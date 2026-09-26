@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月数学自测</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g4-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>数学·四年级上学期第一个月自我检测</h1>
+<div class="meta">满分 100 分 ｜ 建议用时 40 分钟 ｜ 做完先自己批改，再请家长抽 3 题复核</div>
+<blockquote>使用说明（先读再动笔）：限时 40 分钟，独立完成，不翻书不问人；做题时不要往下翻——答案在后面。做完先自己批改，再请家长抽 3 题复核。诚信计分：错了不丢人，漏出来的短板才是我们要找的宝贝。标"选学"的题没学到就跳过。</blockquote>
+<details class="rules"><summary>计分规则与进度差异（先读再动笔）</summary>
+<p>怎么算分：客观题对一题得一题分；主观题对照下面"答案解析"的采分点按步给分，宁可少给不高估。等级对照表：</p>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<p><strong>进度差异说明</strong>：若班级尚未学到"公顷和平方千米"，第 4、6、12、20、21 题可跳过；第 10、14 题为"角的度量"选学起步题，未讲到直接跳过。等级按已做题得分折算后对照。</p>
+</details>
+<div class="toolbar noprint">
+  <span class="chip" id="timerChip">⏱ 未开始 ／ 建议用时 40 分钟</span>
+  <span class="chip" id="progChip">已作答 0 ／ 22 题</span>
+  <button class="btn" id="btnPrint">打印</button>
+  <button class="btn btn-danger" id="btnClear">清空重来</button>
+</div>
+<p class="meta noprint">进度自动保存在本机浏览器（清理浏览器数据会丢；换设备不带过去）。不支持保存的浏览器请一次做完再交卷。</p>
+<p class="warnbox noprint" id="storeWarn" hidden>此浏览器不支持自动保存进度——请一次做完再退出。</p>
+<section id="exam">
+<h3>一、填空（本题 6 小题，共 24 分）</h3>
+<div class="q" id="q1" data-no="1" data-type="self" data-score="4"><div class="qtext"><span class="qno">1.</span><p>从右边起，第（　　）位是万位，第（　　）位是亿位。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q2" data-no="2" data-type="self" data-score="4"><div class="qtext"><span class="qno">2.</span><p>40500000 读作（　　　　　）。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q3" data-no="3" data-type="self" data-score="4"><div class="qtext"><span class="qno">3.</span><p>八百万零四十 写作（　　　　　）。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q4" data-no="4" data-type="self" data-score="4"><div class="qtext"><span class="qno">4.</span><p>1 公顷＝（　　　）平方米；1 平方千米＝（　　　）公顷。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q5" data-no="5" data-type="self" data-score="4"><div class="qtext"><span class="qno">5.</span><p>在 900999、909090、900909 三个数中，最大的数是（　　　　　）。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q6" data-no="6" data-type="self" data-score="4"><div class="qtext"><span class="qno">6.</span><p>5 公顷＝（　　　）平方米；800 公顷＝（　　　）平方千米。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>二、判断（对的画"√"，错的画"×"）（本题 4 小题，共 8 分）</h3>
+<div class="q" id="q7" data-no="7" data-type="judge" data-score="2"><div class="qtext"><span class="qno">7.</span><p>个位、十位、百位、千位……都是数位。（　）（2分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q8" data-no="8" data-type="judge" data-score="2"><div class="qtext"><span class="qno">8.</span><p>读 30050000 时，中间的零一个都不用读。（　）（2分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q9" data-no="9" data-type="judge" data-score="2"><div class="qtext"><span class="qno">9.</span><p>边长 100 米的正方形土地，面积正好是 1 公顷。（　）（2分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q10" data-no="10" data-type="judge" data-score="2"><div class="qtext"><span class="qno">10.</span><p>（选学）角的两条边画得越长，角就越大。（　）（2分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>三、选择（本题 4 小题，共 16 分）</h3>
+<div class="q" id="q11" data-no="11" data-type="choice" data-score="4"><div class="qtext"><span class="qno">11.</span><p>下面哪个数最接近 1 万？A　9990　B　10001　C　10999　D　9900（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q12" data-no="12" data-type="choice" data-score="4"><div class="qtext"><span class="qno">12.</span><p>学校操场的面积约 2（　　）。A　平方厘米　B　平方米　C　公顷　D　平方千米（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q13" data-no="13" data-type="choice" data-score="4"><div class="qtext"><span class="qno">13.</span><p>把 894000 省略万位后面的尾数，约是：A　89 万　B　90 万　C　8 万　D　9 万（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q14" data-no="14" data-type="choice" data-score="4"><div class="qtext"><span class="qno">14.</span><p>（选学）无限长、没有端点的是：A　线段　B　角　C　射线　D　直线（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>四、读写与整理（本题 4 小题，共 16 分）</h3>
+<div class="q" id="q15" data-no="15" data-type="self" data-score="4"><div class="qtext"><span class="qno">15.</span><p>读出下面的数：30700000（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q16" data-no="16" data-type="self" data-score="4"><div class="qtext"><span class="qno">16.</span><p>写出下面的数：一千零五十万四千（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q17" data-no="17" data-type="self" data-score="4"><div class="qtext"><span class="qno">17.</span><p>把 50500、500500、55000、50005 按从大到小的顺序排列。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q18" data-no="18" data-type="self" data-score="4"><div class="qtext"><span class="qno">18.</span><p>把 890000 改写成用"万"作单位的数；再把 694000 省略万位后面的尾数求近似数。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>五、解决问题（本题 4 小题，共 36 分）</h3>
+<div class="q" id="q19" data-no="19" data-type="self" data-score="9"><div class="qtext"><span class="qno">19.</span><p>A 体育场能容纳观众 60000 人，B 体育场能容纳观众 91000 人。两个体育场一共能容纳多少人？A 体育场比 B 体育场少容纳多少人？（9分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q20" data-no="20" data-type="self" data-score="9"><div class="qtext"><span class="qno">20.</span><p>一个正方形果园，边长 300 米。它的面积是多少平方米？合多少公顷？（9分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q21" data-no="21" data-type="self" data-score="9"><div class="qtext"><span class="qno">21.</span><p>王爷爷家的果园面积约 3 公顷，李叔叔家的果园面积约 30000 平方米。谁家的果园大？还是一样大？（9分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q22" data-no="22" data-type="self" data-score="9"><div class="qtext"><span class="qno">22.</span><p>一个数由 5 个百万、7 个十万和 8 个千组成。这个数是多少？把它省略万位后面的尾数约是多少？（9分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+</section>
+<div class="submitbar noprint"><button class="btn" id="btnSubmit">交卷批改</button><span id="submitHint"></span></div>
+<section id="review" hidden>
+<h2>批改说明</h2>
+<p>对照每题解析与采分点给分，宁可少给不高估。</p>
+<h3>答案速查（批改卡）</h3>
+<div class="ansgrid" id="ansgrid"></div>
+</section>
+<section id="results" hidden></section>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g4-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+<script>
+const DATA = {"subject":"数学","year":"2026-2027","term":"上学期第一个月","duration":40,"total":100,"items":[{"no":1,"score":4,"kp":"KP1","difficulty":"易","match":"强"},{"no":2,"score":4,"kp":"KP2","difficulty":"中","match":"强"},{"no":3,"score":4,"kp":"KP2","difficulty":"较难","match":"强"},{"no":4,"score":4,"kp":"KP4","difficulty":"易","match":"强"},{"no":5,"score":4,"kp":"KP3","difficulty":"中","match":"强"},{"no":6,"score":4,"kp":"KP4","difficulty":"中","match":"强"},{"no":7,"score":2,"kp":"KP1","difficulty":"易","match":"强"},{"no":8,"score":2,"kp":"KP2","difficulty":"中","match":"强"},{"no":9,"score":2,"kp":"KP4","difficulty":"易","match":"强"},{"no":10,"score":2,"kp":"KP6","difficulty":"易","match":"强"},{"no":11,"score":4,"kp":"KP5","difficulty":"较难","match":"中"},{"no":12,"score":4,"kp":"KP4","difficulty":"易","match":"强"},{"no":13,"score":4,"kp":"KP3","difficulty":"中","match":"强"},{"no":14,"score":4,"kp":"KP6","difficulty":"易","match":"强"},{"no":15,"score":4,"kp":"KP2","difficulty":"易","match":"强"},{"no":16,"score":4,"kp":"KP2","difficulty":"中","match":"强"},{"no":17,"score":4,"kp":"KP3","difficulty":"中","match":"强"},{"no":18,"score":4,"kp":"KP3","difficulty":"中","match":"强"},{"no":19,"score":9,"kp":"KP5","difficulty":"易","match":"强"},{"no":20,"score":9,"kp":"KP4","difficulty":"中","match":"强"},{"no":21,"score":9,"kp":"KP4","difficulty":"易","match":"强"},{"no":22,"score":9,"kp":"KP5","difficulty":"较难","match":"强"}],"answers":{"1":"5；9","2":"四千零五十万","3":"8000040","4":"10000；100","5":"909090","6":"50000；8","7":"对","8":"错","9":"对","10":"错","11":"B","12":"C","13":"A","14":"D","15":"三千零七十万","16":"10504000","17":"500500＞55000＞50500＞50005","18":"89 万；约 69 万","19":"151000 人；31000 人","20":"90000 平方米；9 公顷","21":"一样大","22":"5708000；约 571 万"},"types":{"1":"self","2":"self","3":"self","4":"self","5":"self","6":"self","7":"judge","8":"judge","9":"judge","10":"judge","11":"choice","12":"choice","13":"choice","14":"choice","15":"self","16":"self","17":"self","18":"self","19":"self","20":"self","21":"self","22":"self"},"kpNames":{"KP1":"数位顺序与数级","KP2":"大数的读写","KP4":"公顷与平方千米","KP3":"大数比较与改写","KP6":"线段射线直线与角","KP5":"大数与面积综合应用"}};
+const SOLS = {"1":"1. 从右起：个、十、百、千、万——第 5 位是万位；万、十万、百万、千万、亿——第 9 位是亿位。判错点：忘了数级里还有十万位、百万位、千万位。","2":"2. 40500000：万级是 4050，读\"四千零五十万\"，个级 4 个 0 不读。判错点：万级里的 0 丢读或全读。","3":"3. 8000040：八百万是 8000000，零四十表示百位、千位、十万位都是 0，十位是 4。判错点：写成 800040 或 8000040 少位。","4":"4. 1 公顷＝10000 平方米（边长 100 米的正方形）；1 平方千米＝100 公顷。","5":"5. 三个数都是六位数，先比十万位（都是 9）和万位（都是 0），再比千位：909090 的千位是 9，另两个的千位都是 0——所以 909090 最大。判错点：只看开头不看中间。","6":"6. 5 公顷＝5 个 10000＝50000 平方米；800 公顷＝800÷100＝8 平方千米。","7":"7. 对——个位、十位、百位、千位、万位……都是数位；\"数位\"要和\"计数单位\"（一、十、百、千）区分开。","8":"8. 错——30050000 读作\"三千零五十万\"，万级中间的 0 要读一个\"零\"；级末尾的 0 才不读。","9":"9. 对——边长 100 米的正方形面积 100×100＝10000 平方米，正好是 1 公顷。","10":"10. 错（选学）——角的大小看两条边张开的口，与边画多长没有关系。","11":"11. B——和 10000 比：9990 差 10，10001 只差 1，10999 差 999，9900 差 100。判错点：看着 9990\"最像\"就选它——要算差多少。","12":"12. C——操场是几块大场地，用公顷；平方米太小，平方千米太大（约 140 个操场）。","13":"13. A——894000＝89 万 4 千，千位是 4，四舍，约是 89 万。判错点：见 9 就进位得 90 万——要看的是万位后面的千位。","14":"14. D（选学）——直线无限长、没有端点；射线无限长、只有一个端点；线段有两个端点、有限长。","15":"15. 三千零七十万——万级 3070，个级全 0 不读；判错点：丢\"零\"读成\"三千七十万\"。","16":"16. 10504000——一千零五十万是 10500000，再加四千。判错点：写成 10500400（位对错）。","17":"17. 500500＞55000＞50500＞50005——先比位数：500500 六位数最大；剩下三个都是五位数，比万级：55＞50＞50，55 最大；50500 和 50005 比千位（0＝0）再比百位：5＞0。","18":"18. 890000＝89 万（整万数直接改写）；694000：千位是 4，四舍，约是 69 万。","19":"19. 采分点：第一问 4 分（60000＋91000＝151000，一共能容纳 151000 人）；第二问 5 分（91000－60000＝31000，少容纳 31000 人）。判错点：问\"少多少\"仍用加法。","20":"20. 采分点：算式与面积 5 分（300×300：先算 3×3＝9，两个因数末尾共 4 个 0，得 90000 平方米）；换算 4 分（90000÷10000＝9，合 9 公顷）。判错点：300×300 乘错 0 的个数。","21":"21. 采分点：换算 5 分（3 公顷＝30000 平方米）；比较与结论 4 分（30000＝30000，两家果园一样大）。判错点：只看数字 3 和 30000 就说李叔叔家大——单位不同不能直接比。","22":"22. 采分点：写数 5 分（5 个百万是 5000000，7 个十万是 700000，8 个千是 8000，合起来是 5708000）；求近似数 4 分（省略万位后面的尾数，千位是 8，五入向万位进一，约是 571 万）。判错点：忘进位写成 570 万。"};
+/*SCORE-CORE-START*/
+function gradeOf(pct){
+  if(pct===null||pct===undefined||isNaN(pct)) return null;
+  if(pct>=85) return {g:"优",t:"本月骨架扎实，保持节奏"};
+  if(pct>=70) return {g:"良",t:"大盘没问题，个别点要回炉"};
+  if(pct>=60) return {g:"合格",t:"有明确短板，按下面清单补"};
+  return {g:"待加强",t:"第一个月很常见！先回课本，不着急刷题报班"};
+}
+function verdictOf(rate){ if(rate>=0.8) return "扎实"; if(rate>=0.5) return "需巩固"; return "要补"; }
+function qVerdict(data, st, it){
+  if(st.skip && st.skip[it.no]) return "skip";
+  var t = data.types[it.no];
+  if(t==="choice"||t==="judge"){
+    if(st.override && st.override[it.no])
+      return st.override[it.no]==="对" ? "full" : "zero";
+    if(!st.ans || !st.ans[it.no]) return "miss";
+    return st.ans[it.no]===data.answers[it.no] ? "full" : "zero";
+  }
+  var v = st.score ? st.score[it.no] : undefined;
+  if(typeof v!=="number") return "unjudged";
+  if(v>=it.score) return "full";
+  if(v>0) return v;
+  return "zero";
+}
+function computeResults(data, st){
+  var earned=0, full=0, kps={}, missed=[], unjudged=[];
+  // 第一遍：总分与缺勤标记（跳过题不计入总分）
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    full += it.score;
+    var pts = 0;
+    if(v==="full") pts = it.score;
+    else if(typeof v==="number") pts = v;
+    else if(v==="miss") missed.push(it.no);
+    else if(v==="unjudged") unjudged.push(it.no);
+    earned += pts;
+  });
+  // 第二遍：KP 汇总先只记被测题（整 KP 全跳过 → 无档 → 不出行）。
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    var pts = (v==="full") ? it.score : (typeof v==="number" ? v : 0);
+    String(it.kp).split("+").forEach(function(k){
+      if(!kps[k]) kps[k]={earned:0,full:0,nos:[],skips:[]};
+      kps[k].earned += pts; kps[k].full += it.score;
+      if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+    });
+  });
+  // 第三遍：部分跳过的 KP —— 跳过题计入满分与关联题号（得分率保守不高估）。
+  data.items.forEach(function(it){
+    if(!(st.skip && st.skip[it.no])) return;
+    String(it.kp).split("+").forEach(function(k){
+      if(kps[k]){
+        kps[k].full += it.score;
+        if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+        kps[k].skips.push(it.no);
+      }
+    });
+  });
+  var pct = full>0 ? Math.round(earned/full*1000)/10 : null;
+  var grade = gradeOf(pct);
+  var kpRows = Object.keys(kps).map(function(k){
+    var r = kps[k];
+    return {kp:k, name:(data.kpNames&&data.kpNames[k])||k, earned:r.earned,
+            full:r.full, nos:r.nos, skips:r.skips,
+            rate:r.full? r.earned/r.full : null,
+            verdict:r.full? verdictOf(r.earned/r.full) : null};
+  }).sort(function(a,b){ return a.rate-b.rate; });
+  var weak = kpRows.filter(function(r){ return r.rate!==null && r.rate<0.8; }).slice(0,2);
+  return {earned:earned, full:full, pct:pct, grade:grade, kpRows:kpRows,
+          weak:weak, missed:missed, unjudged:unjudged};
+}
+/*SCORE-CORE-END*/
+
+var KEY = "g4m1-" + DATA.subject;
+function $(s, el){ return (el||document).querySelector(s); }
+function $all(s, el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); }
+var storeOK = true;
+function loadState(){
+  try{ var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; }
+  catch(e){ storeOK = false; return null; }
+}
+function saveState(){
+  try{ localStorage.setItem(KEY, JSON.stringify(st)); }
+  catch(e){ if(storeOK){ storeOK = false; $("#storeWarn").hidden = false; } }
+}
+var st = loadState() || {ans:{}, fill:{}, score:{}, skip:{}, override:{},
+                         submitted:false, start:null};
+if(!st.ans) st.ans = {}; if(!st.fill) st.fill = {};
+if(!st.score) st.score = {}; if(!st.skip) st.skip = {};
+if(!st.override) st.override = {};
+
+function startTimerIfNeeded(){
+  if(!st.start){ st.start = Date.now(); saveState(); }
+}
+setInterval(function(){
+  if(!st.start) return;
+  var s = Math.floor((Date.now()-st.start)/1000);
+  var mm = String(Math.floor(s/60)).padStart(2,"0"), ss = String(s%60).padStart(2,"0");
+  $("#timerChip").textContent = "⏱ " + mm + ":" + ss + " ／ 建议用时 " + DATA.duration + " 分钟";
+}, 1000);
+
+$all(".q").forEach(function(q){
+  var no = q.getAttribute("data-no"), typ = q.getAttribute("data-type");
+  $all("button.opt", q).forEach(function(b){
+    b.addEventListener("click", function(){
+      startTimerIfNeeded();
+      st.ans[no] = (st.ans[no] === b.getAttribute("data-v")) ? null : b.getAttribute("data-v");
+      if(!st.ans[no]) delete st.ans[no];
+      saveState(); paintQ(q); refresh();
+    });
+  });
+  var fill = $(".fillin", q);
+  if(fill) fill.addEventListener("input", function(){
+    startTimerIfNeeded();
+    if(fill.value) st.fill[no] = fill.value; else delete st.fill[no];
+    saveState();
+  });
+  var sk = $(".skip input", q);
+  if(sk) sk.addEventListener("change", function(){
+    startTimerIfNeeded();
+    if(sk.checked) st.skip[no] = true; else delete st.skip[no];
+    saveState(); paintQ(q); refresh();
+  });
+});
+
+function paintQ(q){
+  var no = q.getAttribute("data-no");
+  $all("button.opt", q).forEach(function(b){
+    b.classList.toggle("sel", st.ans[no] === b.getAttribute("data-v"));
+  });
+  if($(".skip input", q)) $(".skip input", q).checked = !!st.skip[no];
+}
+
+function fillAnsgrid(){
+  $("#ansgrid").innerHTML = Object.keys(DATA.answers).map(function(k){
+    return '<span class="chip"><b>' + k + '.</b>' + escHtml(DATA.answers[k]) + '</span>';
+  }).join("");
+}
+
+function verdictLabel(v, it){
+  if(v==="skip") return ["warn","已跳过（不计分）"];
+  if(v==="full") return ["ok","✓ 对（"+it.score+" 分）"];
+  if(v==="miss") return ["bad","✗ 漏做（0 分）"];
+  if(v==="zero") return ["bad","✗ 错（0 分）"];
+  if(v==="unjudged") return ["warn","待自评给分"];
+  return ["warn","自评 "+v+" ／ "+it.score+" 分"];
+}
+
+function recompute(){
+  var res = computeResults(DATA, st);
+  $all(".q").forEach(function(q){
+    var no = q.getAttribute("data-no");
+    var it = DATA.items.filter(function(x){ return String(x.no)===no; })[0];
+    var v = qVerdict(DATA, st, it);
+    var el = $(".verdict", q);
+    var lab = verdictLabel(v, it);
+    el.className = "verdict " + lab[0];
+    var over = st.override[no] ? "（已按家长复核改判）" : "";
+    el.textContent = st.submitted ? lab[1] + over : "";
+    var rv = $(".reveal", q);
+    if(st.submitted){
+      rv.hidden = false;
+      var parts = [];
+      if(DATA.answers[no] && DATA.answers[no] !== "见解析")
+        parts.push('<div class="ref">参考答案：' + escHtml(DATA.answers[no]) + '</div>');
+      parts.push('<div class="sol">' + escHtml(SOLS[no] || "（无解析）") + '</div>');
+      if(DATA.types[no]==="self"||DATA.types[no]==="fill"){
+        parts.push('<div class="stepper noprint"><button class="dec" aria-label="减">−</button>' +
+          '<span class="score"></span><button class="inc" aria-label="加">＋</button>' +
+          '<span class="muted">／ 满分 ' + it.score + ' 分（宁可少给不高估）</span></div>');
+      }
+      if(DATA.types[no]==="choice"||DATA.types[no]==="judge"){
+        parts.push('<button class="btn noprint gai" data-no="' + no + '">家长复核改判</button>');
+      }
+      rv.innerHTML = parts.join("");
+      var sc = st.score[no];
+      if(typeof sc!=="number") sc = 0;
+      var scoreEl = $(".stepper .score", rv);
+      if(scoreEl) scoreEl.textContent = sc + " 分";
+      var dec = $(".stepper .dec", rv), inc = $(".stepper .inc", rv);
+      if(dec) dec.addEventListener("click", function(){
+        st.score[no] = Math.max(0, (typeof st.score[no]==="number"? st.score[no] : 0) - 1);
+        saveState(); paintScore(no); refresh();
+      });
+      if(inc) inc.addEventListener("click", function(){
+        st.score[no] = Math.min(it.score, (typeof st.score[no]==="number"? st.score[no] : 0) + 1);
+        saveState(); paintScore(no); refresh();
+      });
+      var gai = $(".gai", rv);
+      if(gai) gai.addEventListener("click", function(){
+        var cur = qVerdict(DATA, st, it);
+        st.override[no] = (cur === "full") ? "错" : "对";
+        saveState(); refresh();
+      });
+    } else { rv.hidden = true; rv.innerHTML = ""; }
+  });
+  return res;
+}
+
+function paintScore(no){
+  var q = $("#q" + no);
+  var sc = st.score[no]; if(typeof sc!=="number") sc = 0;
+  var el = $(".stepper .score", q); if(el) el.textContent = sc + " 分";
+}
+
+function refresh(){
+  var res = recompute();
+  var answered = Object.keys(st.ans).length + Object.keys(st.score).length;
+  $("#progChip").textContent = "已作答/已判 " + answered + " ／ " + DATA.items.length + " 题";
+  var nTodo = res.missed.length + res.unjudged.length;
+  $("#submitHint").textContent = nTodo ? ("还有 " + nTodo + " 题未作答或未判分，可先交卷再补。") : "";
+  if(!st.submitted){ $("#results").hidden = true; $("#review").hidden = true; return; }
+  document.body.classList.add("revealed");
+  $("#review").hidden = false;
+  fillAnsgrid();
+  var R = $("#results");
+  R.hidden = false;
+  var h = [];
+  if(res.full === 0){
+    h.push('<div class="warnbox">全卷都标记了跳过，无法评级。去掉"跳过"或先做题。</div>');
+  } else {
+    h.push('<div class="resline">得分：<b>' + res.earned + '</b> ／ 已做题满分 ' + res.full +
+      ' ｜ 折算 <b>' + res.pct + '</b> 分 ｜ 等级 <span class="gradebadge">' +
+      (res.grade ? res.grade.g : "—") + '</span> <span class="muted">' +
+      (res.grade ? res.grade.t : "") + '</span></div>');
+  }
+  if(res.missed.length)
+    h.push('<div class="warnbox">第 ' + res.missed.join("、") + ' 题未作答，按 0 分计；补答后自动重算。</div>');
+  if(res.unjudged.length)
+    h.push('<div class="warnbox">第 ' + res.unjudged.join("、") + ' 题还没自评给分，判完自动重算。</div>');
+  h.push('<h3>按知识点登记（自动汇总）</h3>');
+  h.push('<table><thead><tr><th>知识点</th><th>关联题号</th><th>得分</th><th>满分</th><th>结论</th></tr></thead><tbody>');
+  res.kpRows.forEach(function(r){
+    var nosTxt = r.nos.join(", ") +
+      (r.skips.length ? "（" + r.skips.join("、") + " 跳过，计入满分）" : "");
+    h.push('<tr><td>' + escHtml(r.kp + " " + r.name) + '</td><td>' + escHtml(nosTxt) +
+      '</td><td>' + r.earned + '</td><td>' + r.full + '</td><td>' + escHtml(r.verdict || "—") + '</td></tr>');
+  });
+  h.push('</tbody></table>');
+  h.push('<p class="muted">结论口径：得分率 ≥80% 扎实、50~79% 需巩固、&lt;50% 要补；跳过题计入所在知识点的满分（宁可不高估）。</p>');
+  h.push('<h3>我的短板清单（最先补，≤2 个）</h3>');
+  if(res.weak.length){
+    h.push('<ol>');
+    res.weak.forEach(function(r){
+      h.push('<li><b>' + escHtml(r.kp + " " + r.name) + '</b>（第 ' + r.nos.join("、") +
+        ' 题）：把课本对应章节再读一遍；重做本卷第 ' + r.nos.join("、") +
+        ' 题；错题抄进错题本。</li>');
+    });
+    h.push('</ol>');
+  } else if(res.full > 0){
+    h.push('<p>本月各知识点都扎实，保持节奏。</p>');
+  }
+  h.push('<p>约定复测时间：＿＿＿＿＿＿（建议 7~10 天后只重做错题）</p>');
+  h.push('<h3>成绩单摘要（截图保存，或发给老师/家长）</h3>');
+  h.push('<div class="summarybox">' + escHtml(DATA.subject) + ' · ' + escHtml(DATA.year + DATA.term + "自测") +
+    '<br>得分 ' + res.earned + '／' + res.full + '（已做题折算 ' + (res.pct===null?"—":res.pct) + ' 分，等级 ' +
+    (res.grade ? res.grade.g : "—") + '）<br>要补：' +
+    (res.weak.length ? res.weak.map(function(r){ return escHtml(r.kp + " " + r.name); }).join("；") : "无（全部扎实）") +
+    '<br>日期：＿＿＿＿＿＿　复核：家长抽 3 题已核对 □</div>');
+  R.innerHTML = h.join("");
+}
+
+function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+$("#btnSubmit").addEventListener("click", function(){
+  startTimerIfNeeded();
+  if(!st.submitted && !confirm("确认交卷批改？交卷后公布参考答案与解析。"))
+    return;
+  st.submitted = true;
+  saveState(); refresh();
+  $("#review").scrollIntoView({behavior:"smooth"});
+});
+$("#btnClear").addEventListener("click", function(){
+  if(confirm("清空本卷全部作答与计分？此操作不可恢复。")){
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    location.reload();
+  }
+});
+$("#btnPrint").addEventListener("click", function(){ window.print(); });
+
+(function init(){
+  $all(".q").forEach(paintQ);
+  if(!storeOK) $("#storeWarn").hidden = false;
+  refresh();
+})();
+
+</script>
+</body>
+</html>

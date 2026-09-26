@@ -4,7 +4,8 @@
 **/month1-selfcheck/build_versions.py
 **/month1-selfcheck/build_html.py
 **/month1-selfcheck/check.py
-**/month1-selfcheck/test_html_core.js
+**/month1-selfcheck/check_html.py
+**/month1-selfcheck/test_html_score.js
 **/__pycache__/
 .DS_Store
 **/assets/
