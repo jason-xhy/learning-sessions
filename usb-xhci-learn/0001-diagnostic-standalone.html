@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<!-- 单文件版：由 scripts/build-standalone.py 自动生成，勿手改；源文件与完整课程见 https://github.com/jason-xhy/learning-sessions -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0001 · USB 2.0 / USB 3.2 / xHCI 知识体系诊断测评</title>
+<style>
+/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">诊断测评 · LESSON 0001</div>
+  <h1>USB 2.0 / USB 3.2 / xHCI 知识体系地图测评</h1>
+  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+  <p>你的使命是对 USB 栈补丁做<strong>规范章节级的权威评审</strong>。三本规范你已通读，但通读 ≠ 体系。本课不教新细节——它量的是<strong>骨架</strong>：哪本规范管哪层、各子系统如何咬合。30 题覆盖 7 个领域，结果用来画<strong>缺口图</strong>，之后的每一节细节课都按缺口定制，且永远先在整体地图上定位再下钻。</p>
+
+  <div class="note"><strong>怎么作答：</strong>凭第一印象，不确定就选最像的——测的是体系骨架的牢固度，不是背书。每题答完立即出对错与解析；全部答完后点<strong>复制总结发给老师</strong>，把结果粘回会话，我会据此写学习基线（learning record）并定制下一课。</div>
+
+  <h2>整体地图 · 三规范分工</h2>
+  <p>先看这张图再答题。它就是以后每节细节课开头"定位"用的那张图：</p>
+  <div class="map">
+    <div class="layer"><b>⑧ 内核实现层</b><span class="src">drivers/usb/core（usbcore）｜drivers/usb/host/xhci*（v7.3.0）</span></div>
+    <div class="layer"><b>⑦ 主机控制器编程接口</b><span class="src">xHCI 1.2 §3–§6（环/TRB/寄存器/事件）</span></div>
+    <div class="layer"><b>⑥ Hub 子系统</b><span class="src">USB2 §11（TT·SPLIT）｜USB3.2 §10（存储转发）</span></div>
+    <div class="layer"><b>⑤ 设备框架（描述符/标准请求）</b><span class="src">两代共享 §9（USB3 扩充 BOS 等）</span></div>
+    <div class="layer"><b>④ 传输类型（四种）</b><span class="src">USB2 §5｜主机侧执行 xHCI §4</span></div>
+    <div class="layer"><b>③ 协议层（包/事务/握手）</b><span class="src">USB2 §8｜USB3.2 §8</span></div>
+    <div class="layer"><b>② 链路层（仅 USB3 有）</b><span class="src">USB3.2 §7（LTSSM/Header/DPP）；USB2 无独立链路层</span></div>
+    <div class="layer"><b>① 电气与线缆（速率/复位/挂起）</b><span class="src">USB2 §7｜USB3.2 §6</span></div>
+  </div>
+  <p style="font-size:.93rem;color:var(--muted)">一句话分工：<strong>USB 2.0</strong> 管总线本体与设备框架；<strong>USB 3.2</strong> 重造物理+链路层、沿用协议与设备框架；<strong>xHCI</strong> 只管主机控制器怎么编程，不管总线协议本身。评审补丁的第一问永远是：这条改动落在图上哪一层？</p>
+
+  <h2>测评 · 30 题 × 7 领域</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：<a href="https://github.com/jason-xhy/learning-sessions/tree/main/usb-xhci-learn/specs">xHCI 1.2 主规范（645 页）</a>；USB2 / USB3.2 全本在 <a href="https://github.com/jason-xhy/learning-sessions/tree/main/usb-xhci-learn/specs">specs/</a>。逐章速查先 grep <a href="https://github.com/jason-xhy/learning-sessions/blob/main/usb-xhci-learn/notes/规范全文精读摘要库.md">规范全文精读摘要库</a>，命中就不必重读原文。</li>
+    <li>答完把总结粘回会话：我会写 <code>learning-records</code> 基线 + 缺口图，下一课直接打最大缺口。</li>
+    <li>任何一题看解析仍不明白——<strong>直接问老师（会话里的 agent）</strong>，问到懂为止，这正是它存在的意义。</li>
+  </ul>
+
+  <footer>课 0001 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：无 ｜ 下一课：<a href="https://github.com/jason-xhy/learning-sessions/blob/main/usb-xhci-learn/lessons/0002-hub-attach-chain.html">0002 hub 事件链路</a> ｜ 相关：<a href="https://github.com/jason-xhy/learning-sessions/blob/main/usb-xhci-learn/notes/USB2.0-USB3.2-xHCI-传输流程学习笔记.md">传输流程学习笔记</a> · <a href="https://github.com/jason-xhy/learning-sessions/blob/main/usb-xhci-learn/notes/Linux-xHCI实现与规范差异分析.md">实现-规范差异分析</a></footer>
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '规范版图',
+    prompt: '一台全速 U 盘插在高速集线器下行口。主机控制器与集线器之间为它搬运数据所用的 split 事务，定义在哪？',
+    options: ['USB2.0 §8 · 协议层', 'USB2.0 §11 · Hub 规范', 'USB3.2 §10 · Hub', 'xHCI §4 · 操作模型'],
+    answer: 1,
+    explain: 'B 对。SSPLIT/CSPLIT 只存在于主机控制器与 hub 之间，设备不可见（USB2 §5.10、§11.1.1）；TT 状态机家族在 §11.16–11.23。A：§8 是包/事务格式，split 不在那。C：USB3 hub 没有 TT、没有 split。D：xHCI 只管控制器编程，不管总线事务翻译。' },
+  { tag: '规范版图',
+    prompt: 'USB 3.2 相对 USB 2.0 "完全重造、基本无法复用"的是哪两层？',
+    options: ['协议层与设备框架', '传输类型与带宽协商', '物理层与链路层', '仅物理层电气参数'],
+    answer: 2,
+    explain: 'C 对。USB3 换成差分全双工（Gen1 8b/10b、Gen2 128b/132b、双通道），并新增独立链路层（§7：LTSSM 链路训练、Header Packet 重传、DPP）；而协议层（§8）与设备框架（§9）大幅沿用 USB2——"哪些层共享"是体系图最关键的接缝。' },
+  { tag: '规范版图',
+    prompt: '描述符与标准请求这套设备框架（第九章），USB2 与 USB3 的关系是？',
+    options: ['另起一套全新框架', '已被 xHCI 寄存器取代', '由各类协议自行定义', '沿用 USB2 第九章框架'],
+    answer: 3,
+    explain: 'D 对。USB3 沿用 USB2 ch9 设备框架（描述符/标准请求/状态机），只做扩充：BOS 描述符、SUPER_SPEED_* 等新类型。枚举请求序列两代基本一致——所以 usbcore 的枚举代码能同时服务两代设备。' },
+  { tag: '传输模型',
+    prompt: '四种传输类型中，"不保证送达、传错直接丢弃"的是哪种？',
+    options: ['等时传输 Isochronous', '批量传输 Bulk', '中断传输 Interrupt', '控制传输 Control'],
+    answer: 0,
+    explain: 'A 对。等时无握手包、无重试（USB2 §5.9）；USB3 等时同样不重传（数据包可被 nullify 但不做端到端重发）——保速率、不保完整。批量保证送达但无时限；中断有界延迟；控制必须送达（枚举依赖它）。' },
+  { tag: '传输模型',
+    prompt: 'SuperSpeed 等时端点错过服务间隔后，规范/控制器侧的处理是？',
+    options: ['硬件自动重传该数据', '端点停顿暂停等时流', '触发链路复位重建', '作废数据等待下一间隔'],
+    answer: 3,
+    explain: 'D 对。错过即作废、等下一个间隔——xHCI 用完成码 Missed Service=23 上报（Table 6-90）；等时在 USB3 也不重传。这也解释了为什么等时端点永不 halt（xHCI §4.10.2）。' },
+  { tag: '传输模型',
+    prompt: '设备回 NAK，在总线错误计数里算什么？',
+    options: ['算 1 次错误', '不算错误、不计数', '算 3 次错误立即中止', '仅等时管道计数'],
+    answer: 1,
+    explain: 'B 对。§5.3.2：NAK 是"没就绪"的合法应答，不是错误、不计数；只有 STALL 或累计 3 次总线错误才中止（retire）IRP，成功应答会清零计数。' },
+  { tag: '传输模型',
+    prompt: '非等时管道的 IRP 在什么情况下被中止（retire）？',
+    options: ['收到 1 次 NAK', 'STALL 或任一包累计 3 次总线错误', '帧末尾未完成即中止', '主机调度冲突时'],
+    answer: 1,
+    explain: 'B 对。§5.3.2：管道遇 STALL，或任一包累计 3 次总线错误（CRC/超时等），该 IRP 即被退役并上报最后错误；NAK 不计、成功清零。' },
+  { tag: '传输模型',
+    prompt: '等时端点的服务周期（bInterval 换算后的微帧数）必须满足什么约束？',
+    options: ['必须是 2 的整数次幂个（微）帧', '任意整数值均可', '必须等于 1', '必须大于等于 8'],
+    answer: 0,
+    explain: 'A 对。§5.12.7：等时服务的周期必须是 2 的整数次幂个（微）帧——主机据此做确定性调度，任意值会破坏帧表预算。' },
+  { tag: '枚举与拓扑',
+    prompt: '设备上电到可被驱动绑定，主机侧最少必须完成的一串动作是？',
+    options: ['读描述符→复位→设地址→配置', '复位→设地址→读描述符→配置', '设地址→配置→复位→读描述符', '配置→读描述符→设地址→复位'],
+    answer: 1,
+    explain: 'B 对。复位定速（§7.1.7.5：TDRST≥10ms、根口 TDRSTR≥50ms）→ SET_ADDRESS → 读描述符 → SetConfiguration（§9.1.2 设备状态机）。内核对应 hub_port_init（hub.c:4915）：先 hub_port_reset，再经默认管道走这套序列。' },
+  { tag: '枚举与拓扑',
+    prompt: 'USB 2.0 拓扑里，从主机到最远设备允许的非根集线器级联层数是？',
+    options: ['最多 6 级非根 hub', '最多 7 级非根 hub', '最多 5 级非根 hub', '最多 4 级非根 hub'],
+    answer: 2,
+    explain: 'C 对。§4.1.1：含根层共 7 层，路径最多 5 个非根 hub；compound device 占 2 层且禁止接在第 7 层。这组数字直接约束 hub 深度相关的时序预算（如 SYNC 逐级缩短，§7.1.10）。' },
+  { tag: '枚举与拓扑',
+    prompt: 'compound device（带内置 hub 的设备）在拓扑里怎么算？',
+    options: ['占 2 层，且禁止接在第 7 层', '占 1 层，等同普通设备', '占 2 层，可接任意层', '不计层，只算 1 个地址'],
+    answer: 0,
+    explain: 'A 对。§4.1.1：compound device 占 2 层（内置 hub 一层 + function 一层），因此禁止接在第 7 层——第 7 层只能放 function，否则超出 7 层上限。' },
+  { tag: '枚举与拓扑',
+    prompt: '§5.5.3 允许主机先只读设备描述符前几个字节来确定 ep0 的 wMaxPacketSize？',
+    options: ['4 字节', '8 字节', '16 字节', '18 字节'],
+    answer: 1,
+    explain: 'B 对。§5.5.3：主机可先只读描述符前 8 字节拿到 bMaxPacketSize0，确认 ep0 包长后再读全量——因为不知道 ep0 真实包长前，更长的一次传输可能溢出。内核 hub_port_init 实际一次读 64 字节缓冲（hub.c:4932）。【实现≠规范：读法不同，判据相同】' },
+  { tag: '枚举与拓扑',
+    prompt: '全速（FS）设备的 ep0 wMaxPacketSize 可能取哪些值？',
+    options: ['固定 1024', '固定 512', '8/16/32/64', '64/128/256'],
+    answer: 2,
+    explain: 'C 对。§5.5.3：FS 控制端点可为 8/16/32/64；HS 固定 64、LS 固定 8、SS/SSP 固定 512。内核先猜 64、读 bMaxPacketSize0 后修正（hub.c:4979-4985）。' },
+  { tag: 'xHCI 骨架',
+    prompt: 'xHCI 中，驱动下发"管理命令"与"搬数据"分别走哪条环？',
+    options: ['命令环与传送环', '事件环与命令环', '传送环与事件环', '全部走命令环'],
+    answer: 0,
+    explain: 'A 对。命令环（Command Ring）=驱动→控制器的管理命令（如 Address Device、Configure Endpoint）；传送环（Transfer Ring）=每个端点一对 IN/OUT，搬数据；事件环（Event Ring）=控制器→驱动反向汇报（xHCI 1.2 第 3 章运行概览）。三种环靠 Cycle 位翻转让内存环变成硬件队列。' },
+  { tag: 'xHCI 骨架',
+    prompt: '驱动把 TRB 挂上 Transfer Ring 之后，让控制器真正开工的动作是？',
+    options: ['写 Event Ring 指针', '重置端点上下文', '重发 Setup 事务', '写 Doorbell 寄存器'],
+    answer: 3,
+    explain: 'D 对。TRB 入环只是"作业写好了"，写 Doorbell（第 5 章 Doorbell Array）才是敲门开工；Stream ID 也是经 doorbell 传递的（摘要库附录 C 引文）。内核路径：组环→xhci_ring_ep_doorbell 写寄存器→完成事件回 Event Ring。' },
+  { tag: 'xHCI 骨架',
+    prompt: 'xHCI 事件 TRB 里 Completion Code = 13（十进制）对应？',
+    options: ['环满 Event Ring Full', '短包 Short Packet', '无应答 No Ping Response', '下溢 Ring Underrun'],
+    answer: 1,
+    explain: 'B 对。Table 6-90 数字底座：Success=1、Short Packet=13、Ring Underrun/Overrun=14/15、No Ping Response=20、Event Ring Full=21、Missed Service=23。事件现场定位（评审第二问）就靠这组编号。' },
+  { tag: 'xHCI 骨架',
+    prompt: 'Completion Code = 21（十进制）对应？',
+    options: ['Event Ring Full', 'Short Packet', 'No Ping Response', 'Missed Service'],
+    answer: 0,
+    explain: 'A 对。Event Ring Full=21——事件环满，控制器丢事件，驱动必须扩容/加速消费（Table 6-90）。同一族：Success=1、Short Packet=13、Underrun/Overrun=14/15、No Ping Response=20、Missed Service=23。' },
+  { tag: 'xHCI 骨架',
+    prompt: 'Completion Code = 20（十进制）对应？',
+    options: ['Ring Underrun', 'Event Ring Full', 'No Ping Response', 'Short Packet'],
+    answer: 2,
+    explain: 'C 对。No Ping Response=20（Table 6-90）：HS 域 PING 探测得不到应答——多出现在 OUT 方向等缓冲的场景。识别完成码是事件现场定位的第一步。' },
+  { tag: 'xHCI 骨架',
+    prompt: 'hub descriptor 里的 TT think_time 被内核换算后写到哪里？',
+    options: ['传送环的 TRB 里', '端点上下文的 TT_THINK_TIME 字段', 'Event Ring 表项', 'PORTSC 寄存器'],
+    answer: 1,
+    explain: 'B 对。xhci.c:5337-5342：think_time = tt->think_time; 不为 0 时 (think_time/666)-1，写入端点上下文 TT_THINK_TIME——硬件据此为 FS/LS 事务预留 TT 缓冲时间。字段注释见 xhci.h:344（tt_info 用于构造 split 事务令牌）。' },
+  { tag: '时序与数字',
+    prompt: '内核认为端口"接稳"之前，要求连接状态连续稳定多久（去抖阈值）？',
+    options: ['25 ms', '100 ms', '200 ms', '2000 ms'],
+    answer: 1,
+    explain: 'B 对。hub_port_debounce（hub.c:4709）每 25 ms 步进采样，连续稳定 ≥100 ms 才算接稳（HUB_DEBOUNCE_STABLE，:140），对表规范 TATTDB ≥100 ms（§7.1.7.3 Fig 7-29）；总超时 2000 ms 是实现自定。25 ms 是步进、200 ms 是低速复位初值，别混。' },
+  { tag: '时序与数字',
+    prompt: '根 hub 端口复位的内核等待初值是多少？',
+    options: ['10 ms', '50 ms', '60 ms', '200 ms'],
+    answer: 2,
+    explain: 'C 对。HUB_ROOT_RESET_TIME=60（hub.c:2914），注释点名来自 USB2 §7.1.7.5。【实现≠规范】规范只要求根口 TDRSTR ≥50 ms（允许间断：每段 ≥10 ms、间隔 <3 ms），内核取 60 ms 留裕量；普通口 10 ms、低速口 200 ms、总超时 800 ms。' },
+  { tag: '时序与数字',
+    prompt: '规范要求 attach 信号在 VBUS 达到多少伏后、多久之内出现？',
+    options: ['4.01 V 后 100 ms 内', '5.00 V 后 250 ms 内', '4.01 V 后 10 ms 内', '3.30 V 后 100 ms 内'],
+    answer: 0,
+    explain: 'A 对。§7.1.7.3 Fig 7-29：VBUS 达 4.01 V 起，设备须在 TSIGATT <100 ms 内发出 attach 信号（D+ 上拉）；随后 hub 去抖 TATTDB ≥100 ms。' },
+  { tag: '时序与数字',
+    prompt: 'hub 重发 SYNC 时每级最多"吃掉"起始几个 bit？5 级之后 SYNC 最短剩多少？',
+    options: ['2 bit／16 bit', '8 bit／8 bit', '4 bit／20 bit', '4 bit／12 bit'],
+    answer: 3,
+    explain: 'D 对。§7.1.10：每级 hub 重发 SYNC 最多吃掉起始 4 bit，5 级后 SYNC 最短 12 bit——接收方按最坏 12 bit 设计锁定窗口。这正是拓扑"最多 5 级非根 hub"（§4.1.1）的时序根源之一。' },
+  { tag: 'Hub 骨架',
+    prompt: 'USB2 hub 在数据通路上的核心职责，最准确的概括是？',
+    options: ['仅作电气信号中继', '整帧缓存按需转发', '检测、中继与事务翻译', '代替主机分配地址'],
+    answer: 2,
+    explain: 'C 对。USB2 hub 三件事：连接检测与变化报告（§11.5 计时器）、逐位信号中继（含帧时序再生）、面向 FS/LS 下行设备的事务翻译 TT（§11.1.1：split 只在主机↔hub 之间）。B 是 USB3 hub 的存储转发；地址分配始终是主机的事。' },
+  { tag: 'Hub 骨架',
+    prompt: 'SuperSpeed 集线器转发包的方式是？',
+    options: ['存储转发 store-and-forward', '逐位实时信号中继', '先转发后校验 cut-through', '只转发头部丢弃数据'],
+    answer: 0,
+    explain: 'A 对。USB3.2 §10：SS hub 收完整包、校验后再生转发——与 USB2 逐位中继本质不同，这是两代 hub 的分水岭。D 是链路层 Header Packet/DPP 概念的诱饵：header 是链路层控制包，不是 hub 的转发方式。' },
+  { tag: 'Hub 骨架',
+    prompt: 'bulk/control 的 split 为什么 TT 至少需要 2 个缓冲（每方向）？',
+    options: ['规范要求双倍冗余以便校验', '一个给 SSPLIT、一个给 SOF', '为了同时服务两个下行端口', 'SSPLIT 与 CSPLIT 时间解耦，须"一个在飞、一个接新"'],
+    answer: 3,
+    explain: 'D 对。§11.17/§11.17.4：SSPLIT 交付后 hub↔FS 设备真实执行几十微秒（跨微帧），期间新 SSPLIT 照常到达——双缓冲恰好一个在飞、一个接新。配套语义：无空间回 NAK（不增 err_count）、CSPLIT 未完成回 NYET、无匹配缓冲回 STALL。' },
+  { tag: 'Hub 骨架',
+    prompt: 'interrupt 事务的 split，hub 的 FS handler 能否本地重试？',
+    options: ['可以，重试直到设备应答', '不得本地重试，失败即回报主机', '仅等时事务禁止本地重试', '由 TT 缓冲余量动态决定'],
+    answer: 1,
+    explain: 'B 对。§11.20：FS handler 不得对 interrupt 事务做本地重试——interrupt 活在主机的微帧管道里（§11.18.4），NAK 是合法"未就绪"（§5.3.2），重试决策权在主机。对照：bulk/control 的事务错误 TT 可本地重试 3 次后报 stall（§11.17.2）。' },
+  { tag: '双总线',
+    prompt: 'SuperSpeed 设备插到 USB2-only 口上为什么也能正常枚举？',
+    options: ['SS 设备自动降级重写固件', 'USB2 口会模拟 SS 握手应答', 'VBUS 升压后进入兼容模式', '线缆含 USB2 对，SS 设备在其上保持 FS 形态'],
+    answer: 3,
+    explain: 'D 对。USB3.x 连接器里 USB2 数据对（D+/D-）与 SS 收发对并存，SS/HS 设备在 USB2 对上始终保持 FS 形态（D+ 经 1.5 kΩ 上拉，§7.1.5；HS 设备初始也以 FS 附着，§7.1.5.2）。插 USB2-only 口时 SS 侧完全沉默，USB2 形态直接完成枚举。' },
+  { tag: '双总线',
+    prompt: '内核里一个 xHC 控制器生成几个根 hub？',
+    options: ['两个：USB2 总线与 SS 总线各一', '一个：端口按代混编在同一 hub', '每个物理口生成一个', '按已接入速率动态生成'],
+    answer: 0,
+    explain: 'A 对。xhci.c 里 usb2_rhub（:5379）与 usb3_rhub（:372）两套根 hub 结构共享物理根口，分别注册在 USB2 总线与 SS 总线上；/sys/bus/usb/devices 下可见成对根 hub。正因如此，hub.c 的同一个 hub_event 循环服务两代。' },
+  { tag: '双总线',
+    prompt: 'USB3 的 Warm Reset 通过什么实现、时长量级是多少？',
+    options: ['SE0 拉低 10–50 ms', '连续 16 个 TS2 序列', 'LFPS 长 burst，约 80–120 ms', '断开 VBUS 再上电'],
+    answer: 2,
+    explain: 'C 对。Warm Reset 用 tReset=80/100/120 ms 的 LFPS（§6.9.3 表 6-30），完成后回到 Rx.Detect 重训练（§7.4.2）；与 U1/U2/U3 退出共用波形、靠 burst 时长区分。对照 USB2 复位是 SE0（根口 ≥50 ms）——形态完全不同，对软件都收敛成 PORTSC 的复位位。' }
+]);
+</script>
+</body>
+</html>

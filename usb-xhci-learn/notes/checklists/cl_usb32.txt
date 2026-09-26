@@ -1,0 +1,2 @@
+USB 3.2 规范核对清单（Rev 1.1 569页）
+1. Gen1 5G 8b/10b、Gen2 10G 128b/132b、2x2 仅Type-C、LBPM 协商  2. HP 16B CRC-16、DPP CRC-32、字段位宽  3. bMaxBurst 0-15=16DP  4. NumP 5bit 语义  5. TP 清单 ACK/NRDY/ERDY/STATUS/STALL/PING/DEV_NOTIFICATION  6. HP 链路层重传、DPP 协议层重传、等时不重传  7. ITP 每 125us 区间 8us 窗  8. 控制 Setup DP 8B/STATUS TP  9. U0-U3/LFPS/LGO  10. 双总线 hub 必须/外设禁止  11. 125us 调度/companion 描述符  12. Streams SID 16bit  13. DEV_NOTIFICATION 类型  14. SSP=Gen1x2 及以上

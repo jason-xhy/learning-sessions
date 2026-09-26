@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>课 0003 · 一根线缆里的两套总线</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+  <div class="kicker">细节课 · LESSON 0003 · 主线：hub 深入</div>
+  <h1>一根线缆里的两套总线<br>——USB3.x 走到根端口，为什么又是 USB2 形态</h1>
+
+  <h2>整体定位（先挂图）</h2>
+  <p>来自 <a href="0002-hub-attach-chain.html">课 0002</a> 的疑问：USB3.x 明明有自己的总线形态（地图 <strong>①②③</strong> 层），怎么过了 xHC、到了根端口路径，软件看到的又是 USB2 那一套？答案分三层——物理、硬件、软件接口——最后回到地图收束。</p>
+
+  <h2>一图收束</h2>
+  <div class="flow">
+    <div class="fnode"><b>同一连接器，两套总线并存</b>：USB2 数据对（D+/D-）＋ SuperSpeed 收发对（SSTX/SSRX，Gen2x2 再翻倍）＋共享 VBUS。USB3.x 从未"替换掉"USB2 电气形态，而是把它包进了同一根线。</div>
+    <div class="farrow">↓ 兼容性的物理基础</div>
+    <div class="fnode"><b>SS/HS 设备在 USB2 对上始终保持 FS 形态</b>：D+ 经 1.5 kΩ 上拉到 3.0–3.6 V（0→VIH ≤2.5 µs）；<strong>HS 设备初始也以 FS 附着</strong>（§7.1.5、§7.1.5.2）。所以插进任何口，USB2 侧的连接检测永远在场。</div>
+    <div class="fbranch">
+      <div class="fnode">口是 SS-capable：SS 侧开始链路训练（Polling.LFPS，§6.9）；USB2 侧训练失败即沉默，走 SS</div>
+      <div class="fnode">口是 USB2-only：SS 对上什么也不发生，设备以 USB2 形态直接枚举</div>
+    </div>
+    <div class="farrow">↓ 关键分界：xHC 把 USB3 自己的①②层"吸收"进硬件</div>
+    <div class="fnode"><b>链路训练、Hot/Warm Reset 全在控制器硬件里完成，软件只见结果</b>。两代复位形态天差地别——USB2 是 SE0（根口 ≥50 ms），USB3 是 LFPS 长 burst（Warm Reset 80–120 ms → Rx.Detect 重训练，§6.9.3/§7.4.2）——但对软件都收敛成"端口状态寄存器里的一位"。内核原话："USB-3 connections are initialized automatically by the hostcontroller hardware"（hub.c:5677）。</div>
+    <div class="farrow">↓ 硬件向上暴露的接口</div>
+    <div class="fnode"><b>PORTSC 统一端口模型 = USB2 ch11 端口语义 ＋ SS 扩展位</b>（PLS 链路状态、WPR warm reset 等）。xHCI 用 <strong>§3.5 Root Hub Management</strong> 把根集线器伪装成标准 hub；§5.4 运行寄存器的状态/变化位（CSC/PRC/PEC…）与 USB2 §11 的 C_PORT_CONNECTION 家族同构。</div>
+    <div class="farrow">↓ 软件侧落点</div>
+    <div class="fnode"><b>内核里一个 xHC 生成两套根 hub</b>：<code>usb2_rhub</code>（xhci.c:5379）与 <code>usb3_rhub</code>（xhci.c:372），共享物理根口。于是 <strong>同一个 hub.c、同一个 hub_event 循环、同一套 ch9 设备框架服务两代</strong>——这就是课 0002 七步链路两代通用的根因。</div>
+  </div>
+
+  <div class="note"><strong>动手验证（1 分钟）</strong>：在装了 xHCI 的机器上 <code>ls /sys/bus/usb/devices/</code>——根 hub 成对出现（如 usb1 与 usb2），分别挂在 USB2 总线与 SS 总线上；<code>lsusb -t</code> 能看到两代总线树。这就是"两套根 hub"的现场。</div>
+
+  <h2>为什么规范要这样设计</h2>
+  <p>USB 3.x 在 <strong>③协议层以上（ch8 协议、ch9 设备框架）刻意沿用 USB2</strong>（课 0001 Q2/Q12 的"哪些层共享"接缝）。"描述符、标准请求、hub 模型一次编写、两代通用"是 USB3 对操作系统的兼容承诺；xHC 是这个承诺的主机侧落点——<strong>把新形态挡在硬件里，把旧形态留给软件</strong>。评审视角：凡 xHCI/usbcore 补丁里出现"USB3 特有状态位"，它一定对应某个被硬件吸收的链路层事件（PLS↔LTSSM 状态、WPR↔Warm Reset、PRC↔复位完成），对表时两边都要查。</p>
+
+  <h2>检索练习 · 3 题</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：xHCI 1.2 <a href="../specs/xhci_1.2_2019.pdf">specs/xhci_1.2_2019.pdf</a> §3.5、§5.4；USB2 §7.1.5；USB3.2 §6.9/§7.4（specs/ 下）。内核：<code>drivers/usb/host/xhci.c</code>（usb2_rhub/usb3_rhub）、<code>drivers/usb/core/hub.c:5677</code>。</li>
+    <li>继续主线：正支已开 <a href="0004-tt-split.html">课 0004 · TT 与 split 事务</a>；枚举细节（设备状态机 §9.1）保留为候选。</li>
+  </ul>
+
+  <footer>课 0003 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="0002-hub-attach-chain.html">0002 hub 事件链路</a> ｜ 下一课：<a href="0004-tt-split.html">0004 TT 与 split</a> ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a></footer>
+</main>
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '双总线',
+    prompt: 'SuperSpeed 设备插到 USB2-only 口上为什么也能正常枚举？',
+    options: ['SS 设备自动降级重写固件', '线缆含 USB2 对，SS 设备在其上保持 FS 形态', 'USB2 口会模拟 SS 握手应答', 'VBUS 升压后进入兼容模式'],
+    answer: 1,
+    explain: 'B 对。USB3.x 连接器里 USB2 数据对（D+/D-）与 SS 收发对并存，SS/HS 设备在 USB2 对上始终保持 FS 形态（D+ 经 1.5 kΩ 上拉，§7.1.5；HS 设备初始也以 FS 附着，§7.1.5.2）。插 USB2-only 口时 SS 侧完全沉默，USB2 形态直接完成枚举。' },
+  { tag: '硬件吸收',
+    prompt: 'USB3 的链路训练（Polling.LFPS、均衡）由谁完成？',
+    options: ['hub_event 工作队列', 'usbcore 枚举代码', 'xHC 硬件自动，软件只见结果', '根 hub 描述符配置'],
+    answer: 2,
+    explain: 'C 对。链路训练、Hot/Warm Reset 都是 LTSSM/LFPS 事件（§6.9/§7.4），由 xHC 硬件吸收；软件只在 PORTSC 上看到结果。内核原话："USB-3 connections are initialized automatically by the hostcontroller hardware"（hub.c:5677）。两代复位形态完全不同（SE0 vs LFPS 长 burst 80-120 ms），对软件却是同一个"写复位位、等变化位"。' },
+  { tag: '内核结构',
+    prompt: '内核里一个 xHC 控制器生成几个根 hub？',
+    options: ['两个：USB2 总线与 SS 总线各一', '一个：端口按代混编在同一 hub', '每个物理口生成一个', '按已接入速率动态生成'],
+    answer: 0,
+    explain: 'A 对。xhci.c 里 usb2_rhub（:5379）与 usb3_rhub（:372）两套根 hub 结构共享物理根口，分别注册在 USB2 总线与 SS 总线上；/sys/bus/usb/devices 下可见成对根 hub（如 usb1、usb2）。正因如此，hub.c 的同一个 hub_event 循环和同一套 ch9 框架能服务两代设备。' }
+]);
+</script>
+</body>
+</html>

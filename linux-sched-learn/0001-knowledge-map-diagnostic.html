@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0001 · Linux 调度子系统知识体系诊断测评</title>
+<style>
+/* course.css — teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+}
+
+/* 手机（自包含单文件常被手机浏览器打开）：窄屏堆叠、防止 nowrap 溢出 */
+@media (max-width: 640px) {
+  body { padding: 1.2rem .8rem 3rem; font-size: 1rem; }
+  h1 { font-size: 1.45rem; }
+  .layer { flex-direction: column; gap: .15rem; }
+  .layer .src { white-space: normal; text-align: left; }
+  .quiz-q { padding: .85rem .9rem; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">诊断测评 · LESSON 0001 · v2</div>
+  <h1>Linux 调度子系统知识体系地图测评</h1>
+  <p>你的使命是对 sched 栈补丁做<strong>机制级评审</strong>。本课不教新细节——它量的是<strong>骨架</strong>：调度框架由哪几层组成、每层落在哪个文件、各调度类如何咬合。<strong>40 题 × 8 领域、每领域 5 题</strong>：题量按"缺口图分辨率"设计，单一领域答错 1-2 题即可判定该域需要回填，之后每节细节课按缺口定制，且永远先在整体地图上定位再下钻。</p>
+
+  <div class="note"><strong>怎么作答：</strong>分两部分（P1 框架·机制·队列·公平，P2 负载·实时·截止期·组拓扑），<strong>可一次连做，也可分两次</strong>——每部分答完各自生成"复制总结"，把两段总结都粘回会话。凭第一印象，不确定就选最像的——测的是体系骨架的牢固度，不是背书。每题答完立即出对错与解析（解析即锚点卡，答错的地方值得读）。</div>
+
+  <h2>整体地图 · 调度子系统八层</h2>
+  <p>先看这张图再答题。它就是以后每节细节课开头"定位"用的那张图（行号基线 v7.3.0）：</p>
+  <div class="map">
+    <div class="layer"><b>⑧ 文档与设计层</b><span class="src">Documentation/scheduler/：sched-eevdf · sched-design-CFS · sched-deadline · sched-bwc · sched-pelt · sched-ext …</span></div>
+    <div class="layer"><b>⑦ 用户接口层</b><span class="src">syscalls.c（sched_setscheduler/setattr/nice）＋ cgroup 接口</span></div>
+    <div class="layer"><b>⑥ 组调度与扩展</b><span class="src">autogroup.c · task_group（sched.h）· ext/（BPF 调度器）· isolation.c · psi.c</span></div>
+    <div class="layer"><b>⑤ 负载/容量/拓扑</b><span class="src">pelt.c（PELT）· topology.c（调度域）· util clamp · cpufreq_schedutil.c</span></div>
+    <div class="layer"><b>④ 调度类（五类）</b><span class="src">fair.c（EEVDF）｜rt.c｜deadline.c｜idle.c｜stop_task.c（sched.h:2831-2835 定序）</span></div>
+    <div class="layer"><b>③ 核心机制层</b><span class="src">core.c：__schedule(:7111)/pick_next_task/wakeup/tick(sched_tick_remote :5870) · core_sched.c</span></div>
+    <div class="layer"><b>② 运行队列层</b><span class="src">rq/cfs_rq/rt_rq/dl_rq（sched.h，per-CPU）＋ 负载均衡</span></div>
+    <div class="layer"><b>① 等待基础层</b><span class="src">wait.c · wait_bit.c · swait.c · completion.c</span></div>
+  </div>
+  <p style="font-size:.93rem;color:var(--muted)">一句话分工：<strong>core.c</strong> 只管"何时切、怎么切"；<strong>五个调度类</strong>各自回答"谁配得上 CPU"；<strong>PELT/topology</strong> 回答"它该拿多少、该去哪颗核"。评审 sched 补丁的第一问永远是：这条改动落在图上哪一层？</p>
+
+  <h2>测评 · 第一部分 P1（框架版图 / 核心机制 / 运行队列 / 公平调度，20 题）</h2>
+  <div id="quiz-p1"></div>
+
+  <h2>测评 · 第二部分 P2（负载跟踪 / 实时 / 截止期 / 组·拓扑·治理，20 题）</h2>
+  <div id="quiz-p2"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：内核树本体（<code>kernel/sched/</code>）+ <a href="https://github.com/torvalds/linux/blob/62f4c998b297/Documentation/scheduler/index.rst">Documentation/scheduler/</a>（以树内版本为准）。注意本树反直觉点（如 tick 处理叫 sched_tick_remote、RT 默认带宽值、EEVDF 树按 deadline 序）以陪学协议「事实基线」为准，勿按主线印象或 CFS 时代口诀引用。</li>
+    <li>把 <strong>P1、P2 两段总结</strong>都粘回会话：我会写 <code>learning-records/0001</code> 基线（8 领域缺口图）+ 和你一起定主线（EEVDF / RT-DL / PELT-EAS / 组调度 / 负载均衡五选一）。</li>
+    <li>任何一题看解析仍不明白——<strong>直接问老师（会话里的 agent）</strong>，问到懂为止。</li>
+  </ul>
+
+  <footer>课 0001 · 诊断 v2（40 题 × 8 领域）· 2026-09-25 ｜ 代码：<code>torvalds/linux@62f4c998b297</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23；锚点均已过树核实）｜ 上一课：无 ｜ 下一课：待主线确认后定制 ｜ 工作区：linux-sched-study（同构于 usb-xhci-study）</footer>
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions, part) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0] + (part ? ' · ' + part : '');
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz-p1'), [
+  { tag: '框架版图',
+    prompt: '内核挑选下一个可运行任务时，五个内置调度类的优先级遍历顺序是？',
+    options: ['fair→rt→dl→stop→idle', 'stop→dl→rt→fair→idle', 'idle→fair→rt→dl→stop', 'dl→rt→stop→fair→idle'],
+    answer: 1,
+    explain: 'B 对。stop→dl→rt→fair→idle——声明序即优先序（sched.h:2831-2835），比较宏 sched_class_above 直接比指针，for_each_class 沿序遍历。ext（sched_ext 的 BPF 调度类）不在五类之列，见下一题。' },
+  { tag: '框架版图',
+    prompt: 'SCHED_DEADLINE 调度类的实现落在哪个文件？',
+    options: ['rt.c', 'fair.c', 'deadline.c', 'idle.c'],
+    answer: 2,
+    explain: 'C 对。deadline.c 是 EDF（最早截止期优先）调度类的家，文件头注释即"EDF + CBS"；rt.c 是 POSIX 实时（FIFO/RR）的家；fair.c 是 EEVDF 公平类；idle.c 是空载兜底。配套文档 sched-deadline.rst。' },
+  { tag: '框架版图',
+    prompt: '__schedule 主切换路径（选任务+切换上下文）的家在哪个文件？',
+    options: ['core.c', 'syscalls.c', 'topology.c', 'pelt.c'],
+    answer: 0,
+    explain: 'A 对。core.c 是核心机制层：__schedule（本树 :7111）、__pick_next_task（:6153）、唤醒路径、tick 处理（sched_tick_remote，:5870）都在这。syscalls.c 是 sched_setscheduler 等系统调用入口；topology.c 管调度域；pelt.c 管负载跟踪。' },
+  { tag: '框架版图',
+    prompt: 'sched_ext 的 ext_sched_class（BPF 调度类）在优先序里的位置是？',
+    options: ['固定排在 fair 之前', '固定排在 idle 之前、fair 之后', '随配置动态变化：scx 启用与否决定它是否被跳过，位置未钉死', '完全取代 idle 类'],
+    answer: 2,
+    explain: 'C 对。ext_sched_class 声明在 sched.h:1888，但 next_active_class（sched.h:2841-2851）按 scx_enabled()/scx_switched_all() 动态跳过 fair 或 ext——即"SCX 接管全部 fair 任务则跳过 fair，未启用则跳过 ext"。评审 sched_ext 补丁时不能假设它的固定次序。' },
+  { tag: '框架版图',
+    prompt: 'sched_setscheduler() 系统调用的入口实现落在哪个文件？',
+    options: ['core.c', 'fair.c', 'sched.h', 'syscalls.c'],
+    answer: 3,
+    explain: 'D 对。syscalls.c:934（SYSCALL_DEFINE3(sched_setscheduler,…)，同类还有 sched_setattr/sched_getscheduler 等）——用户接口层收参数、做权限与合法性检查后，才下探到核心机制层与各调度类。这是八层地图的⑦层。' },
+  { tag: '核心机制与时机',
+    prompt: 'TIF_NEED_RESCHED 置位之后，真正的任务切换发生在？',
+    options: ['置位瞬间立即切换', '下一个调度类轮询时', '等进程自愿睡眠时', '最近抢占点（中断/异常返回等）进入 __schedule'],
+    answer: 3,
+    explain: 'D 对。置位只是"请求"，真正的切换发生在最近的抢占点：中断/异常返回、抢占使能边界、cond_resched() 等处检查该标志并调 __schedule（core.c:7111）。配置模型（CONFIG_PREEMPT 系）决定内核态抢占点密度。' },
+  { tag: '核心机制与时机',
+    prompt: 'CONFIG_PREEMPT（全抢占）相对 voluntary 模型的本质区别是？',
+    options: ['只影响用户态抢占频率', '内核态运行中也可被高优先级抢占', '只影响 RT 类、不影响公平类', '只是把 tick 频率调高'],
+    answer: 1,
+    explain: 'B 对。preemption 模型改的是内核态抢占点密度：voluntary 只在显式 might_sleep/cond_resched 点让出，CONFIG_PREEMPT 下内核态任意安全点可被更高优先级任务打断——"低延迟"与"吞吐/复杂度"的权衡旋钮，与 tick 频率、调度类无关。模型定义见 kernel/Kconfig.preempt。' },
+  { tag: '核心机制与时机',
+    prompt: '本树里，周期性驱动调度统计与抢占检查的 tick 处理函数叫什么？',
+    options: ['scheduler_tick', 'sched_tick', 'sched_tick_remote', 'tick_sched_timer'],
+    answer: 2,
+    explain: 'C 对。本树（62f4c998b297）不存在 scheduler_tick——tick 处理叫 sched_tick_remote（core.c:5870）。这是"参数记忆不可信"的典型案例：主线历史名与本树实名必须过树核对，引用错名字的补丁评审意见会被直接打回。' },
+  { tag: '核心机制与时机',
+    prompt: '睡眠中的任务被唤醒时，统一的唤醒入口函数是？',
+    options: ['wake_up_process() 自己完成入队', 'try_to_wake_up() 统一走向选核与入队', 'schedule() 反向回收', 'yield_to() 让出'],
+    answer: 1,
+    explain: 'B 对。try_to_wake_up（core.c:4274）是统一唤醒入口：置 RUNNING、选目标 CPU（ttwu 路径）、activate_task 入队、检查是否抢占。wake_up_process 是它的薄封装。评审"唤醒路径"补丁时，改动多半落在 core.c 的 ttwu 家族。' },
+  { tag: '核心机制与时机',
+    prompt: '"按类优先序依次向各调度类要下一个任务"的函数是？',
+    options: ['core.c 的 __pick_next_task', 'syscalls.c 的 pick 入口', '各调度类自己轮询 CPU 找任务', 'idle.c 定时巡检'],
+    answer: 0,
+    explain: 'A 对。__pick_next_task（core.c:6153）沿调度类优先序遍历：先问 stop，再 dl、rt、fair，最后 idle 才兜底（pick_next_task :6245 是含 smt/代理逻辑的外层）。这是八层地图③层与④层的接缝，也是"哪个类该跑"问题的仲裁点。' },
+  { tag: '运行队列',
+    prompt: 'struct rq / cfs_rq / rt_rq / dl_rq 这些运行队列结构的定义落在哪个文件？',
+    options: ['core.c', 'fair.c', 'sched.h', 'pelt.c'],
+    answer: 2,
+    explain: 'C 对。struct rq 在 sched.h:1159，cfs_rq/rt_rq/dl_rq 同在其内（如 rq 内嵌 struct cfs_rq cfs，sched.h:1211）。sched.h 是调度子系统的"结构总装车间"——读代码先认结构，再顺字段找函数。' },
+  { tag: '运行队列',
+    prompt: '每个 CPU 的 rq 实例在内核里如何组织？',
+    options: ['per-CPU 变量 runqueues（this_rq() 取用）', '全局数组按 CPU 编号索引', '内嵌在每个 task_struct 里', '每次调度动态分配'],
+    answer: 0,
+    explain: 'A 对。DECLARE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues)（sched.h:1427）——per-CPU 变量，this_rq()/cpu_rq(cpu) 取用。per-CPU 是调度器"无锁快路径"的根基，评审补丁时看到 rq 即默认 per-CPU 语境。' },
+  { tag: '运行队列',
+    prompt: 'cfs_rq 实例在系统里的数量关系是？',
+    options: ['每 CPU 恰好 1 个', '全系统唯一 1 个', '每个任务 1 个', '每 CPU × 每任务组各 1 个，随组层级嵌套'],
+    answer: 3,
+    explain: 'D 对。rq 内嵌"根"cfs_rq（sched.h:1211），但每个 task_group 在每个 CPU 上也各有一个组级 cfs_rq，构成层级——组调度就是在这棵树上自叶向根逐级累计。所以数 cfs_rq 时：CPU 数 × (1 + 组数)。' },
+  { tag: '运行队列',
+    prompt: '本树公平类里，被唤醒或新建的实体入队时，place_entity 以哪个量为 vruntime 放置参照？',
+    options: ['队列加权平均 vruntime（avg_vruntime，与 eligible 同口径）', 'cfs_rq->min_vruntime 单调基准（CFS 时代参照）', '全局 0 点，按权重重新计账', '该实体休眠前最后的 vruntime 原值'],
+    answer: 0,
+    explain: 'A 对。place_entity（fair.c:6186）取 vruntime = avg_vruntime(cfs_rq) 作放置基准，实体相对该加权平均计算 lag——与资格线 entity_eligible（:967）同一口径。【本树≠CFS：旧实现以 cfs_rq->min_vruntime 为放置参照，本树已无此字段；min_vruntime 只作为红黑树增广缓存存在（se->min_vruntime，fair.c:1070/:1083），不承担放置职责】选 B = 背了 CFS 时代记忆。' },
+  { tag: '运行队列',
+    prompt: 'stop 调度类（最高优先级）服务的是谁？',
+    options: ['RT 任务不够用时的兜底', 'CPU 迁移、热插拔等 stopper 内核线程（migration/N）', 'idle 之前再试一次用户任务', 'BPF 调度器的心跳'],
+    answer: 1,
+    explain: 'B 对。stop 类（stop_task.c:99 DEFINE_SCHED_CLASS(stop)）服务 CPU 停止类内核工作——迁移线程 migration/N、热插拔、stop_machine。它能无条件抢占一切，所以普通任务永远不该落到它上；补丁若让"业务路径"经过 stop 类即是设计坏味道。' },
+  { tag: '公平调度',
+    prompt: 'EEVDF 里实体"有资格"（eligible）参与竞争的判据是？',
+    options: ['权重在同队列最大', 'deadline 是全树最早', 'vruntime 是全树最小', 'vruntime 不超队列均值（lag≥0）'],
+    answer: 3,
+    explain: 'D 对。eligible = vruntime 不超过 cfs_rq 的平均 vruntime（fair.c:967 entity_eligible→vruntime_eligible），即 lag≥0、没多拿过 CPU；:738 的注释（avg_vruntime()+0 ⇒ entity_eligible():=true）交叉印证。"deadline 最早"是 eligible 之后的挑选规则，不是资格线。' },
+  { tag: '公平调度',
+    prompt: '本树 EEVDF 中，就绪实体红黑树的排序键是？',
+    options: ['wall 运行时间', 'vruntime 虚拟运行时间（CFS 时代口诀）', 'deadline 最早在前', 'slice 请求片长'],
+    answer: 2,
+    explain: 'C 对。入树用 rb_add_augmented_cached(…, __entity_less, min_vruntime_cb)（fair.c:1086），比较器 entity_before 比的是 a->deadline < b->deadline（fair.c:558）——【本树≠CFS 口诀】CFS 时代按 vruntime 排，EEVDF 改按 deadline 排；增广缓存的是子树 min_vruntime（:1083 se->min_vruntime=se->vruntime），不是排序键。选 C 之外的选项=背了旧口诀或主线记忆。' },
+  { tag: '公平调度',
+    prompt: '在红黑树的众多就绪实体中，EEVDF 最终挑谁上 CPU？',
+    options: ['vruntime 全树最小者', 'eligible 实体中 deadline 最早者', '权重最大者', '等待 wall 时间最长者'],
+    answer: 1,
+    explain: 'B 对。pick_eevdf（fair.c:1187；pick_next_entity :6518→:6523 调用）：先按资格线（entity_eligible）过滤，再在合格者中取 deadline 最早者——EEVDF 的"E"（eligible）管公平，"DF"（earliest deadline first）管时延目标。vruntime 最小是 CFS 的规则。' },
+  { tag: '公平调度',
+    prompt: 'nice 0 与 nice +5 两个任务的 CPU 份额比大约是？',
+    options: ['约 3:1（1024 vs 335）', '约 2:1（1024 vs 512）', '约 5:1（每级线性）', '约 10:1（每级翻倍）'],
+    answer: 0,
+    explain: 'A 对。权重表 core.c:10673-10679：nice 0 → 1024，nice +5 → 335，1024/335≈3.1；每级约 1.25 倍（倍率倒数关系）不是线性也不是翻倍。权重是公平类的"份额货币"，设计动机见 sched-nice-design.rst。' },
+  { tag: '公平调度',
+    prompt: '权重越大（nice 越低）的任务，其 vruntime 的增长速度？',
+    options: ['越快', '越慢', '不变', '只影响 slice，与流速无关'],
+    answer: 1,
+    explain: 'B 对。calc_delta_fair（fair.c:303）：Δvruntime = Δexec × NICE_0_LOAD / weight——权重越大，同样的真实运行时间折算成越少的虚拟时间，vruntime 涨得越慢，于是能跑更久才追上队列均值。这就是"权重换时间流速"的机制本体。' }
+], 'P1 · 框架与公平');
+Quiz.render(document.getElementById('quiz-p2'), [
+  { tag: '负载跟踪',
+    prompt: 'PELT 负载信号的几何衰减半衰期是？',
+    options: ['4 ms', '16 ms', '32 ms', '64 ms'],
+    answer: 2,
+    explain: 'C 对。LOAD_AVG_PERIOD = 32（sched-pelt.h:14，单位 ms），pelt.c 的衰减换算（:36、:49）都基于它；可读版推导见树内 sched-pelt.c 文档。半衰期决定"负载历史记多久"，是 EAS/选核行为的根参数之一。' },
+  { tag: '负载跟踪',
+    prompt: '"半衰期 32 ms"对 PELT 信号意味着什么？',
+    options: ['32 ms 后信号清零', '每 32 ms 贡献翻倍', '每 32 ms 重新采样一次', '每 32 ms 无运行的贡献衰减一半'],
+    answer: 3,
+    explain: 'D 对。几何衰减：一个实体停跑 32ms，其历史贡献乘 1/2；64ms 剩 1/4，96ms 剩 1/8——指数遗忘，不是清零也不是采样。画成波形就是"每格乘 0.5"的阶梯衰减；这正是评估"负载历史记多久"时的直觉基准。' },
+  { tag: '负载跟踪',
+    prompt: '哪个 PELT 信号封顶 1024、语义是"这段 CPU 有多忙"？',
+    options: ['load_avg（权重累计口径）', 'util_avg（运行占比口径）', '两者都封顶 1024', '两者都不封顶'],
+    answer: 1,
+    explain: 'B 对。util_avg = 运行时间占比的几何平均，恒在 0..1024，答"CPU 利用率"；load_avg 按 load.weight 累计，任务越多越大、不封顶，答"多少量级的负载在排队"。二者在 pelt.c（___update_load_avg :258）同源异算——混用这两个信号是 EAS/容量类补丁的常见错误。' },
+  { tag: '负载跟踪',
+    prompt: 'PELT 的几何累加在什么时机结算？',
+    options: ['仅周期 tick 结算', '仅在任务唤醒时', 'tick 与入队/出队等 rq 时钟更新点都会结算', '由独立内核线程异步结算'],
+    answer: 2,
+    explain: 'C 对。凡是 update_rq_clock 路径上的时间推进点（tick、enqueue/dequeue、迁移等）都会触发 PELT 结算（pelt.c:258 ___update_load_avg；:299 update_load_se）——不是只有 tick。评审"信号更新不及时"类 bug 时，先确认改动路径上时钟有没有推进。' },
+  { tag: '负载跟踪',
+    prompt: 'EAS（能效感知选核）判定"任务放小核更省电"时，读的是哪两个量？',
+    options: ['nice 与 prio', 'vruntime 与 slice', 'util_avg 与各 CPU capacity', 'deadline 与 runtime'],
+    answer: 2,
+    explain: 'C 对。EAS 用任务 util_avg 对比各 CPU 的 capacity（算力，含大小核差异），配合能量模型算"放哪颗核最省"（sched-capacity.rst、sched-energy.rst）。util 封顶 1024 与容量同量纲，才能直接比——这也是 util_avg 存在的理由之一。' },
+  { tag: '实时 RT',
+    prompt: '同为 RT 且优先级相同时，SCHED_FIFO 与 SCHED_RR 的区别是？',
+    options: ['FIFO 有时间片，RR 没有', '两者同级都轮转', 'FIFO 同级不让（跑到阻塞为止），RR 同级按时间片轮转', 'RR 的优先级更高'],
+    answer: 2,
+    explain: 'C 对。FIFO：同优先级先到先服务，不让出直到阻塞/被更高者抢占；RR：同级之间按时间片轮转。两者对下位类（fair 等）的压迫力相同——所以 RT 任务里"死循环"事故几乎都是 FIFO。规则叙述见 sched-rt-group.rst。' },
+  { tag: '实时 RT',
+    prompt: 'SCHED_FIFO 的 1-99 优先级与 nice 值是什么关系？',
+    options: ['同一线性空间的不同刻度', 'nice 越小越接近 RT 语义', '两套体系：1-99 的 RT 恒压过全部 fair/nice 任务', 'nice<0 时才具备 RT 语义'],
+    answer: 2,
+    explain: 'C 对。RT 优先级（1-99，数字越大越急）属于 rt 类，nice/权重属于 fair 类——类序 rt→fair（sched.h:2831-2835）保证任何 RT 任务压过任何 nice 的 fair 任务，nice 与 RT prio 之间不存在换算。两套体系是评审优先级类补丁时的第一课。' },
+  { tag: '实时 RT',
+    prompt: 'RT 带宽节流（throttling）的两个旋钮是？',
+    options: ['nice 与 priority', 'quota 与 slice', 'slice 与 lag', 'period 与 runtime'],
+    answer: 3,
+    explain: 'D 对。sched_rt_period_us 与 sched_rt_runtime_us 两个 sysctl（sched.h:113-114 声明、rt.c:18/:24 定义本树默认各 1000000µs；µs→ns 换算 :2481）：每个 period 内 RT 累计运行超 runtime 即被 throttled，剩余时间让给其它类。组级展开见 sched-rt-group.rst / sched-bwc.rst。' },
+  { tag: '实时 RT',
+    prompt: '本树 sched_rt_runtime_us 默认 1000000，含义是？',
+    options: ['等于 period ⇒ 默认不限流【本树≠主线】', '默认把 RT 限到 95% 带宽', '超时后 1 秒硬惩罚', '默认禁用 RT 类'],
+    answer: 0,
+    explain: 'A 对。本树默认 1000000µs == period（rt.c:24），即 RT 可用满周期带宽、节流默认不生效——与主线"950000=95%"的印象相反【本树≠主线，过树为准】。评审 RT 饿死 fair 类的 bug 报告时，先核这是哪棵树：换了默认值，结论整个反转。' },
+  { tag: '实时 RT',
+    prompt: 'rt_rq 被 throttle 之后，该 CPU 的剩余时间给谁？',
+    options: ['RT 内部降级继续跑', '让给较低调度类（fair 等）', '空转到下个 period', '唤醒 stopper 接管'],
+    answer: 1,
+    explain: 'B 对。rt_rq_throttled（rt.c:564-566）成立后，RT 挑选让位，pick 往下走到 fair/idle——这正是节流保护系统不被 RT 饿死的设计意图（带 rt_nr_boosted 的例外见 :566）。但注意本树默认不限流（上一题），此保护实际处于关闭态。' },
+  { tag: '截止期 DL',
+    prompt: 'SCHED_DEADLINE 的三参数模型是？',
+    options: ['runtime/deadline/period', 'prio/nice/weight', 'quota/period/burst', 'slice/lag/deadline'],
+    answer: 0,
+    explain: 'A 对。每个调度期（period）内保证 runtime 的 CPU 时间、相对截止期 deadline——EDF 按最早绝对截止期挑选。CBS 算法防止超支拖累他人；树内权威叙述 sched-deadline.rst，实现 deadline.c。' },
+  { tag: '截止期 DL',
+    prompt: '多个 dl 任务都就绪时，deadline.c 挑选的规则是？',
+    options: ['最高静态优先级者', 'runtime 最短者优先', '先来先服务', '最早绝对截止期优先（EDF）'],
+    answer: 3,
+    explain: 'D 对。deadline.c 文件头（:5）即"EDF + CBS"：把（period,runtime,deadline）换算成绝对截止期，最早者先跑（__pick_next_task_dl :2814 一族）。EDF 是动态优先级思想——"急的先办"，与 RT 的静态数字完全不同。' },
+  { tag: '截止期 DL',
+    prompt: '任务实际超用它的 runtime 时，CBS 的处理是？',
+    options: ['不扩支：超额者被推迟（代价自付），不拖累他人', '立即终止超支任务', '无条件补足预算保它跑完', '把它降级到 fair 类'],
+    answer: 0,
+    explain: 'A 对。CBS（deadline.c:789 起，:901 的唤醒补时规则）坚持"带宽守恒"：任务超支不给加时，而是把它的（绝对）deadline 推后，相当于自己排队重来——保证一个不守约的 dl 任务不能侵蚀别人的保障。这是 DL 与 RT 最本质的工程差异。' },
+  { tag: '截止期 DL',
+    prompt: 'SCHED_DEADLINE 任务与 RT 优先级 99 的任务同时就绪，谁先跑？',
+    options: ['dl 类恒先于 RT（声明序 stop→dl→rt→…）', 'RT 99 恒先', '两者并列轮转', '按权重/nice 比较'],
+    answer: 0,
+    explain: 'A 对。类序 stop→dl→rt（sched.h:2831-2835）决定：dl 类整体高于 rt 类，RT 99 也翻不过它。所以混布 DL 与 RT 的系统里，RT 的"最高优先级"只是本类内的最高——跨类比次序，这是优先级类补丁的常见盲区。' },
+  { tag: '截止期 DL',
+    prompt: 'sched_setattr 设置新的 DL 参数时，内核用什么防止"承诺超出产能"？',
+    options: ['不设防，靠 CBS 事后兜底', '挤掉既有 dl 任务腾出带宽', '缩短其他任务的 runtime', '入队前做总带宽溢出检查，超则拒绝（sched_dl_overflow）'],
+    answer: 3,
+    explain: 'D 对。sched_dl_overflow（deadline.c:3779）按"每 CPU 可用带宽"累计校验：新参数会让总利用率超 1 就拒绝（EINVAL）——准入控制让 EDF 的可调度性判定的责任在设置时一次性付清，而不是运行时崩盘。' },
+  { tag: '组·拓扑·治理',
+    prompt: 'cgroup 的 cpu.shares 配置最终作用在哪里？',
+    options: ['修改 RT 带宽', '组级 cfs_rq 的权重，随层级参与每 CPU 竞争', '全局 nice 偏移', '磁盘 IO 权重'],
+    answer: 1,
+    explain: 'B 对。shares 变成 task_group 在每 CPU 上那份 cfs_rq 的权重（每 CPU 每组一份，见运行队列域），组内任务先在组内公平、组间按 shares 分蛋糕——层级求和。规则见 sched-rt-group.rst 的组部分。' },
+  { tag: '组·拓扑·治理',
+    prompt: 'autogroup.c 的自动分组按什么切？',
+    options: ['按会话（tty/登录会话族）自动成组', '按 UID 分组', '按 cgroup 路径分组', '按缓存拓扑分组'],
+    answer: 0,
+    explain: 'A 对。autogroup（autogroup.c）把每个会话（如一个终端里 fork 出的任务族）自动放进独立组，享受组隔离——防止"一个终端里 make -j64 挤死另一个终端的交互任务"，用户无感知、无需配 cgroup。它是"开箱即用的组调度"。' },
+  { tag: '组·拓扑·治理',
+    prompt: 'sched_ext（SCX）提供的能力是？',
+    options: ['CPU 隔离设施', 'RT 带宽的组级版本', '负载跟踪的前端', '用 BPF 编写、可动态加载切换的调度类'],
+    answer: 3,
+    explain: 'D 对。sched_ext.rst：允许用 BPF 实现一套完整调度策略并在线切换（ext_sched_class，sched.h:1888；启用与否动态跳过 fair 或 ext，见 :2841-2851）。它把"谁配得上 CPU"的答案从内核编译期挪到了可编程期——评审 SCX 补丁要先问：策略错误时的兜底路径还在吗？' },
+  { tag: '组·拓扑·治理',
+    prompt: '调度域（sched_domains，负载均衡的边界与层级）由谁构建？',
+    options: ['core.c 自举时写死', 'topology.c 的 build_sched_domains（按拓扑与域标志构建）', 'cpuset 直接生成', '由 PELT 数据推导'],
+    answer: 1,
+    explain: 'B 对。build_sched_domains（topology.c:3077）按系统拓扑（SMT/MC/DIE…层级）与域标志（平衡多少任务、多远频率）把 CPU 织成域树——负载均衡在域间找空闲、EAS 在域内选核。调度域拓扑是⑤层与②层的接缝，文档见 sched-domains.rst。' },
+  { tag: '组·拓扑·治理',
+    prompt: 'util clamp（uclamp）钳制的是哪个量？',
+    options: ['PELT 半衰期', 'RT 带宽', 'nice 的取值区间', '任务 util_avg 的 min/max（改频率与选核视角）'],
+    answer: 3,
+    explain: 'D 对。uclamp（sched-util-clamp.rst）给任务的 util 请求设下限（boost：小任务保频）与上限（cap：限制其把 CPU 频率/容量拉满）——不改变它拿多少 CPU 时间，改变的是它"看起来需要多少算力"，从而影响 cpufreq 与 EAS 选核。' }
+], 'P2 · 负载与扩展');
+</script>
+</body>
+</html>

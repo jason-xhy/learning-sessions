@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月数学自测 · 四年级</title>
+<style>
+:root { --ink:#1a1a1a; --paper:#fffff8; --accent:#a00000; --muted:#707070;
+  --line:#e3e3da; --good:#1a7f37; --bad:#c62828; --card:#fff; }
+* { box-sizing:border-box; }
+body { margin:0; padding:1.2rem .9rem 7rem; background:var(--paper); color:var(--ink);
+  font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;
+  font-size:1.02rem; line-height:1.7; }
+main { max-width:44rem; margin:0 auto; }
+.kicker { color:var(--accent); font-size:.8rem; letter-spacing:.12em; }
+h1 { font-size:1.45rem; line-height:1.35; border-bottom:2px solid var(--ink); padding-bottom:.4rem; margin:.3rem 0 .4rem; }
+.meta { color:var(--muted); font-size:.9rem; margin:.15rem 0; }
+.box { background:var(--card); border:1px solid var(--line); border-radius:.6rem; padding:.8rem 1rem; margin:1rem 0; }
+.box h2 { font-size:1.05rem; margin:.1rem 0 .4rem; }
+.box ul { margin:.3rem 0; padding-left:1.2rem; }
+.note { color:var(--muted); font-size:.95rem; }
+h3.sec { font-size:1.08rem; margin:1.6rem 0 .4rem; border-bottom:1px solid var(--line); padding-bottom:.25rem; }
+.passage { background:#f7f6ee; border-left:3px solid var(--line); border-radius:.4rem;
+  padding:.6rem .9rem; margin:.7rem 0; }
+.passage p { margin:.35rem 0; }
+.q { background:var(--card); border:1px solid var(--line); border-radius:.6rem;
+  padding:.7rem .85rem; margin:.65rem 0; }
+.q.skipped { opacity:.45; }
+.qhead { display:flex; align-items:center; gap:.5rem; margin-bottom:.3rem; }
+.qno { background:var(--ink); color:#fff; border-radius:.35rem; padding:0 .45rem;
+  font-size:.85rem; font-weight:700; }
+.qscore { color:var(--muted); font-size:.85rem; }
+.skipbtn { margin-left:auto; border:1px solid var(--line); background:#fff; color:var(--muted);
+  border-radius:1rem; padding:.15rem .7rem; font-size:.82rem; font-family:inherit; }
+.qtext { white-space:normal; }
+.blank { font:inherit; font-size:16px; width:5.2em; text-align:center;
+  border:none; border-bottom:1.5px solid var(--muted); background:#f2f1e8;
+  border-radius:.25rem .25rem 0 0; padding:.05rem .3rem; }
+.opts { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.55rem; }
+.opt { font:inherit; font-size:16px; background:#fff; border:1.5px solid var(--line);
+  border-radius:.55rem; padding:.35rem .8rem; min-height:2.4rem; text-align:left; }
+.opt.sel { background:var(--accent); border-color:var(--accent); color:#fff; }
+.donewrap { display:flex; align-items:center; gap:.45rem; margin-top:.5rem; color:var(--muted); font-size:.95rem; }
+.donewrap input { width:1.25rem; height:1.25rem; }
+.qgrade { margin-top:.6rem; border-top:1px dashed var(--line); padding-top:.5rem; }
+body:not(.grading) .qgrade { display:none; }
+body.grading .dowidget { display:none; }
+.alab { color:var(--muted); font-size:.85rem; margin-right:.4rem; }
+.ansline code { background:#f2f1e8; border-radius:.3rem; padding:.1rem .45rem; }
+.explbox { margin:.45rem 0; font-size:.95rem; }
+.explbox summary { cursor:pointer; color:var(--accent); }
+.expl { white-space:pre-wrap; background:#faf9f2; border-radius:.4rem; padding:.5rem .7rem; margin-top:.35rem; }
+.stepper { display:flex; align-items:center; gap:.4rem; margin-top:.5rem; }
+.stepper button { font:inherit; border:1.5px solid var(--line); background:#fff;
+  border-radius:.5rem; min-width:2.5rem; min-height:2.3rem; }
+.stepper .sfull { color:var(--good); }
+.stepper .sauto { color:var(--muted); }
+.sval { min-width:5.2em; text-align:center; font-weight:700; }
+#bar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line);
+  display:flex; gap:.5rem; align-items:center; padding:.55rem .8rem calc(.55rem + env(safe-area-inset-bottom)); }
+#bar button { font:inherit; font-size:16px; border:1.5px solid var(--ink); background:#fff;
+  border-radius:.55rem; padding:.45rem .8rem; min-height:2.6rem; }
+#bar .primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+#bar .ghost { border-color:var(--line); color:var(--muted); }
+#progress { margin-left:auto; color:var(--muted); font-size:.9rem; white-space:nowrap; }
+#restoretip { display:none; background:#fdf6e3; border:1px solid #e8d9a0; border-radius:.5rem;
+  padding:.5rem .8rem; margin:.8rem 0; font-size:.92rem; }
+#restoretip button { font:inherit; border:none; background:none; color:var(--accent); text-decoration:underline; }
+.kprow { display:flex; align-items:center; gap:.6rem; margin:.4rem 0; }
+.kpname { flex:0 0 auto; width:14.5em; font-size:.93rem; }
+.kpbar { flex:1 1 auto; height:.8rem; background:#f0efe6; border-radius:.4rem; overflow:hidden; }
+.kpbar i { display:block; height:100%; background:var(--accent); }
+.kpval { flex:0 0 auto; font-size:.9rem; color:var(--muted); }
+.kptag { flex:0 0 auto; font-size:.85rem; }
+#report h2 { border-bottom:2px solid var(--ink); padding-bottom:.3rem; }
+.level { display:inline-block; background:var(--accent); color:#fff; border-radius:.5rem;
+  padding:.1rem .7rem; margin-left:.5rem; }
+#report .skiptip, #report .ugtip { color:var(--muted); font-size:.9rem; }
+#snapshot { border:2px solid var(--ink); }
+details.parent summary { cursor:pointer; color:var(--accent); font-weight:700; }
+footer { margin-top:3rem; color:var(--muted); font-size:.85rem; border-top:1px solid var(--line); padding-top:.7rem; }
+@media (min-width:40rem) { body { padding-left:1rem; padding-right:1rem; } }
+</style>
+</head>
+<body>
+<main>
+<p class="kicker">hunan-g4-learn · month1-selfcheck · 单文件直发版</p>
+<h1>数学 · 四年级上学期第一个月自测</h1>
+<p class="meta">适用：湖南省四年级上学期第 1 个月（2026 年 9 月）｜ 满分 100 分 ｜ 建议用时 40 分钟</p>
+<p class="meta">教材对照：数学人教版第 1~2 单元主题（大数的认识 · 公顷和平方千米）——人教版为主流；第 3 单元"角的度量"多数学校 10 月开课，本卷仅设选学起步题。以学校实际用书与进度为准。</p>
+
+<div class="box" id="howto">
+<h2>先读再动笔</h2>
+<ul>
+<li>独立完成，不翻书不问人；限时 <b>40 分钟</b>。一次只做这一科，不连考。</li>
+<li>选择、判断题<b>点一下</b>就选中；填空题<b>直接打字</b>；写话、阅读问答、笔算竖式在<b>纸上</b>写，写完勾一下"纸上已完成"。</li>
+<li>全部做完点下面「交卷并批改」——对照答案与采分点给分，<b>拿不准就往低给</b>，短板才不会被藏起来。</li>
+<li>错了不丢人，漏出来的短板才是我们要找的宝贝。</li>
+<li>进度自动存在本机，中途退出再打开可继续；要重做点「清空重做」。</li>
+</ul>
+</div>
+
+<div id="restoretip">已恢复上次的进度，接着做就行。想从头来：<button type="button" id="restoreclear">清空重做</button></div>
+
+<h3 class="sec">试卷</h3>
+<h3 class="sec">一、填空（本题 6 小题，共 24 分）</h3>
+<div class="q" data-no="1" data-type="fill"><div class="qhead"><span class="qno">1</span><span class="qscore">4分</span></div><div class="qtext">1. 从右边起，第<input class="blank" data-no="1" data-b="0" autocomplete="off">位是万位，第<input class="blank" data-no="1" data-b="1" autocomplete="off">位是亿位。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>5；9</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">从右起：个、十、百、千、万——第 5 位是万位；万、十万、百万、千万、亿——第 9 位是亿位。判错点：忘了数级里还有十万位、百万位、千万位。</div></details><div class="stepper" data-no="1"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="2" data-type="fill"><div class="qhead"><span class="qno">2</span><span class="qscore">4分</span></div><div class="qtext">2. 40500000 读作<input class="blank" data-no="2" data-b="0" autocomplete="off">。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>四千零五十万</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">40500000：万级是 4050，读"四千零五十万"，个级 4 个 0 不读。判错点：万级里的 0 丢读或全读。</div></details><div class="stepper" data-no="2"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="3" data-type="fill"><div class="qhead"><span class="qno">3</span><span class="qscore">4分</span></div><div class="qtext">3. 八百万零四十 写作<input class="blank" data-no="3" data-b="0" autocomplete="off">。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>8000040</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">8000040：八百万是 8000000，零四十表示百位、千位、十万位都是 0，十位是 4。判错点：写成 800040 或 8000040 少位。</div></details><div class="stepper" data-no="3"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="4" data-type="fill"><div class="qhead"><span class="qno">4</span><span class="qscore">4分</span><button type="button" class="skipbtn" data-no="4">没学到？跳过</button></div><div class="qtext">4. 1 公顷＝<input class="blank" data-no="4" data-b="0" autocomplete="off">平方米；1 平方千米＝<input class="blank" data-no="4" data-b="1" autocomplete="off">公顷。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>10000；100</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">1 公顷＝10000 平方米（边长 100 米的正方形）；1 平方千米＝100 公顷。</div></details><div class="stepper" data-no="4"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="5" data-type="fill"><div class="qhead"><span class="qno">5</span><span class="qscore">4分</span></div><div class="qtext">5. 在 900999、909090、900909 三个数中，最大的数是<input class="blank" data-no="5" data-b="0" autocomplete="off">。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>909090</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">三个数都是六位数，先比十万位（都是 9）和万位（都是 0），再比千位：909090 的千位是 9，另两个的千位都是 0——所以 909090 最大。判错点：只看开头不看中间。</div></details><div class="stepper" data-no="5"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="6" data-type="fill"><div class="qhead"><span class="qno">6</span><span class="qscore">4分</span><button type="button" class="skipbtn" data-no="6">没学到？跳过</button></div><div class="qtext">6. 5 公顷＝<input class="blank" data-no="6" data-b="0" autocomplete="off">平方米；800 公顷＝<input class="blank" data-no="6" data-b="1" autocomplete="off">平方千米。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>50000；8</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">5 公顷＝5 个 10000＝50000 平方米；800 公顷＝800÷100＝8 平方千米。</div></details><div class="stepper" data-no="6"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">二、判断（对的画"√"，错的画"×"）（本题 4 小题，共 8 分）</h3>
+<div class="q" data-no="7" data-type="judge"><div class="qhead"><span class="qno">7</span><span class="qscore">2分</span></div><div class="qtext">7. 个位、十位、百位、千位……都是数位。（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="7" data-v="对">对 √</button><button type="button" class="opt" data-no="7" data-v="错">错 ×</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>对</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">对——个位、十位、百位、千位、万位……都是数位；"数位"要和"计数单位"（一、十、百、千）区分开。</div></details><div class="stepper" data-no="7"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="8" data-type="judge"><div class="qhead"><span class="qno">8</span><span class="qscore">2分</span></div><div class="qtext">8. 读 30050000 时，中间的零一个都不用读。（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="8" data-v="对">对 √</button><button type="button" class="opt" data-no="8" data-v="错">错 ×</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>错</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">错——30050000 读作"三千零五十万"，万级中间的 0 要读一个"零"；级末尾的 0 才不读。</div></details><div class="stepper" data-no="8"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="9" data-type="judge"><div class="qhead"><span class="qno">9</span><span class="qscore">2分</span></div><div class="qtext">9. 边长 100 米的正方形土地，面积正好是 1 公顷。（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="9" data-v="对">对 √</button><button type="button" class="opt" data-no="9" data-v="错">错 ×</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>对</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">对——边长 100 米的正方形面积 100×100＝10000 平方米，正好是 1 公顷。</div></details><div class="stepper" data-no="9"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="10" data-type="judge"><div class="qhead"><span class="qno">10</span><span class="qscore">2分</span><button type="button" class="skipbtn" data-no="10">没学到？跳过</button></div><div class="qtext">10. （选学）角的两条边画得越长，角就越大。（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="10" data-v="对">对 √</button><button type="button" class="opt" data-no="10" data-v="错">错 ×</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>错</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">错（选学）——角的大小看两条边张开的口，与边画多长没有关系。</div></details><div class="stepper" data-no="10"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">三、选择（本题 4 小题，共 16 分）</h3>
+<div class="q" data-no="11" data-type="choice"><div class="qhead"><span class="qno">11</span><span class="qscore">4分</span></div><div class="qtext">11. 下面哪个数最接近 1 万？</div><div class="opts dowidget"><button type="button" class="opt" data-no="11" data-v="A">A　9990　</button><button type="button" class="opt" data-no="11" data-v="B">B　10001　</button><button type="button" class="opt" data-no="11" data-v="C">C　10999　</button><button type="button" class="opt" data-no="11" data-v="D">D　9900</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>B</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">B——和 10000 比：9990 差 10，10001 只差 1，10999 差 999，9900 差 100。判错点：看着 9990"最像"就选它——要算差多少。</div></details><div class="stepper" data-no="11"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="12" data-type="choice"><div class="qhead"><span class="qno">12</span><span class="qscore">4分</span><button type="button" class="skipbtn" data-no="12">没学到？跳过</button></div><div class="qtext">12. 学校操场的面积约 2（　　）。</div><div class="opts dowidget"><button type="button" class="opt" data-no="12" data-v="A">A　平方厘米　</button><button type="button" class="opt" data-no="12" data-v="B">B　平方米　</button><button type="button" class="opt" data-no="12" data-v="C">C　公顷　</button><button type="button" class="opt" data-no="12" data-v="D">D　平方千米</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>C</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">C——操场是几块大场地，用公顷；平方米太小，平方千米太大（约 140 个操场）。</div></details><div class="stepper" data-no="12"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="13" data-type="choice"><div class="qhead"><span class="qno">13</span><span class="qscore">4分</span></div><div class="qtext">13. 把 894000 省略万位后面的尾数，约是：</div><div class="opts dowidget"><button type="button" class="opt" data-no="13" data-v="A">A　89 万　</button><button type="button" class="opt" data-no="13" data-v="B">B　90 万　</button><button type="button" class="opt" data-no="13" data-v="C">C　8 万　</button><button type="button" class="opt" data-no="13" data-v="D">D　9 万</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>A</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">A——894000＝89 万 4 千，千位是 4，四舍，约是 89 万。判错点：见 9 就进位得 90 万——要看的是万位后面的千位。</div></details><div class="stepper" data-no="13"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="14" data-type="choice"><div class="qhead"><span class="qno">14</span><span class="qscore">4分</span><button type="button" class="skipbtn" data-no="14">没学到？跳过</button></div><div class="qtext">14. （选学）无限长、没有端点的是：</div><div class="opts dowidget"><button type="button" class="opt" data-no="14" data-v="A">A　线段　</button><button type="button" class="opt" data-no="14" data-v="B">B　角　</button><button type="button" class="opt" data-no="14" data-v="C">C　射线　</button><button type="button" class="opt" data-no="14" data-v="D">D　直线</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>D</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">D（选学）——直线无限长、没有端点；射线无限长、只有一个端点；线段有两个端点、有限长。</div></details><div class="stepper" data-no="14"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">四、读写与整理（本题 4 小题，共 16 分）</h3>
+<div class="q" data-no="15" data-type="subjective"><div class="qhead"><span class="qno">15</span><span class="qscore">4分</span></div><div class="qtext">15. 读出下面的数：30700000</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="15"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>三千零七十万</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">三千零七十万——万级 3070，个级全 0 不读；判错点：丢"零"读成"三千七十万"。</div></details><div class="stepper" data-no="15"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="16" data-type="subjective"><div class="qhead"><span class="qno">16</span><span class="qscore">4分</span></div><div class="qtext">16. 写出下面的数：一千零五十万四千</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="16"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>10504000</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">10504000——一千零五十万是 10500000，再加四千。判错点：写成 10500400（位对错）。</div></details><div class="stepper" data-no="16"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="17" data-type="subjective"><div class="qhead"><span class="qno">17</span><span class="qscore">4分</span></div><div class="qtext">17. 把 50500、500500、55000、50005 按从大到小的顺序排列。</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="17"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>500500＞55000＞50500＞50005</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">500500＞55000＞50500＞50005——先比位数：500500 六位数最大；剩下三个都是五位数，比万级：55＞50＞50，55 最大；50500 和 50005 比千位（0＝0）再比百位：5＞0。</div></details><div class="stepper" data-no="17"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="18" data-type="subjective"><div class="qhead"><span class="qno">18</span><span class="qscore">4分</span></div><div class="qtext">18. 把 890000 改写成用"万"作单位的数；再把 694000 省略万位后面的尾数求近似数。</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="18"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>89 万；约 69 万</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">890000＝89 万（整万数直接改写）；694000：千位是 4，四舍，约是 69 万。</div></details><div class="stepper" data-no="18"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">五、解决问题（本题 4 小题，共 36 分）</h3>
+<div class="q" data-no="19" data-type="subjective"><div class="qhead"><span class="qno">19</span><span class="qscore">9分</span></div><div class="qtext">19. A 体育场能容纳观众 60000 人，B 体育场能容纳观众 91000 人。两个体育场一共能容纳多少人？A 体育场比 B 体育场少容纳多少人？</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="19"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>151000 人；31000 人</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">采分点：第一问 4 分（60000＋91000＝151000，一共能容纳 151000 人）；第二问 5 分（91000－60000＝31000，少容纳 31000 人）。判错点：问"少多少"仍用加法。</div></details><div class="stepper" data-no="19"><button type="button" class="sdec">−</button><span class="sval">0/9分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="20" data-type="subjective"><div class="qhead"><span class="qno">20</span><span class="qscore">9分</span><button type="button" class="skipbtn" data-no="20">没学到？跳过</button></div><div class="qtext">20. 一个正方形果园，边长 300 米。它的面积是多少平方米？合多少公顷？</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="20"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>90000 平方米；9 公顷</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">采分点：算式与面积 5 分（300×300：先算 3×3＝9，两个因数末尾共 4 个 0，得 90000 平方米）；换算 4 分（90000÷10000＝9，合 9 公顷）。判错点：300×300 乘错 0 的个数。</div></details><div class="stepper" data-no="20"><button type="button" class="sdec">−</button><span class="sval">0/9分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="21" data-type="subjective"><div class="qhead"><span class="qno">21</span><span class="qscore">9分</span><button type="button" class="skipbtn" data-no="21">没学到？跳过</button></div><div class="qtext">21. 王爷爷家的果园面积约 3 公顷，李叔叔家的果园面积约 30000 平方米。谁家的果园大？还是一样大？</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="21"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>一样大</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">采分点：换算 5 分（3 公顷＝30000 平方米）；比较与结论 4 分（30000＝30000，两家果园一样大）。判错点：只看数字 3 和 30000 就说李叔叔家大——单位不同不能直接比。</div></details><div class="stepper" data-no="21"><button type="button" class="sdec">−</button><span class="sval">0/9分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="22" data-type="subjective"><div class="qhead"><span class="qno">22</span><span class="qscore">9分</span></div><div class="qtext">22. 一个数由 5 个百万、7 个十万和 8 个千组成。这个数是多少？把它省略万位后面的尾数约是多少？</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="22"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>5708000；约 571 万</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">采分点：写数 5 分（5 个百万是 5000000，7 个十万是 700000，8 个千是 8000，合起来是 5708000）；求近似数 4 分（省略万位后面的尾数，千位是 8，五入向万位进一，约是 571 万）。判错点：忘进位写成 570 万。</div></details><div class="stepper" data-no="22"><button type="button" class="sdec">−</button><span class="sval">0/9分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+
+<div id="report" hidden></div>
+
+<details class="parent box" id="parentbox">
+<summary>家长角：怎么组织、怎么解读（点开）</summary>
+<ul>
+<li><b>组织</b>：掐表计时，中途不打扰、不提示；做完让孩子先自己批改，家长抽 3 题复核——抽到不一致以家长为准，温和指出来。第 10、14 题是选学起步题（角的度量），没学到就跳过，别硬做。</li>
+<li><b>给分</b>：客观题对一题得一题分；主观题对照采分点按步给分，宁可少给不高估。</li>
+<li><b>进度差异</b>：若班级尚未学到"公顷和平方千米"，第 4、6、12、20、21 题可跳过；第 10、14 题为"角的度量"选学起步题，未讲到直接跳过。等级按已做题得分折算后对照。</li>
+</ul>
+<h2>等级对照（按已做题折算后对照）</h2>
+<li>85 ~ 100 分：优 —— 本月骨架扎实，保持节奏</li><li>70 ~ 84 分：良 —— 大盘没问题，个别点要回炉</li><li>60 ~ 69 分：合格 —— 有明确短板，按下面清单补</li><li>0 ~ 59 分：待加强 —— 第一个月很常见！先回课本，不着急刷题报班</li>
+<h2>每个知识点，人话版</h2>
+<ul>
+<li><b>KP1 数位顺序与数级</b>：就是会说大数里每个数字住在哪一位。家里可以：问一问：从右起第 5 位是什么位</li><li><b>KP2 大数的读写</b>：就是会读会写含万级的大数。家里可以：找报纸或快递单上的大数让孩子读一读</li><li><b>KP3 大数比较与改写</b>：就是会比大小，会把 890000 说成 89 万。家里可以：让孩子把家电价格说成大约几万</li><li><b>KP4 公顷与平方千米</b>：就是知道 1 公顷有多大、单位间怎么换算。家里可以：散步时说说小区广场大约有几个 1 公顷</li><li><b>KP5 大数与面积综合应用</b>：就是能把大数和面积知识用到实际问题里。家里可以：让孩子把应用题先讲给你听再动笔</li><li><b>KP6 线段射线直线与角</b>：就是分得清三种线，知道角看张口不看边长。家里可以：用绳子拉直比划线段、射线、直线</li></ul>
+<p>替代小测法（量感，口头进行）：让孩子说说“我们学校操场大约几个 1 公顷”“一万米大约有多远”，说理即可、不求精确。</p>
+<h2>三档话术</h2>
+<ul>
+<li><strong>85 分以上（优）</strong>——怎么夸：夸具体行为，不夸聪明。“你先分级再读数，一步没乱”“你给短文提的问题真有水平”。被夸到点上的孩子才会重复这个行为。</li><li><strong>70~84 分（良）</strong>——怎么说：“大盘很好，咱们挑两个小地方补一补。”和孩子一起从登记表里挑一个最需要补的知识点，约定时间。</li><li><strong>69 分及以下（合格／待加强）</strong>——怎么陪：第一个月的分数≠能力，这是摸底不是审判。顺序是：先回课本读一读，再重做本卷错题，7~10 天后只测错题。连续错同一知识点，把课本对应单元再读一遍。</li><li><strong>进度差异提示</strong>：如果孩子按说明跳过了个别题（含第 10、14 题选学题），把已做题得分折算成 100 分制后再对照上表。</li></ul>
+<details>
+<summary>答案速查（家长复核用）</summary>
+<pre style="white-space:pre-wrap">1. 5；9
+2. 四千零五十万
+3. 8000040
+4. 10000；100
+5. 909090
+6. 50000；8
+7. 对
+8. 错
+9. 对
+10. 错
+11. B
+12. C
+13. A
+14. D
+15. 三千零七十万
+16. 10504000
+17. 500500＞55000＞50500＞50005
+18. 89 万；约 69 万
+19. 151000 人；31000 人
+20. 90000 平方米；9 公顷
+21. 一样大
+22. 5708000；约 571 万</pre>
+</details>
+</details>
+
+<footer>AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g4-learn / month1-selfcheck · 2026-09</footer>
+</main>
+
+<div id="bar">
+<button type="button" id="m-do">做题</button>
+<button type="button" id="m-grade" class="primary">交卷并批改</button>
+<button type="button" id="m-clear" class="ghost">清空重做</button>
+<span id="progress"></span>
+</div>
+
+<script type="application/json" id="m1-data">{"subject":"数学","grade":"四年级","duration":40,"key":"m1self_g4_数学","items":[{"no":1,"raw":"1. 从右边起，第（　　）位是万位，第（　　）位是亿位。（4分）","score":4,"kp":"KP1","kpName":"数位顺序与数级","difficulty":"易","match":"强","type":"fill","ans":"5；9","ansKey":null,"ansParts":["5","9"],"options":null,"perBlank":null,"skip":false,"explain":"从右起：个、十、百、千、万——第 5 位是万位；万、十万、百万、千万、亿——第 9 位是亿位。判错点：忘了数级里还有十万位、百万位、千万位。"},{"no":2,"raw":"2. 40500000 读作（　　　　　）。（4分）","score":4,"kp":"KP2","kpName":"大数的读写","difficulty":"中","match":"强","type":"fill","ans":"四千零五十万","ansKey":null,"ansParts":["四千零五十万"],"options":null,"perBlank":null,"skip":false,"explain":"40500000：万级是 4050，读\"四千零五十万\"，个级 4 个 0 不读。判错点：万级里的 0 丢读或全读。"},{"no":3,"raw":"3. 八百万零四十 写作（　　　　　）。（4分）","score":4,"kp":"KP2","kpName":"大数的读写","difficulty":"较难","match":"强","type":"fill","ans":"8000040","ansKey":null,"ansParts":["8000040"],"options":null,"perBlank":null,"skip":false,"explain":"8000040：八百万是 8000000，零四十表示百位、千位、十万位都是 0，十位是 4。判错点：写成 800040 或 8000040 少位。"},{"no":4,"raw":"4. 1 公顷＝（　　　）平方米；1 平方千米＝（　　　）公顷。（4分）","score":4,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"易","match":"强","type":"fill","ans":"10000；100","ansKey":null,"ansParts":["10000","100"],"options":null,"perBlank":null,"skip":true,"explain":"1 公顷＝10000 平方米（边长 100 米的正方形）；1 平方千米＝100 公顷。"},{"no":5,"raw":"5. 在 900999、909090、900909 三个数中，最大的数是（　　　　　）。（4分）","score":4,"kp":"KP3","kpName":"大数比较与改写","difficulty":"中","match":"强","type":"fill","ans":"909090","ansKey":null,"ansParts":["909090"],"options":null,"perBlank":null,"skip":false,"explain":"三个数都是六位数，先比十万位（都是 9）和万位（都是 0），再比千位：909090 的千位是 9，另两个的千位都是 0——所以 909090 最大。判错点：只看开头不看中间。"},{"no":6,"raw":"6. 5 公顷＝（　　　）平方米；800 公顷＝（　　　）平方千米。（4分）","score":4,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"中","match":"强","type":"fill","ans":"50000；8","ansKey":null,"ansParts":["50000","8"],"options":null,"perBlank":null,"skip":true,"explain":"5 公顷＝5 个 10000＝50000 平方米；800 公顷＝800÷100＝8 平方千米。"},{"no":7,"raw":"7. 个位、十位、百位、千位……都是数位。（　）（2分）","score":2,"kp":"KP1","kpName":"数位顺序与数级","difficulty":"易","match":"强","type":"judge","ans":"对","ansKey":"对","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"对——个位、十位、百位、千位、万位……都是数位；\"数位\"要和\"计数单位\"（一、十、百、千）区分开。"},{"no":8,"raw":"8. 读 30050000 时，中间的零一个都不用读。（　）（2分）","score":2,"kp":"KP2","kpName":"大数的读写","difficulty":"中","match":"强","type":"judge","ans":"错","ansKey":"错","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"错——30050000 读作\"三千零五十万\"，万级中间的 0 要读一个\"零\"；级末尾的 0 才不读。"},{"no":9,"raw":"9. 边长 100 米的正方形土地，面积正好是 1 公顷。（　）（2分）","score":2,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"易","match":"强","type":"judge","ans":"对","ansKey":"对","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"对——边长 100 米的正方形面积 100×100＝10000 平方米，正好是 1 公顷。"},{"no":10,"raw":"10. （选学）角的两条边画得越长，角就越大。（　）（2分）","score":2,"kp":"KP6","kpName":"线段射线直线与角","difficulty":"易","match":"强","type":"judge","ans":"错","ansKey":"错","ansParts":null,"options":null,"perBlank":null,"skip":true,"explain":"错（选学）——角的大小看两条边张开的口，与边画多长没有关系。"},{"no":11,"raw":"11. 下面哪个数最接近 1 万？A　9990　B　10001　C　10999　D　9900（4分）","score":4,"kp":"KP5","kpName":"大数与面积综合应用","difficulty":"较难","match":"中","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","9990　"],["B","10001　"],["C","10999　"],["D","9900"]],"perBlank":null,"skip":false,"explain":"B——和 10000 比：9990 差 10，10001 只差 1，10999 差 999，9900 差 100。判错点：看着 9990\"最像\"就选它——要算差多少。"},{"no":12,"raw":"12. 学校操场的面积约 2（　　）。A　平方厘米　B　平方米　C　公顷　D　平方千米（4分）","score":4,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","平方厘米　"],["B","平方米　"],["C","公顷　"],["D","平方千米"]],"perBlank":null,"skip":true,"explain":"C——操场是几块大场地，用公顷；平方米太小，平方千米太大（约 140 个操场）。"},{"no":13,"raw":"13. 把 894000 省略万位后面的尾数，约是：A　89 万　B　90 万　C　8 万　D　9 万（4分）","score":4,"kp":"KP3","kpName":"大数比较与改写","difficulty":"中","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","89 万　"],["B","90 万　"],["C","8 万　"],["D","9 万"]],"perBlank":null,"skip":false,"explain":"A——894000＝89 万 4 千，千位是 4，四舍，约是 89 万。判错点：见 9 就进位得 90 万——要看的是万位后面的千位。"},{"no":14,"raw":"14. （选学）无限长、没有端点的是：A　线段　B　角　C　射线　D　直线（4分）","score":4,"kp":"KP6","kpName":"线段射线直线与角","difficulty":"易","match":"强","type":"choice","ans":"D","ansKey":"D","ansParts":null,"options":[["A","线段　"],["B","角　"],["C","射线　"],["D","直线"]],"perBlank":null,"skip":true,"explain":"D（选学）——直线无限长、没有端点；射线无限长、只有一个端点；线段有两个端点、有限长。"},{"no":15,"raw":"15. 读出下面的数：30700000（4分）","score":4,"kp":"KP2","kpName":"大数的读写","difficulty":"易","match":"强","type":"subjective","ans":"三千零七十万","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"三千零七十万——万级 3070，个级全 0 不读；判错点：丢\"零\"读成\"三千七十万\"。"},{"no":16,"raw":"16. 写出下面的数：一千零五十万四千（4分）","score":4,"kp":"KP2","kpName":"大数的读写","difficulty":"中","match":"强","type":"subjective","ans":"10504000","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"10504000——一千零五十万是 10500000，再加四千。判错点：写成 10500400（位对错）。"},{"no":17,"raw":"17. 把 50500、500500、55000、50005 按从大到小的顺序排列。（4分）","score":4,"kp":"KP3","kpName":"大数比较与改写","difficulty":"中","match":"强","type":"subjective","ans":"500500＞55000＞50500＞50005","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"500500＞55000＞50500＞50005——先比位数：500500 六位数最大；剩下三个都是五位数，比万级：55＞50＞50，55 最大；50500 和 50005 比千位（0＝0）再比百位：5＞0。"},{"no":18,"raw":"18. 把 890000 改写成用\"万\"作单位的数；再把 694000 省略万位后面的尾数求近似数。（4分）","score":4,"kp":"KP3","kpName":"大数比较与改写","difficulty":"中","match":"强","type":"subjective","ans":"89 万；约 69 万","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"890000＝89 万（整万数直接改写）；694000：千位是 4，四舍，约是 69 万。"},{"no":19,"raw":"19. A 体育场能容纳观众 60000 人，B 体育场能容纳观众 91000 人。两个体育场一共能容纳多少人？A 体育场比 B 体育场少容纳多少人？（9分）","score":9,"kp":"KP5","kpName":"大数与面积综合应用","difficulty":"易","match":"强","type":"subjective","ans":"151000 人；31000 人","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"采分点：第一问 4 分（60000＋91000＝151000，一共能容纳 151000 人）；第二问 5 分（91000－60000＝31000，少容纳 31000 人）。判错点：问\"少多少\"仍用加法。"},{"no":20,"raw":"20. 一个正方形果园，边长 300 米。它的面积是多少平方米？合多少公顷？（9分）","score":9,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"中","match":"强","type":"subjective","ans":"90000 平方米；9 公顷","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":true,"explain":"采分点：算式与面积 5 分（300×300：先算 3×3＝9，两个因数末尾共 4 个 0，得 90000 平方米）；换算 4 分（90000÷10000＝9，合 9 公顷）。判错点：300×300 乘错 0 的个数。"},{"no":21,"raw":"21. 王爷爷家的果园面积约 3 公顷，李叔叔家的果园面积约 30000 平方米。谁家的果园大？还是一样大？（9分）","score":9,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"易","match":"强","type":"subjective","ans":"一样大","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":true,"explain":"采分点：换算 5 分（3 公顷＝30000 平方米）；比较与结论 4 分（30000＝30000，两家果园一样大）。判错点：只看数字 3 和 30000 就说李叔叔家大——单位不同不能直接比。"},{"no":22,"raw":"22. 一个数由 5 个百万、7 个十万和 8 个千组成。这个数是多少？把它省略万位后面的尾数约是多少？（9分）","score":9,"kp":"KP5","kpName":"大数与面积综合应用","difficulty":"较难","match":"强","type":"subjective","ans":"5708000；约 571 万","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"采分点：写数 5 分（5 个百万是 5000000，7 个十万是 700000，8 个千是 8000，合起来是 5708000）；求近似数 4 分（省略万位后面的尾数，千位是 8，五入向万位进一，约是 571 万）。判错点：忘进位写成 570 万。"}],"byNo":{"1":{"no":1,"raw":"1. 从右边起，第（　　）位是万位，第（　　）位是亿位。（4分）","score":4,"kp":"KP1","kpName":"数位顺序与数级","difficulty":"易","match":"强","type":"fill","ans":"5；9","ansKey":null,"ansParts":["5","9"],"options":null,"perBlank":null,"skip":false,"explain":"从右起：个、十、百、千、万——第 5 位是万位；万、十万、百万、千万、亿——第 9 位是亿位。判错点：忘了数级里还有十万位、百万位、千万位。"},"2":{"no":2,"raw":"2. 40500000 读作（　　　　　）。（4分）","score":4,"kp":"KP2","kpName":"大数的读写","difficulty":"中","match":"强","type":"fill","ans":"四千零五十万","ansKey":null,"ansParts":["四千零五十万"],"options":null,"perBlank":null,"skip":false,"explain":"40500000：万级是 4050，读\"四千零五十万\"，个级 4 个 0 不读。判错点：万级里的 0 丢读或全读。"},"3":{"no":3,"raw":"3. 八百万零四十 写作（　　　　　）。（4分）","score":4,"kp":"KP2","kpName":"大数的读写","difficulty":"较难","match":"强","type":"fill","ans":"8000040","ansKey":null,"ansParts":["8000040"],"options":null,"perBlank":null,"skip":false,"explain":"8000040：八百万是 8000000，零四十表示百位、千位、十万位都是 0，十位是 4。判错点：写成 800040 或 8000040 少位。"},"4":{"no":4,"raw":"4. 1 公顷＝（　　　）平方米；1 平方千米＝（　　　）公顷。（4分）","score":4,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"易","match":"强","type":"fill","ans":"10000；100","ansKey":null,"ansParts":["10000","100"],"options":null,"perBlank":null,"skip":true,"explain":"1 公顷＝10000 平方米（边长 100 米的正方形）；1 平方千米＝100 公顷。"},"5":{"no":5,"raw":"5. 在 900999、909090、900909 三个数中，最大的数是（　　　　　）。（4分）","score":4,"kp":"KP3","kpName":"大数比较与改写","difficulty":"中","match":"强","type":"fill","ans":"909090","ansKey":null,"ansParts":["909090"],"options":null,"perBlank":null,"skip":false,"explain":"三个数都是六位数，先比十万位（都是 9）和万位（都是 0），再比千位：909090 的千位是 9，另两个的千位都是 0——所以 909090 最大。判错点：只看开头不看中间。"},"6":{"no":6,"raw":"6. 5 公顷＝（　　　）平方米；800 公顷＝（　　　）平方千米。（4分）","score":4,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"中","match":"强","type":"fill","ans":"50000；8","ansKey":null,"ansParts":["50000","8"],"options":null,"perBlank":null,"skip":true,"explain":"5 公顷＝5 个 10000＝50000 平方米；800 公顷＝800÷100＝8 平方千米。"},"7":{"no":7,"raw":"7. 个位、十位、百位、千位……都是数位。（　）（2分）","score":2,"kp":"KP1","kpName":"数位顺序与数级","difficulty":"易","match":"强","type":"judge","ans":"对","ansKey":"对","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"对——个位、十位、百位、千位、万位……都是数位；\"数位\"要和\"计数单位\"（一、十、百、千）区分开。"},"8":{"no":8,"raw":"8. 读 30050000 时，中间的零一个都不用读。（　）（2分）","score":2,"kp":"KP2","kpName":"大数的读写","difficulty":"中","match":"强","type":"judge","ans":"错","ansKey":"错","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"错——30050000 读作\"三千零五十万\"，万级中间的 0 要读一个\"零\"；级末尾的 0 才不读。"},"9":{"no":9,"raw":"9. 边长 100 米的正方形土地，面积正好是 1 公顷。（　）（2分）","score":2,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"易","match":"强","type":"judge","ans":"对","ansKey":"对","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"对——边长 100 米的正方形面积 100×100＝10000 平方米，正好是 1 公顷。"},"10":{"no":10,"raw":"10. （选学）角的两条边画得越长，角就越大。（　）（2分）","score":2,"kp":"KP6","kpName":"线段射线直线与角","difficulty":"易","match":"强","type":"judge","ans":"错","ansKey":"错","ansParts":null,"options":null,"perBlank":null,"skip":true,"explain":"错（选学）——角的大小看两条边张开的口，与边画多长没有关系。"},"11":{"no":11,"raw":"11. 下面哪个数最接近 1 万？A　9990　B　10001　C　10999　D　9900（4分）","score":4,"kp":"KP5","kpName":"大数与面积综合应用","difficulty":"较难","match":"中","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","9990　"],["B","10001　"],["C","10999　"],["D","9900"]],"perBlank":null,"skip":false,"explain":"B——和 10000 比：9990 差 10，10001 只差 1，10999 差 999，9900 差 100。判错点：看着 9990\"最像\"就选它——要算差多少。"},"12":{"no":12,"raw":"12. 学校操场的面积约 2（　　）。A　平方厘米　B　平方米　C　公顷　D　平方千米（4分）","score":4,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","平方厘米　"],["B","平方米　"],["C","公顷　"],["D","平方千米"]],"perBlank":null,"skip":true,"explain":"C——操场是几块大场地，用公顷；平方米太小，平方千米太大（约 140 个操场）。"},"13":{"no":13,"raw":"13. 把 894000 省略万位后面的尾数，约是：A　89 万　B　90 万　C　8 万　D　9 万（4分）","score":4,"kp":"KP3","kpName":"大数比较与改写","difficulty":"中","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","89 万　"],["B","90 万　"],["C","8 万　"],["D","9 万"]],"perBlank":null,"skip":false,"explain":"A——894000＝89 万 4 千，千位是 4，四舍，约是 89 万。判错点：见 9 就进位得 90 万——要看的是万位后面的千位。"},"14":{"no":14,"raw":"14. （选学）无限长、没有端点的是：A　线段　B　角　C　射线　D　直线（4分）","score":4,"kp":"KP6","kpName":"线段射线直线与角","difficulty":"易","match":"强","type":"choice","ans":"D","ansKey":"D","ansParts":null,"options":[["A","线段　"],["B","角　"],["C","射线　"],["D","直线"]],"perBlank":null,"skip":true,"explain":"D（选学）——直线无限长、没有端点；射线无限长、只有一个端点；线段有两个端点、有限长。"},"15":{"no":15,"raw":"15. 读出下面的数：30700000（4分）","score":4,"kp":"KP2","kpName":"大数的读写","difficulty":"易","match":"强","type":"subjective","ans":"三千零七十万","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"三千零七十万——万级 3070，个级全 0 不读；判错点：丢\"零\"读成\"三千七十万\"。"},"16":{"no":16,"raw":"16. 写出下面的数：一千零五十万四千（4分）","score":4,"kp":"KP2","kpName":"大数的读写","difficulty":"中","match":"强","type":"subjective","ans":"10504000","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"10504000——一千零五十万是 10500000，再加四千。判错点：写成 10500400（位对错）。"},"17":{"no":17,"raw":"17. 把 50500、500500、55000、50005 按从大到小的顺序排列。（4分）","score":4,"kp":"KP3","kpName":"大数比较与改写","difficulty":"中","match":"强","type":"subjective","ans":"500500＞55000＞50500＞50005","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"500500＞55000＞50500＞50005——先比位数：500500 六位数最大；剩下三个都是五位数，比万级：55＞50＞50，55 最大；50500 和 50005 比千位（0＝0）再比百位：5＞0。"},"18":{"no":18,"raw":"18. 把 890000 改写成用\"万\"作单位的数；再把 694000 省略万位后面的尾数求近似数。（4分）","score":4,"kp":"KP3","kpName":"大数比较与改写","difficulty":"中","match":"强","type":"subjective","ans":"89 万；约 69 万","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"890000＝89 万（整万数直接改写）；694000：千位是 4，四舍，约是 69 万。"},"19":{"no":19,"raw":"19. A 体育场能容纳观众 60000 人，B 体育场能容纳观众 91000 人。两个体育场一共能容纳多少人？A 体育场比 B 体育场少容纳多少人？（9分）","score":9,"kp":"KP5","kpName":"大数与面积综合应用","difficulty":"易","match":"强","type":"subjective","ans":"151000 人；31000 人","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"采分点：第一问 4 分（60000＋91000＝151000，一共能容纳 151000 人）；第二问 5 分（91000－60000＝31000，少容纳 31000 人）。判错点：问\"少多少\"仍用加法。"},"20":{"no":20,"raw":"20. 一个正方形果园，边长 300 米。它的面积是多少平方米？合多少公顷？（9分）","score":9,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"中","match":"强","type":"subjective","ans":"90000 平方米；9 公顷","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":true,"explain":"采分点：算式与面积 5 分（300×300：先算 3×3＝9，两个因数末尾共 4 个 0，得 90000 平方米）；换算 4 分（90000÷10000＝9，合 9 公顷）。判错点：300×300 乘错 0 的个数。"},"21":{"no":21,"raw":"21. 王爷爷家的果园面积约 3 公顷，李叔叔家的果园面积约 30000 平方米。谁家的果园大？还是一样大？（9分）","score":9,"kp":"KP4","kpName":"公顷与平方千米","difficulty":"易","match":"强","type":"subjective","ans":"一样大","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":true,"explain":"采分点：换算 5 分（3 公顷＝30000 平方米）；比较与结论 4 分（30000＝30000，两家果园一样大）。判错点：只看数字 3 和 30000 就说李叔叔家大——单位不同不能直接比。"},"22":{"no":22,"raw":"22. 一个数由 5 个百万、7 个十万和 8 个千组成。这个数是多少？把它省略万位后面的尾数约是多少？（9分）","score":9,"kp":"KP5","kpName":"大数与面积综合应用","difficulty":"较难","match":"强","type":"subjective","ans":"5708000；约 571 万","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"采分点：写数 5 分（5 个百万是 5000000，7 个十万是 700000，8 个千是 8000，合起来是 5708000）；求近似数 4 分（省略万位后面的尾数，千位是 8，五入向万位进一，约是 571 万）。判错点：忘进位写成 570 万。"}},"kpAct":{"KP1":"抄三个大数，先分级再说出每位数字","KP2":"重做读写错题并读给家长听","KP3":"重做改写与近似数错题，说清看的哪一位","KP4":"口头换算五道并说出用的进率","KP5":"重做应用错题并写出完整过程","KP6":"未学到先跳过，学到后回做选学题"}}</script>
+<script>
+/* M1_CORE_BEGIN —— 纯函数判分核（零 DOM；node test_html_core.js 同源测试） */
+function normAnswer(s) {
+  return String(s == null ? '' : s)
+    .replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
+    .replace(/[\s\u3000。，、；;：:．,.''""“”‘’（）()]/g, '');
+}
+function numEq(a, b) {
+  var na = normAnswer(a), nb = normAnswer(b);
+  if (!na || !nb) return false;
+  if (!/^-?\d+(\.\d+)?$/.test(na) || !/^-?\d+(\.\d+)?$/.test(nb)) return false;
+  return Math.abs(parseFloat(na) - parseFloat(nb)) < 1e-9;
+}
+function cmpOne(a, b) {
+  return normAnswer(a) === normAnswer(b) || numEq(a, b);
+}
+function isCorrect(q, st) {
+  var v = st.ans ? st.ans[q.no] : undefined;
+  if (v == null || v === '') return false;
+  if (q.type === 'choice' || q.type === 'judge') return String(v) === q.ansKey;
+  if (q.type === 'fill') {
+    var vals = [].concat(v), ok = 0;
+    for (var i = 0; i < q.ansParts.length; i++) {
+      if (vals[i] != null && cmpOne(vals[i], q.ansParts[i])) ok++;
+    }
+    return ok === q.ansParts.length;
+  }
+  return false;
+}
+function autoScore(q, st) {
+  if (q.type === 'choice' || q.type === 'judge') return isCorrect(q, st) ? q.score : 0;
+  if (q.type === 'fill') {
+    var v = st.ans ? st.ans[q.no] : undefined;
+    if (v == null) return 0;
+    var vals = [].concat(v), ok = 0;
+    for (var i = 0; i < q.ansParts.length; i++) {
+      if (vals[i] != null && cmpOne(vals[i], q.ansParts[i])) ok++;
+    }
+    return q.perBlank ? ok * q.perBlank : (ok === q.ansParts.length ? q.score : 0);
+  }
+  return 0;
+}
+function computeResult(data, st) {
+  st = st || {};
+  var kps = {}, total = 0, possible = 0, ungraded = [], perQ = {};
+  data.items.forEach(function (q) {
+    if (st.skips && st.skips[q.no]) return;
+    possible += q.score;
+    var kp = kps[q.kp] || (kps[q.kp] = { id: q.kp, name: q.kpName, got: 0, max: 0, nos: [] });
+    kp.max += q.score; kp.nos.push(q.no);
+    var manual = st.scores ? st.scores[q.no] : null;
+    var s = manual != null ? manual : autoScore(q, st);
+    if (manual == null && q.type === 'subjective') ungraded.push(q.no);
+    perQ[q.no] = s; total += s; kp.got += s;
+  });
+  var pct = possible > 0 ? total / possible * 100 : 0;
+  var level = pct >= 85 ? '优' : pct >= 70 ? '良' : pct >= 60 ? '合格' : '待加强';
+  var list = Object.keys(kps).map(function (k) { return kps[k]; });
+  var weak = list.filter(function (k) { return k.max > 0 && k.got / k.max < 0.8; })
+    .sort(function (a, b) { return a.got / a.max - b.got / b.max; }).slice(0, 2);
+  return { total: total, possible: possible, pct: pct, level: level,
+    kps: list, weak: weak, ungraded: ungraded, perQ: perQ };
+}
+/* M1_CORE_END */
+
+(function () {
+  if (typeof document === 'undefined') return;
+  var data = JSON.parse(document.getElementById('m1-data').textContent);
+  var KEY = data.key;
+  var st = window.__M1_PRESET__ || null;
+  var restored = false;
+  if (!st) {
+    try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { st = null; }
+    restored = !!st;
+  }
+  if (!st) st = { ans: {}, scores: {}, skips: {}, done: {}, mode: 'do' };
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { } }
+  function qdiv(no) { return document.querySelector('.q[data-no="' + no + '"]'); }
+  function items() { return data.items; }
+
+  function effScore(q) {
+    var m = st.scores[q.no];
+    return m != null ? m : autoScore(q, st);
+  }
+  function refreshSteppers() {
+    items().forEach(function (q) {
+      var el = qdiv(q.no); if (!el) return;
+      var v = el.querySelector('.sval');
+      if (v) v.textContent = effScore(q) + '/' + q.score + '分';
+      el.classList.toggle('skipped', !!st.skips[q.no]);
+    });
+  }
+  function refreshSelections() {
+    items().forEach(function (q) {
+      var el = qdiv(q.no); if (!el) return;
+      var a = st.ans[q.no];
+      el.querySelectorAll('.opt').forEach(function (b) {
+        b.classList.toggle('sel', a != null && String(a) === b.dataset.v);
+      });
+      el.querySelectorAll('.blank').forEach(function (inp) {
+        var arr = [].concat(a || []);
+        var i = parseInt(inp.dataset.b, 10);
+        if (document.activeElement !== inp && arr[i] != null) inp.value = arr[i];
+      });
+      var d = el.querySelector('.done');
+      if (d) d.checked = !!st.done[q.no];
+    });
+  }
+  function progress() {
+    var n = 0;
+    items().forEach(function (q) {
+      if (st.skips[q.no] || st.done[q.no]) { n++; return; }
+      var a = st.ans[q.no];
+      if (a == null) return;
+      var vals = [].concat(a);
+      if (vals.length && vals.every(function (x) { return x != null && x !== ''; })) n++;
+    });
+    return n;
+  }
+  function refreshBar() {
+    var total = items().length;
+    document.getElementById('progress').textContent =
+      (st.mode === 'grade' ? '批改中 ' : '已作答 ') + progress() + '/' + total +
+      (Object.keys(st.skips).filter(function (k) { return st.skips[k]; }).length ?
+        '（含跳过 ' + Object.keys(st.skips).filter(function (k) { return st.skips[k]; }).length + ' 题）' : '');
+  }
+  function tag(ratio) { return ratio >= 0.8 ? '扎实' : ratio >= 0.5 ? '需巩固' : '要补'; }
+  function refreshReport() {
+    var box = document.getElementById('report');
+    if (st.mode !== 'grade') { box.hidden = true; return; }
+    var r = computeResult(data, st);
+    var rows = r.kps.map(function (k) {
+      var ratio = k.max ? k.got / k.max : 0;
+      return '<div class="kprow"><span class="kpname">' + k.id + ' ' + k.name + '</span>' +
+        '<span class="kpbar"><i style="width:' + Math.round(ratio * 100) + '%"></i></span>' +
+        '<span class="kpval">' + k.got + '/' + k.max + '</span>' +
+        '<span class="kptag">' + tag(ratio) + '</span></div>';
+    }).join('');
+    var weak = r.weak.map(function (k) {
+      var act = data.kpAct[k.id] || '';
+      return '<li><b>' + k.id + ' ' + k.name + '</b>（' + k.got + '/' + k.max + '）' +
+        (act ? '——' + act : '') + '。重做本卷第 ' + k.nos.join('、') + ' 题。</li>';
+    }).join('');
+    var skipped = items().filter(function (q) { return st.skips[q.no]; }).map(function (q) { return q.no; });
+    var d = new Date();
+    var date = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+    box.innerHTML =
+      '<h2>成绩单<span class="level">' + r.level + '</span></h2>' +
+      '<p class="meta">' + data.grade + ' · ' + data.subject + ' · ' + date + '</p>' +
+      '<p style="font-size:1.3rem"><b>总分 ' + r.total + ' / ' + r.possible + '</b>' +
+      (r.possible < 100 ? ' <span class="skiptip">（跳题后按已做题折算）</span>' : '') + '</p>' +
+      (skipped.length ? '<p class="skiptip">跳过题号：' + skipped.join('、') + '</p>' : '') +
+      (r.ungraded.length ? '<p class="ugtip"><b>还有 ' + r.ungraded.length +
+        ' 道主观题没打分</b>（对照解析与采分点，在每题下方打分），打完再看这份成绩单。</p>' : '') +
+      '<h3 class="sec">各知识点得分</h3>' + rows +
+      (weak ? '<h3 class="sec">最先要补的知识点（≤2 个）</h3><ul>' + weak + '</ul>' : '') +
+      '<p class="note">约定复测时间：7~10 天后只重做错题。把这张成绩单<b>截图发给家长或老师</b>，帮你定下一步。</p>';
+    box.hidden = false;
+  }
+  function refreshAll() { refreshSteppers(); refreshReport(); refreshBar(); }
+
+  function setMode(mode) {
+    st.mode = mode; save();
+    document.body.classList.toggle('grading', mode === 'grade');
+    document.getElementById('m-do').classList.toggle('primary', mode === 'do');
+    document.getElementById('m-grade').classList.toggle('primary', mode === 'grade');
+    refreshAll();
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest('button'); if (!t) return;
+    if (t.id === 'm-do') return setMode('do');
+    if (t.id === 'm-grade') return setMode('grade');
+    if (t.id === 'm-clear' || t.id === 'restoreclear') {
+      if (!confirm('确定清空本卷全部作答与得分，从头重做吗？')) return;
+      try { localStorage.removeItem(KEY); } catch (e) { }
+      st = { ans: {}, scores: {}, skips: {}, done: {}, mode: 'do' };
+      document.getElementById('restoretip').style.display = 'none';
+      refreshSelections(); setMode('do'); return;
+    }
+    var qel = t.closest('.q'); if (!qel) return;
+    var no = parseInt(qel.dataset.no, 10);
+    if (t.classList.contains('opt')) {
+      if (st.skips[no]) return;
+      st.ans[no] = t.dataset.v; save();
+      qel.querySelectorAll('.opt').forEach(function (b) {
+        b.classList.toggle('sel', b === t);
+      });
+      refreshAll(); return;
+    }
+    if (t.classList.contains('skipbtn')) {
+      st.skips[no] = !st.skips[no]; save(); refreshAll(); return;
+    }
+    if (t.classList.contains('sdec') || t.classList.contains('sinc') ||
+        t.classList.contains('sfull') || t.classList.contains('sauto')) {
+      var q = data.byNo[no];
+      var cur = effScore(q);
+      if (t.classList.contains('sdec')) st.scores[no] = Math.max(0, cur - 1);
+      else if (t.classList.contains('sinc')) st.scores[no] = Math.min(q.score, cur + 1);
+      else if (t.classList.contains('sfull')) st.scores[no] = q.score;
+      else delete st.scores[no];
+      save(); refreshAll(); return;
+    }
+  });
+  document.addEventListener('input', function (ev) {
+    var inp = ev.target; if (!inp.classList || !inp.classList.contains('blank')) return;
+    var qel = inp.closest('.q');
+    var no = parseInt(qel.dataset.no, 10);
+    if (st.skips[no]) return;
+    var arr = [].concat(st.ans[no] || []);
+    arr[parseInt(inp.dataset.b, 10)] = inp.value;
+    st.ans[no] = arr; save(); refreshAll();
+  });
+  document.addEventListener('change', function (ev) {
+    var inp = ev.target; if (!inp.classList || !inp.classList.contains('done')) return;
+    var no = parseInt(inp.closest('.q').dataset.no, 10);
+    st.done[no] = inp.checked; save(); refreshAll();
+  });
+
+  refreshSelections();
+  document.body.classList.toggle('grading', st.mode === 'grade');
+  document.getElementById('m-do').classList.toggle('primary', st.mode !== 'grade');
+  if (restored && progress() > 0) document.getElementById('restoretip').style.display = 'block';
+  refreshAll();
+})();
+</script>
+</body>
+</html>

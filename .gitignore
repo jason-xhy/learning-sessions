@@ -1,0 +1,9 @@
+# 工具/脚本不入公开仓（2026-09-26 用户裁定）：权威副本在私有仓 learning-sessions-plan 的 tools/
+**/scripts/
+**/setup.sh
+**/month1-selfcheck/build_versions.py
+**/month1-selfcheck/build_html.py
+**/month1-selfcheck/check.py
+**/month1-selfcheck/test_html_core.js
+**/__pycache__/
+.DS_Store

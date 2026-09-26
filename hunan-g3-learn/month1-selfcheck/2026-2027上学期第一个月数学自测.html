@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月数学自测 · 三年级</title>
+<style>
+:root { --ink:#1a1a1a; --paper:#fffff8; --accent:#a00000; --muted:#707070;
+  --line:#e3e3da; --good:#1a7f37; --bad:#c62828; --card:#fff; }
+* { box-sizing:border-box; }
+body { margin:0; padding:1.2rem .9rem 7rem; background:var(--paper); color:var(--ink);
+  font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;
+  font-size:1.02rem; line-height:1.7; }
+main { max-width:44rem; margin:0 auto; }
+.kicker { color:var(--accent); font-size:.8rem; letter-spacing:.12em; }
+h1 { font-size:1.45rem; line-height:1.35; border-bottom:2px solid var(--ink); padding-bottom:.4rem; margin:.3rem 0 .4rem; }
+.meta { color:var(--muted); font-size:.9rem; margin:.15rem 0; }
+.box { background:var(--card); border:1px solid var(--line); border-radius:.6rem; padding:.8rem 1rem; margin:1rem 0; }
+.box h2 { font-size:1.05rem; margin:.1rem 0 .4rem; }
+.box ul { margin:.3rem 0; padding-left:1.2rem; }
+.note { color:var(--muted); font-size:.95rem; }
+h3.sec { font-size:1.08rem; margin:1.6rem 0 .4rem; border-bottom:1px solid var(--line); padding-bottom:.25rem; }
+.passage { background:#f7f6ee; border-left:3px solid var(--line); border-radius:.4rem;
+  padding:.6rem .9rem; margin:.7rem 0; }
+.passage p { margin:.35rem 0; }
+.q { background:var(--card); border:1px solid var(--line); border-radius:.6rem;
+  padding:.7rem .85rem; margin:.65rem 0; }
+.q.skipped { opacity:.45; }
+.qhead { display:flex; align-items:center; gap:.5rem; margin-bottom:.3rem; }
+.qno { background:var(--ink); color:#fff; border-radius:.35rem; padding:0 .45rem;
+  font-size:.85rem; font-weight:700; }
+.qscore { color:var(--muted); font-size:.85rem; }
+.skipbtn { margin-left:auto; border:1px solid var(--line); background:#fff; color:var(--muted);
+  border-radius:1rem; padding:.15rem .7rem; font-size:.82rem; font-family:inherit; }
+.qtext { white-space:normal; }
+.blank { font:inherit; font-size:16px; width:5.2em; text-align:center;
+  border:none; border-bottom:1.5px solid var(--muted); background:#f2f1e8;
+  border-radius:.25rem .25rem 0 0; padding:.05rem .3rem; }
+.opts { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.55rem; }
+.opt { font:inherit; font-size:16px; background:#fff; border:1.5px solid var(--line);
+  border-radius:.55rem; padding:.35rem .8rem; min-height:2.4rem; text-align:left; }
+.opt.sel { background:var(--accent); border-color:var(--accent); color:#fff; }
+.donewrap { display:flex; align-items:center; gap:.45rem; margin-top:.5rem; color:var(--muted); font-size:.95rem; }
+.donewrap input { width:1.25rem; height:1.25rem; }
+.qgrade { margin-top:.6rem; border-top:1px dashed var(--line); padding-top:.5rem; }
+body:not(.grading) .qgrade { display:none; }
+body.grading .dowidget { display:none; }
+.alab { color:var(--muted); font-size:.85rem; margin-right:.4rem; }
+.ansline code { background:#f2f1e8; border-radius:.3rem; padding:.1rem .45rem; }
+.explbox { margin:.45rem 0; font-size:.95rem; }
+.explbox summary { cursor:pointer; color:var(--accent); }
+.expl { white-space:pre-wrap; background:#faf9f2; border-radius:.4rem; padding:.5rem .7rem; margin-top:.35rem; }
+.stepper { display:flex; align-items:center; gap:.4rem; margin-top:.5rem; }
+.stepper button { font:inherit; border:1.5px solid var(--line); background:#fff;
+  border-radius:.5rem; min-width:2.5rem; min-height:2.3rem; }
+.stepper .sfull { color:var(--good); }
+.stepper .sauto { color:var(--muted); }
+.sval { min-width:5.2em; text-align:center; font-weight:700; }
+#bar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line);
+  display:flex; gap:.5rem; align-items:center; padding:.55rem .8rem calc(.55rem + env(safe-area-inset-bottom)); }
+#bar button { font:inherit; font-size:16px; border:1.5px solid var(--ink); background:#fff;
+  border-radius:.55rem; padding:.45rem .8rem; min-height:2.6rem; }
+#bar .primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+#bar .ghost { border-color:var(--line); color:var(--muted); }
+#progress { margin-left:auto; color:var(--muted); font-size:.9rem; white-space:nowrap; }
+#restoretip { display:none; background:#fdf6e3; border:1px solid #e8d9a0; border-radius:.5rem;
+  padding:.5rem .8rem; margin:.8rem 0; font-size:.92rem; }
+#restoretip button { font:inherit; border:none; background:none; color:var(--accent); text-decoration:underline; }
+.kprow { display:flex; align-items:center; gap:.6rem; margin:.4rem 0; }
+.kpname { flex:0 0 auto; width:14.5em; font-size:.93rem; }
+.kpbar { flex:1 1 auto; height:.8rem; background:#f0efe6; border-radius:.4rem; overflow:hidden; }
+.kpbar i { display:block; height:100%; background:var(--accent); }
+.kpval { flex:0 0 auto; font-size:.9rem; color:var(--muted); }
+.kptag { flex:0 0 auto; font-size:.85rem; }
+#report h2 { border-bottom:2px solid var(--ink); padding-bottom:.3rem; }
+.level { display:inline-block; background:var(--accent); color:#fff; border-radius:.5rem;
+  padding:.1rem .7rem; margin-left:.5rem; }
+#report .skiptip, #report .ugtip { color:var(--muted); font-size:.9rem; }
+#snapshot { border:2px solid var(--ink); }
+details.parent summary { cursor:pointer; color:var(--accent); font-weight:700; }
+footer { margin-top:3rem; color:var(--muted); font-size:.85rem; border-top:1px solid var(--line); padding-top:.7rem; }
+@media (min-width:40rem) { body { padding-left:1rem; padding-right:1rem; } }
+</style>
+</head>
+<body>
+<main>
+<p class="kicker">hunan-g3-learn · month1-selfcheck · 单文件直发版</p>
+<h1>数学 · 三年级上学期第一个月自测</h1>
+<p class="meta">适用：湖南省三年级上学期第 1 个月（2026 年 9 月）｜ 满分 100 分 ｜ 建议用时 35 分钟</p>
+<p class="meta">教材对照：数学人教版第 1~2 单元主题（时、分、秒 · 万以内的加法和减法（一））——人教版为主流，2024 年起新版教材陆续替换；以学校实际用书与进度为准。</p>
+
+<div class="box" id="howto">
+<h2>先读再动笔</h2>
+<ul>
+<li>独立完成，不翻书不问人；限时 <b>35 分钟</b>。一次只做这一科，不连考。</li>
+<li>选择、判断题<b>点一下</b>就选中；填空题<b>直接打字</b>；写话、阅读问答、笔算竖式在<b>纸上</b>写，写完勾一下"纸上已完成"。</li>
+<li>全部做完点下面「交卷并批改」——对照答案与采分点给分，<b>拿不准就往低给</b>，短板才不会被藏起来。</li>
+<li>错了不丢人，漏出来的短板才是我们要找的宝贝。</li>
+<li>进度自动存在本机，中途退出再打开可继续；要重做点「清空重做」。</li>
+</ul>
+</div>
+
+<div id="restoretip">已恢复上次的进度，接着做就行。想从头来：<button type="button" id="restoreclear">清空重做</button></div>
+
+<h3 class="sec">试卷</h3>
+<h3 class="sec">一、填空（本题 6 小题，共 18 分）</h3>
+<div class="q" data-no="1" data-type="fill"><div class="qhead"><span class="qno">1</span><span class="qscore">3分</span></div><div class="qtext">1. 钟面上有<input class="blank" data-no="1" data-b="0" autocomplete="off">个大格，秒针走一圈是<input class="blank" data-no="1" data-b="1" autocomplete="off">秒。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>12；60</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">钟面 12 个大格、60 个小格；秒针走一圈 60 秒。判错点：大格与小格混淆（12 个大格、60 个小格）。</div></details><div class="stepper" data-no="1"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="2" data-type="fill"><div class="qhead"><span class="qno">2</span><span class="qscore">3分</span></div><div class="qtext">2. 1 时＝<input class="blank" data-no="2" data-b="0" autocomplete="off">分；1 分＝<input class="blank" data-no="2" data-b="1" autocomplete="off">秒。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>60；60</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">1 时＝60 分，1 分＝60 秒——时间单位之间的进率是 60，不是 10 或 100。</div></details><div class="stepper" data-no="2"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="3" data-type="fill"><div class="qhead"><span class="qno">3</span><span class="qscore">3分</span></div><div class="qtext">3. 小明早上 7 时 30 分到校，8 时上第一节课，中间隔了<input class="blank" data-no="3" data-b="0" autocomplete="off">分钟。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>30</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">7:30 到 8:00 走了 30 分钟。判错点：误算成 70（用 80－30 时把 8 时当 80）。</div></details><div class="stepper" data-no="3"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="4" data-type="fill"><div class="qhead"><span class="qno">4</span><span class="qscore">3分</span></div><div class="qtext">4. 口算 36＋28 时，先算 36＋20＝56，再算 56＋<input class="blank" data-no="4" data-b="0" autocomplete="off">＝<input class="blank" data-no="4" data-b="1" autocomplete="off">。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>8；64</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">先算 36＋20＝56，再算 56＋8＝64——把两位数拆成"整十数＋几"，新知识变旧知识。</div></details><div class="stepper" data-no="4"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="5" data-type="fill"><div class="qhead"><span class="qno">5</span><span class="qscore">3分</span></div><div class="qtext">5. 比 250 多 70 的数是<input class="blank" data-no="5" data-b="0" autocomplete="off">；250 比 70 多<input class="blank" data-no="5" data-b="1" autocomplete="off">。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>320；180</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">比 250 多 70 用加法：250＋70＝320；250 比 70 多多少，求相差数用减法：250－70＝180。判错点：两问都是"比"，但一问求大数、一问求相差数，方法不同。</div></details><div class="stepper" data-no="5"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="6" data-type="fill"><div class="qhead"><span class="qno">6</span><span class="qscore">3分</span></div><div class="qtext">6. 钟面上，分针从 3 走到 6，经过了<input class="blank" data-no="6" data-b="0" autocomplete="off">分钟。</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>15</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">分针每走一大格是 5 分钟，从 3 到 6 走了 3 大格：3×5＝15 分钟。</div></details><div class="stepper" data-no="6"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">二、判断（对的画"√"，错的画"×"）（本题 4 小题，共 8 分）</h3>
+<div class="q" data-no="7" data-type="judge"><div class="qhead"><span class="qno">7</span><span class="qscore">2分</span></div><div class="qtext">7. 秒针走一圈，分针正好走一小格。（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="7" data-v="对">对 √</button><button type="button" class="opt" data-no="7" data-v="错">错 ×</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>对</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">对——秒针走一圈是 60 秒，正好是 1 分钟，分针走一小格。</div></details><div class="stepper" data-no="7"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="8" data-type="judge"><div class="qhead"><span class="qno">8</span><span class="qscore">2分</span></div><div class="qtext">8. 6 时整，时针和分针重合在一起。（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="8" data-v="对">对 √</button><button type="button" class="opt" data-no="8" data-v="错">错 ×</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>错</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">错——6 时整，时针指着 6、分针指着 12，两针成一条直线；12 时整两针才重合。</div></details><div class="stepper" data-no="8"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="9" data-type="judge"><div class="qhead"><span class="qno">9</span><span class="qscore">2分</span></div><div class="qtext">9. 笔算加减法时，要从高位算起。（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="9" data-v="对">对 √</button><button type="button" class="opt" data-no="9" data-v="错">错 ×</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>错</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">错——笔算加减法要<strong>相同数位对齐，从个位算起</strong>。</div></details><div class="stepper" data-no="9"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="10" data-type="judge"><div class="qhead"><span class="qno">10</span><span class="qscore">2分</span></div><div class="qtext">10. 估算时，把 398 看作 400 很方便。（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="10" data-v="对">对 √</button><button type="button" class="opt" data-no="10" data-v="错">错 ×</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>对</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">对——398 接近 400，看作 400 好算，估的结果说明"大约是多少"。</div></details><div class="stepper" data-no="10"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">三、选择（本题 4 小题，共 12 分）</h3>
+<div class="q" data-no="11" data-type="choice"><div class="qhead"><span class="qno">11</span><span class="qscore">3分</span></div><div class="qtext">11. 跑 50 米大约用多长时间？</div><div class="opts dowidget"><button type="button" class="opt" data-no="11" data-v="A">A　8 秒　</button><button type="button" class="opt" data-no="11" data-v="B">B　8 分　</button><button type="button" class="opt" data-no="11" data-v="C">C　8 时　</button><button type="button" class="opt" data-no="11" data-v="D">D　8 天</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>A</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">A——跑 50 米不到一分钟，用"秒"最合适：8 秒合理；8 分、8 时太长。</div></details><div class="stepper" data-no="11"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="12" data-type="choice"><div class="qhead"><span class="qno">12</span><span class="qscore">3分</span></div><div class="qtext">12. 分针走一大格，秒针要走：</div><div class="opts dowidget"><button type="button" class="opt" data-no="12" data-v="A">A　1 圈　</button><button type="button" class="opt" data-no="12" data-v="B">B　5 小格　</button><button type="button" class="opt" data-no="12" data-v="C">C　60 圈　</button><button type="button" class="opt" data-no="12" data-v="D">D　5 圈</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>D</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">D——分针走一大格是 5 分钟，秒针 1 分钟走一圈，所以要走 5 圈。</div></details><div class="stepper" data-no="12"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="13" data-type="choice"><div class="qhead"><span class="qno">13</span><span class="qscore">3分</span></div><div class="qtext">13. 图书馆有 502 本故事书，借出 187 本，还剩多少本？正确的算式是：</div><div class="opts dowidget"><button type="button" class="opt" data-no="13" data-v="A">A　502＋187　</button><button type="button" class="opt" data-no="13" data-v="B">B　502×187　</button><button type="button" class="opt" data-no="13" data-v="C">C　502－187　</button><button type="button" class="opt" data-no="13" data-v="D">D　187＋502</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>C</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">C——从总数里去掉借出的，用减法 502－187。判错点：见"借出"就加。</div></details><div class="stepper" data-no="13"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="14" data-type="choice"><div class="qhead"><span class="qno">14</span><span class="qscore">3分</span></div><div class="qtext">14. 一部动画片从 8:10 播到 8:55，片长是：</div><div class="opts dowidget"><button type="button" class="opt" data-no="14" data-v="A">A　15 分钟　</button><button type="button" class="opt" data-no="14" data-v="B">B　45 分钟　</button><button type="button" class="opt" data-no="14" data-v="C">C　65 分钟　</button><button type="button" class="opt" data-no="14" data-v="D">D　1 时 55 分</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>B</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">B——8:55－8:10＝45 分钟。判错点：误用 85－10。</div></details><div class="stepper" data-no="14"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">四、口算（本题 8 小题，共 16 分）</h3>
+<div class="q" data-no="15" data-type="fill"><div class="qhead"><span class="qno">15</span><span class="qscore">2分</span></div><div class="qtext">15. 26＋30＝<input class="blank" data-no="15" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>56</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">56。两位数加整十数，先加十位。</div></details><div class="stepper" data-no="15"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="16" data-type="fill"><div class="qhead"><span class="qno">16</span><span class="qscore">2分</span></div><div class="qtext">16. 45＋38＝<input class="blank" data-no="16" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>83</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">83。45＋38：个位 5＋8＝13 满十进一，十位 4＋3＋1＝8。判错点：忘进位得 73。</div></details><div class="stepper" data-no="16"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="17" data-type="fill"><div class="qhead"><span class="qno">17</span><span class="qscore">2分</span></div><div class="qtext">17. 74－16＝<input class="blank" data-no="17" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>58</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">58。74－16：个位 4 减 6 不够，向十位借一当十，14－6＝8，十位 6－1＝5。判错点：忘退位得 68。</div></details><div class="stepper" data-no="17"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="18" data-type="fill"><div class="qhead"><span class="qno">18</span><span class="qscore">2分</span></div><div class="qtext">18. 520＋340＝<input class="blank" data-no="18" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>860</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">860。52 个十加 34 个十是 86 个十。</div></details><div class="stepper" data-no="18"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="19" data-type="fill"><div class="qhead"><span class="qno">19</span><span class="qscore">2分</span></div><div class="qtext">19. 640－280＝<input class="blank" data-no="19" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>360</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">360。640－280：十位 4－8 不够退位，64 个十减 28 个十是 36 个十。</div></details><div class="stepper" data-no="19"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="20" data-type="fill"><div class="qhead"><span class="qno">20</span><span class="qscore">2分</span></div><div class="qtext">20. 42－25＝<input class="blank" data-no="20" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>17</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">17。42－25：个位 2－5 不够，借一当十 12－5＝7，十位 3－2＝1。</div></details><div class="stepper" data-no="20"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="21" data-type="fill"><div class="qhead"><span class="qno">21</span><span class="qscore">2分</span></div><div class="qtext">21. 370＋480＝<input class="blank" data-no="21" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>850</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">850。37 个十加 48 个十是 85 个十。</div></details><div class="stepper" data-no="21"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="22" data-type="fill"><div class="qhead"><span class="qno">22</span><span class="qscore">2分</span></div><div class="qtext">22. 620－450＝<input class="blank" data-no="22" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>170</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">170。62 个十减 45 个十是 17 个十。</div></details><div class="stepper" data-no="22"><button type="button" class="sdec">−</button><span class="sval">0/2分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">五、笔算（带验算）（本题 2 小题，共 16 分）</h3>
+<div class="q" data-no="23" data-type="fill"><div class="qhead"><span class="qno">23</span><span class="qscore">8分</span><button type="button" class="skipbtn" data-no="23">没学到？跳过</button></div><div class="qtext">23. 503－286＝<input class="blank" data-no="23" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>217（验算 217＋286＝503）</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">217。完整步骤：个位 3 减 6 不够，向十位借一；十位是 0，再向百位借一当十，个位 13－6＝7，十位 10－1－8＝1，百位 4－2＝2。验算：217＋286＝503 ✓。判错点：中间 0 的连续退位——十位漏借一得 227。</div></details><div class="stepper" data-no="23"><button type="button" class="sdec">−</button><span class="sval">0/8分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="24" data-type="fill"><div class="qhead"><span class="qno">24</span><span class="qscore">8分</span><button type="button" class="skipbtn" data-no="24">没学到？跳过</button></div><div class="qtext">24. 345＋268＝<input class="blank" data-no="24" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>613（验算 613－268＝345）</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">613。个位 5＋8＝13 写 3 进一，十位 4＋6＋1＝11 写 1 进一，百位 3＋2＋1＝6。验算：613－268＝345 ✓。判错点：漏进位得 503。</div></details><div class="stepper" data-no="24"><button type="button" class="sdec">−</button><span class="sval">0/8分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">六、解决问题（本题 3 小题，共 30 分）</h3>
+<div class="q" data-no="25" data-type="subjective"><div class="qhead"><span class="qno">25</span><span class="qscore">10分</span></div><div class="qtext">25. 小红 7:45 从家出发，8:05 到学校。她在路上用了多长时间？（先画一画或算一算）</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="25"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>20 分钟</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">采分点：画图或列式 4 分（8:05－7:45，或数格子：7:45→8:00 走 15 分，再走 5 分）；结果 20 分钟 4 分；单位写"分钟"2 分。判错点：误算 60 分（用 805－745）。</div></details><div class="stepper" data-no="25"><button type="button" class="sdec">−</button><span class="sval">0/10分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="26" data-type="subjective"><div class="qhead"><span class="qno">26</span><span class="qscore">10分</span><button type="button" class="skipbtn" data-no="26">没学到？跳过</button></div><div class="qtext">26. 妈妈带了 200 元，买一个电饭锅要 157 元，再买一个水壶要 48 元。钱够吗？（先估一估，再说理由）</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="26"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>不够</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">采分点：估一估 4 分（把 157 看作 160、48 看作 50，160＋50＝210；或 157＋48 精确算得 205）；判断与理由 4 分（210 或 205 都超过 200，所以不够）；表达完整 2 分。判错点：只算精确值不算估——本题要求先估。</div></details><div class="stepper" data-no="26"><button type="button" class="sdec">−</button><span class="sval">0/10分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="27" data-type="subjective"><div class="qhead"><span class="qno">27</span><span class="qscore">10分</span></div><div class="qtext">27. 果园里种了 420 棵梨树，苹果树比梨树多 150 棵，桃树比苹果树少 90 棵。苹果树有多少棵？桃树有多少棵？</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="27"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>苹果树 570 棵；桃树 480 棵</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">采分点：第一问 5 分（420＋150＝570，苹果树 570 棵）；第二问 5 分（570－90＝480，桃树 480 棵）。判错点：第二问误用 420－90——"桃树比苹果树少 90"要比的对象是苹果树 570，不是梨树。</div></details><div class="stepper" data-no="27"><button type="button" class="sdec">−</button><span class="sval">0/10分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+
+<div id="report" hidden></div>
+
+<details class="parent box" id="parentbox">
+<summary>家长角：怎么组织、怎么解读（点开）</summary>
+<ul>
+<li><b>组织</b>：掐表计时，中途不打扰、不提示；做完让孩子先自己批改，家长抽 3 题复核——抽到不一致以家长为准，温和指出来。笔算题要求孩子写出竖式和验算——过程比答案重要。</li>
+<li><b>给分</b>：客观题对一题得一题分；主观题对照采分点按步给分，宁可少给不高估。</li>
+<li><b>进度差异</b>：若班级尚未学到笔算（几百几十加减），第 23、24 题可跳过；尚未讲到估算的，第 26 题可跳过。等级按已做题得分折算后对照。</li>
+</ul>
+<h2>等级对照（按已做题折算后对照）</h2>
+<li>85 ~ 100 分：优 —— 本月骨架扎实，保持节奏</li><li>70 ~ 84 分：良 —— 大盘没问题，个别点要回炉</li><li>60 ~ 69 分：合格 —— 有明确短板，按下面清单补</li><li>0 ~ 59 分：待加强 —— 第一个月很常见！先回课本，不着急刷题报班</li>
+<h2>每个知识点，人话版</h2>
+<ul>
+<li><b>KP1 时分秒的认识与换算</b>：就是认识钟面，知道 1 时＝60 分、1 分＝60 秒。家里可以：让孩子报一报现在几时几分</li><li><b>KP2 经过时间</b>：就是算从几点到几点花了多久。家里可以：出门前让孩子算算路上要用多久，到点对答案</li><li><b>KP3 两位数加减口算</b>：就是不动笔也能算对 45＋38 这类题。家里可以：扑克牌各抽一张当十位和个位，比谁算得快</li><li><b>KP4 几百几十加减与笔算验算</b>：就是会列竖式算几百几十加减，算完还会验算。家里可以：让孩子把验算过程讲给你听</li><li><b>KP5 估算</b>：就是把 398 看成 400，快速判断够不够。家里可以：超市里让孩子估一估两样东西合起来多少钱</li><li><b>KP6 解决问题·比多少与连续两问</b>：就是读题后知道先算什么、再算什么。家里可以：让孩子先圈条件和问题，再讲给你听</li></ul>
+<p>替代小测法（量感与口算，口头进行）：让孩子报一报“从家到学校大约要走多久”，再用钟面对一对；口算出 6 道两位数加减题。</p>
+<h2>三档话术</h2>
+<ul>
+<li><strong>85 分以上（优）</strong>——怎么夸：夸具体行为，不夸聪明。“你把验算过程讲得清清楚楚”“这个字的三点水没丢”。被夸到点上的孩子才会重复这个行为。</li><li><strong>70~84 分（良）</strong>——怎么说：“大盘很好，咱们挑两个小地方补一补。”和孩子一起从登记表里挑一个最需要补的知识点，约定时间。</li><li><strong>69 分及以下（合格／待加强）</strong>——怎么陪：第一个月的分数≠能力，这是摸底不是审判。顺序是：先回课本读一读，再重做本卷错题，7~10 天后只测错题。连续错同一知识点，把课本对应单元再读一遍。</li><li><strong>进度差异提示</strong>：如果孩子按说明跳过了个别题，把已做题得分折算成 100 分制后再对照上表。</li></ul>
+<details>
+<summary>答案速查（家长复核用）</summary>
+<pre style="white-space:pre-wrap">1. 12；60
+2. 60；60
+3. 30
+4. 8；64
+5. 320；180
+6. 15
+7. 对
+8. 错
+9. 错
+10. 对
+11. A
+12. D
+13. C
+14. B
+15. 56
+16. 83
+17. 58
+18. 860
+19. 360
+20. 17
+21. 850
+22. 170
+23. 217（验算 217＋286＝503）
+24. 613（验算 613－268＝345）
+25. 20 分钟
+26. 不够
+27. 苹果树 570 棵；桃树 480 棵</pre>
+</details>
+</details>
+
+<footer>AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g3-learn / month1-selfcheck · 2026-09</footer>
+</main>
+
+<div id="bar">
+<button type="button" id="m-do">做题</button>
+<button type="button" id="m-grade" class="primary">交卷并批改</button>
+<button type="button" id="m-clear" class="ghost">清空重做</button>
+<span id="progress"></span>
+</div>
+
+<script type="application/json" id="m1-data">{"subject":"数学","grade":"三年级","duration":35,"key":"m1self_g3_数学","items":[{"no":1,"raw":"1. 钟面上有（　　）个大格，秒针走一圈是（　　）秒。（3分）","score":3,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"易","match":"强","type":"fill","ans":"12；60","ansKey":null,"ansParts":["12","60"],"options":null,"perBlank":null,"skip":false,"explain":"钟面 12 个大格、60 个小格；秒针走一圈 60 秒。判错点：大格与小格混淆（12 个大格、60 个小格）。"},{"no":2,"raw":"2. 1 时＝（　　）分；1 分＝（　　）秒。（3分）","score":3,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"易","match":"强","type":"fill","ans":"60；60","ansKey":null,"ansParts":["60","60"],"options":null,"perBlank":null,"skip":false,"explain":"1 时＝60 分，1 分＝60 秒——时间单位之间的进率是 60，不是 10 或 100。"},{"no":3,"raw":"3. 小明早上 7 时 30 分到校，8 时上第一节课，中间隔了（　　）分钟。（3分）","score":3,"kp":"KP2","kpName":"经过时间","difficulty":"易","match":"强","type":"fill","ans":"30","ansKey":null,"ansParts":["30"],"options":null,"perBlank":null,"skip":false,"explain":"7:30 到 8:00 走了 30 分钟。判错点：误算成 70（用 80－30 时把 8 时当 80）。"},{"no":4,"raw":"4. 口算 36＋28 时，先算 36＋20＝56，再算 56＋（　　）＝（　　）。（3分）","score":3,"kp":"KP3","kpName":"两位数加减口算","difficulty":"较难","match":"强","type":"fill","ans":"8；64","ansKey":null,"ansParts":["8","64"],"options":null,"perBlank":null,"skip":false,"explain":"先算 36＋20＝56，再算 56＋8＝64——把两位数拆成\"整十数＋几\"，新知识变旧知识。"},{"no":5,"raw":"5. 比 250 多 70 的数是（　　）；250 比 70 多（　　）。（3分）","score":3,"kp":"KP6","kpName":"解决问题·比多少与连续两问","difficulty":"中","match":"强","type":"fill","ans":"320；180","ansKey":null,"ansParts":["320","180"],"options":null,"perBlank":null,"skip":false,"explain":"比 250 多 70 用加法：250＋70＝320；250 比 70 多多少，求相差数用减法：250－70＝180。判错点：两问都是\"比\"，但一问求大数、一问求相差数，方法不同。"},{"no":6,"raw":"6. 钟面上，分针从 3 走到 6，经过了（　　）分钟。（3分）","score":3,"kp":"KP2","kpName":"经过时间","difficulty":"易","match":"强","type":"fill","ans":"15","ansKey":null,"ansParts":["15"],"options":null,"perBlank":null,"skip":false,"explain":"分针每走一大格是 5 分钟，从 3 到 6 走了 3 大格：3×5＝15 分钟。"},{"no":7,"raw":"7. 秒针走一圈，分针正好走一小格。（　）（2分）","score":2,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"易","match":"强","type":"judge","ans":"对","ansKey":"对","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"对——秒针走一圈是 60 秒，正好是 1 分钟，分针走一小格。"},{"no":8,"raw":"8. 6 时整，时针和分针重合在一起。（　）（2分）","score":2,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"中","match":"强","type":"judge","ans":"错","ansKey":"错","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"错——6 时整，时针指着 6、分针指着 12，两针成一条直线；12 时整两针才重合。"},{"no":9,"raw":"9. 笔算加减法时，要从高位算起。（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"易","match":"强","type":"judge","ans":"错","ansKey":"错","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"错——笔算加减法要**相同数位对齐，从个位算起**。"},{"no":10,"raw":"10. 估算时，把 398 看作 400 很方便。（　）（2分）","score":2,"kp":"KP5","kpName":"估算","difficulty":"易","match":"强","type":"judge","ans":"对","ansKey":"对","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"对——398 接近 400，看作 400 好算，估的结果说明\"大约是多少\"。"},{"no":11,"raw":"11. 跑 50 米大约用多长时间？A　8 秒　B　8 分　C　8 时　D　8 天（3分）","score":3,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"易","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","8 秒　"],["B","8 分　"],["C","8 时　"],["D","8 天"]],"perBlank":null,"skip":false,"explain":"A——跑 50 米不到一分钟，用\"秒\"最合适：8 秒合理；8 分、8 时太长。"},{"no":12,"raw":"12. 分针走一大格，秒针要走：A　1 圈　B　5 小格　C　60 圈　D　5 圈（3分）","score":3,"kp":"KP2","kpName":"经过时间","difficulty":"较难","match":"中","type":"choice","ans":"D","ansKey":"D","ansParts":null,"options":[["A","1 圈　"],["B","5 小格　"],["C","60 圈　"],["D","5 圈"]],"perBlank":null,"skip":false,"explain":"D——分针走一大格是 5 分钟，秒针 1 分钟走一圈，所以要走 5 圈。"},{"no":13,"raw":"13. 图书馆有 502 本故事书，借出 187 本，还剩多少本？正确的算式是：A　502＋187　B　502×187　C　502－187　D　187＋502（3分）","score":3,"kp":"KP6","kpName":"解决问题·比多少与连续两问","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","502＋187　"],["B","502×187　"],["C","502－187　"],["D","187＋502"]],"perBlank":null,"skip":false,"explain":"C——从总数里去掉借出的，用减法 502－187。判错点：见\"借出\"就加。"},{"no":14,"raw":"14. 一部动画片从 8:10 播到 8:55，片长是：A　15 分钟　B　45 分钟　C　65 分钟　D　1 时 55 分（3分）","score":3,"kp":"KP2","kpName":"经过时间","difficulty":"易","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","15 分钟　"],["B","45 分钟　"],["C","65 分钟　"],["D","1 时 55 分"]],"perBlank":null,"skip":false,"explain":"B——8:55－8:10＝45 分钟。判错点：误用 85－10。"},{"no":15,"raw":"15. 26＋30＝（　）（2分）","score":2,"kp":"KP3","kpName":"两位数加减口算","difficulty":"易","match":"强","type":"fill","ans":"56","ansKey":null,"ansParts":["56"],"options":null,"perBlank":null,"skip":false,"explain":"56。两位数加整十数，先加十位。"},{"no":16,"raw":"16. 45＋38＝（　）（2分）","score":2,"kp":"KP3","kpName":"两位数加减口算","difficulty":"中","match":"强","type":"fill","ans":"83","ansKey":null,"ansParts":["83"],"options":null,"perBlank":null,"skip":false,"explain":"83。45＋38：个位 5＋8＝13 满十进一，十位 4＋3＋1＝8。判错点：忘进位得 73。"},{"no":17,"raw":"17. 74－16＝（　）（2分）","score":2,"kp":"KP3","kpName":"两位数加减口算","difficulty":"中","match":"强","type":"fill","ans":"58","ansKey":null,"ansParts":["58"],"options":null,"perBlank":null,"skip":false,"explain":"58。74－16：个位 4 减 6 不够，向十位借一当十，14－6＝8，十位 6－1＝5。判错点：忘退位得 68。"},{"no":18,"raw":"18. 520＋340＝（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"易","match":"强","type":"fill","ans":"860","ansKey":null,"ansParts":["860"],"options":null,"perBlank":null,"skip":false,"explain":"860。52 个十加 34 个十是 86 个十。"},{"no":19,"raw":"19. 640－280＝（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"360","ansKey":null,"ansParts":["360"],"options":null,"perBlank":null,"skip":false,"explain":"360。640－280：十位 4－8 不够退位，64 个十减 28 个十是 36 个十。"},{"no":20,"raw":"20. 42－25＝（　）（2分）","score":2,"kp":"KP3","kpName":"两位数加减口算","difficulty":"易","match":"强","type":"fill","ans":"17","ansKey":null,"ansParts":["17"],"options":null,"perBlank":null,"skip":false,"explain":"17。42－25：个位 2－5 不够，借一当十 12－5＝7，十位 3－2＝1。"},{"no":21,"raw":"21. 370＋480＝（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"850","ansKey":null,"ansParts":["850"],"options":null,"perBlank":null,"skip":false,"explain":"850。37 个十加 48 个十是 85 个十。"},{"no":22,"raw":"22. 620－450＝（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"170","ansKey":null,"ansParts":["170"],"options":null,"perBlank":null,"skip":false,"explain":"170。62 个十减 45 个十是 17 个十。"},{"no":23,"raw":"23. 503－286＝（　）（8分）","score":8,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"217（验算 217＋286＝503）","ansKey":null,"ansParts":["217"],"options":null,"perBlank":null,"skip":true,"explain":"217。完整步骤：个位 3 减 6 不够，向十位借一；十位是 0，再向百位借一当十，个位 13－6＝7，十位 10－1－8＝1，百位 4－2＝2。验算：217＋286＝503 ✓。判错点：中间 0 的连续退位——十位漏借一得 227。"},{"no":24,"raw":"24. 345＋268＝（　）（8分）","score":8,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"613（验算 613－268＝345）","ansKey":null,"ansParts":["613"],"options":null,"perBlank":null,"skip":true,"explain":"613。个位 5＋8＝13 写 3 进一，十位 4＋6＋1＝11 写 1 进一，百位 3＋2＋1＝6。验算：613－268＝345 ✓。判错点：漏进位得 503。"},{"no":25,"raw":"25. 小红 7:45 从家出发，8:05 到学校。她在路上用了多长时间？（先画一画或算一算）（10分）","score":10,"kp":"KP2","kpName":"经过时间","difficulty":"易","match":"强","type":"subjective","ans":"20 分钟","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"采分点：画图或列式 4 分（8:05－7:45，或数格子：7:45→8:00 走 15 分，再走 5 分）；结果 20 分钟 4 分；单位写\"分钟\"2 分。判错点：误算 60 分（用 805－745）。"},{"no":26,"raw":"26. 妈妈带了 200 元，买一个电饭锅要 157 元，再买一个水壶要 48 元。钱够吗？（先估一估，再说理由）（10分）","score":10,"kp":"KP5","kpName":"估算","difficulty":"中","match":"中","type":"subjective","ans":"不够","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":true,"explain":"采分点：估一估 4 分（把 157 看作 160、48 看作 50，160＋50＝210；或 157＋48 精确算得 205）；判断与理由 4 分（210 或 205 都超过 200，所以不够）；表达完整 2 分。判错点：只算精确值不算估——本题要求先估。"},{"no":27,"raw":"27. 果园里种了 420 棵梨树，苹果树比梨树多 150 棵，桃树比苹果树少 90 棵。苹果树有多少棵？桃树有多少棵？（10分）","score":10,"kp":"KP6","kpName":"解决问题·比多少与连续两问","difficulty":"较难","match":"拓展","type":"subjective","ans":"苹果树 570 棵；桃树 480 棵","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"采分点：第一问 5 分（420＋150＝570，苹果树 570 棵）；第二问 5 分（570－90＝480，桃树 480 棵）。判错点：第二问误用 420－90——\"桃树比苹果树少 90\"要比的对象是苹果树 570，不是梨树。"}],"byNo":{"1":{"no":1,"raw":"1. 钟面上有（　　）个大格，秒针走一圈是（　　）秒。（3分）","score":3,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"易","match":"强","type":"fill","ans":"12；60","ansKey":null,"ansParts":["12","60"],"options":null,"perBlank":null,"skip":false,"explain":"钟面 12 个大格、60 个小格；秒针走一圈 60 秒。判错点：大格与小格混淆（12 个大格、60 个小格）。"},"2":{"no":2,"raw":"2. 1 时＝（　　）分；1 分＝（　　）秒。（3分）","score":3,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"易","match":"强","type":"fill","ans":"60；60","ansKey":null,"ansParts":["60","60"],"options":null,"perBlank":null,"skip":false,"explain":"1 时＝60 分，1 分＝60 秒——时间单位之间的进率是 60，不是 10 或 100。"},"3":{"no":3,"raw":"3. 小明早上 7 时 30 分到校，8 时上第一节课，中间隔了（　　）分钟。（3分）","score":3,"kp":"KP2","kpName":"经过时间","difficulty":"易","match":"强","type":"fill","ans":"30","ansKey":null,"ansParts":["30"],"options":null,"perBlank":null,"skip":false,"explain":"7:30 到 8:00 走了 30 分钟。判错点：误算成 70（用 80－30 时把 8 时当 80）。"},"4":{"no":4,"raw":"4. 口算 36＋28 时，先算 36＋20＝56，再算 56＋（　　）＝（　　）。（3分）","score":3,"kp":"KP3","kpName":"两位数加减口算","difficulty":"较难","match":"强","type":"fill","ans":"8；64","ansKey":null,"ansParts":["8","64"],"options":null,"perBlank":null,"skip":false,"explain":"先算 36＋20＝56，再算 56＋8＝64——把两位数拆成\"整十数＋几\"，新知识变旧知识。"},"5":{"no":5,"raw":"5. 比 250 多 70 的数是（　　）；250 比 70 多（　　）。（3分）","score":3,"kp":"KP6","kpName":"解决问题·比多少与连续两问","difficulty":"中","match":"强","type":"fill","ans":"320；180","ansKey":null,"ansParts":["320","180"],"options":null,"perBlank":null,"skip":false,"explain":"比 250 多 70 用加法：250＋70＝320；250 比 70 多多少，求相差数用减法：250－70＝180。判错点：两问都是\"比\"，但一问求大数、一问求相差数，方法不同。"},"6":{"no":6,"raw":"6. 钟面上，分针从 3 走到 6，经过了（　　）分钟。（3分）","score":3,"kp":"KP2","kpName":"经过时间","difficulty":"易","match":"强","type":"fill","ans":"15","ansKey":null,"ansParts":["15"],"options":null,"perBlank":null,"skip":false,"explain":"分针每走一大格是 5 分钟，从 3 到 6 走了 3 大格：3×5＝15 分钟。"},"7":{"no":7,"raw":"7. 秒针走一圈，分针正好走一小格。（　）（2分）","score":2,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"易","match":"强","type":"judge","ans":"对","ansKey":"对","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"对——秒针走一圈是 60 秒，正好是 1 分钟，分针走一小格。"},"8":{"no":8,"raw":"8. 6 时整，时针和分针重合在一起。（　）（2分）","score":2,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"中","match":"强","type":"judge","ans":"错","ansKey":"错","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"错——6 时整，时针指着 6、分针指着 12，两针成一条直线；12 时整两针才重合。"},"9":{"no":9,"raw":"9. 笔算加减法时，要从高位算起。（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"易","match":"强","type":"judge","ans":"错","ansKey":"错","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"错——笔算加减法要**相同数位对齐，从个位算起**。"},"10":{"no":10,"raw":"10. 估算时，把 398 看作 400 很方便。（　）（2分）","score":2,"kp":"KP5","kpName":"估算","difficulty":"易","match":"强","type":"judge","ans":"对","ansKey":"对","ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"对——398 接近 400，看作 400 好算，估的结果说明\"大约是多少\"。"},"11":{"no":11,"raw":"11. 跑 50 米大约用多长时间？A　8 秒　B　8 分　C　8 时　D　8 天（3分）","score":3,"kp":"KP1","kpName":"时分秒的认识与换算","difficulty":"易","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","8 秒　"],["B","8 分　"],["C","8 时　"],["D","8 天"]],"perBlank":null,"skip":false,"explain":"A——跑 50 米不到一分钟，用\"秒\"最合适：8 秒合理；8 分、8 时太长。"},"12":{"no":12,"raw":"12. 分针走一大格，秒针要走：A　1 圈　B　5 小格　C　60 圈　D　5 圈（3分）","score":3,"kp":"KP2","kpName":"经过时间","difficulty":"较难","match":"中","type":"choice","ans":"D","ansKey":"D","ansParts":null,"options":[["A","1 圈　"],["B","5 小格　"],["C","60 圈　"],["D","5 圈"]],"perBlank":null,"skip":false,"explain":"D——分针走一大格是 5 分钟，秒针 1 分钟走一圈，所以要走 5 圈。"},"13":{"no":13,"raw":"13. 图书馆有 502 本故事书，借出 187 本，还剩多少本？正确的算式是：A　502＋187　B　502×187　C　502－187　D　187＋502（3分）","score":3,"kp":"KP6","kpName":"解决问题·比多少与连续两问","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","502＋187　"],["B","502×187　"],["C","502－187　"],["D","187＋502"]],"perBlank":null,"skip":false,"explain":"C——从总数里去掉借出的，用减法 502－187。判错点：见\"借出\"就加。"},"14":{"no":14,"raw":"14. 一部动画片从 8:10 播到 8:55，片长是：A　15 分钟　B　45 分钟　C　65 分钟　D　1 时 55 分（3分）","score":3,"kp":"KP2","kpName":"经过时间","difficulty":"易","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","15 分钟　"],["B","45 分钟　"],["C","65 分钟　"],["D","1 时 55 分"]],"perBlank":null,"skip":false,"explain":"B——8:55－8:10＝45 分钟。判错点：误用 85－10。"},"15":{"no":15,"raw":"15. 26＋30＝（　）（2分）","score":2,"kp":"KP3","kpName":"两位数加减口算","difficulty":"易","match":"强","type":"fill","ans":"56","ansKey":null,"ansParts":["56"],"options":null,"perBlank":null,"skip":false,"explain":"56。两位数加整十数，先加十位。"},"16":{"no":16,"raw":"16. 45＋38＝（　）（2分）","score":2,"kp":"KP3","kpName":"两位数加减口算","difficulty":"中","match":"强","type":"fill","ans":"83","ansKey":null,"ansParts":["83"],"options":null,"perBlank":null,"skip":false,"explain":"83。45＋38：个位 5＋8＝13 满十进一，十位 4＋3＋1＝8。判错点：忘进位得 73。"},"17":{"no":17,"raw":"17. 74－16＝（　）（2分）","score":2,"kp":"KP3","kpName":"两位数加减口算","difficulty":"中","match":"强","type":"fill","ans":"58","ansKey":null,"ansParts":["58"],"options":null,"perBlank":null,"skip":false,"explain":"58。74－16：个位 4 减 6 不够，向十位借一当十，14－6＝8，十位 6－1＝5。判错点：忘退位得 68。"},"18":{"no":18,"raw":"18. 520＋340＝（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"易","match":"强","type":"fill","ans":"860","ansKey":null,"ansParts":["860"],"options":null,"perBlank":null,"skip":false,"explain":"860。52 个十加 34 个十是 86 个十。"},"19":{"no":19,"raw":"19. 640－280＝（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"360","ansKey":null,"ansParts":["360"],"options":null,"perBlank":null,"skip":false,"explain":"360。640－280：十位 4－8 不够退位，64 个十减 28 个十是 36 个十。"},"20":{"no":20,"raw":"20. 42－25＝（　）（2分）","score":2,"kp":"KP3","kpName":"两位数加减口算","difficulty":"易","match":"强","type":"fill","ans":"17","ansKey":null,"ansParts":["17"],"options":null,"perBlank":null,"skip":false,"explain":"17。42－25：个位 2－5 不够，借一当十 12－5＝7，十位 3－2＝1。"},"21":{"no":21,"raw":"21. 370＋480＝（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"850","ansKey":null,"ansParts":["850"],"options":null,"perBlank":null,"skip":false,"explain":"850。37 个十加 48 个十是 85 个十。"},"22":{"no":22,"raw":"22. 620－450＝（　）（2分）","score":2,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"170","ansKey":null,"ansParts":["170"],"options":null,"perBlank":null,"skip":false,"explain":"170。62 个十减 45 个十是 17 个十。"},"23":{"no":23,"raw":"23. 503－286＝（　）（8分）","score":8,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"217（验算 217＋286＝503）","ansKey":null,"ansParts":["217"],"options":null,"perBlank":null,"skip":true,"explain":"217。完整步骤：个位 3 减 6 不够，向十位借一；十位是 0，再向百位借一当十，个位 13－6＝7，十位 10－1－8＝1，百位 4－2＝2。验算：217＋286＝503 ✓。判错点：中间 0 的连续退位——十位漏借一得 227。"},"24":{"no":24,"raw":"24. 345＋268＝（　）（8分）","score":8,"kp":"KP4","kpName":"几百几十加减与笔算验算","difficulty":"中","match":"强","type":"fill","ans":"613（验算 613－268＝345）","ansKey":null,"ansParts":["613"],"options":null,"perBlank":null,"skip":true,"explain":"613。个位 5＋8＝13 写 3 进一，十位 4＋6＋1＝11 写 1 进一，百位 3＋2＋1＝6。验算：613－268＝345 ✓。判错点：漏进位得 503。"},"25":{"no":25,"raw":"25. 小红 7:45 从家出发，8:05 到学校。她在路上用了多长时间？（先画一画或算一算）（10分）","score":10,"kp":"KP2","kpName":"经过时间","difficulty":"易","match":"强","type":"subjective","ans":"20 分钟","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"采分点：画图或列式 4 分（8:05－7:45，或数格子：7:45→8:00 走 15 分，再走 5 分）；结果 20 分钟 4 分；单位写\"分钟\"2 分。判错点：误算 60 分（用 805－745）。"},"26":{"no":26,"raw":"26. 妈妈带了 200 元，买一个电饭锅要 157 元，再买一个水壶要 48 元。钱够吗？（先估一估，再说理由）（10分）","score":10,"kp":"KP5","kpName":"估算","difficulty":"中","match":"中","type":"subjective","ans":"不够","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":true,"explain":"采分点：估一估 4 分（把 157 看作 160、48 看作 50，160＋50＝210；或 157＋48 精确算得 205）；判断与理由 4 分（210 或 205 都超过 200，所以不够）；表达完整 2 分。判错点：只算精确值不算估——本题要求先估。"},"27":{"no":27,"raw":"27. 果园里种了 420 棵梨树，苹果树比梨树多 150 棵，桃树比苹果树少 90 棵。苹果树有多少棵？桃树有多少棵？（10分）","score":10,"kp":"KP6","kpName":"解决问题·比多少与连续两问","difficulty":"较难","match":"拓展","type":"subjective","ans":"苹果树 570 棵；桃树 480 棵","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"采分点：第一问 5 分（420＋150＝570，苹果树 570 棵）；第二问 5 分（570－90＝480，桃树 480 棵）。判错点：第二问误用 420－90——\"桃树比苹果树少 90\"要比的对象是苹果树 570，不是梨树。"}},"kpAct":{"KP1":"用家里的钟面练习报时与换算","KP2":"画时间轴重做经过时间错题","KP3":"每天 6 道口算，全对收工","KP4":"重做笔算错题并写出验算","KP5":"口头估一估家庭购物小票","KP6":"圈画条件问题后重做应用错题"}}</script>
+<script>
+/* M1_CORE_BEGIN —— 纯函数判分核（零 DOM；node test_html_core.js 同源测试） */
+function normAnswer(s) {
+  return String(s == null ? '' : s)
+    .replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
+    .replace(/[\s\u3000。，、；;：:．,.''""“”‘’（）()]/g, '');
+}
+function numEq(a, b) {
+  var na = normAnswer(a), nb = normAnswer(b);
+  if (!na || !nb) return false;
+  if (!/^-?\d+(\.\d+)?$/.test(na) || !/^-?\d+(\.\d+)?$/.test(nb)) return false;
+  return Math.abs(parseFloat(na) - parseFloat(nb)) < 1e-9;
+}
+function cmpOne(a, b) {
+  return normAnswer(a) === normAnswer(b) || numEq(a, b);
+}
+function isCorrect(q, st) {
+  var v = st.ans ? st.ans[q.no] : undefined;
+  if (v == null || v === '') return false;
+  if (q.type === 'choice' || q.type === 'judge') return String(v) === q.ansKey;
+  if (q.type === 'fill') {
+    var vals = [].concat(v), ok = 0;
+    for (var i = 0; i < q.ansParts.length; i++) {
+      if (vals[i] != null && cmpOne(vals[i], q.ansParts[i])) ok++;
+    }
+    return ok === q.ansParts.length;
+  }
+  return false;
+}
+function autoScore(q, st) {
+  if (q.type === 'choice' || q.type === 'judge') return isCorrect(q, st) ? q.score : 0;
+  if (q.type === 'fill') {
+    var v = st.ans ? st.ans[q.no] : undefined;
+    if (v == null) return 0;
+    var vals = [].concat(v), ok = 0;
+    for (var i = 0; i < q.ansParts.length; i++) {
+      if (vals[i] != null && cmpOne(vals[i], q.ansParts[i])) ok++;
+    }
+    return q.perBlank ? ok * q.perBlank : (ok === q.ansParts.length ? q.score : 0);
+  }
+  return 0;
+}
+function computeResult(data, st) {
+  st = st || {};
+  var kps = {}, total = 0, possible = 0, ungraded = [], perQ = {};
+  data.items.forEach(function (q) {
+    if (st.skips && st.skips[q.no]) return;
+    possible += q.score;
+    var kp = kps[q.kp] || (kps[q.kp] = { id: q.kp, name: q.kpName, got: 0, max: 0, nos: [] });
+    kp.max += q.score; kp.nos.push(q.no);
+    var manual = st.scores ? st.scores[q.no] : null;
+    var s = manual != null ? manual : autoScore(q, st);
+    if (manual == null && q.type === 'subjective') ungraded.push(q.no);
+    perQ[q.no] = s; total += s; kp.got += s;
+  });
+  var pct = possible > 0 ? total / possible * 100 : 0;
+  var level = pct >= 85 ? '优' : pct >= 70 ? '良' : pct >= 60 ? '合格' : '待加强';
+  var list = Object.keys(kps).map(function (k) { return kps[k]; });
+  var weak = list.filter(function (k) { return k.max > 0 && k.got / k.max < 0.8; })
+    .sort(function (a, b) { return a.got / a.max - b.got / b.max; }).slice(0, 2);
+  return { total: total, possible: possible, pct: pct, level: level,
+    kps: list, weak: weak, ungraded: ungraded, perQ: perQ };
+}
+/* M1_CORE_END */
+
+(function () {
+  if (typeof document === 'undefined') return;
+  var data = JSON.parse(document.getElementById('m1-data').textContent);
+  var KEY = data.key;
+  var st = window.__M1_PRESET__ || null;
+  var restored = false;
+  if (!st) {
+    try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { st = null; }
+    restored = !!st;
+  }
+  if (!st) st = { ans: {}, scores: {}, skips: {}, done: {}, mode: 'do' };
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { } }
+  function qdiv(no) { return document.querySelector('.q[data-no="' + no + '"]'); }
+  function items() { return data.items; }
+
+  function effScore(q) {
+    var m = st.scores[q.no];
+    return m != null ? m : autoScore(q, st);
+  }
+  function refreshSteppers() {
+    items().forEach(function (q) {
+      var el = qdiv(q.no); if (!el) return;
+      var v = el.querySelector('.sval');
+      if (v) v.textContent = effScore(q) + '/' + q.score + '分';
+      el.classList.toggle('skipped', !!st.skips[q.no]);
+    });
+  }
+  function refreshSelections() {
+    items().forEach(function (q) {
+      var el = qdiv(q.no); if (!el) return;
+      var a = st.ans[q.no];
+      el.querySelectorAll('.opt').forEach(function (b) {
+        b.classList.toggle('sel', a != null && String(a) === b.dataset.v);
+      });
+      el.querySelectorAll('.blank').forEach(function (inp) {
+        var arr = [].concat(a || []);
+        var i = parseInt(inp.dataset.b, 10);
+        if (document.activeElement !== inp && arr[i] != null) inp.value = arr[i];
+      });
+      var d = el.querySelector('.done');
+      if (d) d.checked = !!st.done[q.no];
+    });
+  }
+  function progress() {
+    var n = 0;
+    items().forEach(function (q) {
+      if (st.skips[q.no] || st.done[q.no]) { n++; return; }
+      var a = st.ans[q.no];
+      if (a == null) return;
+      var vals = [].concat(a);
+      if (vals.length && vals.every(function (x) { return x != null && x !== ''; })) n++;
+    });
+    return n;
+  }
+  function refreshBar() {
+    var total = items().length;
+    document.getElementById('progress').textContent =
+      (st.mode === 'grade' ? '批改中 ' : '已作答 ') + progress() + '/' + total +
+      (Object.keys(st.skips).filter(function (k) { return st.skips[k]; }).length ?
+        '（含跳过 ' + Object.keys(st.skips).filter(function (k) { return st.skips[k]; }).length + ' 题）' : '');
+  }
+  function tag(ratio) { return ratio >= 0.8 ? '扎实' : ratio >= 0.5 ? '需巩固' : '要补'; }
+  function refreshReport() {
+    var box = document.getElementById('report');
+    if (st.mode !== 'grade') { box.hidden = true; return; }
+    var r = computeResult(data, st);
+    var rows = r.kps.map(function (k) {
+      var ratio = k.max ? k.got / k.max : 0;
+      return '<div class="kprow"><span class="kpname">' + k.id + ' ' + k.name + '</span>' +
+        '<span class="kpbar"><i style="width:' + Math.round(ratio * 100) + '%"></i></span>' +
+        '<span class="kpval">' + k.got + '/' + k.max + '</span>' +
+        '<span class="kptag">' + tag(ratio) + '</span></div>';
+    }).join('');
+    var weak = r.weak.map(function (k) {
+      var act = data.kpAct[k.id] || '';
+      return '<li><b>' + k.id + ' ' + k.name + '</b>（' + k.got + '/' + k.max + '）' +
+        (act ? '——' + act : '') + '。重做本卷第 ' + k.nos.join('、') + ' 题。</li>';
+    }).join('');
+    var skipped = items().filter(function (q) { return st.skips[q.no]; }).map(function (q) { return q.no; });
+    var d = new Date();
+    var date = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+    box.innerHTML =
+      '<h2>成绩单<span class="level">' + r.level + '</span></h2>' +
+      '<p class="meta">' + data.grade + ' · ' + data.subject + ' · ' + date + '</p>' +
+      '<p style="font-size:1.3rem"><b>总分 ' + r.total + ' / ' + r.possible + '</b>' +
+      (r.possible < 100 ? ' <span class="skiptip">（跳题后按已做题折算）</span>' : '') + '</p>' +
+      (skipped.length ? '<p class="skiptip">跳过题号：' + skipped.join('、') + '</p>' : '') +
+      (r.ungraded.length ? '<p class="ugtip"><b>还有 ' + r.ungraded.length +
+        ' 道主观题没打分</b>（对照解析与采分点，在每题下方打分），打完再看这份成绩单。</p>' : '') +
+      '<h3 class="sec">各知识点得分</h3>' + rows +
+      (weak ? '<h3 class="sec">最先要补的知识点（≤2 个）</h3><ul>' + weak + '</ul>' : '') +
+      '<p class="note">约定复测时间：7~10 天后只重做错题。把这张成绩单<b>截图发给家长或老师</b>，帮你定下一步。</p>';
+    box.hidden = false;
+  }
+  function refreshAll() { refreshSteppers(); refreshReport(); refreshBar(); }
+
+  function setMode(mode) {
+    st.mode = mode; save();
+    document.body.classList.toggle('grading', mode === 'grade');
+    document.getElementById('m-do').classList.toggle('primary', mode === 'do');
+    document.getElementById('m-grade').classList.toggle('primary', mode === 'grade');
+    refreshAll();
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest('button'); if (!t) return;
+    if (t.id === 'm-do') return setMode('do');
+    if (t.id === 'm-grade') return setMode('grade');
+    if (t.id === 'm-clear' || t.id === 'restoreclear') {
+      if (!confirm('确定清空本卷全部作答与得分，从头重做吗？')) return;
+      try { localStorage.removeItem(KEY); } catch (e) { }
+      st = { ans: {}, scores: {}, skips: {}, done: {}, mode: 'do' };
+      document.getElementById('restoretip').style.display = 'none';
+      refreshSelections(); setMode('do'); return;
+    }
+    var qel = t.closest('.q'); if (!qel) return;
+    var no = parseInt(qel.dataset.no, 10);
+    if (t.classList.contains('opt')) {
+      if (st.skips[no]) return;
+      st.ans[no] = t.dataset.v; save();
+      qel.querySelectorAll('.opt').forEach(function (b) {
+        b.classList.toggle('sel', b === t);
+      });
+      refreshAll(); return;
+    }
+    if (t.classList.contains('skipbtn')) {
+      st.skips[no] = !st.skips[no]; save(); refreshAll(); return;
+    }
+    if (t.classList.contains('sdec') || t.classList.contains('sinc') ||
+        t.classList.contains('sfull') || t.classList.contains('sauto')) {
+      var q = data.byNo[no];
+      var cur = effScore(q);
+      if (t.classList.contains('sdec')) st.scores[no] = Math.max(0, cur - 1);
+      else if (t.classList.contains('sinc')) st.scores[no] = Math.min(q.score, cur + 1);
+      else if (t.classList.contains('sfull')) st.scores[no] = q.score;
+      else delete st.scores[no];
+      save(); refreshAll(); return;
+    }
+  });
+  document.addEventListener('input', function (ev) {
+    var inp = ev.target; if (!inp.classList || !inp.classList.contains('blank')) return;
+    var qel = inp.closest('.q');
+    var no = parseInt(qel.dataset.no, 10);
+    if (st.skips[no]) return;
+    var arr = [].concat(st.ans[no] || []);
+    arr[parseInt(inp.dataset.b, 10)] = inp.value;
+    st.ans[no] = arr; save(); refreshAll();
+  });
+  document.addEventListener('change', function (ev) {
+    var inp = ev.target; if (!inp.classList || !inp.classList.contains('done')) return;
+    var no = parseInt(inp.closest('.q').dataset.no, 10);
+    st.done[no] = inp.checked; save(); refreshAll();
+  });
+
+  refreshSelections();
+  document.body.classList.toggle('grading', st.mode === 'grade');
+  document.getElementById('m-do').classList.toggle('primary', st.mode !== 'grade');
+  if (restored && progress() > 0) document.getElementById('restoretip').style.display = 'block';
+  refreshAll();
+})();
+</script>
+</body>
+</html>

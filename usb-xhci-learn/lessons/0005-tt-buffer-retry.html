@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>课 0005 · SSPLIT 与 CSPLIT 之间：TT 缓冲与重试的规则</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+  <div class="kicker">补缺课 · LESSON 0005 · 主线：hub 深入（缺口驱动：课 0004 Q2/Q3）</div>
+  <h1>SSPLIT 与 CSPLIT 之间<br>TT 缓冲与重试的规则</h1>
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75，2026-09-23）——规范锚点：USB2 §11.17/§11.18/§11.20/§5.3.2</p>
+
+  <h2>整体定位（先挂图）</h2>
+  <p>本课钻进 <a href="0004-tt-split.html">课 0004</a> ⑥层 TT 的内部，打你测评错的两题：<strong>缓冲为什么要两个</strong>（Q2）与<strong>重试权属在谁</strong>（Q3）。两题同源：split 把一次搬运拆成时间上解耦的两段，规则全是围绕这个解耦设计的。</p>
+
+  <h2>时间解耦：SSPLIT 和 CSPLIT 之间隔着一个真实事务</h2>
+  <p>HS 微帧 125 µs；FS 侧一次满载 64 字节 bulk 事务，光数据就要 64×8÷12Mb/s ≈ <strong>43 µs</strong>，加协议开销轻松跨过微帧边界。于是 SSPLIT（交付）与 CSPLIT（取结果）必然是<strong>两个不同微帧里的独立事务</strong>——中间夹着 hub ↔ FS 设备的真实异步执行：</p>
+  <figure>
+    <svg viewBox="0 0 880 300" role="img" aria-label="SSPLIT 与 CSPLIT 时间解耦" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <g stroke="#e3e3da" stroke-width="1">
+        <line x1="60" y1="40" x2="60" y2="230"/><line x1="210" y1="40" x2="210" y2="230"/><line x1="360" y1="40" x2="360" y2="230"/><line x1="510" y1="40" x2="510" y2="230"/><line x1="660" y1="40" x2="660" y2="230"/><line x1="810" y1="40" x2="810" y2="230"/>
+      </g>
+      <g font-size="12.5" fill="#707070" text-anchor="middle">
+        <text x="135" y="32">微帧 Y0</text><text x="285" y="32">Y1</text><text x="435" y="32">Y2</text><text x="585" y="32">Y3</text><text x="735" y="32">Y4</text>
+      </g>
+      <rect x="70" y="55" width="90" height="30" fill="#e9f7ee" stroke="#1a7f37"/>
+      <text x="115" y="74" font-size="12" fill="#1a7f37" text-anchor="middle">SSPLIT#1</text>
+      <rect x="220" y="95" width="90" height="30" fill="#e9f7ee" stroke="#1a7f37"/>
+      <text x="265" y="114" font-size="12" fill="#1a7f37" text-anchor="middle">SSPLIT#2</text>
+      <rect x="100" y="150" width="300" height="34" fill="#e8f0fb" stroke="#1a5fb4"/>
+      <text x="250" y="171" font-size="12.5" fill="#1a5fb4" text-anchor="middle">FS 域：事务#1 真实执行 ≈43µs＋开销（跨微帧）</text>
+      <rect x="370" y="55" width="90" height="30" fill="#fff3c4" stroke="#a00000"/>
+      <text x="415" y="74" font-size="12" fill="#a00000" text-anchor="middle">CSPLIT#1</text>
+      <rect x="520" y="55" width="90" height="30" fill="#fff3c4" stroke="#a00000"/>
+      <text x="565" y="74" font-size="12" fill="#a00000" text-anchor="middle">CSPLIT#2</text>
+      <line x1="265" y1="125" x2="265" y2="150" stroke="#707070" stroke-dasharray="3 3"/>
+      <line x1="415" y1="85" x2="415" y2="150" stroke="#707070" stroke-dasharray="3 3"/>
+      <rect x="220" y="200" width="240" height="26" fill="#fdeaea"/>
+      <text x="340" y="217" font-size="12" fill="#c62828" text-anchor="middle">若单缓冲：SSPLIT#2 只能被 NAK，空转一个微帧</text>
+    </svg>
+    <figcaption>SSPLIT#1 进缓冲后，FS 事务在后台真跑几十微秒；期间 SSPLIT#2 照常到达——<strong>两个缓冲恰好一个"在飞"、一个"接新"</strong>。这就是 §11.17.4 "at least two transactions of non-periodic buffering" 的全部动机。</figcaption>
+  </figure>
+
+  <h2>规则一 · 缓冲（Q2）：双缓冲乒乓与四种握手语义</h2>
+  <p>§11.17/§11.17.4：每个 TT 的非周期方向（bulk/control）<strong>至少 2 个事务缓冲</strong>。配套的握手语义表（§11.17.1）——每条都有明确含义：</p>
+  <table>
+    <tr><th>场景</th><th>hub 回应</th><th>err_count</th></tr>
+    <tr><td>TT 无空间接新 SSPLIT</td><td><strong>NAK</strong>（空转但不罚）</td><td>不增</td></tr>
+    <tr><td>该端点已有 pending/ready 结果</td><td><strong>ACK</strong> 但忽略数据</td><td>不增</td></tr>
+    <tr><td>CSPLIT 到但事务还没跑完</td><td><strong>NYET</strong>（下个微帧再来）</td><td>不增</td></tr>
+    <tr><td>CSPLIT 到但找不到匹配缓冲</td><td><strong>STALL</strong>（协议违例）</td><td>按错误处理</td></tr>
+  </table>
+  <p>另外每端点任一时刻只允许 <strong>1 个缓冲结果</strong>（Compare_buffs 规则，§11.17.1）——双缓冲是"在飞＋接新"，不是"堆两个结果"。</p>
+
+  <h2>规则二 · 重试权属（Q3）：三层对照，谁的地盘听谁的</h2>
+  <div class="flow">
+    <div class="fnode"><b>TT 本地（FS handler）——只限非周期的事务错误</b>：bulk/control 在 FS 域遭遇传输错误（bit 错/超时）可本地重试，<strong>3 次后以 stall 状态回报</strong>；但对 ACK/NAK/STALL 等握手结果<strong>不得重试</strong>（§11.17.2）。
+<pre>/* 摘要库 §11.17.2 引文 */
+"If the transaction experiences a transaction error three times,
+ the full-/low-speed handler will reflect this as a stall status result"</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>主机侧——three strikes 与 halt</b>：err_count &lt; 3 主机重试；≥ 3 做端点 halt；halt 之后软件发 <strong>Clear_TT_Buffer</strong> 清 TT 的 busy 缓冲（§11.17.1/§11.17.5）——这正是 <code>hub_clear_tt_buffer</code>（hub.c:816-831）存在的理由，课 0004 的内核锚点在这里接上规范。
+<pre>/* 摘要库 §11.17.1 引文 */
+"it increments an error count (err_count) and, if the count is less
+ than three..., it will retry the transaction. If the err_count is
+ greater or equal to three..., the host controller does endpoint
+ halt processing"</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>periodic（interrupt/iso）——TT 完全不本地重试</b>：§11.20 明文。因为 interrupt 活在主机的微帧管道里（§11.18.4：SSPLIT/CSPLIT 在哪个微帧都排得死死的），NAK 不是错误而是"没就绪"的合法状态（§5.3.2），hub 若自作主张重试会（a）吃掉 187.5 字节/微帧的 FS 预算（b）打乱主机按 bInterval 的服务记账（c）重复执行风险。<strong>结果如实经 CSPLIT 回报，何时再试由主机按服务节奏决定</strong>；periodic 的 CSPLIT 遇传输错误也是主机侧"立即重试"（§11.18.4⑥），不是 TT 的活。</div>
+  </div>
+  <div class="note"><strong>一句话收拢两道错题</strong>：Q2——解耦需要排队，双缓冲=一个在飞一个接新；Q3——重试决策权跟着调度权走：非周期事务错误归 TT（3 次封顶），握手结果与全部 periodic 归主机。</div>
+
+  <h2>检索练习 · 4 题（新角度回测）</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：USB 2.0 §11.17（360-372）/§11.18（372-382）/§11.20（382-394），<code>specs/usb20x/</code>；速查先 grep <a href="../notes/规范全文精读摘要库.md">规范全文精读摘要库</a>。内核：<code>hub.c:816-840</code>（ClearTTBuffer）。</li>
+    <li>想再挖：TT 缓冲量公式（§11.19：SSPLIT 级 &lt;752 字节、CSPLIT 级 2×188 字节）或 periodic 管道的 Y0-Y7 细则（§11.18.7/.8）——<strong>直接问老师</strong>。</li>
+  </ul>
+
+  <footer>课 0005 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="0004-tt-split.html">0004 TT 与 split</a> ｜ 下一课：待定 ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a></footer>
+</main>
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '缓冲乒乓',
+    prompt: 'SSPLIT 与对应的 CSPLIT 之间，隔着什么？',
+    options: ['一次真实的 FS/LS 事务异步执行', '一次 HS 域的带宽重协商', '一次 hub 内部 TT 状态机复位', '一次 SOF 帧起始包的同步等待'],
+    answer: 0,
+    explain: 'A 对。SSPLIT 交付后 hub↔FS 设备真实执行几十微秒（64 字节 bulk 光数据 ≈43µs），必然跨进后续微帧——CSPLIT 是另一个微帧里的独立事务。时间解耦是缓冲与重试两条规则的共同根源。' },
+  { tag: '缓冲乒乓',
+    prompt: '新 SSPLIT 到达但 TT 的非周期缓冲全忙，hub 回什么、计不计错？',
+    options: ['NYET，err_count 加 1', 'ACK，err_count 加 1', 'NAK，err_count 不增', 'STALL，err_count 不增'],
+    answer: 2,
+    explain: 'C 对。§11.17.1：TT 无空间回 NAK、不增 err_count（空转但不罚）；"已有 pending/ready 回 ACK 但忽略数据"；"CSPLIT 未完成回 NYET"；"CSPLIT 无匹配缓冲回 STALL（协议违例）"。四个语义各司其职，评测 TT 补丁时逐条对表。' },
+  { tag: '重试权属',
+    prompt: 'bulk 事务在 FS 域遭遇传输错误，TT 的 FS handler 怎么处置？',
+    options: ['立即上报主机等裁决', '本地重试，3 次后以 stall 回报', '本地无限重试直到成功', '丢弃数据等待主机轮询'],
+    answer: 1,
+    explain: 'B 对。§11.17.2：非周期的事务错误（bit 错/超时）允许 TT 本地重试，3 次后以 stall 状态结果回报；但对 ACK/NAK/STALL 等握手结果不得本地重试。对照：interrupt 是"完全不本地重试"（§11.20）——非周期与 periodic 的分界。' },
+  { tag: '重试权属',
+    prompt: 'CSPLIT 时发现 FS 设备当初 NAK 了（interrupt IN），谁决定何时再试、按什么节奏？',
+    options: ['TT 按 187.5 字节预算重试', 'hub 立即本地重发 IN', 'TT 与主机协商后重试', '主机按端点 bInterval 节奏重新调度'],
+    answer: 3,
+    explain: 'D 对。NAK 是"没就绪"的合法状态（§5.3.2），不是错误；hub 经 CSPLIT 如实回报，重试决策在主机——与 interrupt 端点的 bInterval 服务节奏、微帧管道调度（§11.18.4）和带宽记账保持一致。TT 本地重试会破坏这套契约（§11.20 禁止）。' }
+]);
+</script>
+</body>
+</html>

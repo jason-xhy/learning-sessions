@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>课 0002 · 设备插入后，主机侧发生了什么</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+  <div class="kicker">细节课 · LESSON 0002 · 主线：hub 深入</div>
+  <h1>设备插入后，主机侧发生了什么</h1>
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75，2026-09-23）——本课全部行号以此树为准</p>
+
+  <h2>整体定位（先挂图）</h2>
+  <p>本课在整体地图（<a href="../0001-knowledge-map-diagnostic.html">课 0001</a>）的第 <strong>⑥⑤⑦</strong> 层：hub 子系统负责<strong>发现与复位</strong>，设备框架负责<strong>地址与描述符</strong>，xHCI 负责<strong>默认管道的传输执行</strong>。看完链路最后会回到这张图。</p>
+  <div class="map">
+    <div class="layer"><b>⑦ xHCI 执行</b><span class="src">默认管道=控制传输（fig4）</span></div>
+    <div class="layer" style="background:#fdf6ec"><b>⑥ hub 发现/复位/去抖</b><span class="src">USB2 §11.5、§7.1.7.3/5</span></div>
+    <div class="layer" style="background:#fdf6ec"><b>⑤ 设备框架：地址/描述符/配置</b><span class="src">USB2 §9</span></div>
+    <div class="layer"><b>④ 传输类型（控制传输为主角）</b><span class="src">USB2 §5.5</span></div>
+    <div class="layer"><b>…①②③ 电气/链路/协议</b><span class="src">复位定速发生在①</span></div>
+  </div>
+
+  <h2>七步链路（USB2 视角）</h2>
+  <div class="step"><div class="stepnum">1</div><div><b>物理连接</b>：<strong>谁拉 VBUS</strong>——主机经集线器下行口供电（§7.2 电源分配），hub 不发电、只转发；<strong>谁拉 D+</strong>——设备侧经 1.5 kΩ 上拉到 3.0–3.6 V 声明"我在"（§7.1.5），hub 侧用 15 kΩ 下拉采样分压，且上拉电源须随 VBUS 断开而关断。设备须在 VBUS 达 4.01 V 后 <strong>100 ms</strong> 内完成 attach。<span class="where">§7.1.7.3 Fig 7-29（TSIGATT<100ms、TATTDB 去抖 ≥100ms、TRSTRCY 复位恢复 10ms）</span></div></div>
+  <figure>
+    <svg viewBox="0 0 880 330" role="img" aria-label="VBUS 与 attach 信号时序" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <rect x="60" y="30" width="200" height="255" fill="#fff3c4" opacity="0.35"/>
+      <rect x="300" y="30" width="200" height="255" fill="#e9f7ee" opacity="0.55"/>
+      <rect x="600" y="170" width="120" height="115" fill="#fdeaea" opacity="0.6"/>
+      <g font-size="12.5" fill="#a00000">
+        <text x="160" y="24" text-anchor="middle">TSIGATT &lt;100 ms</text>
+        <text x="400" y="24" text-anchor="middle">TATTDB 去抖 ≥100 ms（内核 25ms 步进 × 稳定 100ms）</text>
+        <text x="660" y="163" text-anchor="middle">复位 SE0（步骤⑥）</text>
+      </g>
+      <line x1="60" y1="285" x2="860" y2="285" stroke="#707070" stroke-width="1"/>
+      <g font-size="12" fill="#707070" text-anchor="middle">
+        <text x="60" y="303">0</text><text x="260" y="303">100 ms</text><text x="460" y="303">200 ms</text><text x="660" y="303">300 ms</text><text x="860" y="303">400 ms</text>
+      </g>
+      <text x="14" y="80" font-size="13" fill="#1a1a1a">VBUS</text>
+      <polyline points="60,110 120,45 860,45" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+      <line x1="60" y1="58" x2="860" y2="58" stroke="#a00000" stroke-width="1" stroke-dasharray="5 4"/>
+      <text x="850" y="72" font-size="12" fill="#a00000" text-anchor="end">4.01 V 阈值</text>
+      <text x="130" y="40" font-size="12" fill="#1a5fb4">标称 +5 V · 主机经 hub 下行口供电（§7.2）</text>
+      <line x1="105" y1="58" x2="105" y2="285" stroke="#707070" stroke-width="1" stroke-dasharray="3 4" opacity="0.7"/>
+      <text x="14" y="215" font-size="13" fill="#1a1a1a">D+</text>
+      <polyline points="60,245 200,245 200,185 600,185 600,245 720,245 720,185 860,185" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+      <text x="212" y="176" font-size="12" fill="#1a5fb4">3.3 V：设备侧 1.5 kΩ 上拉＝attach 声明（§7.1.5）</text>
+      <circle cx="200" cy="215" r="3" fill="#a00000"/>
+      <text x="207" y="238" font-size="11.5" fill="#a00000">上升 ≤2.5 µs，本尺度不可见</text>
+      <text x="70" y="262" font-size="11.5" fill="#1a5fb4">hub 侧 15 kΩ 下拉采样（Rpd，§7.1.5）</text>
+      <line x1="540" y1="150" x2="540" y2="285" stroke="#1a5fb4" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="540" y="142" font-size="12.5" fill="#1a5fb4" text-anchor="middle">hub 上报连接变化 → 进入步骤 ②-④</text>
+      <text x="660" y="322" font-size="12" fill="#707070" text-anchor="middle">复位后 TRSTRCY 10 ms 恢复，再走枚举（步骤⑥⑦）</text>
+    </svg>
+    <figcaption>步骤① 一页看懂：供电方（主机→hub 下行口）拉 VBUS，受电方（设备）拉 D+ 声明 attach → hub 去抖 ≥100 ms → 上报端口变化 → 复位/枚举。数字对表 USB2 §7.1.5 / §7.1.7.3 Fig 7-29。</figcaption>
+  </figure>
+  <div class="step"><div class="stepnum">2</div><div><b>hub 中断管道上报</b>：hub 通过其中断端点报告端口位图，内核 <code>hub_irq</code> 收下位图存入 <code>event_bits</code>；连续 <strong>10 次</strong>传输错误则置 <code>hub-&gt;error</code> 转恢复路径。<span class="where">hub.c:776（:792 10 次阈值）</span></div></div>
+  <div class="step"><div class="stepnum">3</div><div><b>工作队列处理</b>：所有 hub 共用一个 work 循环 <code>hub_event</code>，逐端口调 <code>port_event</code>（过流/_resume/连接变化分类处理）。<span class="where">hub.c:5887 → :5759（work 注册 :1976）</span></div></div>
+  <div class="step"><div class="stepnum">4</div><div><b>连接变化</b>：<code>hub_port_connect_change</code> 先尝试<strong>复活</strong>已有设备（重读设备描述符做 <code>descriptors_changed</code> 比对，USB3 的连接由主机控制器硬件自动初始化）；复活失败才走 <code>hub_port_connect</code> 全新枚举。<span class="where">hub.c:5650（复活 :5674-5699，转 connect :5720）</span></div></div>
+  <h3 style="margin:1.4rem 0 0">步骤 ②-④ 控制流 · 节点 = 代码行为 + 源码片段</h3>
+  <div class="flow">
+    <div class="fnode"><span class="ftag">②</span><b>赋值</b>：把中断端点送来的端口位图逐字节移位拼装，写入 <code>event_bits[0]</code>
+<pre>/* hub.c:799-803 */
+bits = 0;
+for (i = 0; i &lt; urb-&gt;actual_length; ++i)
+        bits |= ((unsigned long) ((*hub-&gt;buffer)[i])) &lt;&lt; (i*8);
+hub-&gt;event_bits[0] = bits;</pre></div>
+    <div class="fbranch">
+      <div class="fnode"><b>判断</b>（status==0 成功路径）：清错误计数（赋值 0），唤醒工作队列
+<pre>/* hub.c:806-810 */
+hub-&gt;nerrors = 0;
+/* Something happened, let hub_wq figure it out */
+kick_hub_wq(hub);</pre></div>
+      <div class="fnode"><b>判断</b>（status&lt;0 失败路径）：先自增再比较，&lt;10 次则 goto 重提交；第 10 次把状态存入 hub-&gt;error
+<pre>/* hub.c:792-794 */
+if ((++hub-&gt;nerrors &lt; 10) || hub-&gt;error)
+        goto resubmit;
+hub-&gt;error = status;</pre></div>
+    </div>
+    <div class="farrow">↓ 成功路径</div>
+    <div class="fnode"><span class="ftag">③</span><b>判断＋循环</b>：hub_event 对每个端口检查 <code>change_bits</code>/<code>wakeup_bits</code>，命中者压住 runtime pm 后进入分派
+<pre>/* hub.c:5963-5968 */
+pm_runtime_get_noresume(&amp;port_dev-&gt;dev);
+pm_runtime_barrier(&amp;port_dev-&gt;dev);
+usb_lock_port(port_dev);
+port_event(hub, i);
+usb_unlock_port(port_dev);
+pm_runtime_put_sync(&amp;port_dev-&gt;dev);</pre></div>
+    <div class="farrow">↓ 连接变化位</div>
+    <div class="fnode"><span class="ftag">④</span><b>判断</b>：老设备还在且端口使能 → 复活校验；<b>赋值</b>：status=0 表示无事可做
+<pre>/* hub.c:5675-5690（节选） */
+if ((portstatus &amp; USB_PORT_STAT_CONNECTION) &amp;&amp; udev &amp;&amp;
+                udev-&gt;state != USB_STATE_NOTATTACHED) {
+        if (portstatus &amp; USB_PORT_STAT_ENABLE) {
+                descr = usb_get_device_descriptor(udev);
+                ...
+                if (descriptors_changed(udev, descr,
+                                udev-&gt;bos)) {</pre></div>
+    <div class="fbranch">
+      <div class="fnode">复活成功：<b>判断</b> status==0 → 直接返回（设备还在，不重新枚举）
+<pre>/* hub.c:5715-5717 */
+/* successfully revalidated the connection */
+if (status == 0)
+        return;</pre></div>
+      <div class="fnode">复活失败/新设备 → <b>调用</b> hub_port_connect（接步骤⑤⑥⑦）
+<pre>/* hub.c:5719-5721 */
+usb_unlock_port(port_dev);
+hub_port_connect(hub, port1, portstatus, portchange);
+usb_lock_port(port_dev);</pre></div>
+    </div>
+  </div>
+  <div class="step"><div class="stepnum">5</div><div><b>去抖</b>：<code>hub_port_debounce</code> 每 <strong>25 ms</strong> 步进采样，连续稳定 <strong>≥100 ms</strong> 才认为接稳；总超时 <strong>2 s</strong> 放弃。对表规范 TATTDB ≥100 ms（数值一致）。<span class="where">hub.c:4709（宏 :138-140：STEP 25 / STABLE 100 / TIMEOUT 2000）</span></div></div>
+  <h3 style="margin:1.4rem 0 0">步骤 ⑤ 去抖循环 · 源码即状态机</h3>
+  <div class="flow">
+    <div class="fnode"><b>调用＋判断</b>：读端口状态；<b>判断</b>：无连接变化位 且 连接位与上次采样相同 → 稳定计数累加，否则清零并记住新状态
+<pre>/* hub.c:4717-4732（节选） */
+for (total_time = 0; ; total_time += HUB_DEBOUNCE_STEP) {
+        ret = usb_hub_port_status(hub, port1, &amp;portstatus, &amp;portchange);
+        if (ret &lt; 0)
+                return ret;
+        if (!(portchange &amp; USB_PORT_STAT_C_CONNECTION) &amp;&amp;
+             (portstatus &amp; USB_PORT_STAT_CONNECTION) == connection) {
+                if (!must_be_connected ||
+                     (connection == USB_PORT_STAT_CONNECTION))
+                        stable_time += HUB_DEBOUNCE_STEP;
+                if (stable_time &gt;= HUB_DEBOUNCE_STABLE)
+                        break;
+        } else {
+                stable_time = 0;
+                connection = portstatus &amp; USB_PORT_STAT_CONNECTION;
+        }</pre></div>
+    <div class="fnode"><b>赋值＋调用</b>：每轮清掉连接变化位；<b>判断</b>：总时长到 2 s 即退出；sleep 25 ms
+<pre>/* hub.c:4734-4741（节选） */
+if (portchange &amp; USB_PORT_STAT_C_CONNECTION) {
+        usb_clear_port_feature(hub-&gt;hdev, port1,
+                        USB_PORT_FEAT_C_CONNECTION);
+}
+if (total_time &gt;= HUB_DEBOUNCE_TIMEOUT)
+        break;
+msleep(HUB_DEBOUNCE_STEP);</pre></div>
+    <div class="fbranch">
+      <div class="fnode">出口一：<b>判断</b>稳定不足 100 ms → 超时失败
+<pre>/* hub.c:4747-4749 */
+if (stable_time &lt; HUB_DEBOUNCE_STABLE)
+        return -ETIMEDOUT;
+return portstatus;</pre></div>
+      <div class="fnode">出口二：stable ≥ 100 ms → 以最终 portstatus 返回（步骤⑥用同一份状态）</div>
+    </div>
+    <div class="farrow">↺ 未达标 → 回到采样（整个函数就是"采样→比较→累加/清零→睡 25ms"的状态机）</div>
+  </div>
+  <div class="step"><div class="stepnum">6</div><div><b>复位定速</b>：<code>hub_port_init</code> 先 <code>hub_port_reset</code>——初值根口 <strong>60 ms</strong> / 普通口 <strong>10 ms</strong> / 低速口 <strong>200 ms</strong>，总超时 800 ms<span class="diff">实现≠规范：内核初值 60ms &gt; 规范最小 50ms，多留裕量</span>；规范要求 TDRST≥10ms、根口 TDRSTR≥50ms（允许间断：每段 ≥10ms、间隔 <3ms）、复位恢复 TRSTRCY 10ms。复位后速度已知，ep0 包长：SS/SSP=512、HS=64、LS=8、<strong>FS 先猜 64 再按 bMaxPacketSize0 修正</strong>。<span class="where">hub.c:4915、:3063（时序宏 :2914-2918；ep0 :4971-4989；根口注释自带 §7.1.7.5 引用）</span></div></div>
+  <h3 style="margin:1.4rem 0 0">步骤 ⑥ hub_port_init 顺序 · 源码片段</h3>
+  <div class="flow">
+    <div class="fnode"><b>赋值</b>：按端口角色选复位等待初值（根口/普通口/低速口三档）
+<pre>/* hub.c:2914-2918（宏定义） */
+#define HUB_ROOT_RESET_TIME	60	/* times are in msec */
+#define HUB_SHORT_RESET_TIME	10
+#define HUB_BH_RESET_TIME	50
+#define HUB_LONG_RESET_TIME	200
+#define HUB_RESET_TIMEOUT	800
+
+/* hub.c:4939-4948（选值） */
+if (!hdev-&gt;parent) {
+        delay = HUB_ROOT_RESET_TIME;    /* 根口：规范 §7.1.7.5 */
+...
+if (oldspeed == USB_SPEED_LOW)
+        delay = HUB_LONG_RESET_TIME;</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>调用</b>：发复位并等待完成（速度在复位后即知）
+<pre>/* hub.c:4952 */
+retval = hub_port_reset(hub, port1, udev, delay, false);</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>判断</b>：复位不得换速（SS 升速是唯一豁免），违者失败
+<pre>/* hub.c:4959-4964 */
+if (oldspeed != USB_SPEED_UNKNOWN &amp;&amp; oldspeed != udev-&gt;speed &amp;&amp;
+    !(oldspeed == USB_SPEED_SUPER &amp;&amp; udev-&gt;speed &gt; oldspeed)) {
+        dev_dbg(&amp;udev-&gt;dev, "device reset changed speed!\n");
+        goto fail;
+}</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>判断＋赋值</b>：按速度定 ep0 包长——SS/SSP 512、HS 64、LS 8 是定值；FS 需试探（§5.5.3：8/16/32/64）<span class="diff">实现≠规范：内核一次读 64 字节缓冲，§5.5.3 允许只读前 8 字节定 wMaxPacketSize</span>
+<pre>/* hub.c:4971-4985（节选） */
+switch (udev-&gt;speed) {
+case USB_SPEED_SUPER_PLUS:
+case USB_SPEED_SUPER:
+        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(512);
+        break;
+case USB_SPEED_HIGH:            /* fixed at 64 */
+        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);
+        break;
+case USB_SPEED_FULL:            /* 8, 16, 32, or 64 */
+        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);</pre></div>
+    <div class="farrow">↓ 进入 SET_ADDRESS 与描述符读取（步骤⑦）</div>
+  </div>
+  <div class="step"><div class="stepnum">7</div><div><b>设备框架收尾</b>：SET_ADDRESS → 读全量描述符 → <code>usb_new_device</code> 取配置描述符、announce、绑定驱动。此后的每次默认管道读写，都是一记控制传输（见下图）。<span class="where">hub.c:2652</span></div></div>
+
+  <figure style="margin:1.4rem 0">
+    <img src="../figures/fig4-control.png" alt="控制传输主机侧完整流程（已归档 fig4）" style="max-width:100%;border:1px solid var(--line)">
+    <figcaption style="color:var(--muted);font-size:.88rem">第 6-7 步的默认管道执行 = 控制传输主机侧完整流程（课 0001 地图第 ④⑦ 层，fig4 已过视觉验收）。</figcaption>
+  </figure>
+
+  <div class="note"><strong>USB3 差异一行记</strong>：同一个 <code>hub_event</code> 循环；但连接由 HC 硬件自动建立（hub.c:5677 注释）、<code>port_event</code> 多处理 link state 与 warm reset、无 TT/split。延伸疑问"USB3.x 走到根端口为何又是 USB2 形态"见 <a href="0003-dual-bus-root-port.html">课 0003</a>。</div>
+
+  <h2>补 Q6 缺口：为什么是最多 5 级非根 hub</h2>
+  <p>你唯一答错的题。数字：<strong>含根层共 7 层，主机到设备路径最多 5 个非根 hub，compound device 占 2 层、禁接第 7 层，第 7 层只能接 function</strong>（§4.1.1）；地址空间 127（§3.3）。</p>
+  <p>这不是随意限制，而是<strong>每级都在花钱</strong>，5 级正好是预算花完的位置：</p>
+  <ul>
+    <li><strong>SYNC 逐级缩短</strong>：每级 hub 重发 SYNC 最多吃掉起始 4 bit，5 级后 SYNC 最短 12 bit——接收方按最坏 12 bit 设计锁定窗口（§7.1.10）。再来一级就没有余量了。</li>
+    <li><strong>时延与抖动预算</strong>：FS 上行缆+hub 总时延 ≤70 ns（THDD1，§7.1.14.1）；每 hub 另加 ≤4 HS bit 抖动（§7.1.12）。级数直接吃帧时序余量。</li>
+  </ul>
+  <p>记忆钩子：<strong>7 层塔、5 级梯、塔顶只住 function</strong>。compound device（带内置 hub 的设备）一来就占 2 层，所以它接不上塔顶。</p>
+
+  <h2>检索练习 · 4 题</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：USB 2.0 主规范 <code>specs/usb20x/</code> 下的 usb_20.pdf §7.1.7.3/§7.1.7.5/§11；内核侧直接读 <code>drivers/usb/core/hub.c</code>（基线见页脚）。速查卡：<a href="../reference/hub-attach-chain.html">Hub 事件链路速查卡</a>。</li>
+    <li>解析看不懂的题、或链路上想再挖的环（比如复活逻辑 <code>descriptors_changed</code>、warm reset）——<strong>直接问老师</strong>。</li>
+    <li>下一课候选：<strong>TT/SPLIT 深入</strong>（§11.16-11.23）或<strong>枚举细节</strong>（SET_ADDRESS 前后的设备状态机 §9.1）。</li>
+  </ul>
+
+  <footer>课 0002 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="../0001-knowledge-map-diagnostic.html">0001 知识体系诊断</a> ｜ 下一课：<a href="0003-dual-bus-root-port.html">0003 双总线根端口</a> ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a> · <a href="../notes/Linux-xHCI实现与规范差异分析.md">实现-规范差异分析</a></footer>
+</main>
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '链路时序',
+    prompt: '内核认为端口"接稳"之前，要求连接状态连续稳定多久（去抖阈值）？',
+    options: ['25 ms', '100 ms', '200 ms', '2000 ms'],
+    answer: 1,
+    explain: 'B 对。hub_port_debounce（hub.c:4709）每 25 ms 步进采样，连续稳定 ≥100 ms 才算接稳（HUB_DEBOUNCE_STABLE，:140），对表规范 TATTDB ≥100 ms（§7.1.7.3 Fig 7-29）——此阈值实现与规范一致；但总超时 2000 ms 是实现自定，规范未定义。25 ms 是步进、200 ms 是低速复位初值，别混。' },
+  { tag: '链路时序',
+    prompt: '根 hub 端口复位的内核等待初值是多少？',
+    options: ['10 ms', '50 ms', '60 ms', '200 ms'],
+    answer: 2,
+    explain: 'C 对。HUB_ROOT_RESET_TIME=60（hub.c:2914），hub_port_init 的注释点名它来自 USB2 §7.1.7.5。【实现≠规范】规范只要求根口 TDRSTR ≥50 ms（允许间断：每段 ≥10 ms、间隔 <3 ms），内核取 60 ms 多留 10 ms 裕量；普通口 10 ms（HUB_SHORT_RESET_TIME）、低速口 200 ms、总超时 800 ms 均为实现自定数值。' },
+  { tag: '内核机制',
+    prompt: 'hub_irq 连续多少次传输错误后停止重提交、转入 error 恢复路径？',
+    options: ['16 次', '3 次', '8 次', '10 次'],
+    answer: 3,
+    explain: 'D 对。hub_irq（hub.c:792-794）里 ++hub->nerrors < 10 则重提交；第 10 次置 hub->error，由 hub_event 走 hub 重置恢复。【实现≠规范·层次不同】§4.5.2 的"出错传输最多尝试 3 次"是单次传输的硬件/协议层重试上限，这里的 10 次是软件 URB 重提交上限——两个不同层面的计数器，数值无对应关系。' },
+  { tag: '枚举细节',
+    prompt: '复位定速后，全速（FS）设备 ep0 的 wMaxPacketSize 如何确定？',
+    options: ['先猜 64，读 bMaxPacketSize0 后修正', '固定 64，规范保证无需修正', '固定 8，由低速规则决定', '由端点描述符的 bInterval 推出'],
+    answer: 0,
+    explain: 'A 对。hub_port_init（hub.c:4979-4985）：FS 的 ep0 可以是 8/16/32/64（§5.5.3），内核先按 64 猜、读设备描述符的 bMaxPacketSize0 再修正；SS/SSP=512、HS=64、LS=8 是定值。【实现≠规范】§5.5.3 允许主机只读描述符前 8 字节来确定 wMaxPacketSize，内核实际一次读 64 字节缓冲（GET_DESCRIPTOR_BUFSIZE，hub.c:4932）——读法不同，判据相同。' }
+]);
+</script>
+</body>
+</html>

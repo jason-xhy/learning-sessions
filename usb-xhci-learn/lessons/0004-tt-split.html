@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>课 0004 · TT 与 split 事务：高速集线器里的翻译官</title>
+<link rel="stylesheet" href="../assets/course.css">
+</head>
+<body>
+<main>
+  <div class="kicker">细节课 · LESSON 0004 · 主线：hub 深入</div>
+  <h1>TT 与 split 事务<br>高速集线器里的翻译官</h1>
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75，2026-09-23）——本课全部行号以此树为准</p>
+
+  <h2>整体定位（先挂图）</h2>
+  <p>本课在整体地图（<a href="../0001-knowledge-map-diagnostic.html">课 0001</a>）的 <strong>⑥ hub 层</strong>——USB2 特有的核心机制；并承接 <a href="0003-dual-bus-root-port.html">课 0003</a> 的"硬件吸收"叙事：<strong>xHCI 时代 split 的执行被吸进控制器硬件</strong>，usbcore 里只剩错误恢复。</p>
+
+  <h2>为什么需要 TT：一个 hub，两个时钟域</h2>
+  <p>高速 hub 的上行口跑 HS 域：<strong>480 Mb/s、微帧 125 µs</strong>；下行口可能挂 FS 设备：**12 Mb/s、帧 1 ms**（§7.1.11/§7.1.12）。两种信令、两个节拍，hub 里的<strong>事务翻译器（Transaction Translator，TT）</strong>负责两边互译。规范的做法非常克制：</p>
+  <div class="note"><strong>split 只存在于主机控制器 ↔ hub 之间，设备永远不可见</strong>（§5.10、§11.1.1）。hub↔设备一侧仍是普通 FS/LS 事务。设备无需知道任何事——这就是兼容性的代价全由主机侧承担的设计。</div>
+  <p>数字直觉：一个 HS 微帧（125 µs）只占 FS 帧（1 ms）的 <strong>1/8</strong>——翻译的实时性压力全压在 hub 的 TT 缓冲与调度上。</p>
+
+  <h2>split 家族 · 按传输类型分治（§11.16-11.20）</h2>
+  <table>
+    <tr><th>传输类型</th><th>split 形态</th><th>TT 侧约束</th></tr>
+    <tr><td>bulk / control</td><td>SSPLIT 起始 + CSPLIT 完成（§11.17）</td><td>每方向至少 <strong>2 个缓冲</strong>——请求与应答异步到达，须同时驻留</td></tr>
+    <tr><td>interrupt</td><td>§11.20</td><td>hub 的 FS handler <strong>不得本地重试</strong>，失败即回报主机</td></tr>
+    <tr><td>isochronous</td><td>SSPLIT 分散进微帧管道（§11.18）</td><td>Y0-Y7 记账；每微帧 FS 侧预算 <strong>187.5 raw 字节</strong>（§11.18.1）</td></tr>
+    <tr><td>（全局）</td><td>TT 状态机按 PID/端点类型分发（§11.16）</td><td>缓冲空间需求公式 §11.19</td></tr>
+  </table>
+
+  <h2>内核落点：软件几乎只剩"擦屁股"</h2>
+  <p>xHCI 把 split 的执行收进了硬件：驱动只把 hub descriptor 里的 TT 信息填进上下文——<code>tt_info</code> 的注释原话是 "used to construct split transaction tokens"（<a href="0003-dual-bus-root-port.html">课 0003</a> 吸收叙事的又一实证）：</p>
+  <div class="flow">
+    <div class="fnode"><b>构造</b>：xHC 用 TT 信息构造 split 事务令牌（槽上下文字段）
+<pre>/* xhci.h:344（字段注释） */
+* @tt_info:	tt_info is used to construct split transaction tokens</pre>
+<b>换算＋赋值</b>：TT think time 从 hub descriptor 取出、除以 666 减 1 后写进端点上下文的 TT_THINK_TIME 字段
+<pre>/* xhci.c:5337-5342（节选） */
+think_time = tt-&gt;think_time;
+if (think_time != 0)
+        think_time = (think_time / 666) - 1;
+...
+cpu_to_le32(TT_THINK_TIME(think_time));</pre></div>
+    <div class="farrow">↓ 于是 usbcore 侧对 TT 的主动动作只剩一条：错误恢复</div>
+    <div class="fnode"><b>调用</b>：ClearTTBuffer（§11.24.2.3）——控制端点要<strong>两个方向各清一次</strong>（<code>devinfo ^ 0x8000</code> 翻转方向位）
+<pre>/* hub.c:816-831 */
+/* USB 2.0 spec Section 11.24.2.3 */
+static inline int
+hub_clear_tt_buffer(struct usb_device *hdev, u16 devinfo, u16 tt)
+{
+        /* Need to clear both directions for control ep */
+        if (((devinfo &gt;&gt; 11) &amp; USB_ENDPOINT_XFERTYPE_MASK) ==
+                        USB_ENDPOINT_XFER_CONTROL) {
+                int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+                                HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
+                                devinfo ^ 0x8000, tt, NULL, 0, 1000);
+                if (status)
+                        return status;
+        }
+        return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+                        HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
+                        tt, NULL, 0, 1000);
+}</pre></div>
+    <div class="fnode">此动作在异步工作项里执行（错误事件 → clear_work）
+<pre>/* hub.c:840 / :1587 */
+static void hub_tt_work(struct work_struct *work)
+INIT_WORK(&amp;hub-&gt;tt.clear_work, hub_tt_work);</pre></div>
+  </div>
+
+  <h2>评审视角</h2>
+  <ul>
+    <li>TT 类补丁分两族：<strong>xHCI 内部的 split 调度</strong>（对表 §11.16-11.23 + 上下文构造字段）与 <strong>usbcore 的 ClearTTBuffer 恢复路径</strong>（对表 §11.24.2.3）。两族锚点不同，别混审。</li>
+    <li>数字复核清单：微帧 125 µs / FS 帧 1 ms（§7.1.12）、每微帧 187.5 raw 字节（§11.18.1）、每方向 ≥2 缓冲（§11.17）、interrupt 禁止本地重试（§11.20）。</li>
+  </ul>
+
+  <h2>检索练习 · 4 题</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：USB 2.0 主规范 §11.16-11.24（<code>specs/usb20x/</code>）；速查先 grep <a href="../notes/规范全文精读摘要库.md">规范全文精读摘要库</a> 的 11.16-11.23 条目。内核：<code>hub.c:816-840</code>、<code>xhci.c:5277-5342</code>、<code>xhci.h:344</code>。</li>
+    <li>两道错题（缓冲乒乓/重试权属）已在 <a href="0005-tt-buffer-retry.html">课 0005</a> 补缺。</li>
+    <li>hub 主线剩余候选：<strong>枚举状态机</strong>（§9.1 设备六态，偏 usbcore）或 hub 电源/过流（§11.2/§7.2）。</li>
+  </ul>
+
+  <footer>课 0004 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="0003-dual-bus-root-port.html">0003 双总线根端口</a> ｜ 下一课：<a href="0005-tt-buffer-retry.html">0005 TT 缓冲与重试</a> ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a></footer>
+</main>
+<script src="../assets/quiz.js"></script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: 'TT 翻译',
+    prompt: 'split 事务存在于哪一段路径上？',
+    options: ['hub 与下游 FS/LS 设备之间', '设备内部端点与缓冲之间', '主机控制器与 hub 之间', '总线上所有段都能看到'],
+    answer: 2,
+    explain: 'C 对。SSPLIT/CSPLIT 只在主机控制器与 hub 之间使用，设备不可见（§5.10、§11.1.1）；hub↔设备一侧仍是普通 FS/LS 事务——兼容的代价全由主机侧承担，设备无需感知。' },
+  { tag: 'split 家族',
+    prompt: 'bulk/control 的 split 为什么 TT 至少需要 2 个缓冲（每方向）？',
+    options: ['请求与应答异步到达，须同时驻留两侧', '规范要求双倍冗余以便校验', '一个给 SSPLIT、一个给 SOF', '为了同时服务两个下行端口'],
+    answer: 0,
+    explain: 'A 对。§11.17：每方向至少 2 个 bulk/control 缓冲——SSPLIT 送达后 hub 异步等待 FS 设备应答（可能 NAK 多次），期间数据必须驻留 TT；CSPLIT 取结果与接收新 SSPLIT 可能交叠，单缓冲会自阻塞。' },
+  { tag: 'split 家族',
+    prompt: 'interrupt 事务的 split，hub 的 FS handler 能否本地重试？',
+    options: ['可以，重试直到设备应答', '不得本地重试，失败即回报主机', '仅等时事务禁止本地重试', '由 TT 缓冲余量动态决定'],
+    answer: 1,
+    explain: 'B 对。§11.20 明文：FS handler 不得对 interrupt 事务做本地重试，失败直接向主机回报。这与等时的"一次机会"（§5.9 无握手不重传）是两条不同的规则——前者是 TT 行为约束，后者是传输类型语义。' },
+  { tag: '内核落点',
+    prompt: 'xHCI 时代，usbcore 对 TT 的主动动作还剩什么？',
+    options: ['软件排布每微帧的 CSPLIT 时刻表', '为 TT 缓冲动态分配内存池', '重传 hub 上失败的 FS 事务', 'ClearTTBuffer 错误恢复（hub.c:816-840）'],
+    answer: 3,
+    explain: 'D 对。split 的构造与调度由 xHC 硬件承担——驱动只填上下文：tt_info "used to construct split transaction tokens"（xhci.h:344）、think_time/666-1 进 TT_THINK_TIME（xhci.c:5337-5342）。usbcore 侧只剩错误恢复：hub_clear_tt_buffer（hub.c:816-831，§11.24.2.3，控制端点双向各清一次 devinfo^0x8000），经 hub_tt_work 异步执行（:840、:1587）。' }
+]);
+</script>
+</body>
+</html>

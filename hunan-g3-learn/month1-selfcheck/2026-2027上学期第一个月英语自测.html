@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月英语自测 · 三年级</title>
+<style>
+:root { --ink:#1a1a1a; --paper:#fffff8; --accent:#a00000; --muted:#707070;
+  --line:#e3e3da; --good:#1a7f37; --bad:#c62828; --card:#fff; }
+* { box-sizing:border-box; }
+body { margin:0; padding:1.2rem .9rem 7rem; background:var(--paper); color:var(--ink);
+  font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;
+  font-size:1.02rem; line-height:1.7; }
+main { max-width:44rem; margin:0 auto; }
+.kicker { color:var(--accent); font-size:.8rem; letter-spacing:.12em; }
+h1 { font-size:1.45rem; line-height:1.35; border-bottom:2px solid var(--ink); padding-bottom:.4rem; margin:.3rem 0 .4rem; }
+.meta { color:var(--muted); font-size:.9rem; margin:.15rem 0; }
+.box { background:var(--card); border:1px solid var(--line); border-radius:.6rem; padding:.8rem 1rem; margin:1rem 0; }
+.box h2 { font-size:1.05rem; margin:.1rem 0 .4rem; }
+.box ul { margin:.3rem 0; padding-left:1.2rem; }
+.note { color:var(--muted); font-size:.95rem; }
+h3.sec { font-size:1.08rem; margin:1.6rem 0 .4rem; border-bottom:1px solid var(--line); padding-bottom:.25rem; }
+.passage { background:#f7f6ee; border-left:3px solid var(--line); border-radius:.4rem;
+  padding:.6rem .9rem; margin:.7rem 0; }
+.passage p { margin:.35rem 0; }
+.q { background:var(--card); border:1px solid var(--line); border-radius:.6rem;
+  padding:.7rem .85rem; margin:.65rem 0; }
+.q.skipped { opacity:.45; }
+.qhead { display:flex; align-items:center; gap:.5rem; margin-bottom:.3rem; }
+.qno { background:var(--ink); color:#fff; border-radius:.35rem; padding:0 .45rem;
+  font-size:.85rem; font-weight:700; }
+.qscore { color:var(--muted); font-size:.85rem; }
+.skipbtn { margin-left:auto; border:1px solid var(--line); background:#fff; color:var(--muted);
+  border-radius:1rem; padding:.15rem .7rem; font-size:.82rem; font-family:inherit; }
+.qtext { white-space:normal; }
+.blank { font:inherit; font-size:16px; width:5.2em; text-align:center;
+  border:none; border-bottom:1.5px solid var(--muted); background:#f2f1e8;
+  border-radius:.25rem .25rem 0 0; padding:.05rem .3rem; }
+.opts { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.55rem; }
+.opt { font:inherit; font-size:16px; background:#fff; border:1.5px solid var(--line);
+  border-radius:.55rem; padding:.35rem .8rem; min-height:2.4rem; text-align:left; }
+.opt.sel { background:var(--accent); border-color:var(--accent); color:#fff; }
+.donewrap { display:flex; align-items:center; gap:.45rem; margin-top:.5rem; color:var(--muted); font-size:.95rem; }
+.donewrap input { width:1.25rem; height:1.25rem; }
+.qgrade { margin-top:.6rem; border-top:1px dashed var(--line); padding-top:.5rem; }
+body:not(.grading) .qgrade { display:none; }
+body.grading .dowidget { display:none; }
+.alab { color:var(--muted); font-size:.85rem; margin-right:.4rem; }
+.ansline code { background:#f2f1e8; border-radius:.3rem; padding:.1rem .45rem; }
+.explbox { margin:.45rem 0; font-size:.95rem; }
+.explbox summary { cursor:pointer; color:var(--accent); }
+.expl { white-space:pre-wrap; background:#faf9f2; border-radius:.4rem; padding:.5rem .7rem; margin-top:.35rem; }
+.stepper { display:flex; align-items:center; gap:.4rem; margin-top:.5rem; }
+.stepper button { font:inherit; border:1.5px solid var(--line); background:#fff;
+  border-radius:.5rem; min-width:2.5rem; min-height:2.3rem; }
+.stepper .sfull { color:var(--good); }
+.stepper .sauto { color:var(--muted); }
+.sval { min-width:5.2em; text-align:center; font-weight:700; }
+#bar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line);
+  display:flex; gap:.5rem; align-items:center; padding:.55rem .8rem calc(.55rem + env(safe-area-inset-bottom)); }
+#bar button { font:inherit; font-size:16px; border:1.5px solid var(--ink); background:#fff;
+  border-radius:.55rem; padding:.45rem .8rem; min-height:2.6rem; }
+#bar .primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+#bar .ghost { border-color:var(--line); color:var(--muted); }
+#progress { margin-left:auto; color:var(--muted); font-size:.9rem; white-space:nowrap; }
+#restoretip { display:none; background:#fdf6e3; border:1px solid #e8d9a0; border-radius:.5rem;
+  padding:.5rem .8rem; margin:.8rem 0; font-size:.92rem; }
+#restoretip button { font:inherit; border:none; background:none; color:var(--accent); text-decoration:underline; }
+.kprow { display:flex; align-items:center; gap:.6rem; margin:.4rem 0; }
+.kpname { flex:0 0 auto; width:14.5em; font-size:.93rem; }
+.kpbar { flex:1 1 auto; height:.8rem; background:#f0efe6; border-radius:.4rem; overflow:hidden; }
+.kpbar i { display:block; height:100%; background:var(--accent); }
+.kpval { flex:0 0 auto; font-size:.9rem; color:var(--muted); }
+.kptag { flex:0 0 auto; font-size:.85rem; }
+#report h2 { border-bottom:2px solid var(--ink); padding-bottom:.3rem; }
+.level { display:inline-block; background:var(--accent); color:#fff; border-radius:.5rem;
+  padding:.1rem .7rem; margin-left:.5rem; }
+#report .skiptip, #report .ugtip { color:var(--muted); font-size:.9rem; }
+#snapshot { border:2px solid var(--ink); }
+details.parent summary { cursor:pointer; color:var(--accent); font-weight:700; }
+footer { margin-top:3rem; color:var(--muted); font-size:.85rem; border-top:1px solid var(--line); padding-top:.7rem; }
+@media (min-width:40rem) { body { padding-left:1rem; padding-right:1rem; } }
+</style>
+</head>
+<body>
+<main>
+<p class="kicker">hunan-g3-learn · month1-selfcheck · 单文件直发版</p>
+<h1>英语 · 三年级上学期第一个月自测</h1>
+<p class="meta">适用：湖南省三年级上学期第 1 个月（2026 年 9 月）｜ 满分 100 分 ｜ 建议用时 30 分钟</p>
+<p class="meta">教材对照：湘少版 / 人教PEP 三年级起点上册 Unit 1~2 通用主题（问候与自我介绍 · 字母 · 课堂用语）——两版本月主题一致；湖南用湘少版的学校居多，以学校实际用书为准。</p>
+
+<div class="box" id="howto">
+<h2>先读再动笔</h2>
+<ul>
+<li>独立完成，不翻书不问人；限时 <b>30 分钟</b>。一次只做这一科，不连考。</li>
+<li>选择、判断题<b>点一下</b>就选中；填空题<b>直接打字</b>；写话、阅读问答、笔算竖式在<b>纸上</b>写，写完勾一下"纸上已完成"。</li>
+<li>全部做完点下面「交卷并批改」——对照答案与采分点给分，<b>拿不准就往低给</b>，短板才不会被藏起来。</li>
+<li>错了不丢人，漏出来的短板才是我们要找的宝贝。</li>
+<li>进度自动存在本机，中途退出再打开可继续；要重做点「清空重做」。</li>
+</ul>
+</div>
+
+<div id="restoretip">已恢复上次的进度，接着做就行。想从头来：<button type="button" id="restoreclear">清空重做</button></div>
+
+<h3 class="sec">试卷</h3>
+<h3 class="sec">一、字母（本题 6 小题，共 24 分）</h3>
+<div class="q" data-no="1" data-type="fill"><div class="qhead"><span class="qno">1</span><span class="qscore">3分</span></div><div class="qtext">1. 写出大写字母 B 的小写形式：<input class="blank" data-no="1" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>b</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">b——大写 B 的小写是 b；判错点：与 d 认反（b 的"肚子"朝右）。</div></details><div class="stepper" data-no="1"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="2" data-type="fill"><div class="qhead"><span class="qno">2</span><span class="qscore">3分</span></div><div class="qtext">2. 写出小写字母 e 的大写形式：<input class="blank" data-no="2" data-b="0" autocomplete="off"></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>E</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">E——小写 e 的大写是 E；判错点：与 F 混。</div></details><div class="stepper" data-no="2"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="3" data-type="fill"><div class="qhead"><span class="qno">3</span><span class="qscore">3分</span></div><div class="qtext">3. 按字母表顺序填空：a　b　c　<input class="blank" data-no="3" data-b="0" autocomplete="off">　e</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>d</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">d——a b c d e 顺次；判错点：跳跃填错。</div></details><div class="stepper" data-no="3"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="4" data-type="fill"><div class="qhead"><span class="qno">4</span><span class="qscore">3分</span><button type="button" class="skipbtn" data-no="4">没学到？跳过</button></div><div class="qtext">4. 按字母表顺序填空：F　G　<input class="blank" data-no="4" data-b="0" autocomplete="off">　I</div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>H</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">H——F G H I 顺次；判错点：与 J 混。</div></details><div class="stepper" data-no="4"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="5" data-type="choice"><div class="qhead"><span class="qno">5</span><span class="qscore">6分</span></div><div class="qtext">5. 下面哪个是元音字母？</div><div class="opts dowidget"><button type="button" class="opt" data-no="5" data-v="A">A　b　</button><button type="button" class="opt" data-no="5" data-v="B">B　e　</button><button type="button" class="opt" data-no="5" data-v="C">C　m　</button><button type="button" class="opt" data-no="5" data-v="D">D　t</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>B</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">B——元音字母五个：a、e、i、o、u；b、m、t 都是辅音字母。</div></details><div class="stepper" data-no="5"><button type="button" class="sdec">−</button><span class="sval">0/6分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="6" data-type="choice"><div class="qhead"><span class="qno">6</span><span class="qscore">6分</span></div><div class="qtext">6. 小写字母 a 在四线三格里占：</div><div class="opts dowidget"><button type="button" class="opt" data-no="6" data-v="A">A　上面两格　</button><button type="button" class="opt" data-no="6" data-v="B">B　中间一格　</button><button type="button" class="opt" data-no="6" data-v="C">C　下面两格　</button><button type="button" class="opt" data-no="6" data-v="D">D　三格全占</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>B</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">B——a、c、e、m、n 这类小写字母安稳住中间一格；b、d、f、h 有"小辫子"占上面两格。</div></details><div class="stepper" data-no="6"><button type="button" class="sdec">−</button><span class="sval">0/6分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">二、词汇（本题 6 小题，共 18 分）</h3>
+<div class="q" data-no="7" data-type="choice"><div class="qhead"><span class="qno">7</span><span class="qscore">3分</span></div><div class="qtext">7. 选出不同类的一项：</div><div class="opts dowidget"><button type="button" class="opt" data-no="7" data-v="A">A　pen　</button><button type="button" class="opt" data-no="7" data-v="B">B　pencil　</button><button type="button" class="opt" data-no="7" data-v="C">C　ruler　</button><button type="button" class="opt" data-no="7" data-v="D">D　apple</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>D</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">D——pen、pencil、ruler 都是文具，apple 是水果。</div></details><div class="stepper" data-no="7"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="8" data-type="choice"><div class="qhead"><span class="qno">8</span><span class="qscore">3分</span></div><div class="qtext">8. 选出不同类的一项：</div><div class="opts dowidget"><button type="button" class="opt" data-no="8" data-v="A">A　book　</button><button type="button" class="opt" data-no="8" data-v="B">B　morning　</button><button type="button" class="opt" data-no="8" data-v="C">C　afternoon　</button><button type="button" class="opt" data-no="8" data-v="D">D　evening</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>A</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">A——morning、afternoon、evening 都是时间问候词，book 是学习用品。</div></details><div class="stepper" data-no="8"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="9" data-type="choice"><div class="qhead"><span class="qno">9</span><span class="qscore">3分</span></div><div class="qtext">9. 老师说 "Stand up, please." 你应该：</div><div class="opts dowidget"><button type="button" class="opt" data-no="9" data-v="A">A　起立　</button><button type="button" class="opt" data-no="9" data-v="B">B　坐下　</button><button type="button" class="opt" data-no="9" data-v="C">C　开门　</button><button type="button" class="opt" data-no="9" data-v="D">D　合上书</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>A</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">A——Stand up 就是"起立"；坐下是 Sit down。</div></details><div class="stepper" data-no="9"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="10" data-type="choice"><div class="qhead"><span class="qno">10</span><span class="qscore">3分</span></div><div class="qtext">10. "ruler" 的意思是：</div><div class="opts dowidget"><button type="button" class="opt" data-no="10" data-v="A">A　钢笔　</button><button type="button" class="opt" data-no="10" data-v="B">B　尺子　</button><button type="button" class="opt" data-no="10" data-v="C">C　橡皮　</button><button type="button" class="opt" data-no="10" data-v="D">D　书包</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>B</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">B——ruler 是尺子；判错点：与 rubber（橡皮）混。</div></details><div class="stepper" data-no="10"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="11" data-type="choice"><div class="qhead"><span class="qno">11</span><span class="qscore">3分</span></div><div class="qtext">11. "eraser" 的意思是：</div><div class="opts dowidget"><button type="button" class="opt" data-no="11" data-v="A">A　铅笔　</button><button type="button" class="opt" data-no="11" data-v="B">B　钢笔　</button><button type="button" class="opt" data-no="11" data-v="C">C　橡皮　</button><button type="button" class="opt" data-no="11" data-v="D">D　尺子</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>C</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">C——eraser 是橡皮。</div></details><div class="stepper" data-no="11"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="12" data-type="choice"><div class="qhead"><span class="qno">12</span><span class="qscore">3分</span></div><div class="qtext">12. 老师说 "Open your book." 你应该：</div><div class="opts dowidget"><button type="button" class="opt" data-no="12" data-v="A">A　打开书　</button><button type="button" class="opt" data-no="12" data-v="B">B　合上书　</button><button type="button" class="opt" data-no="12" data-v="C">C　举手　</button><button type="button" class="opt" data-no="12" data-v="D">D　起立</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>A</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">A——Open 是打开，Open your book＝打开书；合上书是 Close your book。</div></details><div class="stepper" data-no="12"><button type="button" class="sdec">−</button><span class="sval">0/3分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">三、情景选择（本题 4 小题，共 16 分）</h3>
+<div class="q" data-no="13" data-type="choice"><div class="qhead"><span class="qno">13</span><span class="qscore">4分</span></div><div class="qtext">13. 早上见到老师，应该说：</div><div class="opts dowidget"><button type="button" class="opt" data-no="13" data-v="A">A　Good morning, Miss Li!　</button><button type="button" class="opt" data-no="13" data-v="B">B　Good night!　</button><button type="button" class="opt" data-no="13" data-v="C">C　Goodbye!　</button><button type="button" class="opt" data-no="13" data-v="D">D　Thank you!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>A</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">A——早上问好用 Good morning；Good night 是睡前道别，Goodbye 是告别，Thank you 是道谢。</div></details><div class="stepper" data-no="13"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="14" data-type="choice"><div class="qhead"><span class="qno">14</span><span class="qscore">4分</span></div><div class="qtext">14. 别人问你 "What's your name?"，应回答：</div><div class="opts dowidget"><button type="button" class="opt" data-no="14" data-v="A">A　I'm fine, thanks.　</button><button type="button" class="opt" data-no="14" data-v="B">B　My name is Peter.　</button><button type="button" class="opt" data-no="14" data-v="C">C　I'm ten.　</button><button type="button" class="opt" data-no="14" data-v="D">D　Goodbye!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>B</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">B——问名字答名字：My name is … 或 I'm …；I'm fine, thanks. 是回答 How are you 的。</div></details><div class="stepper" data-no="14"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="15" data-type="choice"><div class="qhead"><span class="qno">15</span><span class="qscore">4分</span></div><div class="qtext">15. 放学和同学告别，说：</div><div class="opts dowidget"><button type="button" class="opt" data-no="15" data-v="A">A　Good morning!　</button><button type="button" class="opt" data-no="15" data-v="B">B　Hello!　</button><button type="button" class="opt" data-no="15" data-v="C">C　Goodbye! See you!　</button><button type="button" class="opt" data-no="15" data-v="D">D　Thank you!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>C</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">C——告别用 Goodbye / See you；Hello、Good morning 是见面用语。</div></details><div class="stepper" data-no="15"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="16" data-type="choice"><div class="qhead"><span class="qno">16</span><span class="qscore">4分</span></div><div class="qtext">16. 同桌帮你捡起了橡皮，你说：</div><div class="opts dowidget"><button type="button" class="opt" data-no="16" data-v="A">A　You're welcome.　</button><button type="button" class="opt" data-no="16" data-v="B">B　I'm fine.　</button><button type="button" class="opt" data-no="16" data-v="C">C　Hello!　</button><button type="button" class="opt" data-no="16" data-v="D">D　Thank you!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>D</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">D——得到帮助说 Thank you!；对方回应 You're welcome.（不客气）——选项 A 是"回应感谢"，不是"感谢"。</div></details><div class="stepper" data-no="16"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<h3 class="sec">四、对话匹配（从 B 栏中选出 A 栏各句的应答，把字母写在括号里）（本题 5 小题，共 20 分）</h3>
+<div class="q" data-no="17" data-type="choice"><div class="qhead"><span class="qno">17</span><span class="qscore">4分</span></div><div class="qtext">17. Hello! I'm Sarah.（　）</div><div class="passage">　　B 栏：A．I'm fine, thank you.　　B．Nice to meet you, too.　　C．Hi! I'm Mike.
+　　　　　D．You're welcome.　　E．My name is Amy.　　F．Bye-bye!</div><div class="opts dowidget"><button type="button" class="opt" data-no="17" data-v="A">A　I'm fine, thank you.</button><button type="button" class="opt" data-no="17" data-v="B">B　Nice to meet you, too.</button><button type="button" class="opt" data-no="17" data-v="C">C　Hi! I'm Mike.</button><button type="button" class="opt" data-no="17" data-v="D">D　You're welcome.</button><button type="button" class="opt" data-no="17" data-v="E">E　My name is Amy.</button><button type="button" class="opt" data-no="17" data-v="F">F　Bye-bye!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>C</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">C——别人说 Hello! I'm Sarah.（我是萨拉），回敬同样自我介绍：Hi! I'm Mike.</div></details><div class="stepper" data-no="17"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="18" data-type="choice"><div class="qhead"><span class="qno">18</span><span class="qscore">4分</span></div><div class="qtext">18. How are you?（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="18" data-v="A">A　I'm fine, thank you.</button><button type="button" class="opt" data-no="18" data-v="B">B　Nice to meet you, too.</button><button type="button" class="opt" data-no="18" data-v="C">C　Hi! I'm Mike.</button><button type="button" class="opt" data-no="18" data-v="D">D　You're welcome.</button><button type="button" class="opt" data-no="18" data-v="E">E　My name is Amy.</button><button type="button" class="opt" data-no="18" data-v="F">F　Bye-bye!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>A</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">A——How are you? 问"你好吗"，答 I'm fine, thank you.（我很好，谢谢）。</div></details><div class="stepper" data-no="18"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="19" data-type="choice"><div class="qhead"><span class="qno">19</span><span class="qscore">4分</span></div><div class="qtext">19. Goodbye!（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="19" data-v="A">A　I'm fine, thank you.</button><button type="button" class="opt" data-no="19" data-v="B">B　Nice to meet you, too.</button><button type="button" class="opt" data-no="19" data-v="C">C　Hi! I'm Mike.</button><button type="button" class="opt" data-no="19" data-v="D">D　You're welcome.</button><button type="button" class="opt" data-no="19" data-v="E">E　My name is Amy.</button><button type="button" class="opt" data-no="19" data-v="F">F　Bye-bye!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>F</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">F——Goodbye!（再见）应答 Bye-bye!</div></details><div class="stepper" data-no="19"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="20" data-type="choice"><div class="qhead"><span class="qno">20</span><span class="qscore">4分</span></div><div class="qtext">20. Nice to meet you.（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="20" data-v="A">A　I'm fine, thank you.</button><button type="button" class="opt" data-no="20" data-v="B">B　Nice to meet you, too.</button><button type="button" class="opt" data-no="20" data-v="C">C　Hi! I'm Mike.</button><button type="button" class="opt" data-no="20" data-v="D">D　You're welcome.</button><button type="button" class="opt" data-no="20" data-v="E">E　My name is Amy.</button><button type="button" class="opt" data-no="20" data-v="F">F　Bye-bye!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>B</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">B——Nice to meet you.（见到你很高兴）应答 Nice to meet you, too.（我也是）——too 不能丢。</div></details><div class="stepper" data-no="20"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="21" data-type="choice"><div class="qhead"><span class="qno">21</span><span class="qscore">4分</span></div><div class="qtext">21. What's your name?（　）</div><div class="opts dowidget"><button type="button" class="opt" data-no="21" data-v="A">A　I'm fine, thank you.</button><button type="button" class="opt" data-no="21" data-v="B">B　Nice to meet you, too.</button><button type="button" class="opt" data-no="21" data-v="C">C　Hi! I'm Mike.</button><button type="button" class="opt" data-no="21" data-v="D">D　You're welcome.</button><button type="button" class="opt" data-no="21" data-v="E">E　My name is Amy.</button><button type="button" class="opt" data-no="21" data-v="F">F　Bye-bye!</button></div><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>E</code></div><details class="explbox"><summary>解析与采分点</summary><div class="expl">E——问 What's your name? 答 My name is Amy.（我叫艾米）。</div></details><div class="stepper" data-no="21"><button type="button" class="sdec">−</button><span class="sval">0/4分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<p class="note">　　　　　D．You're welcome.　　E．My name is Amy.　　F．Bye-bye!</p>
+<h3 class="sec">五、书写（本题 2 小题，共 22 分）</h3>
+<div class="q" data-no="22" data-type="subjective"><div class="qhead"><span class="qno">22</span><span class="qscore">8分</span></div><div class="qtext">22. 把下面的句子抄写正确（注意句首字母大写）：i am nine years old.</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="22"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>I am nine years old.（句首 I 大写）</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">正确抄写：I am nine years old.——句首字母必须大写。采分点：句首 I 大写 4 分；抄写正确、占格工整 4 分。</div></details><div class="stepper" data-no="22"><button type="button" class="sdec">−</button><span class="sval">0/8分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+<div class="q" data-no="23" data-type="subjective"><div class="qhead"><span class="qno">23</span><span class="qscore">14分</span></div><div class="qtext">23. 照样子，补全自我介绍并抄写工整：Hello! I'm Peter.（把 Peter 换成你自己的名字）</div><label class="donewrap dowidget"><input type="checkbox" class="done" data-no="23"> 纸上已完成，待批改</label><div class="qgrade"><div class="ansline"><span class="alab">参考答案</span><code>见解析</code></div><details class="explbox" open><summary>解析与采分点</summary><div class="expl">示例：Hello! I'm Li Ming.——把名字换成自己的。采分点：补全名字（首字母大写）4 分；I'm 大小写正确、撇号不丢 6 分；抄写工整、标点齐全 4 分。判错点：整句小写（hello! i'm …）——句首大写是本月硬规矩。</div></details><div class="stepper" data-no="23"><button type="button" class="sdec">−</button><span class="sval">0/14分</span><button type="button" class="sinc">＋</button><button type="button" class="sfull">满分</button><button type="button" class="sauto">自动</button></div></div>
+
+<div id="report" hidden></div>
+
+<details class="parent box" id="parentbox">
+<summary>家长角：怎么组织、怎么解读（点开）</summary>
+<ul>
+<li><b>组织</b>：掐表计时，中途不打扰、不提示；做完让孩子先自己批改，家长抽 3 题复核——抽到不一致以家长为准，温和指出来。全卷 30 分钟内做完；读题慢的孩子，家长可轻声帮读题干，但不提示答案。</li>
+<li><b>给分</b>：客观题对一题得一题分；主观题对照采分点按步给分，宁可少给不高估。</li>
+<li><b>进度差异</b>：字母教学进度各校不同——若班级尚未学到字母 F，第 4 题可跳过，等级按已做题得分折算后对照。</li>
+</ul>
+<h2>等级对照（按已做题折算后对照）</h2>
+<li>85 ~ 100 分：优 —— 本月骨架扎实，保持节奏</li><li>70 ~ 84 分：良 —— 大盘没问题，个别点要回炉</li><li>60 ~ 69 分：合格 —— 有明确短板，按下面清单补</li><li>0 ~ 59 分：待加强 —— 第一个月很常见！先回课本，不着急刷题报班</li>
+<h2>每个知识点，人话版</h2>
+<ul>
+<li><b>KP1 字母认读与书写</b>：就是26 个字母会认会写，知道占格。家里可以：字母卡打乱抽认，写对 5 个给个小奖励</li><li><b>KP2 主题词汇</b>：就是pen、ruler 这些词看得懂意思。家里可以：指着家里文具说英文名</li><li><b>KP3 问候与自我介绍</b>：就是会 Hello、I'm…、What's your name? 这套开场。家里可以：全家互相用英语打招呼</li><li><b>KP4 课堂指令</b>：就是听到 Stand up 就知道该做什么。家里可以：家长发指令孩子做动作，再来一轮互换</li><li><b>KP5 情景交际应答</b>：就是人家问什么、你能接得上。家里可以：家长问 How are you，孩子接 I'm fine, thank you.</li><li><b>KP6 书写规范</b>：就是抄句子时句首大写、标点不丢。家里可以：检查孩子英语作业的第一行</li></ul>
+<p>替代小测法（听力，纸面测不到）：家长读 5 个词或指令（Stand up ／ Open your book ／ pen ／ eraser ／ Goodbye），孩子做动作或指认，记下对了几个。</p>
+<h2>三档话术</h2>
+<ul>
+<li><strong>85 分以上（优）</strong>——怎么夸：夸具体行为，不夸聪明。“你把验算过程讲得清清楚楚”“这个字的三点水没丢”。被夸到点上的孩子才会重复这个行为。</li><li><strong>70~84 分（良）</strong>——怎么说：“大盘很好，咱们挑两个小地方补一补。”和孩子一起从登记表里挑一个最需要补的知识点，约定时间。</li><li><strong>69 分及以下（合格／待加强）</strong>——怎么陪：第一个月的分数≠能力，这是摸底不是审判。顺序是：先回课本读一读，再重做本卷错题，7~10 天后只测错题。连续错同一知识点，把课本对应单元再读一遍。</li><li><strong>进度差异提示</strong>：如果孩子按说明跳过了个别题，把已做题得分折算成 100 分制后再对照上表。</li></ul>
+<details>
+<summary>答案速查（家长复核用）</summary>
+<pre style="white-space:pre-wrap">1. b
+2. E
+3. d
+4. H
+5. B
+6. B
+7. D
+8. A
+9. A
+10. B
+11. C
+12. A
+13. A
+14. B
+15. C
+16. D
+17. C
+18. A
+19. F
+20. B
+21. E
+22. I am nine years old.（句首 I 大写）
+23. 见解析</pre>
+</details>
+</details>
+
+<footer>AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g3-learn / month1-selfcheck · 2026-09</footer>
+</main>
+
+<div id="bar">
+<button type="button" id="m-do">做题</button>
+<button type="button" id="m-grade" class="primary">交卷并批改</button>
+<button type="button" id="m-clear" class="ghost">清空重做</button>
+<span id="progress"></span>
+</div>
+
+<script type="application/json" id="m1-data">{"subject":"英语","grade":"三年级","duration":30,"key":"m1self_g3_英语","items":[{"no":1,"raw":"1. 写出大写字母 B 的小写形式：（　　）（3分）","score":3,"kp":"KP1","kpName":"字母认读与书写","difficulty":"易","match":"强","type":"fill","ans":"b","ansKey":null,"ansParts":["b"],"options":null,"perBlank":null,"skip":false,"explain":"b——大写 B 的小写是 b；判错点：与 d 认反（b 的\"肚子\"朝右）。"},{"no":2,"raw":"2. 写出小写字母 e 的大写形式：（　　）（3分）","score":3,"kp":"KP1","kpName":"字母认读与书写","difficulty":"易","match":"强","type":"fill","ans":"E","ansKey":null,"ansParts":["E"],"options":null,"perBlank":null,"skip":false,"explain":"E——小写 e 的大写是 E；判错点：与 F 混。"},{"no":3,"raw":"3. 按字母表顺序填空：a　b　c　（　）　e（3分）","score":3,"kp":"KP1","kpName":"字母认读与书写","difficulty":"易","match":"强","type":"fill","ans":"d","ansKey":null,"ansParts":["d"],"options":null,"perBlank":null,"skip":false,"explain":"d——a b c d e 顺次；判错点：跳跃填错。"},{"no":4,"raw":"4. 按字母表顺序填空：F　G　（　）　I（3分）","score":3,"kp":"KP1","kpName":"字母认读与书写","difficulty":"中","match":"强","type":"fill","ans":"H","ansKey":null,"ansParts":["H"],"options":null,"perBlank":null,"skip":true,"explain":"H——F G H I 顺次；判错点：与 J 混。"},{"no":5,"raw":"5. 下面哪个是元音字母？A　b　B　e　C　m　D　t（6分）","score":6,"kp":"KP1","kpName":"字母认读与书写","difficulty":"较难","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","b　"],["B","e　"],["C","m　"],["D","t"]],"perBlank":null,"skip":false,"explain":"B——元音字母五个：a、e、i、o、u；b、m、t 都是辅音字母。"},{"no":6,"raw":"6. 小写字母 a 在四线三格里占：A　上面两格　B　中间一格　C　下面两格　D　三格全占（6分）","score":6,"kp":"KP1","kpName":"字母认读与书写","difficulty":"较难","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","上面两格　"],["B","中间一格　"],["C","下面两格　"],["D","三格全占"]],"perBlank":null,"skip":false,"explain":"B——a、c、e、m、n 这类小写字母安稳住中间一格；b、d、f、h 有\"小辫子\"占上面两格。"},{"no":7,"raw":"7. 选出不同类的一项：A　pen　B　pencil　C　ruler　D　apple（3分）","score":3,"kp":"KP2","kpName":"主题词汇","difficulty":"易","match":"强","type":"choice","ans":"D","ansKey":"D","ansParts":null,"options":[["A","pen　"],["B","pencil　"],["C","ruler　"],["D","apple"]],"perBlank":null,"skip":false,"explain":"D——pen、pencil、ruler 都是文具，apple 是水果。"},{"no":8,"raw":"8. 选出不同类的一项：A　book　B　morning　C　afternoon　D　evening（3分）","score":3,"kp":"KP2","kpName":"主题词汇","difficulty":"中","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","book　"],["B","morning　"],["C","afternoon　"],["D","evening"]],"perBlank":null,"skip":false,"explain":"A——morning、afternoon、evening 都是时间问候词，book 是学习用品。"},{"no":9,"raw":"9. 老师说 \"Stand up, please.\" 你应该：A　起立　B　坐下　C　开门　D　合上书（3分）","score":3,"kp":"KP4","kpName":"课堂指令","difficulty":"易","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","起立　"],["B","坐下　"],["C","开门　"],["D","合上书"]],"perBlank":null,"skip":false,"explain":"A——Stand up 就是\"起立\"；坐下是 Sit down。"},{"no":10,"raw":"10. \"ruler\" 的意思是：A　钢笔　B　尺子　C　橡皮　D　书包（3分）","score":3,"kp":"KP2","kpName":"主题词汇","difficulty":"易","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","钢笔　"],["B","尺子　"],["C","橡皮　"],["D","书包"]],"perBlank":null,"skip":false,"explain":"B——ruler 是尺子；判错点：与 rubber（橡皮）混。"},{"no":11,"raw":"11. \"eraser\" 的意思是：A　铅笔　B　钢笔　C　橡皮　D　尺子（3分）","score":3,"kp":"KP2","kpName":"主题词汇","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","铅笔　"],["B","钢笔　"],["C","橡皮　"],["D","尺子"]],"perBlank":null,"skip":false,"explain":"C——eraser 是橡皮。"},{"no":12,"raw":"12. 老师说 \"Open your book.\" 你应该：A　打开书　B　合上书　C　举手　D　起立（3分）","score":3,"kp":"KP4","kpName":"课堂指令","difficulty":"中","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","打开书　"],["B","合上书　"],["C","举手　"],["D","起立"]],"perBlank":null,"skip":false,"explain":"A——Open 是打开，Open your book＝打开书；合上书是 Close your book。"},{"no":13,"raw":"13. 早上见到老师，应该说：A　Good morning, Miss Li!　B　Good night!　C　Goodbye!　D　Thank you!（4分）","score":4,"kp":"KP3","kpName":"问候与自我介绍","difficulty":"易","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","Good morning, Miss Li!　"],["B","Good night!　"],["C","Goodbye!　"],["D","Thank you!"]],"perBlank":null,"skip":false,"explain":"A——早上问好用 Good morning；Good night 是睡前道别，Goodbye 是告别，Thank you 是道谢。"},{"no":14,"raw":"14. 别人问你 \"What's your name?\"，应回答：A　I'm fine, thanks.　B　My name is Peter.　C　I'm ten.　D　Goodbye!（4分）","score":4,"kp":"KP3","kpName":"问候与自我介绍","difficulty":"中","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","I'm fine, thanks.　"],["B","My name is Peter.　"],["C","I'm ten.　"],["D","Goodbye!"]],"perBlank":null,"skip":false,"explain":"B——问名字答名字：My name is … 或 I'm …；I'm fine, thanks. 是回答 How are you 的。"},{"no":15,"raw":"15. 放学和同学告别，说：A　Good morning!　B　Hello!　C　Goodbye! See you!　D　Thank you!（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","Good morning!　"],["B","Hello!　"],["C","Goodbye! See you!　"],["D","Thank you!"]],"perBlank":null,"skip":false,"explain":"C——告别用 Goodbye / See you；Hello、Good morning 是见面用语。"},{"no":16,"raw":"16. 同桌帮你捡起了橡皮，你说：A　You're welcome.　B　I'm fine.　C　Hello!　D　Thank you!（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"中","match":"强","type":"choice","ans":"D","ansKey":"D","ansParts":null,"options":[["A","You're welcome.　"],["B","I'm fine.　"],["C","Hello!　"],["D","Thank you!"]],"perBlank":null,"skip":false,"explain":"D——得到帮助说 Thank you!；对方回应 You're welcome.（不客气）——选项 A 是\"回应感谢\"，不是\"感谢\"。"},{"no":17,"raw":"17. Hello! I'm Sarah.（　）（4分）","score":4,"kp":"KP3","kpName":"问候与自我介绍","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"C——别人说 Hello! I'm Sarah.（我是萨拉），回敬同样自我介绍：Hi! I'm Mike."},{"no":18,"raw":"18. How are you?（　）（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"易","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"A——How are you? 问\"你好吗\"，答 I'm fine, thank you.（我很好，谢谢）。"},{"no":19,"raw":"19. Goodbye!（　）（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"易","match":"强","type":"choice","ans":"F","ansKey":"F","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"F——Goodbye!（再见）应答 Bye-bye!"},{"no":20,"raw":"20. Nice to meet you.（　）（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"中","match":"中","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"B——Nice to meet you.（见到你很高兴）应答 Nice to meet you, too.（我也是）——too 不能丢。"},{"no":21,"raw":"21. What's your name?（　）（4分）","score":4,"kp":"KP3","kpName":"问候与自我介绍","difficulty":"中","match":"强","type":"choice","ans":"E","ansKey":"E","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"E——问 What's your name? 答 My name is Amy.（我叫艾米）。"},{"no":22,"raw":"22. 把下面的句子抄写正确（注意句首字母大写）：i am nine years old.（8分）","score":8,"kp":"KP6","kpName":"书写规范","difficulty":"易","match":"强","type":"subjective","ans":"I am nine years old.（句首 I 大写）","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"正确抄写：I am nine years old.——句首字母必须大写。采分点：句首 I 大写 4 分；抄写正确、占格工整 4 分。"},{"no":23,"raw":"23. 照样子，补全自我介绍并抄写工整：Hello! I'm Peter.（把 Peter 换成你自己的名字）（14分）","score":14,"kp":"KP6","kpName":"书写规范","difficulty":"较难","match":"拓展","type":"subjective","ans":"见解析","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"示例：Hello! I'm Li Ming.——把名字换成自己的。采分点：补全名字（首字母大写）4 分；I'm 大小写正确、撇号不丢 6 分；抄写工整、标点齐全 4 分。判错点：整句小写（hello! i'm …）——句首大写是本月硬规矩。"}],"byNo":{"1":{"no":1,"raw":"1. 写出大写字母 B 的小写形式：（　　）（3分）","score":3,"kp":"KP1","kpName":"字母认读与书写","difficulty":"易","match":"强","type":"fill","ans":"b","ansKey":null,"ansParts":["b"],"options":null,"perBlank":null,"skip":false,"explain":"b——大写 B 的小写是 b；判错点：与 d 认反（b 的\"肚子\"朝右）。"},"2":{"no":2,"raw":"2. 写出小写字母 e 的大写形式：（　　）（3分）","score":3,"kp":"KP1","kpName":"字母认读与书写","difficulty":"易","match":"强","type":"fill","ans":"E","ansKey":null,"ansParts":["E"],"options":null,"perBlank":null,"skip":false,"explain":"E——小写 e 的大写是 E；判错点：与 F 混。"},"3":{"no":3,"raw":"3. 按字母表顺序填空：a　b　c　（　）　e（3分）","score":3,"kp":"KP1","kpName":"字母认读与书写","difficulty":"易","match":"强","type":"fill","ans":"d","ansKey":null,"ansParts":["d"],"options":null,"perBlank":null,"skip":false,"explain":"d——a b c d e 顺次；判错点：跳跃填错。"},"4":{"no":4,"raw":"4. 按字母表顺序填空：F　G　（　）　I（3分）","score":3,"kp":"KP1","kpName":"字母认读与书写","difficulty":"中","match":"强","type":"fill","ans":"H","ansKey":null,"ansParts":["H"],"options":null,"perBlank":null,"skip":true,"explain":"H——F G H I 顺次；判错点：与 J 混。"},"5":{"no":5,"raw":"5. 下面哪个是元音字母？A　b　B　e　C　m　D　t（6分）","score":6,"kp":"KP1","kpName":"字母认读与书写","difficulty":"较难","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","b　"],["B","e　"],["C","m　"],["D","t"]],"perBlank":null,"skip":false,"explain":"B——元音字母五个：a、e、i、o、u；b、m、t 都是辅音字母。"},"6":{"no":6,"raw":"6. 小写字母 a 在四线三格里占：A　上面两格　B　中间一格　C　下面两格　D　三格全占（6分）","score":6,"kp":"KP1","kpName":"字母认读与书写","difficulty":"较难","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","上面两格　"],["B","中间一格　"],["C","下面两格　"],["D","三格全占"]],"perBlank":null,"skip":false,"explain":"B——a、c、e、m、n 这类小写字母安稳住中间一格；b、d、f、h 有\"小辫子\"占上面两格。"},"7":{"no":7,"raw":"7. 选出不同类的一项：A　pen　B　pencil　C　ruler　D　apple（3分）","score":3,"kp":"KP2","kpName":"主题词汇","difficulty":"易","match":"强","type":"choice","ans":"D","ansKey":"D","ansParts":null,"options":[["A","pen　"],["B","pencil　"],["C","ruler　"],["D","apple"]],"perBlank":null,"skip":false,"explain":"D——pen、pencil、ruler 都是文具，apple 是水果。"},"8":{"no":8,"raw":"8. 选出不同类的一项：A　book　B　morning　C　afternoon　D　evening（3分）","score":3,"kp":"KP2","kpName":"主题词汇","difficulty":"中","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","book　"],["B","morning　"],["C","afternoon　"],["D","evening"]],"perBlank":null,"skip":false,"explain":"A——morning、afternoon、evening 都是时间问候词，book 是学习用品。"},"9":{"no":9,"raw":"9. 老师说 \"Stand up, please.\" 你应该：A　起立　B　坐下　C　开门　D　合上书（3分）","score":3,"kp":"KP4","kpName":"课堂指令","difficulty":"易","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","起立　"],["B","坐下　"],["C","开门　"],["D","合上书"]],"perBlank":null,"skip":false,"explain":"A——Stand up 就是\"起立\"；坐下是 Sit down。"},"10":{"no":10,"raw":"10. \"ruler\" 的意思是：A　钢笔　B　尺子　C　橡皮　D　书包（3分）","score":3,"kp":"KP2","kpName":"主题词汇","difficulty":"易","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","钢笔　"],["B","尺子　"],["C","橡皮　"],["D","书包"]],"perBlank":null,"skip":false,"explain":"B——ruler 是尺子；判错点：与 rubber（橡皮）混。"},"11":{"no":11,"raw":"11. \"eraser\" 的意思是：A　铅笔　B　钢笔　C　橡皮　D　尺子（3分）","score":3,"kp":"KP2","kpName":"主题词汇","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","铅笔　"],["B","钢笔　"],["C","橡皮　"],["D","尺子"]],"perBlank":null,"skip":false,"explain":"C——eraser 是橡皮。"},"12":{"no":12,"raw":"12. 老师说 \"Open your book.\" 你应该：A　打开书　B　合上书　C　举手　D　起立（3分）","score":3,"kp":"KP4","kpName":"课堂指令","difficulty":"中","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","打开书　"],["B","合上书　"],["C","举手　"],["D","起立"]],"perBlank":null,"skip":false,"explain":"A——Open 是打开，Open your book＝打开书；合上书是 Close your book。"},"13":{"no":13,"raw":"13. 早上见到老师，应该说：A　Good morning, Miss Li!　B　Good night!　C　Goodbye!　D　Thank you!（4分）","score":4,"kp":"KP3","kpName":"问候与自我介绍","difficulty":"易","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","Good morning, Miss Li!　"],["B","Good night!　"],["C","Goodbye!　"],["D","Thank you!"]],"perBlank":null,"skip":false,"explain":"A——早上问好用 Good morning；Good night 是睡前道别，Goodbye 是告别，Thank you 是道谢。"},"14":{"no":14,"raw":"14. 别人问你 \"What's your name?\"，应回答：A　I'm fine, thanks.　B　My name is Peter.　C　I'm ten.　D　Goodbye!（4分）","score":4,"kp":"KP3","kpName":"问候与自我介绍","difficulty":"中","match":"强","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","I'm fine, thanks.　"],["B","My name is Peter.　"],["C","I'm ten.　"],["D","Goodbye!"]],"perBlank":null,"skip":false,"explain":"B——问名字答名字：My name is … 或 I'm …；I'm fine, thanks. 是回答 How are you 的。"},"15":{"no":15,"raw":"15. 放学和同学告别，说：A　Good morning!　B　Hello!　C　Goodbye! See you!　D　Thank you!（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","Good morning!　"],["B","Hello!　"],["C","Goodbye! See you!　"],["D","Thank you!"]],"perBlank":null,"skip":false,"explain":"C——告别用 Goodbye / See you；Hello、Good morning 是见面用语。"},"16":{"no":16,"raw":"16. 同桌帮你捡起了橡皮，你说：A　You're welcome.　B　I'm fine.　C　Hello!　D　Thank you!（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"中","match":"强","type":"choice","ans":"D","ansKey":"D","ansParts":null,"options":[["A","You're welcome.　"],["B","I'm fine.　"],["C","Hello!　"],["D","Thank you!"]],"perBlank":null,"skip":false,"explain":"D——得到帮助说 Thank you!；对方回应 You're welcome.（不客气）——选项 A 是\"回应感谢\"，不是\"感谢\"。"},"17":{"no":17,"raw":"17. Hello! I'm Sarah.（　）（4分）","score":4,"kp":"KP3","kpName":"问候与自我介绍","difficulty":"易","match":"强","type":"choice","ans":"C","ansKey":"C","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"C——别人说 Hello! I'm Sarah.（我是萨拉），回敬同样自我介绍：Hi! I'm Mike."},"18":{"no":18,"raw":"18. How are you?（　）（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"易","match":"强","type":"choice","ans":"A","ansKey":"A","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"A——How are you? 问\"你好吗\"，答 I'm fine, thank you.（我很好，谢谢）。"},"19":{"no":19,"raw":"19. Goodbye!（　）（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"易","match":"强","type":"choice","ans":"F","ansKey":"F","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"F——Goodbye!（再见）应答 Bye-bye!"},"20":{"no":20,"raw":"20. Nice to meet you.（　）（4分）","score":4,"kp":"KP5","kpName":"情景交际应答","difficulty":"中","match":"中","type":"choice","ans":"B","ansKey":"B","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"B——Nice to meet you.（见到你很高兴）应答 Nice to meet you, too.（我也是）——too 不能丢。"},"21":{"no":21,"raw":"21. What's your name?（　）（4分）","score":4,"kp":"KP3","kpName":"问候与自我介绍","difficulty":"中","match":"强","type":"choice","ans":"E","ansKey":"E","ansParts":null,"options":[["A","I'm fine, thank you."],["B","Nice to meet you, too."],["C","Hi! I'm Mike."],["D","You're welcome."],["E","My name is Amy."],["F","Bye-bye!"]],"perBlank":null,"skip":false,"explain":"E——问 What's your name? 答 My name is Amy.（我叫艾米）。"},"22":{"no":22,"raw":"22. 把下面的句子抄写正确（注意句首字母大写）：i am nine years old.（8分）","score":8,"kp":"KP6","kpName":"书写规范","difficulty":"易","match":"强","type":"subjective","ans":"I am nine years old.（句首 I 大写）","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"正确抄写：I am nine years old.——句首字母必须大写。采分点：句首 I 大写 4 分；抄写正确、占格工整 4 分。"},"23":{"no":23,"raw":"23. 照样子，补全自我介绍并抄写工整：Hello! I'm Peter.（把 Peter 换成你自己的名字）（14分）","score":14,"kp":"KP6","kpName":"书写规范","difficulty":"较难","match":"拓展","type":"subjective","ans":"见解析","ansKey":null,"ansParts":null,"options":null,"perBlank":null,"skip":false,"explain":"示例：Hello! I'm Li Ming.——把名字换成自己的。采分点：补全名字（首字母大写）4 分；I'm 大小写正确、撇号不丢 6 分；抄写工整、标点齐全 4 分。判错点：整句小写（hello! i'm …）——句首大写是本月硬规矩。"}},"kpAct":{"KP1":"字母卡抽认，错的重写一行","KP2":"文具实物配对认读","KP3":"和家长演一遍见面开场","KP4":"玩指令游戏五连发","KP5":"把匹配题里的对话读熟背出","KP6":"重抄书写题并互查大小写"}}</script>
+<script>
+/* M1_CORE_BEGIN —— 纯函数判分核（零 DOM；node test_html_core.js 同源测试） */
+function normAnswer(s) {
+  return String(s == null ? '' : s)
+    .replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); })
+    .replace(/[\s\u3000。，、；;：:．,.''""“”‘’（）()]/g, '');
+}
+function numEq(a, b) {
+  var na = normAnswer(a), nb = normAnswer(b);
+  if (!na || !nb) return false;
+  if (!/^-?\d+(\.\d+)?$/.test(na) || !/^-?\d+(\.\d+)?$/.test(nb)) return false;
+  return Math.abs(parseFloat(na) - parseFloat(nb)) < 1e-9;
+}
+function cmpOne(a, b) {
+  return normAnswer(a) === normAnswer(b) || numEq(a, b);
+}
+function isCorrect(q, st) {
+  var v = st.ans ? st.ans[q.no] : undefined;
+  if (v == null || v === '') return false;
+  if (q.type === 'choice' || q.type === 'judge') return String(v) === q.ansKey;
+  if (q.type === 'fill') {
+    var vals = [].concat(v), ok = 0;
+    for (var i = 0; i < q.ansParts.length; i++) {
+      if (vals[i] != null && cmpOne(vals[i], q.ansParts[i])) ok++;
+    }
+    return ok === q.ansParts.length;
+  }
+  return false;
+}
+function autoScore(q, st) {
+  if (q.type === 'choice' || q.type === 'judge') return isCorrect(q, st) ? q.score : 0;
+  if (q.type === 'fill') {
+    var v = st.ans ? st.ans[q.no] : undefined;
+    if (v == null) return 0;
+    var vals = [].concat(v), ok = 0;
+    for (var i = 0; i < q.ansParts.length; i++) {
+      if (vals[i] != null && cmpOne(vals[i], q.ansParts[i])) ok++;
+    }
+    return q.perBlank ? ok * q.perBlank : (ok === q.ansParts.length ? q.score : 0);
+  }
+  return 0;
+}
+function computeResult(data, st) {
+  st = st || {};
+  var kps = {}, total = 0, possible = 0, ungraded = [], perQ = {};
+  data.items.forEach(function (q) {
+    if (st.skips && st.skips[q.no]) return;
+    possible += q.score;
+    var kp = kps[q.kp] || (kps[q.kp] = { id: q.kp, name: q.kpName, got: 0, max: 0, nos: [] });
+    kp.max += q.score; kp.nos.push(q.no);
+    var manual = st.scores ? st.scores[q.no] : null;
+    var s = manual != null ? manual : autoScore(q, st);
+    if (manual == null && q.type === 'subjective') ungraded.push(q.no);
+    perQ[q.no] = s; total += s; kp.got += s;
+  });
+  var pct = possible > 0 ? total / possible * 100 : 0;
+  var level = pct >= 85 ? '优' : pct >= 70 ? '良' : pct >= 60 ? '合格' : '待加强';
+  var list = Object.keys(kps).map(function (k) { return kps[k]; });
+  var weak = list.filter(function (k) { return k.max > 0 && k.got / k.max < 0.8; })
+    .sort(function (a, b) { return a.got / a.max - b.got / b.max; }).slice(0, 2);
+  return { total: total, possible: possible, pct: pct, level: level,
+    kps: list, weak: weak, ungraded: ungraded, perQ: perQ };
+}
+/* M1_CORE_END */
+
+(function () {
+  if (typeof document === 'undefined') return;
+  var data = JSON.parse(document.getElementById('m1-data').textContent);
+  var KEY = data.key;
+  var st = window.__M1_PRESET__ || null;
+  var restored = false;
+  if (!st) {
+    try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { st = null; }
+    restored = !!st;
+  }
+  if (!st) st = { ans: {}, scores: {}, skips: {}, done: {}, mode: 'do' };
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { } }
+  function qdiv(no) { return document.querySelector('.q[data-no="' + no + '"]'); }
+  function items() { return data.items; }
+
+  function effScore(q) {
+    var m = st.scores[q.no];
+    return m != null ? m : autoScore(q, st);
+  }
+  function refreshSteppers() {
+    items().forEach(function (q) {
+      var el = qdiv(q.no); if (!el) return;
+      var v = el.querySelector('.sval');
+      if (v) v.textContent = effScore(q) + '/' + q.score + '分';
+      el.classList.toggle('skipped', !!st.skips[q.no]);
+    });
+  }
+  function refreshSelections() {
+    items().forEach(function (q) {
+      var el = qdiv(q.no); if (!el) return;
+      var a = st.ans[q.no];
+      el.querySelectorAll('.opt').forEach(function (b) {
+        b.classList.toggle('sel', a != null && String(a) === b.dataset.v);
+      });
+      el.querySelectorAll('.blank').forEach(function (inp) {
+        var arr = [].concat(a || []);
+        var i = parseInt(inp.dataset.b, 10);
+        if (document.activeElement !== inp && arr[i] != null) inp.value = arr[i];
+      });
+      var d = el.querySelector('.done');
+      if (d) d.checked = !!st.done[q.no];
+    });
+  }
+  function progress() {
+    var n = 0;
+    items().forEach(function (q) {
+      if (st.skips[q.no] || st.done[q.no]) { n++; return; }
+      var a = st.ans[q.no];
+      if (a == null) return;
+      var vals = [].concat(a);
+      if (vals.length && vals.every(function (x) { return x != null && x !== ''; })) n++;
+    });
+    return n;
+  }
+  function refreshBar() {
+    var total = items().length;
+    document.getElementById('progress').textContent =
+      (st.mode === 'grade' ? '批改中 ' : '已作答 ') + progress() + '/' + total +
+      (Object.keys(st.skips).filter(function (k) { return st.skips[k]; }).length ?
+        '（含跳过 ' + Object.keys(st.skips).filter(function (k) { return st.skips[k]; }).length + ' 题）' : '');
+  }
+  function tag(ratio) { return ratio >= 0.8 ? '扎实' : ratio >= 0.5 ? '需巩固' : '要补'; }
+  function refreshReport() {
+    var box = document.getElementById('report');
+    if (st.mode !== 'grade') { box.hidden = true; return; }
+    var r = computeResult(data, st);
+    var rows = r.kps.map(function (k) {
+      var ratio = k.max ? k.got / k.max : 0;
+      return '<div class="kprow"><span class="kpname">' + k.id + ' ' + k.name + '</span>' +
+        '<span class="kpbar"><i style="width:' + Math.round(ratio * 100) + '%"></i></span>' +
+        '<span class="kpval">' + k.got + '/' + k.max + '</span>' +
+        '<span class="kptag">' + tag(ratio) + '</span></div>';
+    }).join('');
+    var weak = r.weak.map(function (k) {
+      var act = data.kpAct[k.id] || '';
+      return '<li><b>' + k.id + ' ' + k.name + '</b>（' + k.got + '/' + k.max + '）' +
+        (act ? '——' + act : '') + '。重做本卷第 ' + k.nos.join('、') + ' 题。</li>';
+    }).join('');
+    var skipped = items().filter(function (q) { return st.skips[q.no]; }).map(function (q) { return q.no; });
+    var d = new Date();
+    var date = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+    box.innerHTML =
+      '<h2>成绩单<span class="level">' + r.level + '</span></h2>' +
+      '<p class="meta">' + data.grade + ' · ' + data.subject + ' · ' + date + '</p>' +
+      '<p style="font-size:1.3rem"><b>总分 ' + r.total + ' / ' + r.possible + '</b>' +
+      (r.possible < 100 ? ' <span class="skiptip">（跳题后按已做题折算）</span>' : '') + '</p>' +
+      (skipped.length ? '<p class="skiptip">跳过题号：' + skipped.join('、') + '</p>' : '') +
+      (r.ungraded.length ? '<p class="ugtip"><b>还有 ' + r.ungraded.length +
+        ' 道主观题没打分</b>（对照解析与采分点，在每题下方打分），打完再看这份成绩单。</p>' : '') +
+      '<h3 class="sec">各知识点得分</h3>' + rows +
+      (weak ? '<h3 class="sec">最先要补的知识点（≤2 个）</h3><ul>' + weak + '</ul>' : '') +
+      '<p class="note">约定复测时间：7~10 天后只重做错题。把这张成绩单<b>截图发给家长或老师</b>，帮你定下一步。</p>';
+    box.hidden = false;
+  }
+  function refreshAll() { refreshSteppers(); refreshReport(); refreshBar(); }
+
+  function setMode(mode) {
+    st.mode = mode; save();
+    document.body.classList.toggle('grading', mode === 'grade');
+    document.getElementById('m-do').classList.toggle('primary', mode === 'do');
+    document.getElementById('m-grade').classList.toggle('primary', mode === 'grade');
+    refreshAll();
+    window.scrollTo(0, 0);
+  }
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest('button'); if (!t) return;
+    if (t.id === 'm-do') return setMode('do');
+    if (t.id === 'm-grade') return setMode('grade');
+    if (t.id === 'm-clear' || t.id === 'restoreclear') {
+      if (!confirm('确定清空本卷全部作答与得分，从头重做吗？')) return;
+      try { localStorage.removeItem(KEY); } catch (e) { }
+      st = { ans: {}, scores: {}, skips: {}, done: {}, mode: 'do' };
+      document.getElementById('restoretip').style.display = 'none';
+      refreshSelections(); setMode('do'); return;
+    }
+    var qel = t.closest('.q'); if (!qel) return;
+    var no = parseInt(qel.dataset.no, 10);
+    if (t.classList.contains('opt')) {
+      if (st.skips[no]) return;
+      st.ans[no] = t.dataset.v; save();
+      qel.querySelectorAll('.opt').forEach(function (b) {
+        b.classList.toggle('sel', b === t);
+      });
+      refreshAll(); return;
+    }
+    if (t.classList.contains('skipbtn')) {
+      st.skips[no] = !st.skips[no]; save(); refreshAll(); return;
+    }
+    if (t.classList.contains('sdec') || t.classList.contains('sinc') ||
+        t.classList.contains('sfull') || t.classList.contains('sauto')) {
+      var q = data.byNo[no];
+      var cur = effScore(q);
+      if (t.classList.contains('sdec')) st.scores[no] = Math.max(0, cur - 1);
+      else if (t.classList.contains('sinc')) st.scores[no] = Math.min(q.score, cur + 1);
+      else if (t.classList.contains('sfull')) st.scores[no] = q.score;
+      else delete st.scores[no];
+      save(); refreshAll(); return;
+    }
+  });
+  document.addEventListener('input', function (ev) {
+    var inp = ev.target; if (!inp.classList || !inp.classList.contains('blank')) return;
+    var qel = inp.closest('.q');
+    var no = parseInt(qel.dataset.no, 10);
+    if (st.skips[no]) return;
+    var arr = [].concat(st.ans[no] || []);
+    arr[parseInt(inp.dataset.b, 10)] = inp.value;
+    st.ans[no] = arr; save(); refreshAll();
+  });
+  document.addEventListener('change', function (ev) {
+    var inp = ev.target; if (!inp.classList || !inp.classList.contains('done')) return;
+    var no = parseInt(inp.closest('.q').dataset.no, 10);
+    st.done[no] = inp.checked; save(); refreshAll();
+  });
+
+  refreshSelections();
+  document.body.classList.toggle('grading', st.mode === 'grade');
+  document.getElementById('m-do').classList.toggle('primary', st.mode !== 'grade');
+  if (restored && progress() > 0) document.getElementById('restoretip').style.display = 'block';
+  refreshAll();
+})();
+</script>
+</body>
+</html>

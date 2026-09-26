@@ -1,0 +1,2 @@
+USB 2.0 规范核对清单（Rev 2.0 + ECN/Errata，usb_20.pdf 650页）
+1. 帧/微帧节拍 1ms/125us/SOF  2. 带宽预算 HS periodic 80%、控制保底 FS/LS 10% HS 20%、FS 90%  3. max packet：ctrl EP0 8/16/32/64(HS 64) bulk 64/512 int 64/1024/LS8 iso 1023/1024  4. int 周期 FS 1-255ms LS 10-255ms HS 2^(n-1)x125us  5. 高带宽适用类型与 DATA2/DATA1/DATA0/MDATA 顺序  6. PID 分类表  7. 3 次错误规则  8. data toggle 适用范围  9. PING/NYET  10. 控制三阶段细节  11. 9.2.6.1 五秒规则  12. babble 定义处理  13. SPLIT 用途  14. 挂起电流

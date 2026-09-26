@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0001 · 小学四年级 语数外 知识体系诊断测评</title>
+<style>
+/* course.css — teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+}
+
+/* 手机（自包含单文件常被手机浏览器打开）：窄屏堆叠、防止 nowrap 溢出 */
+@media (max-width: 640px) {
+  body { padding: 1.2rem .8rem 3rem; font-size: 1rem; }
+  h1 { font-size: 1.45rem; }
+  .layer { flex-direction: column; gap: .15rem; }
+  .layer .src { white-space: normal; text-align: left; }
+  .quiz-q { padding: .85rem .9rem; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">诊断测评 · LESSON 0001 · 四年级版 v1</div>
+  <h1>小学四年级 语数外 知识体系地图测评</h1>
+  <p>这个测评量的是<strong>四年级（上、下两学期）的骨架</strong>：语文的四块能力、数学的四大领域、英语的四样基本功——每块是干什么的、遇到什么问题用什么工具和方法。<strong>60 题 × 12 领域、每领域 5 题</strong>，按"缺口图分辨率"设计：一个领域答错 2 题以上，就说明这块需要回来补一补，之后陪学老师按缺口定制小课。（三年级请用 <code>hunan-g3-learn</code> 科目的同名测评；诊断若暴露三年级地基缺口，老师会先回灌地基再讲新内容。）</p>
+
+  <div class="note"><strong>给家长的话：</strong>①分三个部分（P1 语文、P2 数学、P3 英语），<strong>可分三次做，每次 15~20 分钟就好</strong>，别让孩子硬撑；②每题答完立即出对错和讲解，答错的地方讲解就是一张"方法卡"，值得一起读一遍；③<strong>刚上四年级上学期？下学期内容答错完全正常</strong>——把总结和当前学期一起发给老师，老师会区分"还没学"和"学了没掌握"。凭第一印象作答即可，测的是骨架牢固度，不是背书。</div>
+
+  <h2>语文地图 · 四块能力（课标第二学段 · 四年级范围）</h2>
+  <div class="map">
+    <div class="layer"><b>④ 梳理与探究</b><span class="src">分类整理与摘抄归档 · 查资料解决问题 · 图表/导图理故事结构</span></div>
+    <div class="layer"><b>③ 表达与交流</b><span class="src">把一件事写清楚 · 连续动词写过程 · 书信格式 · 修改符号 · 说清理由</span></div>
+    <div class="layer"><b>② 阅读与鉴赏</b><span class="src">提问策略 · 批注阅读 · 长文抓主要内容 · 体会人物心情 · 简要复述</span></div>
+    <div class="layer"><b>① 识字与写字</b><span class="src">独立识字进阶 · 多音字/多义词/形近字/近义词辨析 · 硬笔正楷提速</span></div>
+  </div>
+  <p style="font-size:.93rem;color:var(--muted)">四年级的关键词是<strong>"从读懂到会问、会评"</strong>：预测升级为提问和批注，写话升级为把一件事写清楚，认识字升级为辨析字词。四块互相供血，缺哪块补哪块。</p>
+
+  <h2>数学地图 · 四大领域（课标第二学段 · 四年级范围）</h2>
+  <div class="map">
+    <div class="layer"><b>④ 综合与实践</b><span class="src">统筹优化 · 鸡兔同笼（假设）· 线段图与列表整理 · 把数学用到生活里</span></div>
+    <div class="layer"><b>③ 统计与概率</b><span class="src">条形统计图（一格多个）· 复式条形图 · 小数的意义与加减</span></div>
+    <div class="layer"><b>② 图形与几何</b><span class="src">角的度量 · 线段/射线/直线 · 平行与垂直 · 公顷与平方千米 · 三角形 · 梯形</span></div>
+    <div class="layer"><b>① 数与代数</b><span class="src">大数的认识（分级读写）· 三位数乘两位数 · 除数是两位数除法与商不变 · 运算律</span></div>
+  </div>
+  <p style="font-size:.93rem;color:var(--muted)">素养词条（数感 · 量感 · 运算能力 · 几何直观 · 推理意识 · 数据意识……）不是额外科目，而是做上面四域题目时练出来的眼光。</p>
+
+  <h2>英语地图 · 四样基本功（课标一级 · 四年级范围）</h2>
+  <div class="map">
+    <div class="layer"><b>④ 读写初步</b><span class="src">连词成句 · 仿写 · 大小写与人名规范 · 看图写句 · 读短文抓大意</span></div>
+    <div class="layer"><b>③ 听说交际</b><span class="src">喜好与天气问答 · 礼貌请求与提醒 · 听前读题、抓关键词</span></div>
+    <div class="layer"><b>② 句型语法</b><span class="src">三单与 Does 问答 · 现在进行时 · there be · What time…? · 不规则复数</span></div>
+    <div class="layer"><b>① 语音词汇</b><span class="src">字母组合发音（ee 等）· 不规则复数 · 主题词族（学科/天气/活动）· 动词搭配</span></div>
+  </div>
+  <p style="font-size:.93rem;color:var(--muted)">话题三范畴：人与自我 · 人与社会 · 人与自然。四年级在三年级起步件上"加长句子、扩宽话题"，仍不求语法术语，求"听得懂、说得出、写得对"。</p>
+
+  <h2>测评 · 第一部分 P1 语文（20 题）</h2>
+  <div id="quiz-p1"></div>
+
+  <h2>测评 · 第二部分 P2 数学（20 题）</h2>
+  <div id="quiz-p2"></div>
+
+  <h2>测评 · 第三部分 P3 英语（20 题）</h2>
+  <div id="quiz-p3"></div>
+
+  <h2>校验生成的课</h2>
+  <div class="note"><strong>怎么用：</strong>AI 把课程网页代码发回来后，整段粘贴到下面，点「开始校验」。机器查四样——小测答案位置不泄露、图示代码完好、不依赖网络（单文件）、页脚有 AI 生成标识。<strong>机器查不出答案本身对不对</strong>，通过后请按提示再抽查 2~3 道题。带 markdown 围栏（<code>```</code>）或夹着说明文字的粘贴也能识别。</div>
+  <textarea id="lesson-paste" style="display:block;width:100%;min-height:11rem;margin:.6rem 0;padding:.6rem .7rem;border:1px solid var(--line);border-radius:6px;background:#fff;font-family:Menlo,Consolas,monospace;font-size:.85rem" placeholder="把 AI 回复的课程网页代码整段粘贴到这里（<!DOCTYPE html> 开头、</html> 结尾；带 ``` 围栏也可以直接粘）"></textarea>
+  <p><button id="lesson-check-run" class="btn" type="button">开始校验</button></p>
+  <div id="lesson-check-out" aria-live="polite"></div>
+
+  <h2>下一步</h2>
+  <ul>
+    <li>把 <strong>P1、P2、P3 三段总结</strong>（每段末尾有"复制总结"按钮）都发给陪学老师：老师会写出基线缺口图（12 领域），记入 <code>learning-records/</code>，再按缺口定制小课。孩子的<strong>当前学期</strong>和<strong>本学期课本版本</strong>（语文/数学/英语封底版权页）一并告诉老师。</li>
+    <li>四年级上学期做测评：下学期内容的题答错按"未学"计，不算缺口——老师对照框架的学期推进表判读；若暴露的是<strong>三年级地基缺口</strong>（如乘法口诀不熟、be 动词混乱），先回灌地基。</li>
+    <li>任何一题看讲解仍不明白——<strong>直接问老师</strong>，问到懂为止，不赶进度。</li>
+  </ul>
+
+  <footer>课 0001 · 四年级版 · 诊断 v1（60 题 × 12 领域）· 2026-09-26 ｜ 锚定：《义务教育课程标准（2022年版）》语文 · 数学 · 英语（第二学段/一级）；教材单元以学校实际用书为准（湖南常见：语文统编版 · 数学人教版 · 英语湘少版/人教PEP 等）｜ 上一课：无 ｜ 下一课：按缺口图定制 ｜ 科目：hunan-g4-learn</footer>
+</main>
+<script>
+/* diag-export — P0 定制课指令包构建。纯函数、零 DOM；scripts/test_export.js 按
+   DIAG_EXPORT_BEGIN/END 标记抽取自测。指令包的消费者（家长投喂的任意 AI）看不到本仓库，
+   提示词必须自包含、零仓库依赖。 */
+/* DIAG_EXPORT_BEGIN */
+var DIAG_FOOTER_LABEL = '本课由 AI 辅助生成，内容仅供参考，请家长抽查核对';
+
+function __diagTermDefault(month) {
+  return (month >= 3 && month <= 7) ? '下' : '上';
+}
+
+function __diagBuildPackage(state, term, textbooks) {
+  var SUBJECT = { '识字写字': '语文', '阅读鉴赏': '语文', '表达交流': '语文', '梳理探究': '语文',
+    '数与运算': '数学', '图形几何': '数学', '量与统计': '数学', '问题解决': '数学',
+    '语音词汇': '英语', '句型语法': '英语', '听说交际': '英语', '读写初步': '英语' };
+  textbooks = textbooks || {};
+  var byTag = {}, areas = [];
+  Object.keys(state.qmeta).map(Number).sort(function (a, b) { return a - b; }).forEach(function (n) {
+    var m = state.qmeta[n];
+    if (!byTag[m.tag]) {
+      byTag[m.tag] = { subject: SUBJECT[m.tag] || '未知', name: m.tag, right: 0, total: 0, wrong_this: 0 };
+      areas.push(byTag[m.tag]);
+    }
+    byTag[m.tag].total++;
+    if (m.ok) byTag[m.tag].right++;
+  });
+  /* 学期过滤：选下学期＝上+下全部已学（错题都算本学期责任）；选上学期＝只有上学期题的错题算缺口 */
+  var wrongThis = [], wrongNext = [];
+  state.wrong.slice().sort(function (a, b) { return a - b; }).forEach(function (n) {
+    if (term === '下' || state.qmeta[n].sem === '上') { wrongThis.push(n); byTag[state.qmeta[n].tag].wrong_this++; }
+    else wrongNext.push(n);
+  });
+  var rightAll = 0;
+  areas.forEach(function (a) { rightAll += a.right; });
+  var data = {
+    grade: '4',
+    term: term,
+    textbook: { '语文': textbooks['语文'] || '', '数学': textbooks['数学'] || '', '英语': textbooks['英语'] || '' },
+    total: { right: rightAll, count: Object.keys(state.qmeta).length },
+    areas: areas.map(function (a) { return { subject: a.subject, name: a.name, right: a.right, total: a.total, wrong_this: a.wrong_this }; }),
+    wrong_this_term: wrongThis,
+    wrong_next_term: wrongNext
+  };
+  var L = [];
+  L.push('【家长使用说明】');
+  L.push('1. 把本条消息整段复制、粘贴给任意一个 AI 助手（豆包、DeepSeek、ChatGPT 等都可以），发送。');
+  L.push('2. AI 会回复一节完整的课程网页（HTML 代码）：新建文本文件粘贴代码，保存为 课程.html（编码选 UTF-8），双击用浏览器打开即可使用。');
+  L.push('3. 给孩子用之前，把 AI 给的网页代码粘贴回本测评页底部「校验生成的课」做机器检查（查答案位置泄露、图示损坏、断网失效、缺 AI 标识）；通过后再抽查其中 2~3 道题的答案是否正确——AI 偶尔会出错；发现答案不对，把本条消息再发一次让它重新生成。');
+  L.push('4. 拿不准这份课合不合适？把这份文件发给老师，免费做一次缺口解读。');
+  L.push('');
+  L.push('【课程生成指令】');
+  L.push('你是「小学四年级定制课生成器」。先读下面的测评数据 JSON，再严格按生成规则输出课程。');
+  L.push('');
+  L.push('```json');
+  L.push(JSON.stringify(data, null, 2));
+  L.push('```');
+  L.push('');
+  L.push('生成规则：');
+  L.push('1. 缺口判定：只为 areas 中 wrong_this ≥ 2 的领域生成课程；wrong_this ≤ 1 的领域跳过，并在开头用一句话说明跳过了哪些。若没有任何领域达到缺口线，不生成课程，直接告诉家长：本学期范围内没有明显缺口，可把上方数据发回老师解读。wrong_next_term 里的题号属于下学期才学的内容——不算缺口、不为其生成课，也不要在结果里当成问题提及。');
+  L.push('2. 双减红线：单课学习时长 15~25 分钟；需要动笔书写的总量不超过 2 页；每课检索练习 4~8 题。');
+  L.push('3. 单文件要求：每课输出一个完整 HTML 文件，以 <!DOCTYPE html> 开头、</html> 结尾；全部 CSS 与 JS 内联，不引用任何外部文件或网络资源，图示用内联 SVG；保存为 .html 后双击浏览器即可打开。');
+  L.push('4. 课程结构（一课只补一个缺口领域）：①开头一句话说明这课补哪个领域、建议时长；②讲解：短句＋生活比喻，面向四年级孩子讲清核心方法；③1~2 道例题给完整解题过程链，每一步都说明「为什么这么做」；④给家长的一句提示（为什么这样学、在家怎么配合）；⑤结尾 4~8 道检索练习小测。');
+  L.push('5. 小测要求：内联 JS 实现即时判分——点击选项立即显示对错与解析；正确答案的位置逐题轮换，禁止全部选项同位；每题解析是一张方法卡：先肯定（如「选B！」），再讲对的理由，末尾附课标锚点。');
+  L.push('6. 页脚：每课页脚必须包含一行「' + DIAG_FOOTER_LABEL + '」。');
+  L.push('7. 多个缺口领域：每个领域单独一课，逐课输出，每课都是完整独立的 HTML 文件。');
+  L.push('8. 教材版本：textbook 字段已填的科目，例题素材尽量贴合该版本常见情境；未填则用通用生活情境。');
+  L.push('9. 领域→补强主题对照（只为达到缺口线的领域对号生成）：');
+  L.push('语文·识字写字｜课标锚点：第二学段·识字与写字｜主题「辨析四剑客：多音·多义·形近·近义」：多音字据义定音、多义词随文定义、形近字抓部件辨析、近义词抓细微差别');
+  L.push('语文·阅读鉴赏｜课标锚点：第二学段·阅读与鉴赏｜主题「提问与批注」：多角度提问（内容/写法/联系生活）、批注圈画写感受、长文抓主要内容、抓描写体会人物心情、简要复述');
+  L.push('语文·表达交流｜课标锚点：第二学段·表达与交流｜主题「把一件事写清楚」：按顺序写、重点部分写具体、连续动词写过程、书信格式、修改符号');
+  L.push('语文·梳理探究｜课标锚点：第二学段·梳理与探究｜主题「给积累建档案」：分类摘抄标出处、查资料记来源、表格/导图理故事结构、按字族梳理生字');
+  L.push('数学·数与运算｜课标锚点：第二学段·数与运算、数量关系｜主题「分级·试商·商不变」：大数四位一级分级读写、三位数乘两位数先估后算、除数是两位数除法试商、商不变性质、运算律凑整简算');
+  L.push('数学·图形几何｜课标锚点：第二学段·图形的认识与测量、图形的位置与运动｜主题「线的家族与角的度量」：线段/射线/直线、角的张口与度量、平行与垂直、平行四边形与梯形分类、三角形内角和');
+  L.push('数学·量与统计｜课标锚点：第二学段·数据的收集整理与表达、数与运算｜主题「小数点对齐的秘密」：公顷与平方千米、条形统计图一格代表多个、复式条形统计图、小数的意义（十进分数）、小数点对齐加减');
+  L.push('数学·问题解决｜课标锚点：第二学段·综合与实践、数量关系｜主题「假设法与列表法」：路程=速度×时间等数量关系、统筹优化、鸡兔同笼假设法、线段图与列表整理策略');
+  L.push('英语·语音词汇｜课标锚点：一级·语音知识、词汇知识｜主题「拼读组合与词族卡」：字母组合发音（ee 等）、不规则复数（children/men/feet）、主题词族（学科/天气/活动）、动词搭配整串记');
+  L.push('英语·句型语法｜课标锚点：一级·语法知识｜主题「问答配套与进行时」：三单动词加 -s 与 Does 问答配套、现在进行时 be+V-ing、there be 随名词选 is/are、What time…? 问答');
+  L.push('英语·听说交际｜课标锚点：一级·语言技能（听说）、语用知识｜主题「万能问答模板」：favourite 万能问答、天气问答、礼貌请求与提醒（May I…? / Please…）、听前读题抓关键词');
+  L.push('英语·读写初步｜课标锚点：一级·语言技能（读写）｜主题「从仿写到连句」：and/but 连词成句、仿写留骨架换内容、大小写与人名地名规范、看图写句三查、短文抓大意');
+  return L.join('\n');
+}
+/* DIAG_EXPORT_END */
+</script>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, sem: '上'|'下', explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。
+   P0：跨部分全局状态 window.__diag 汇总 60 题，三部分答完后可导出「定制课指令包」。 */
+(function () {
+  var G = window.__diag = window.__diag || { answered: 0, total: 0, qmeta: {}, wrong: [], parts: [] };
+
+  function copyText(text, btn, doneMsg) {
+    function ok() { btn.textContent = doneMsg; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(ok);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      ok();
+    }
+  }
+
+  function showExport(anchor) {
+    var old = document.getElementById('diag-export');
+    if (old) old.remove();
+    var box = document.createElement('div');
+    box.className = 'summary';
+    box.id = 'diag-export';
+    box.style.marginTop = '1rem';
+    if (G.answered < G.total) {
+      var prog = G.parts.map(function (p) { return (p.done ? '✓' : '✗') + ' ' + p.label; }).join('　');
+      var tt = document.createElement('b');
+      tt.textContent = '生成定制课指令包';
+      box.appendChild(tt);
+      box.appendChild(document.createElement('br'));
+      var s1 = document.createElement('span');
+      s1.textContent = '还差 ' + (G.total - G.answered) + ' 题未答（' + prog + '）。';
+      box.appendChild(s1);
+      box.appendChild(document.createElement('br'));
+      var s2 = document.createElement('span');
+      s2.textContent = '三部分（P1/P2/P3）全部答完后，回到任意一部分末尾的「测评完成」面板，再点「生成定制课指令包」。';
+      box.appendChild(s2);
+      anchor.appendChild(box);
+      box.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem('diagTextbookG4') || '{}'); } catch (e) { saved = {}; }
+    var title = document.createElement('b');
+    title.textContent = '生成定制课指令包';
+    box.appendChild(title);
+    box.appendChild(document.createElement('br'));
+    var l1 = document.createElement('span');
+    l1.textContent = '孩子当前学期：';
+    box.appendChild(l1);
+    var sel = document.createElement('select');
+    sel.id = 'diag-term';
+    [['上', '四年级上学期'], ['下', '四年级下学期']].forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o[0];
+      opt.textContent = o[1];
+      sel.appendChild(opt);
+    });
+    box.appendChild(sel);
+    var hint = document.createElement('span');
+    hint.style.cssText = 'font-size:.85rem;color:var(--muted)';
+    hint.textContent = '　选上学期时，下学期题目的错题自动不算缺口';
+    box.appendChild(hint);
+    box.appendChild(document.createElement('br'));
+    var l2 = document.createElement('span');
+    l2.textContent = '教材版本（选填，翻课本版权页确认）：';
+    box.appendChild(l2);
+    box.appendChild(document.createElement('br'));
+    var inputs = [['语文', '统编版（全国统一）'], ['数学', '人教版为主流'], ['英语', '湘少/PEP/外研']].map(function (p, i) {
+      var lab = document.createElement('span');
+      lab.textContent = p[0] + ' ';
+      box.appendChild(lab);
+      var inp = document.createElement('input');
+      inp.id = 'diag-tb-' + i;
+      inp.placeholder = p[1];
+      inp.value = saved[p[0]] || '';
+      box.appendChild(inp);
+      box.appendChild(document.createTextNode(' '));
+      return [p[0], inp];
+    });
+    anchor.appendChild(box);
+    sel.value = __diagTermDefault(new Date().getMonth() + 1);
+    var go = document.createElement('button');
+    go.className = 'btn';
+    go.style.marginTop = '.5rem';
+    go.textContent = '复制指令包';
+    go.addEventListener('click', function () {
+      var tb = {};
+      inputs.forEach(function (p) { tb[p[0]] = p[1].value.trim(); });
+      try { localStorage.setItem('diagTextbookG4', JSON.stringify(tb)); } catch (e) { }
+      copyText(__diagBuildPackage(G, sel.value, tb), go, '已复制 ✓ 整段发给任意 AI 即可');
+    });
+    box.appendChild(go);
+    var vh = document.createElement('span');
+    vh.style.cssText = 'display:block;margin-top:.5rem;font-size:.85rem;color:var(--muted)';
+    vh.textContent = '课程生成后：把 AI 给的代码粘贴回本页底部「校验生成的课」机检，通过并抽查 2~3 题后再给孩子用。';
+    box.appendChild(vh);
+    box.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function render(mount, questions, part) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+    var partRec = { label: part || ('第 ' + (G.parts.length + 1) + ' 部分'), total: questions.length, done: false };
+    G.parts.push(partRec);
+    var offset = G.total;
+    G.total += questions.length;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      G.qmeta[offset + qi + 1] = { tag: q.tag, sem: q.sem };
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          G.answered++;
+          var ok = oi === q.answer;
+          G.qmeta[offset + qi + 1].ok = ok;
+          if (ok) scores[q.tag].right++; else { wrong.push('Q' + (qi + 1)); G.wrong.push(offset + qi + 1); }
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      partRec.done = true;
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0] + (part ? ' · ' + part : '');
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        copyText(text, copy, '已复制 ✓ 粘贴回会话即可');
+      });
+      panel.appendChild(copy);
+
+      var gen = document.createElement('button');
+      gen.className = 'btn';
+      gen.style.marginLeft = '.5rem';
+      gen.textContent = '生成定制课指令包';
+      gen.addEventListener('click', function () { showExport(mount); });
+      panel.appendChild(gen);
+
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz-p1'), [
+  { tag: '识字写字', sem: '上',
+    prompt: '"他很骄傲"和"我为祖国骄傲"里，"骄傲"的意思一样吗？怎么定？',
+    options: ['一样，跟着感觉读', '不一样：按上下文定意思——前句是"自满"，后句是"自豪"', '都当"自满"讲', '都当"自豪"讲'],
+    answer: 1,
+    explain: '选 B！同一个词在不同句子里意思会变，这叫多义词。判断的钥匙永远在上下文里——把它放回句子读一读，意思就清楚了。四年级的词句辨析就练这个。锚点：课标·语文·第二学段·阅读与鉴赏（联系上下文理解词句）。' },
+  { tag: '识字写字', sem: '上',
+    prompt: '"烧、浇、绕、晓"四个字长得像，用什么办法又快又准地区分？',
+    options: ['每个字抄二十遍', '看声旁定读音，看形旁定意思：火旁烧、水旁浇、丝旁绕、日旁晓', '长得一样，随便用', '看哪个笔画多'],
+    answer: 1,
+    explain: '选 B！形声字的公式：形旁表义、声旁表音。认出形旁（火/水/丝/日）就知道它和什么有关——四年级要在三年级"发现规律"的基础上主动用规律识字。锚点：课标·语文·第二学段·梳理与探究（体会汉字部件之间的关系）。' },
+  { tag: '识字写字', sem: '上',
+    prompt: '碰到一个完全不认识、也不会读的字（如"瀛"），用哪种查字法？',
+    options: ['音序查字法（可它不会读音呀）', '部首查字法：定部首、数部首笔画、再数剩余笔画', '闭上眼睛翻', '问手机语音助手'],
+    answer: 1,
+    explain: '选 B！不会读音，音序查字法就没钥匙可用——部首查字法不靠读音，靠"长相"。三年级学会两种查法，四年级要做到遇到生僻字自动选对那把钥匙。锚点：课标·语文·第二学段·识字与写字（有初步的独立识字能力）。' },
+  { tag: '识字写字', sem: '上',
+    prompt: '"实验前___做好准备"和"这是生活___品"，该填"必须"还是"必需"？',
+    options: ['都填"必须"', '都填"必需"', '前句"必须"（一定要做），后句"必需"（不能缺少的东西）', '随便，两个字长得一样'],
+    answer: 2,
+    explain: '选 C！近义词靠"细微差别"区分："必须"是副词，修饰动作——必须做；"必需"是形容词，修饰事物——必需品。把词性一想，选择就不纠结。锚点：课标·语文·第二学段·梳理与探究（分类整理学过的词语）。' },
+  { tag: '识字写字', sem: '上',
+    prompt: '"投降"和"降落"里的"降"，读音一样吗？',
+    options: ['一样，都读 jiàng', '不一样：投降读 xiáng，降落读 jiàng——按意思定音', '投降读 jiàng，降落读 xiáng', '都不读'],
+    answer: 1,
+    explain: '选 B！"降"表示"落下"读 jiàng（降落、下降），表示"屈服、使驯服"读 xiáng（投降、降龙伏虎）——又是多音字据义定音，四年级换一批词继续练。锚点：课标·语文·第二学段·识字与写字。' },
+  { tag: '阅读鉴赏', sem: '上',
+    prompt: '读课文时"提问"，高质量的问法是？',
+    options: ['只问"这个词什么意思"', '从不同角度问：针对内容问、针对写法问、联系生活问', '等老师提问记下来', '问题越多越好，不管有没有用'],
+    answer: 1,
+    explain: '选 B！四年级的提问策略讲究"角度"：问内容（为什么……）、问写法（作者为什么这样写）、联系生活问（我遇到过吗）——角度一换，理解就深一层。还要学着筛：哪些问题值得读下去找答案。锚点：课标·语文·第二学段·阅读与鉴赏；统编教材四年级"提问"阅读策略单元。' },
+  { tag: '阅读鉴赏', sem: '上',
+    prompt: '"批注式阅读"，正确的做法是？',
+    options: ['把整页都用荧光笔涂满', '圈画关键词句，在旁边写下自己的感受和疑问', '只在心里想，不动笔', '抄同桌的批注'],
+    answer: 1,
+    explain: '选 B！批注＝"圈画＋写想法"：画出关键处，用几个词写下感受、疑问或联想到的内容。批注是把自己"阅读时的思考"留在纸上的方法，复习时一看就回到当时的思路。锚点：课标·语文·第二学段·阅读与鉴赏；统编教材四年级"学习用批注的方法阅读"。' },
+  { tag: '阅读鉴赏', sem: '下',
+    prompt: '一篇好几页的长文章，怎么抓住主要内容？',
+    options: ['从头抄一遍就记住了', '把每个小标题（或每部分）的意思串联起来，或按起因、经过、结果理一遍', '只读最后一段', '数页数'],
+    answer: 1,
+    explain: '选 B！长文抓主要内容有两条路：有标题用标题串联，是故事就按起因—经过—结果理线。先把长文"分成块"，再把块连成话——四下专门练这个本领。锚点：课标·语文·第二学段·阅读与鉴赏（初步把握文章的主要内容）。' },
+  { tag: '阅读鉴赏', sem: '上',
+    prompt: '想体会课文中人物的心情变化，重点抓什么？',
+    options: ['数他出现了几次', '抓他的动作、语言和神态描写', '只看插图', '猜就行'],
+    answer: 1,
+    explain: '选 B！人物的心情藏在细节里：动作发抖是害怕，语言变短是着急，神态舒展是开心——抓住描写，心情变化就有了证据。这也是"有感情朗读"和写人的底子。锚点：课标·语文·第二学段·阅读与鉴赏（体会文章表达的思想感情）。' },
+  { tag: '阅读鉴赏', sem: '下',
+    prompt: '"简要复述"和把课文背下来，区别在哪？',
+    options: ['没区别', '简要复述是抓住主要事件用自己的话讲，长对话、细枝末节可以简说', '简要复述就是读一遍', '复述必须一字不差'],
+    answer: 1,
+    explain: '选 B！简要复述考验的是"取舍"：主干（谁、做了什么、结果）保留，次要细节压缩——用自己的话讲出来，才是真消化了。锚点：课标·语文·第二学段·表达与交流（复述叙事性作品的大意）；统编教材四年级"简要复述"。' },
+  { tag: '表达交流', sem: '上',
+    prompt: '要"把一件事写清楚"，最要紧的两条是什么？',
+    options: ['字数越多越好', '按一定顺序写，重要内容写具体', '把所有人物都写进去', '多用"然后、然后"'],
+    answer: 1,
+    explain: '选 B！写清楚＝顺序＋详略：按时间或事情发展的顺序展开，最关键的部分（最紧张、最难忘的）放慢镜头写具体，次要的一笔带过。锚点：课标·语文·第二学段·表达与交流；统编教材四年级习作单元"把一件事写清楚"。' },
+  { tag: '表达交流', sem: '上',
+    prompt: '想写活"爷爷浇花"的过程，下笔时重点用好什么？',
+    options: ['连续的动词：提、弯、浇、擦……一步一拍写出来', '多堆形容词', '写"爷爷人很好"就够了', '把过程缩成一句话'],
+    answer: 0,
+    explain: '选 A！过程感靠连续动词撑起来：提水—弯腰—慢浇—擦叶，读者眼前才有画面。动词用得准，比十个形容词都管用。锚点：课标·语文·第二学段·表达与交流（观察周围世界，写见闻感受）。' },
+  { tag: '表达交流', sem: '上',
+    prompt: '给朋友写信，信的格式正确的说法是？',
+    options: ['称呼顶格写，正文另起一行空两格，最后署名和日期', '称呼缩在角落，署名写在最前面', '全信挤在一段，不用署名', '日期写在开头'],
+    answer: 0,
+    explain: '选 A！书信五件套：称呼顶格、正文空两格、祝福语、署名在右下、日期在署名下方——格式是给收信人的"礼貌骨架"，四年级要动笔写一封真正的信。锚点：课标·语文·第二学段·表达与交流；统编教材四年级习作"写信"。' },
+  { tag: '表达交流', sem: '上',
+    prompt: '修改习作时用"修改符号"，下面哪种用法是对的？',
+    options: ['错字圈出来标"删除"，多余的词划掉，位置不对的词画对调符号', '把整篇擦掉重抄', '用涂改液涂成一团白', '不用符号，靠记忆改'],
+    answer: 0,
+    explain: '选 A！常用修改符号各有分工：改正号修错字、删除号去多余、对调号换位置——符号让修改过程看得见，老师也知道你改了什么、为什么改。锚点：课标·语文·第二学段·表达与交流（学习修改习作中有明显错误的词句）。' },
+  { tag: '表达交流', sem: '上',
+    prompt: '小组讨论"春游去哪儿"，想把理由说清楚，怎么表达最有效？',
+    options: ['声音最大盖过别人', '先说清观点，再用一两条理由支持，比如"我建议去植物园，因为……而且……"', '反复说"就是去那儿"', '不发言'],
+    answer: 1,
+    explain: '选 B！有理有据的表达公式：观点 ＋ 理由（最好两条），用上"因为、而且、所以"把理由串起来——讨论时别人才能接得上、被你说服。锚点：课标·语文·第二学段·表达与交流（能说清楚自己的想法和理由）。' },
+  { tag: '梳理探究', sem: '上',
+    prompt: '读完一篇介绍四季景物的课文，想收藏里面的好词好句，最好的做法是？',
+    options: ['全部抄进本子，越多越好', '分类摘抄：写春天的归一类、写夏天的归一类，标注出处', '背下来就扔掉书', '用手机拍下来'],
+    answer: 1,
+    explain: '选 B！摘抄的诀窍是"分类归档"：按主题分类、标好出处，写作时按图索骥才有用——积累不等于抄得多，在于找得到、用得上。锚点：课标·语文·第二学段·梳理与探究（尝试分类整理，用图表等方式呈现）。' },
+  { tag: '梳理探究', sem: '上',
+    prompt: '课文里讲到一种你从没见过的动物，想弄明白它，最靠谱的路径是？',
+    options: ['自己编一个答案', '先查字典词典，再查科普书或可信的网络资料，把来源记下来', '问同学，他说什么就是什么', '算了，不查'],
+    answer: 1,
+    explain: '选 B！四年级要从"会查字典"升级到"会查资料"：多渠道（词典、科普书、网络）交叉验证，还要留意"信息从哪来"。这是探究精神的起点。锚点：课标·语文·第二学段·梳理与探究（初步运用多种方法整理和呈现信息）。' },
+  { tag: '梳理探究', sem: '上',
+    prompt: '读了几个神话故事，想把人物理清楚，下面哪种梳理最有用？',
+    options: ['按"人物—神奇本领—故事"列表格或画卡片', '把故事抄一遍', '只记人物名字', '按笔画数排序'],
+    answer: 0,
+    explain: '选 A！神话人物的特点是"神奇"：盘古开天辟地、女娲炼石补天——用表格或卡片记下"谁、有什么神奇之处、干了什么大事"，比较着读，神话就成体系了。锚点：课标·语文·第二学段·梳理与探究；统编教材四年级神话主题单元。' },
+  { tag: '梳理探究', sem: '下',
+    prompt: '复述一个长故事前，用哪种工具帮自己理结构最方便？',
+    options: ['流程图/思维导图：起因→经过→结果，一节一节画下来', '把故事背五十遍', '不准备，全靠现场发挥', '只看插图'],
+    answer: 0,
+    explain: '选 A！画结构图是"给故事搭骨架"：起因、经过（可以再分几步）、结果一目了然，照着图用自己的话讲，长故事就不会讲丢。锚点：课标·语文·第二学段·梳理与探究（尝试用图表等方式整理、呈现信息）。' },
+  { tag: '梳理探究', sem: '上',
+    prompt: '"晴、清、请、情、蜻"这一串字，怎么梳理记得最牢？',
+    options: ['按声旁"青"归成一家：读音相近，形旁区分意思', '按笔画数分堆', '各背各的，不整理', '按课本出现的先后顺序背'],
+    answer: 0,
+    explain: '选 A！"青"是这一家子的声旁，加上不同的形旁就变出一串字——按字族梳理，认一个带一串，这是四年级字词梳理的高阶玩法。锚点：课标·语文·第二学段·梳理与探究（体会汉字部件之间的关系）。' }
+], 'P1 · 语文');
+Quiz.render(document.getElementById('quiz-p2'), [
+  { tag: '数与运算', sem: '上',
+    prompt: '读"30800000"这样的大数，最稳的办法是？',
+    options: ['从左到右一口气硬读', '先按"四位一级"分级，再一级一级读', '数一数有几个数字', '用手指点着读'],
+    answer: 1,
+    explain: '选 B！先分级（3080｜0000：万级 3080，个级 0000），再按级读——大数一下子变成"几个万"。分级是应付大数的总钥匙：读、写、比大小全靠它。锚点：课标·数学·第二学段·数与运算（认识万以上的数，了解数位顺序）。' },
+  { tag: '数与运算', sem: '上',
+    prompt: '算 240÷63，先"把 63 看成 60 来试商"，这一步叫？',
+    options: ['瞎猜一个数', '试商：把除数看成整十数估着除，大了小了再调', '这道题除不了', '用了商不变的性质'],
+    answer: 1,
+    explain: '选 B！除数是两位数的除法，核心动作就是"看成整十数试商，再调整"——先估后调，估是手段，准是目的。试商熟了，除法就不再可怕。锚点：课标·数学·第二学段·数与运算（能计算除数是两位数的除法）。' },
+  { tag: '数与运算', sem: '上',
+    prompt: '由 240÷60＝4，直接得出 24÷6＝4、1200÷300＝4，用的是？',
+    options: ['商不变的性质：被除数和除数同时乘或除以同一个数（0 除外），商不变', '乘法分配律', '碰巧相等', '加法交换律'],
+    answer: 0,
+    explain: '选 A！被除数、除数同时÷10（240÷60→24÷6），商不变——这是"商不变的性质"。它和简便计算是一对：150÷25 想成 600÷100 就口算出来了。锚点：课标·数学·第二学段·数与运算（探索并理解运算规律）；四年级上册除数是两位数的除法。' },
+  { tag: '数与运算', sem: '上',
+    prompt: '一本书 48 元，买 12 本带 500 元够吗？最快可靠的判断办法是？',
+    options: ['精确算出 48×12 再比', '估算：48 接近 50，50×12＝600＞500，带 500 不够', '直接说够', '翻钱包数一数'],
+    answer: 1,
+    explain: '选 B！生活中的"够不够"用估算就够：把 48 放大到 50，50×12＝600，比 500 大——不够，而且往大估都不够，真值更不够，判断稳稳的。三位数乘两位数先估后算，是四年级的标配。锚点：课标·数学·第二学段·数与运算；素养：数感与运算能力。' },
+  { tag: '数与运算', sem: '下',
+    prompt: '25×98 算成"25×100－25×2"，用的是哪条运算律？',
+    options: ['乘法分配律', '乘法结合律', '加法结合律', '运气好碰巧相等'],
+    answer: 0,
+    explain: '选 A！98 个 25 ＝ 100 个 25 减 2 个 25——分配律把"难算的"换成"好算的"。凑整是简算的核心思想，但每一步都必须有运算律撑腰，不能乱凑。锚点：课标·数学·第二学段·数与运算（探索并理解运算律：分配律等）。' },
+  { tag: '图形几何', sem: '上',
+    prompt: '两个角，一个角的两条边画得比较长，它的角就更大吗？',
+    options: ['是，边长角就大', '是，边越长角越小', '角没法比较大小', '不是。角的大小看两条边张开的口，与边画多长无关'],
+    answer: 3,
+    explain: '选 D！角的大小只看"张口"：两边张开多大，角就多大。边是射线，画多长都一样——四年级量角（用量角器）之前必须立对的概念。锚点：课标·数学·第二学段·图形的认识与测量（角的认识与度量）。' },
+  { tag: '图形几何', sem: '上',
+    prompt: '哪一种线可以量出确定的长度？',
+    options: ['直线', '射线', '线段', '三种都可以'],
+    answer: 2,
+    explain: '选 C！线段有两个端点、能量长度；射线只有一个端点、往一头无限延伸；直线没有端点、两头无限延伸——无限长的线量不了。三个概念抓"端点个数"。锚点：课标·数学·第二学段·图形的认识与测量（线段、射线、直线）。' },
+  { tag: '图形几何', sem: '上',
+    prompt: '"在同一平面内，永不相交的两条直线"叫什么？',
+    options: ['相交线', '垂线', '曲线', '平行线'],
+    answer: 3,
+    explain: '选 D！平行线三要素：同一平面内、两条直线、永不相交。它和垂直（相交成直角）是四年级"图形的位置"两大主角，生活中铁轨、斑马线都是。锚点：课标·数学·第二学段·图形的位置与运动（平行与垂直）。' },
+  { tag: '图形几何', sem: '下',
+    prompt: '任意画一个三角形，量出三个内角加起来，和是多少？',
+    options: ['90°', '360°', '180°', '每本三角形不一样'],
+    answer: 2,
+    explain: '选 C！三角形内角和永远是 180°——不管大的小的、锐角的钝角的。撕下三个角拼一拼，正好拼成一条直线（平角）。知道它，"已知两角求第三角"就是减法题。锚点：课标·数学·第二学段·图形的认识与测量（三角形的认识）；四年级下册。' },
+  { tag: '图形几何', sem: '上',
+    prompt: '"只有一组对边平行"的四边形叫什么？',
+    options: ['平行四边形', '长方形', '菱形', '梯形'],
+    answer: 3,
+    explain: '选 D！梯形的身份证就是"只有一组对边平行"（平行的叫上底、下底）；平行四边形是两组对边都平行。数一数"几组对边平行"，四边形就分清了。锚点：课标·数学·第二学段·图形的认识与测量；四年级上册平行四边形和梯形。' },
+  { tag: '量与统计', sem: '上',
+    prompt: '条形统计图里"一格代表 2 人"，喜欢苹果的有 8 人，要画几格？',
+    options: ['2 格', '8 格', '16 格', '4 格'],
+    answer: 3,
+    explain: '选 D！一格 2 人，8 人就要 8÷2＝4 格——先看懂"一格代表多少"，再动笔画，这是读图和画图的第一步。一格代表 1、2、5 还是更多，图下面都写着呢。锚点：课标·数学·第二学段·数据的收集、整理与表达（条形统计图）。' },
+  { tag: '量与统计', sem: '上',
+    prompt: '描述一所学校校园的占地面积，用哪个面积单位最合适？',
+    options: ['平方厘米', '平方米', '公顷', '毫米'],
+    answer: 2,
+    explain: '选 C！测量土地、校园这种"大块地面"用公顷；更大的（一个市）用平方千米，1 平方千米＝100 公顷，1 公顷＝10000 平方米。单位跟着"块头"走，这是量感。锚点：课标·数学·第二学段·图形的认识与测量；四年级上册"公顷和平方千米"。' },
+  { tag: '量与统计', sem: '下',
+    prompt: '要把"全班男生、女生最喜欢的运动"两组数据放在一起比较，用什么图最清楚？',
+    options: ['单式条形统计图画两张', '折线图', '复式条形统计图：两色直条并排，带图例', '扇形图'],
+    answer: 2,
+    explain: '选 C！复式条形统计图用两种颜色（加图例区分）把两组数据并排画在同一张图里——谁多谁少一眼看出。它和三年级的复式统计表是"表—图"一对。锚点：课标·数学·第二学段·数据的收集、整理与表达；四年级下册复式条形统计图。' },
+  { tag: '量与统计', sem: '下',
+    prompt: '小数 0.3 表示什么意思？',
+    options: ['把整体分成 3 份取 1 份', '3 减 0', '三个 0', '把整体平均分成 10 份，取其中的 3 份（就是 3/10）'],
+    answer: 3,
+    explain: '选 D！一位小数就是分母是 10 的分数：0.3＝3/10、0.07＝7/100。四年级把三年级的"小数初步"升级成"小数的意义"——从会认到懂道理。锚点：课标·数学·第二学段·数与运算（认识小数）；四年级下册小数的意义。' },
+  { tag: '量与统计', sem: '下',
+    prompt: '竖式算 0.4＋0.35，最关键的一步是？',
+    options: ['把数字都靠右对齐', '把 0.4 写成 0.04', '把小数点对齐（相同数位对齐），再算', '直接 4＋35'],
+    answer: 2,
+    explain: '选 C！小数加减法的铁规矩是小数点对齐——就是保证"十分位加十分位、百分位加百分位"。0.40＋0.35＝0.75。整数加减法"末位对齐"和小数"点对齐"其实是同一件事。锚点：课标·数学·第二学段·数与运算；四年级下册小数加减法。' },
+  { tag: '问题解决', sem: '上',
+    prompt: '一辆汽车每小时行 80 千米，3 小时行多少千米？用的数量关系是？',
+    options: ['总价＝单价×数量', '长方形周长公式', '乘法交换律', '路程＝速度×时间（80×3＝240 千米）'],
+    answer: 3,
+    explain: '选 D！每小时行 80 千米是速度，3 小时是时间，求的是路程：路程＝速度×时间。它和"总价＝单价×数量"是同一家族——认识常见数量关系，应用题就有了翻译器。锚点：课标·数学·第二学段·数量关系（路程、速度、时间）。' },
+  { tag: '问题解决', sem: '上',
+    prompt: '"沏茶问题"（烧水的同时洗茶杯）背后的数学思想是？',
+    options: ['猜拳决定', '乖乖排队一件件来', '乘法口诀', '统筹安排：能同时做的事同时做，省时间'],
+    answer: 3,
+    explain: '选 D！这是"优化"：把事情排出顺序，能并行的并行，总共用时就缩短了——数学管的是"怎么安排更聪明"。锚点：课标·数学·第二学段·综合与实践；数学广角"优化"。' },
+  { tag: '问题解决', sem: '下',
+    prompt: '"笼子里鸡兔同笼，数头 8 个、数脚 22 只"，经典解法是？',
+    options: ['猜到对为止', '数脚趾头', '假设法：假设全是鸡，8×2＝16 只脚，比实际少 6 只，每把一只鸡换兔多 2 只，兔＝6÷2＝3 只', '用乘法口诀凑'],
+    answer: 2,
+    explain: '选 C！假设全是鸡，脚就"少了"——每换一只兔多 2 只脚，差额除以 2 就是兔数。假设法是"退一步想"的数学智慧，也是方程思想的萌芽。锚点：课标·数学·第二学段·综合与实践；四年级数学广角"鸡兔同笼"。' },
+  { tag: '问题解决', sem: '上',
+    prompt: '"苹果有 5 箱，梨的箱数是苹果的 3 倍"，想看清楚两者的关系，最好的工具是？',
+    options: ['线段图：苹果画 1 段，梨画同样长的 3 段', '背口诀', '画圆圈数到 100', '列一堆没关系的算式'],
+    answer: 0,
+    explain: '选 A！倍数关系画线段图：一倍量画一段，几倍就画几段——谁是谁的几倍、相差多少，一眼看清。四年级的倍数、和差问题，线段图都是第一助手。锚点：课标·数学·第二学段·数量关系；素养：几何直观。' },
+  { tag: '问题解决', sem: '下',
+    prompt: '"大船限坐 6 人、小船限坐 4 人，全班 32 人怎么租船又坐得下又划算？"解题时最有条理的做法是？',
+    options: ['随便报一种', '只算一种交差', '用表格把各种租法一行行列出来，算钱比较', '抛硬币决定'],
+    answer: 2,
+    explain: '选 C！"列表整理、一一尝试、再挑最优"是有条理的解题策略：方案都摆出来，钱数一比就出答案。把"试"变成"有顺序地试"，乱猜就变成了方法。锚点：课标·数学·第二学段·综合与实践；素养：数据意识与模型意识。' }
+], 'P2 · 数学');
+Quiz.render(document.getElementById('quiz-p3'), [
+  { tag: '语音词汇', sem: '上',
+    prompt: '"child"变成"孩子们"是？',
+    options: ['childs', 'childes', 'childss', 'children（不规则变化，要单独记）'],
+    answer: 3,
+    explain: '选 D！多数名词加 -s/-es，但不规则复数要单独记：child→children、man→men、woman→women、foot→feet。高频的不规则复数就十来个，见一个收一个。锚点：课标·英语·一级·语法知识（可数名词的复数形式）。' },
+  { tag: '语音词汇', sem: '上',
+    prompt: '"tree、see、three"里都有的字母组合 ee，发音是？',
+    options: ['/e/（哎）', '/aɪ/（爱）', '/iː/（长"衣"）', '不发音'],
+    answer: 2,
+    explain: '选 C！ee 这个组合常发长音 /iː/——这就是"字母组合"拼读规律：认得组合，一串词一起读对（tree/see/three/green）。拼读规律攒多了，生词也能自己读出来。锚点：课标·英语·一级·语音知识（感知字母组合的发音）。' },
+  { tag: '语音词汇', sem: '上',
+    prompt: 'Chinese、maths、English、music、art 这些词属于哪个"主题词族"？',
+    options: ['颜色类', '动物类', '天气类', '学科（课程）类'],
+    answer: 3,
+    explain: '选 D！按主题串词是记单词的捷径：学科一串（Chinese 语文、maths 数学、English 英语、music 音乐、art 美术），谈谈"My favourite subject"就有一堆词可用。锚点：课标·英语·一级·词汇知识（围绕主题学习词汇）。' },
+  { tag: '语音词汇', sem: '上',
+    prompt: '下面哪个动词搭配是对的？',
+    options: ['play football（踢足球）', 'make football', 'go football', 'eat football'],
+    answer: 0,
+    explain: '选 A！动词和名词是"固定搭档"：play football/basketball、have breakfast、go to school——整串记、整串用，说出来的英语才地道。锚点：课标·英语·一级·词汇知识（常见动词短语搭配）。' },
+  { tag: '语音词汇', sem: '下',
+    prompt: 'sunny、rainy、cloudy、windy、snowy 这一串词属于哪个主题？',
+    options: ['天气', '水果', '家庭成员', '文具'],
+    answer: 0,
+    explain: '选 A！天气词族：sunny 晴、rainy 雨、cloudy 多云、windy 风、snowy 雪——很多还是"名词＋y"变的（sun→sunny），规律和词一起收。锚点：课标·英语·一级·词汇知识（围绕主题学习词汇）。' },
+  { tag: '句型语法', sem: '下',
+    prompt: '"He ___ football every Sunday." 横线上填什么？',
+    options: ['like', 'liking', 'liked', 'likes'],
+    answer: 3,
+    explain: '选 D！主语是第三人称单数（he/she/it），一般现在时的动词要加 -s：he likes、she plays——这就是"三单"。记牢触发条件：他她它＋每星期/总是。锚点：课标·英语·一级·语法知识（一般现在时第三人称单数）。' },
+  { tag: '句型语法', sem: '上',
+    prompt: '"___ he like pandas?" 的肯定回答是？',
+    options: ['Does — Yes, he does.', 'Do — Yes, he do.', 'Does — Yes, he like.', 'Is — Yes, he is.'],
+    answer: 0,
+    explain: '选 A！主语是他她它，问句用 Does 开头（动词还原成 like），回答也用 does 接力：Yes, he does. / No, he doesn’t——问 Does 答 does，配套原则。锚点：课标·英语·一级·语法知识（一般现在时及其问答）。' },
+  { tag: '句型语法', sem: '下',
+    prompt: '看，鸟正在飞——英语说"看，鸟正在飞"该用哪种句型？',
+    options: ['The birds fly.', 'The birds is flying.', 'The birds are flying.（be＋动词ing：现在进行时）', 'The birds flew.'],
+    answer: 2,
+    explain: '选 C！正在发生的事用现在进行时：be（am/is/are）＋动词-ing。birds 复数配 are——"be 选对、ing 加上"，两步就成句。锚点：课标·英语·一级·语法知识（现在进行时）。' },
+  { tag: '句型语法', sem: '下',
+    prompt: '"There ___ two apples on the desk." 横线上填什么？',
+    options: ['is', 'am', 'are', 'be'],
+    answer: 2,
+    explain: '选 C！there be 句型表示"某处有某物"：be 动词跟紧后面的名词——两个苹果是复数，用 are（一个才用 is）。先看"有什么"，再定 is/are。锚点：课标·英语·一级·语法知识（there be 句型）。' },
+  { tag: '句型语法', sem: '上',
+    prompt: '问"现在几点了"，正确的一问一答是？',
+    options: ['What time is it? — It’s seven o’clock.', 'What time is it? — Yes, it is.', 'How many is it? — Seven.', 'What’s this? — It’s seven.'],
+    answer: 0,
+    explain: '选 A！问时间用 What time is it?，回答用 It’s ＋ 时间（o’clock 表示"整点"）——问答要成对背，上场就能用。锚点：课标·英语·一级·语用知识（询问时间与应答）。' },
+  { tag: '听说交际', sem: '上',
+    prompt: '想借同桌的铅笔，最礼貌的说法是？',
+    options: ['Give me your pencil!', 'Pencil!!', 'You give me now.', 'May I use your pencil, please?'],
+    answer: 3,
+    explain: '选 D！May I…? ＋ please 是礼貌请求的黄金句型：先请求许可、再说事、结尾加 please。同样的意思，说法不同，人缘就不同。锚点：课标·英语·一级·语用知识（请求与致谢）。' },
+  { tag: '听说交际', sem: '上',
+    prompt: '做听力题的好习惯是？',
+    options: ['闭着眼睛听', '一个词一个词全听懂才敢动笔', '听前先看题目和选项，听的时候抓关键词', '全靠蒙'],
+    answer: 2,
+    explain: '选 C！听前读题＝带着问题听；听时抓关键词（数字、地点、人物）＝抓大放小。听懂每个词不是目标，听懂"该听的信息"才是。锚点：课标·英语·一级·学习策略（听前预测、抓要点）。' },
+  { tag: '听说交际', sem: '上',
+    prompt: '问别人"最喜欢什么学科"，该怎么说？',
+    options: ['What’s your favourite subject? — English. I like it best.', 'What subject do you? — Yes.', 'Who is subject? — English.', 'Where is English? — At school.'],
+    answer: 0,
+    explain: '选 A！favourite（最喜欢的）问法是万能模板：换掉 subject 就能问颜色、动物、季节——What’s your favourite…? I like … best. 学一个模板，顶十个句子。锚点：课标·英语·一级·语用知识（询问喜好与应答）。' },
+  { tag: '听说交际', sem: '下',
+    prompt: '问"北京天气怎么样"，正确的一问一答是？',
+    options: ['What’s the weather like in Beijing? — It’s sunny.', 'What’s weather? — Sun.', 'How Beijing? — Yes.', 'Where is weather? — Beijing.'],
+    answer: 0,
+    explain: '选 A！问天气的固定句型：What’s the weather like ＋ 地点？回答 It’s ＋ 天气词（sunny/rainy…）。句型加词族，聊天气就齐活了。锚点：课标·英语·一级·语用知识（谈论天气）。' },
+  { tag: '听说交际', sem: '上',
+    prompt: '在图书馆里有人大声说话，最礼貌的提醒是？',
+    options: ['Stop! Be quiet!', 'I like talking.', 'You go out!', 'Please be quiet.（请安静）'],
+    answer: 3,
+    explain: '选 D！提醒别人加个 please，语气立刻不同：Please be quiet. / Please don’t run.——礼貌句式是社交的润滑油，同样是提醒，听感大不一样。锚点：课标·英语·一级·语用知识（劝阻与提醒）。' },
+  { tag: '读写初步', sem: '上',
+    prompt: '看图写句 "It is a dog."，写完要检查什么？',
+    options: ['只数字数够不够', '只看写得漂不漂亮', '图和句子意思对上了，再查拼写、大小写和标点', '不用检查'],
+    answer: 2,
+    explain: '选 C！看图写句三查：意对（图是狗别写成猫）、字对（拼写）、形对（大写和标点）。写句子的"验收三关"，从看图写句就开始练。锚点：课标·英语·一级·写（模仿范例写词句）。' },
+  { tag: '读写初步', sem: '下',
+    prompt: '读英语短文时碰到好多生词，怎么办？',
+    options: ['把书撕掉', '一个词一个词死抠', '直接放弃', '先看标题和插图猜大意，再抓认识的词串起意思'],
+    answer: 3,
+    explain: '选 D！读的策略是"抓大放小"：标题、插图、认识的词先搭起大意骨架，生词卡住的地方绕过去再回头猜——读懂九成就是胜利，不必十成。锚点：课标·英语·一级·读（借助图片读懂小短文）。' },
+  { tag: '读写初步', sem: '下',
+    prompt: '把"I like spring."和"It is warm."合成一句通顺的话，用什么连？',
+    options: ['I like spring and it is warm.（用 and 并列）', 'I like spring but it is warm 就一定错', 'Like I spring warm is it.', '两个句子永远不能连'],
+    answer: 0,
+    explain: '选 A！用 and 把两个意思顺连：喜欢春天，春天很暖和——两个短句变一句长句，写话立刻高级起来。表示转折时才换 but。锚点：课标·英语·一级·写（写简单句与并列句）。' },
+  { tag: '读写初步', sem: '下',
+    prompt: '照样子"My favourite season is autumn."仿写自己的句子，正确的做法是？',
+    options: ['一字不差照抄原句', '随便写一句就行', '换掉要改的部分：My favourite season is summer.（保留句型骨架，替换内容）', '把单词顺序打乱写'],
+    answer: 2,
+    explain: '选 C！仿写的公式＝留骨架、换内容：句型"My favourite … is …"不动，把季节、颜色、动物换成自己的——这是从"读句子"到"写句子"的桥。锚点：课标·英语·一级·写（模仿范例写句子）。' },
+  { tag: '读写初步', sem: '上',
+    prompt: '"my name is li ming." 这句话有拼写错误吗？错在哪？',
+    options: ['没有错', 'name 要小写加数字', 'is 应该改成 are', '错在大小写：句首 My 要大写，人名 Li Ming 两个字首字母都要大写'],
+    answer: 3,
+    explain: '选 D！英文里两处必大写：句首字母、人名地名（Li Ming、Beijing、Changsha）。自己写完扫一遍"大小写关"，这类分就不会丢。锚点：课标·英语·一级·写（正确使用大小写）。' }
+], 'P3 · 英语');
+</script>
+<script>
+/* lesson-check — P1 页内回贴校验器。家长把 AI 产出的课 HTML 整段粘贴进页面，浏览器端机检四项：
+   ① quiz 答案分布（防全同位）② SVG 良构 ③ 单文件性（无外链）④ 页脚 AI 标识。
+   核心是纯函数、零 DOM：输入=粘贴文本，输出=结果对象；scripts/test_validator.js 按
+   LESSON_CHECK_BEGIN/END 标记抽取后与浏览器跑同一份代码（node 端无 DOMParser 也全量可测，
+   故 SVG 良构用同语义的标签配平扫描器实现，不依赖 DOMParser）。
+   判分实现兼容多种形态（P0 三 AI 实测各不相同，不能只认一种），按优先级依次识别：
+   选项级 data-ok / data-correct(true|false) / onclick 尾布尔参（Kimi 语文、GLM 英语、DeepSeek 英语）
+   ｜ 题容器 data-answer（GLM 语文）｜ answers 数组（提示词规范形态）
+   ｜ 数据字段 answer:/ans:/correct:（DeepSeek 数学语文、GLM 数学、Kimi 数学英语）。
+   识别不了时给人话指引（人工抽查），不静默放行。 */
+/* LESSON_CHECK_BEGIN */
+var LESSON_FOOTER_LABEL = '本课由 AI 辅助生成，内容仅供参考，请家长抽查核对';
+
+/* 剥 markdown 围栏并定位文档边界。返回 {doc, complete, multi} 或 {error:'empty'|'nohtml'} */
+function __lessonStripFences(text) {
+  text = String(text == null ? '' : text).replace(/^\uFEFF/, '').trim();
+  if (!text) return { error: 'empty' };
+  var hasDoc = /<!doctype\s+html[^>]*>|<html[\s>]/i;
+  /* 逐行状态机收围栏：围栏内容常是多行，lazy 正则 + $ 会在首行行尾误截断 */
+  var lines = text.split('\n');
+  var blocks = [], cur = null, li;
+  for (li = 0; li < lines.length; li++) {
+    if (/^[ \t]*```/.test(lines[li])) {
+      if (cur === null) { cur = []; blocks.push(cur); }
+      else cur = null;
+      continue;
+    }
+    if (cur !== null) cur.push(lines[li]);
+  }
+  if (blocks.length) {
+    var pick = null, joinLen = 0;
+    for (li = 0; li < blocks.length; li++) {
+      var b = blocks[li].join('\n');
+      if (hasDoc.test(b)) { pick = b; break; }
+      if (b.length > joinLen) { joinLen = b.length; pick = b; }
+    }
+    if (hasDoc.test(pick) || !hasDoc.test(text)) text = pick.trim();
+  }
+  var si = text.search(hasDoc);
+  if (si === -1) return { error: 'nohtml' };
+  var low = text.toLowerCase();
+  var ei = low.indexOf('</html>', si);
+  var doc, rest;
+  if (ei === -1) { doc = text.slice(si); rest = ''; }
+  else { doc = text.slice(si, ei + 7); rest = text.slice(ei + 7); }
+  return { doc: doc, complete: ei !== -1, multi: hasDoc.test(rest) };
+}
+
+function __lessonScriptText(doc) {
+  /* 收尾标签用拼接写法：脚本块内出现字面的关闭 script 标签会把本块提前截断 */
+  var re = new RegExp('<' + 'script[^>]*>([\\s\\S]*?)<' + '/script>', 'gi');
+  var out = [], m;
+  while ((m = re.exec(doc)) !== null) out.push(m[1]);
+  return out.join('\n');
+}
+
+function __lessonIdx(ch) {
+  if (ch >= '0' && ch <= '9') return +ch;
+  var c = ch.toUpperCase().charCodeAt(0);
+  return (c >= 65 && c <= 72) ? c - 65 : -1;
+}
+
+function __lessonPack(raw, method) {
+  var a = [];
+  for (var i = 0; i < raw.length; i++) {
+    var k = __lessonIdx(raw[i]);
+    if (k < 0 || k > 5) return null;
+    a.push(k);
+  }
+  return a.length >= 2 ? { answers: a, method: method } : null;
+}
+
+/* 逐题提取正确答案位置（0 基）。四种形态依次识别，全部失败返回 null */
+function __lessonExtractAnswers(doc) {
+  function cap(mm) { return mm[1] != null ? mm[1] : mm[2]; }
+  /* ① 选项级标记：data-ok / data-correct(true|false|1|0) / onclick 尾布尔参
+     （Kimi 语文、GLM 英语、DeepSeek 英语）。
+     自校验切块：总数能按「每题选项数」均匀分组且每组恰好一个正确，任一不满足即弃用 */
+  var opts = [];
+  var tagRe = /<[a-zA-Z][^>]*>/g, tm;
+  var okRe = /\bdata-ok\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+  var crRe = /\bdata-correct\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+  var ocRe = /\bonclick\s*=\s*(?:"([^"]*)"|'([^']*)')/i;
+  var boolRe = /,\s*(?:true|false)\s*\)\s*$/i;
+  var boolT = /,\s*true\s*\)\s*$/i;
+  while ((tm = tagRe.exec(doc)) !== null) {
+    var om = okRe.exec(tm[0]);
+    if (om) { opts.push(/^(1|true|yes)$/i.test(cap(om))); continue; }
+    var dm = crRe.exec(tm[0]);
+    if (dm && /^(?:true|false|1|0|yes|no)$/i.test(cap(dm))) {
+      opts.push(/^(?:true|1|yes)$/i.test(cap(dm))); continue;
+    }
+    var cm = ocRe.exec(tm[0]);
+    if (cm && boolRe.test(cap(cm))) opts.push(boolT.test(cap(cm)));
+  }
+  if (opts.length >= 4) {
+    var trues = 0, t;
+    for (t = 0; t < opts.length; t++) if (opts[t]) trues++;
+    if (trues >= 2 && opts.length % trues === 0) {
+      var k = opts.length / trues;
+      if (k >= 2 && k <= 6) {
+        var ans = [], good = true;
+        for (var q = 0; q < trues && good; q++) {
+          var pos = -1, cnt = 0;
+          for (var j = 0; j < k; j++) if (opts[q * k + j]) { cnt++; pos = j; }
+          if (cnt !== 1) good = false; else ans.push(pos);
+        }
+        if (good) {
+          var p1 = __lessonPack(ans, '选项标记（data-ok/onclick）');
+          if (p1) return p1;
+        }
+      }
+    }
+  }
+  /* ② 题容器属性：data-answer/data-correct/data-key，数字按 1 基（GLM 语文） */
+  var qa = [];
+  var qaRe = /\bdata-(?:answer|correct|key)\s*=\s*(?:"([1-8A-Ha-h])"|'([1-8A-Ha-h])')/g, qm;
+  while ((qm = qaRe.exec(doc)) !== null) {
+    var v = cap(qm);
+    qa.push(v >= '0' && v <= '9' ? String(+v - 1) : v);
+  }
+  if (qa.length >= 2) {
+    var p2 = __lessonPack(qa, '题容器 data-answer');
+    if (p2) return p2;
+  }
+  /* ③ 答案数组：answers = [...]（提示词规范形态） */
+  var scripts = __lessonScriptText(doc);
+  var arr = [];
+  var aRe = /(?:answers|answerKey|answerKeys|correctAnswers)\s*=\s*\[([^\]]*)\]/g, am;
+  while ((am = aRe.exec(scripts)) !== null) {
+    am[1].split(',').forEach(function (s) {
+      s = s.replace(/['"\s]/g, '');
+      if (s.length === 1) arr.push(s);
+    });
+  }
+  if (arr.length >= 2) {
+    var p3 = __lessonPack(arr, '答案数组');
+    if (p3) return p3;
+  }
+  /* ④ 数据字段：answer:/ans:/correct:（其余五份实测产出的形态） */
+  var fld = [];
+  var fRe = /(?:answer|ans|correct|correctAnswer)\s*:\s*(['"]?)([0-9A-Ha-h])\1/g, fm;
+  while ((fm = fRe.exec(scripts)) !== null) fld.push(fm[2]);
+  if (fld.length >= 2) {
+    var p4 = __lessonPack(fld, '数据字段（answer/ans/correct）');
+    if (p4) return p4;
+  }
+  return null;
+}
+
+/* SVG 良构扫描：从 <svg 起做标签配平（大小写敏感、引号敏感），嵌套 svg 按深度配对。
+   与仓库侧 check_lessons.py（ElementTree 严格解析）同语义；实体白名单比 XML 五实体宽——
+   nbsp 等常见 HTML 实体在网页内联 SVG 里可正常渲染，不算坏（不误伤）。 */
+function __lessonSvgScan(text, from) {
+  var stack = [], i = from, n = text.length;
+  while (i < n) {
+    var lt = text.indexOf('<', i);
+    if (lt === -1) return { err: '缺少闭合标签', end: n };
+    var next = text.charAt(lt + 1);
+    if (next === '!') {
+      if (text.slice(lt, lt + 4) === '<!' + '--') {
+        var e1 = text.indexOf('--' + '>', lt + 4);
+        if (e1 === -1) return { err: '注释未闭合', end: n };
+        i = e1 + 3; continue;
+      }
+      if (text.slice(lt, lt + 9) === '<![CDATA[') {
+        var e2 = text.indexOf(']]' + '>', lt + 9);
+        if (e2 === -1) return { err: 'CDATA 未闭合', end: n };
+        i = e2 + 3; continue;
+      }
+      return { err: 'svg 里出现非法的 <! 声明', end: n };
+    }
+    if (next === '?') return { err: 'svg 里出现处理指令', end: n };
+    if (next === '/') {
+      var e3 = text.indexOf('>', lt);
+      if (e3 === -1) return { err: '尖括号未闭合', end: n };
+      var nm = text.slice(lt + 2, e3).replace(/\s[\s\S]*$/, '');
+      if (!nm) return { err: '闭合标签缺名字', end: n };
+      if (!stack.length) return { err: '多余的闭合标签 </' + nm + '>', end: n };
+      var top = stack.pop();
+      if (top !== nm) return { err: '标签嵌套错误：<' + top + '> 还没闭合就出现 </' + nm + '>', end: n };
+      if (!stack.length) return { err: null, end: e3 + 1 };
+      i = e3 + 1; continue;
+    }
+    if (!/[a-zA-Z]/.test(next || '')) return { err: '文本中出现未转义的 <', end: n };
+    var name = (/^[a-zA-Z][^\s/>]*/.exec(text.slice(lt + 1)))[0];
+    var j = lt + 1 + name.length, quote = null, selfClose = false;
+    while (j < n) {
+      var ch = text.charAt(j);
+      if (quote) { if (ch === quote) quote = null; }
+      else if (ch === '"' || ch === "'") quote = ch;
+      else if (ch === '>') break;
+      else if (ch === '/' && text.charAt(j + 1) === '>') { selfClose = true; break; }
+      else if (ch === '<') return { err: '属性值里出现未转义的 <', end: n };
+      j++;
+    }
+    if (j >= n) return { err: '尖括号未闭合', end: n };
+    if (!selfClose) stack.push(name);
+    i = j + 1;
+  }
+  return { err: stack.length ? '标签未闭合：<' + stack[stack.length - 1] + '>' : '缺少闭合标签', end: n };
+}
+
+function __lessonSvgCheck(doc) {
+  var out = { count: 0, bad: [] };
+  var entRe = /&(?!(?:amp|lt|gt|quot|apos|nbsp|mdash|ndash|hellip|middot|ldquo|rdquo|lsquo|rsquo|times|divide|plusmn|deg|sup2|sup3|frac12|laquo|raquo|ensp|thinsp|larr|rarr|uarr|darr|#\d+|#x[0-9A-Fa-f]+);)/;
+  var re = /<svg[\s>]/gi, m;
+  while ((m = re.exec(doc)) !== null) {
+    out.count++;
+    var r = __lessonSvgScan(doc, m.index);
+    if (r.err) out.bad.push({ i: out.count, err: r.err });
+    else {
+      var be = entRe.exec(doc.slice(m.index, r.end));
+      if (be) out.bad.push({ i: out.count, err: '实体引用 ' + be[0] + '… SVG 不认识' });
+    }
+    re.lastIndex = r.end > m.index ? r.end : m.index + 1;
+  }
+  return out;
+}
+
+/* 单文件性：只抓会「加载外部资源」的引用（断网即坏）；<a href> 外链不挡，只报信息 */
+function __lessonExternalRefs(doc) {
+  function ext(u) { return /^(?:https?:)?\/\//i.test(u); }
+  var bad = [], links = [];
+  var re = /<(script|iframe|frame|embed|object|img|image|source|video|audio|track|link|use)\b([^>]*)>/gi, m;
+  while ((m = re.exec(doc)) !== null) {
+    var tag = m[1].toLowerCase(), attrs = m[2];
+    if (tag === 'link') {
+      var rm = /\brel\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(attrs);
+      var rel = rm ? (rm[1] != null ? rm[1] : rm[2]) : '';
+      if (!/stylesheet|icon|manifest|prefetch|preload|apple/i.test(rel)) continue;
+    }
+    var am, are = /\b(?:src|srcset|poster|data|href|xlink:href)\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+    while ((am = are.exec(attrs)) !== null) {
+      var u = (am[1] != null ? am[1] : am[2]).trim();
+      if (ext(u)) bad.push('<' + tag + '> 引用 ' + u.slice(0, 90));
+    }
+  }
+  var ar, are2 = /<a\b[^>]*\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+  while ((ar = are2.exec(doc)) !== null) {
+    var u2 = (ar[1] != null ? ar[1] : ar[2]).trim();
+    if (ext(u2)) links.push(u2);
+  }
+  var css = '', ss, sre = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+  while ((ss = sre.exec(doc)) !== null) css += ss[1] + '\n';
+  var st, stre = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+  while ((st = stre.exec(doc)) !== null) css += (st[1] != null ? st[1] : st[2]) + '\n';
+  var im, ire = /@import\s+(?:url\(\s*)?["']?\s*((?:https?:)?\/\/[^"'()\s;]+)/gi;
+  while ((im = ire.exec(css)) !== null) bad.push('CSS @import ' + im[1].slice(0, 80));
+  css = css.replace(/@import[^;]+;/g, ''); /* 已按 @import 单独识别，避免与 url() 重复计数 */
+  var um, ure = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"]*))\s*\)/gi;
+  while ((um = ure.exec(css)) !== null) {
+    var u3 = (um[1] != null ? um[1] : (um[2] != null ? um[2] : um[3])).trim();
+    if (ext(u3)) bad.push('CSS url(' + u3.slice(0, 80) + ')');
+  }
+  var mr, mre = /<meta\b[^>]*>/gi;
+  while ((mr = mre.exec(doc)) !== null) {
+    if (/http-equiv\s*=\s*["']?refresh/i.test(mr[0])) {
+      var cm = /\bcontent\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(mr[0]);
+      var cv = cm ? (cm[1] != null ? cm[1] : cm[2]) : '';
+      if (ext(cv.replace(/^[\s\S]*?url=/i, '').trim())) bad.push('<meta> 自动跳转');
+    }
+  }
+  return { bad: bad, links: links };
+}
+
+function __lessonCheckFooter(doc) {
+  return doc.replace(/\s+/g, '').indexOf(LESSON_FOOTER_LABEL.replace(/\s+/g, '')) !== -1;
+}
+
+function __lessonDistribution(answers) {
+  var counts = {}, i;
+  for (i = 0; i < answers.length; i++) {
+    var L = 'ABCDEFGH'[answers[i]];
+    counts[L] = (counts[L] || 0) + 1;
+  }
+  var allSame = answers.length >= 3;
+  for (i = 1; i < answers.length; i++) if (answers[i] !== answers[0]) { allSame = false; break; }
+  var domLetter = 'ABCDEFGH'[answers[0]], domCount = 0;
+  Object.keys(counts).forEach(function (L) { if (counts[L] > domCount) { domCount = counts[L]; domLetter = L; } });
+  var countsText = Object.keys(counts).sort().map(function (L) { return L + ':' + counts[L]; }).join(' ');
+  return { counts: counts, countsText: countsText, allSame: allSame,
+    allLetter: 'ABCDEFGH'[answers[0]], domLetter: domLetter, domCount: domCount,
+    domRatio: domCount / answers.length };
+}
+
+/* 汇总：粘贴文本 → {verdict:'PASS'|'FAIL', problems[], warnings[], details[]}，消息全部人话 */
+function __lessonValidate(text) {
+  var res = { verdict: 'PASS', problems: [], warnings: [], details: [] };
+  function fail(msg) { res.verdict = 'FAIL'; res.problems.push(msg); }
+  var st = __lessonStripFences(text);
+  if (st.error === 'empty') {
+    fail('没有收到内容——请先把 AI 给的网页代码粘贴到上面的框里，再点「开始校验」。');
+    return res;
+  }
+  if (st.error === 'nohtml') {
+    fail('没有认出网页代码——请回到 AI 的回复，点代码块右上角的「复制」按钮，把完整代码整段粘贴过来（应以 <!DOCTYPE html> 开头）。');
+    return res;
+  }
+  if (st.multi) res.warnings.push('这段粘贴里不止一份课的代码：本次只校验了第一份，其余请分开粘贴逐份校验。');
+  if (!st.complete) fail('代码不完整（没有 </html> 结尾）——多半是没复制完。请点 AI 回复里代码块的「复制」按钮整段复制，再粘贴一次。');
+  var doc = st.doc;
+
+  if (!__lessonCheckFooter(doc))
+    fail('页脚没有找到 AI 生成标识（' + LESSON_FOOTER_LABEL + '）。这是合规底线，也是让孩子知道内容来历的标记——请把课程生成指令重新发给 AI，让它重新生成。');
+
+  var ext = __lessonExternalRefs(doc);
+  if (ext.bad.length)
+    fail('这份课引用了外部网络资源（' + ext.bad[0] + '）——断网打开或单独转发时图片、样式会丢失，不符合「单文件课」要求。请把课程生成指令重新发给 AI，让它重新生成。');
+  else if (ext.links.length)
+    res.details.push('有 ' + ext.links.length + ' 处指向外部网页的文字链接（不影响离线使用，不算问题）');
+
+  var svg = __lessonSvgCheck(doc);
+  if (svg.count) res.details.push('内联图示 SVG ×' + svg.count + (svg.bad.length ? '' : '，良构'));
+  svg.bad.forEach(function (b) {
+    fail('第 ' + b.i + ' 个图示（SVG）代码有问题：' + b.err + '——打开时图可能显示不出来。请重新生成一次。');
+  });
+
+  var ex = __lessonExtractAnswers(doc);
+  if (!ex) {
+    res.details.push('答案分布：无法机检');
+    fail('没有认出这份课的小测判分写法（或这份课没有小测）——无法自动核对答案位置。请人工抽查 2~3 道题：点选项看判分对不对；本来该有小测却没有的，请重新生成。');
+  } else {
+    var d = __lessonDistribution(ex.answers);
+    res.details.push('小测 ' + ex.answers.length + ' 题 · 答案位置分布 ' + d.countsText + '（判分写法：' + ex.method + '）');
+    if (d.allSame)
+      fail('这课 ' + ex.answers.length + ' 道小测的答案全是 ' + d.allLetter + '——选项位置把答案泄露了，孩子不读题也能蒙对。请把课程生成指令重新发给 AI，让它重新生成一次。');
+    else if (d.domRatio >= 0.75 && ex.answers.length >= 4)
+      res.warnings.push('答案位置偏集中在 ' + d.domLetter + '（' + d.domCount + '/' + ex.answers.length + ' 题）——不算废，但建议多抽查几道答案在 ' + d.domLetter + ' 的题。');
+  }
+  return res;
+}
+/* LESSON_CHECK_END */
+
+/* UI 初始化：挂载点缺失（如无头测试桩）时安静退出 */
+(function () {
+  var ta = document.getElementById('lesson-paste');
+  var btn = document.getElementById('lesson-check-run');
+  var out = document.getElementById('lesson-check-out');
+  if (!ta || !btn || !out) return;
+  btn.addEventListener('click', function () {
+    out.textContent = '';
+    var r = __lessonValidate(ta.value);
+    var box = document.createElement('div');
+    box.className = 'summary';
+    var pass = r.verdict === 'PASS';
+    box.style.borderWidth = '2px';
+    box.style.borderColor = pass ? 'var(--good)' : 'var(--bad)';
+    var head = document.createElement('div');
+    head.style.cssText = 'font-weight:600;font-size:1.05rem;color:' + (pass ? 'var(--good)' : 'var(--bad)');
+    head.textContent = pass ? '✅ 机检通过——可以给孩子用了' : '❌ 先别用，请按下面的提示处理';
+    box.appendChild(head);
+    r.problems.forEach(function (p) {
+      var el = document.createElement('p');
+      el.style.cssText = 'margin:.5rem 0';
+      el.textContent = '✗ ' + p;
+      box.appendChild(el);
+    });
+    r.warnings.forEach(function (w) {
+      var el = document.createElement('p');
+      el.style.cssText = 'margin:.5rem 0';
+      el.textContent = '⚠ ' + w;
+      box.appendChild(el);
+    });
+    if (pass) {
+      var el = document.createElement('p');
+      el.style.cssText = 'margin:.5rem 0';
+      el.textContent = '最后一步：抽查 2~3 道小测题，看答案本身对不对——机器查不出答案对错。';
+      box.appendChild(el);
+    }
+    var dl = document.createElement('div');
+    dl.style.cssText = 'color:var(--muted);font-size:.85rem';
+    r.details.forEach(function (d) {
+      var el = document.createElement('div');
+      el.textContent = '· ' + d;
+      dl.appendChild(el);
+    });
+    box.appendChild(dl);
+    out.appendChild(box);
+    box.scrollIntoView({ behavior: 'smooth' });
+  });
+})();
+</script>
+</body>
+</html>
