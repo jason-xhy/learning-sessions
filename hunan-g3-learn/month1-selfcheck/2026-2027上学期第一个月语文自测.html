@@ -59,10 +59,11 @@ body.grading .dowidget { display:none; }
 #bar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line);
   display:flex; gap:.5rem; align-items:center; padding:.55rem .8rem calc(.55rem + env(safe-area-inset-bottom)); }
 #bar button { font:inherit; font-size:16px; border:1.5px solid var(--ink); background:#fff;
-  border-radius:.55rem; padding:.45rem .8rem; min-height:2.6rem; }
+  border-radius:.55rem; padding:.45rem .8rem; min-height:2.6rem; flex:0 0 auto; white-space:nowrap; }
 #bar .primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
 #bar .ghost { border-color:var(--line); color:var(--muted); }
-#progress { margin-left:auto; color:var(--muted); font-size:.9rem; white-space:nowrap; }
+#progress { flex:1 1 auto; min-width:0; text-align:right; color:var(--muted); font-size:.9rem;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #restoretip { display:none; background:#fdf6e3; border:1px solid #e8d9a0; border-radius:.5rem;
   padding:.5rem .8rem; margin:.8rem 0; font-size:.92rem; }
 #restoretip button { font:inherit; border:none; background:none; color:var(--accent); text-decoration:underline; }
@@ -334,7 +335,8 @@ function computeResult(data, st) {
       (r.ungraded.length ? '<p class="ugtip"><b>还有 ' + r.ungraded.length +
         ' 道主观题没打分</b>（对照解析与采分点，在每题下方打分），打完再看这份成绩单。</p>' : '') +
       '<h3 class="sec">各知识点得分</h3>' + rows +
-      (weak ? '<h3 class="sec">最先要补的知识点（≤2 个）</h3><ul>' + weak + '</ul>' : '') +
+      (weak ? '<h3 class="sec">最先要补的知识点（≤2 个）</h3><ul>' + weak + '</ul>'
+            : '<p class="note"><b>各知识点全部扎实</b>——保持节奏，按下面的复测时间回看错题即可。</p>') +
       '<p class="note">约定复测时间：7~10 天后只重做错题。把这张成绩单<b>截图发给家长或老师</b>，帮你定下一步。</p>';
     box.hidden = false;
   }
