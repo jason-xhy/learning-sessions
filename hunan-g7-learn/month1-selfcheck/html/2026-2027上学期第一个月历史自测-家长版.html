@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月历史自测-家长版</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g7-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>历史·七年级上学期第一个月自我检测<span class="muted">（家长版）</span></h1>
+<p>这一页写给家长：不讲题，只讲四件事——孩子这个月学了什么、怎么组织这次自检、怎么批改、结果怎么看待。</p>
+<h2>一、进度速览（孩子这个月学了什么）</h2>
+<p>孩子这个月学的是"中国从哪里来"：从最早的祖先（元谋人、北京人、山顶洞人），到第一次在一个地方安家、种粮食（河姆渡、半坡），再到中华文明露出的第一缕曙光（良渚古城、炎黄传说）。</p>
+<table><tr><th>周次</th><th>学校进度（第一单元）</th><th>孩子学到什么</th></tr><tr><td>第 1 周</td><td>第 1 课 远古时期的人类活动</td><td>元谋人、北京人、山顶洞人</td></tr><tr><td>第 2 周</td><td>第 2 课 原始农业与史前社会（河姆渡部分）</td><td>河姆渡居民：住干栏式房屋、种水稻</td></tr><tr><td>第 3 周</td><td>第 2 课（半坡部分、原始农业的意义）+ 第 3 课开篇</td><td>半坡居民：住半地穴式房屋、种粟；原始农业出现；良渚古城</td></tr><tr><td>第 4 周</td><td>第 3 课 中华文明的起源</td><td>炎帝黄帝传说、人文初祖、华夏形成、"多元一体"</td></tr></table>
+<p>每个知识点用一句话说人话：</p>
+<ul><li><strong>KP1 我国境内早期人类</strong>：就是"中国最早的祖先们"——云南元谋人（约 170 万年前）、北京人（约 70 万~20 万年前，会保存火种但长相还像猿）、山顶洞人（会用小孔骨针缝衣服）。家里可以问：一枚骨针能说明什么？</li><li><strong>KP2 原始农业与史前定居生活</strong>：原始农业就是祖先从"到处找吃的"变成"住在固定地方种粮养猪"。记忆口诀：长江的河姆渡人"水—稻—楼（干栏式）"，黄河的半坡人"旱—粟—窖（半地穴）"。</li><li><strong>KP3 炎黄传说与华夏形成</strong>：炎帝、黄帝是传说中的部落首领，被尊为"人文初祖"，所以华人都自称"炎黄子孙"。</li><li><strong>KP4 中华文明起源特征（多元一体·考古实证）</strong>：浙江的良渚古城（约 5300~4300 年前）挖出了大城和玉器，证明 5000 年前长江下游已进入文明社会；"多元一体"= 起源有好几个中心，最后汇成一家。</li><li><strong>KP5 传说与史实的区分</strong>：这是本单元最重要的一课——故事（传说）不等于史实，历史要靠挖出来的东西（化石、遗址、文物）说话。</li></ul>
+<p>进度差异说明：若学校进度较慢、第 3 课还没讲完，让孩子跳过第 11~17、19、20 题和第 22 题（共 47 分），只做其余 12 题（满分 53 分）；换算方法 = 实际得分 ÷ 53 × 100，再对照下文等级表。</p>
+<h2>二、怎么组织这次自检（10 分钟准备）</h2>
+<p>1. 打印学生版；教师版（或本页答案速查）留给自己对照。<br>
+2. 一次只测一科、不连考；留出完整的 40 分钟，安静环境。<br>
+3. 计时开始后不打扰、不提示；时间到就收卷。<br>
+4. 做完让孩子先自己批改，家长再抽 3 题复核——建议抽 1 道选择题、1 道材料题小问、1 道孩子犹豫过的题；抽到与孩子批的不一致，以家长为准，温和指出来。<br>
+5. 批改完，和孩子一起填"短板登记表"。</p>
+<h2>三、答案速查（家长批改用）</h2>
+<div class="ansgrid"><span class="chip"><b>1.</b>C</span><span class="chip"><b>2.</b>A</span><span class="chip"><b>3.</b>D</span><span class="chip"><b>4.</b>A</span><span class="chip"><b>5.</b>B</span><span class="chip"><b>6.</b>C</span><span class="chip"><b>7.</b>A</span><span class="chip"><b>8.</b>C</span><span class="chip"><b>9.</b>D</span><span class="chip"><b>10.</b>B</span><span class="chip"><b>11.</b>D</span><span class="chip"><b>12.</b>C</span><span class="chip"><b>13.</b>A</span><span class="chip"><b>14.</b>D</span><span class="chip"><b>15.</b>B</span><span class="chip"><b>16.</b>A</span><span class="chip"><b>17.</b>C</span><span class="chip"><b>18.</b>B</span><span class="chip"><b>19.</b>B</span><span class="chip"><b>20.</b>A</span><span class="chip"><b>21.</b>见解析</span><span class="chip"><b>22.</b>见解析</span></div>
+<p>（材料题第 21、22 题的参考答案与分步采分点见教师版"逐题解析"；家庭对照时按点给分，意思接近就算对。）</p>
+<h2>四、怎么解读结果（短板总结）</h2>
+<p>先把选择题得分加上材料题得分。等级对照表：</p>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<p>（跳做了题的，先按上面方法换算成百分制再对表。）第一个月的分数不等于能力，它只是帮我们找到漏点。</p>
+<p>三档话术：</p>
+<ul><li><strong>85+ 怎么夸</strong>：夸方法和习惯，不夸聪明——"你把'哪个流域、住什么房、种什么粮'配得清清楚楚，这套整理本事比分数还值钱。"</li><li><strong>70~84 怎么说</strong>：只挑一个最痛的点补——"大盘没问题，咱们只攻扣分最多的那一块，别的先不动。"</li><li><strong>&lt;70 怎么陪</strong>：陪孩子把课本第 1~3 课的课标题和小标题读一遍，只重做错题，7~10 天后复测；先不着急报班刷题。</li></ul>
+<h3>短板登记表（与孩子一起填）</h3>
+<table><tr><th>知识点</th><th>扣分</th><th>严重度（要补 / 需巩固）</th><th>建议动作（人话）</th></tr><tr><td>KP1 我国境内早期人类</td><td></td><td></td><td>读课本第 1 课 + 重做第 1~4 题</td></tr><tr><td>KP2 原始农业与史前定居生活</td><td></td><td></td><td>读课本第 2 课 + 重做第 5~10 题和第 21 题，用"水—稻—楼、旱—粟—窖"对对子</td></tr><tr><td>KP3 炎黄传说与华夏形成</td><td></td><td></td><td>读课本第 3 课传说部分 + 重做第 11~14 题</td></tr><tr><td>KP4 中华文明起源特征（多元一体·考古实证）</td><td></td><td></td><td>读课本第 3 课良渚部分 + 重做第 15~17 题</td></tr><tr><td>KP5 传说与史实的区分</td><td></td><td></td><td>重做第 18~20 题和第 22 题，练三句话："材料说了什么、课本怎么叫它、证据在哪"</td></tr></table>
+<h2>五、常见误区与家庭话术</h2>
+<p>1. <strong>"死背年代不如记特征与证据"</strong>：孩子记不清"7000 年、6000 年"很正常，先抓配对关系。可以照说："年代记个大概就行，先把'谁、在哪个流域、住什么房、种什么粮'四件事配对清楚，配对了年代自然不容易串。"<br>
+2. <strong>"传说不等于假的"</strong>：孩子说"黄帝是编的"或"黄帝百分之百是真的"都不全对。可以照说："传说像外婆讲的老故事，里面藏着真的影子——先民把重要的人和事记成了故事，我们再用考古挖出来的东西去验证它。"<br>
+3. <strong>"材料题不是抄材料"</strong>：孩子常把材料原句整段抄上去。可以照说："先从材料里圈出关键词，再换成课本上的词回答——材料说'木桩架空'，答案要写'干栏式房屋'。"<br>
+4. <strong>纸面测不到的能力——看文物的"证据意识"</strong>：卷子考不出博物馆里的观察力。替代小测法：带孩子看一件文物（或文物图片、纪录片画面），让孩子说三句话——"它是什么、它能证明什么、它证明了哪个课本上的说法。"</p>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g7-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+</body>
+</html>

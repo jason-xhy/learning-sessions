@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月数学自测-家长版</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g7-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>数学·七年级上学期第一个月自我检测<span class="muted">（家长版）</span></h1>
+<p>这一页写给家长：不讲题，只讲四件事——孩子这个月学了什么、怎么组织这次自检、怎么批改、结果怎么看待。</p>
+<h2>一、进度速览（孩子这个月学了什么）</h2>
+<p>本月数学只学“有理数”前半章：认识负数、把数分类、数轴、相反数、绝对值、比大小、加减法。<strong>乘除法和乘方这个月还没考</strong>，本卷也完全不涉及。</p>
+<table><tr><th>周次</th><th>学的内容</th><th>白话说明</th></tr><tr><td>第 1 周</td><td>认识负数</td><td>用正负号记录“意义相反”的量：收入记正、支出记负，水位高记正、低记负</td></tr><tr><td>第 2 周</td><td>数轴、相反数、绝对值</td><td>数轴是所有数的“刻度尺”；相反数是只差一个正负号；绝对值是到 0 的距离</td></tr><tr><td>第 3 周</td><td>数的分类与比大小</td><td>整数、分数分家；两个负数比大小，绝对值大的反而小</td></tr><tr><td>第 4 周</td><td>有理数的加减法</td><td>本月最重的板块，全卷近四成分数在这里</td></tr></table>
+<p><strong>每个知识点一句人话（KP1~KP8）：</strong></p>
+<ul><li>KP1 负数与相反意义的量：比 0 小的数就是负数；“水位比基准低 0.3 米”记作 -0.3 米，这就是用负数记相反意义的量。</li><li>KP2 有理数分类：把数分成整数和分数两大家族；0 既不是正数也不是负数，但它是整数。</li><li>KP3 数轴：一条带原点、正方向、刻度的直线，每个数在上面都有自己的位置，越靠右的数越大。</li><li>KP4 相反数：只有正负号不同的两个数，比如 +3 和 -3；0 的相反数还是 0。</li><li>KP5 绝对值：数轴上这个数到 0 的距离，永远不小于 0——所以“-3 的绝对值”是 3，不是 -3。</li><li>KP6 大小比较：正数大于 0，0 大于一切负数；两个负数比，绝对值大的反而小，比如 -5 &lt; -3。</li><li>KP7 加减运算：同号相加，符号不变、数字相加；异号相加，符号跟绝对值大的、数字相减；减一个数等于加它的相反数。</li><li>KP8 数形结合与规律探索：画条数轴帮着想数的问题；在一列数里找“每次多几、正负交替”的规律。</li></ul>
+<p><strong>进度差异说明</strong>：个别学校已讲到乘除法，相关题可自行加练，但本卷不涉及乘除与乘方；若学校还没讲到加减法，孩子可暂不做第 16、17、19 题，成绩按已做题换算（已做题得分 ÷ 已做题满分 × 100）。</p>
+<h2>二、怎么组织这次自检（10 分钟准备）</h2>
+<ul><li>打印学生版（20 题、满分 100、限时 45 分钟），备好笔、草稿纸和直尺（第 18 题画数轴要用）。</li><li>一次只测一科，不连考；计时 45 分钟，中途不打扰、不提醒。</li><li>到点收卷，先让孩子自己批改，家长再抽 3 题复核——建议抽 1 道选择、1 道填空、1 道计算；抽到不一致以家长为准，温和指出来。</li><li>计分口径：选择 1~10 每题 4 分；填空 11~15 每题 4 分（第 11、12、13、15 题两空各 2 分）；解答 16~20 按学生版里的采分点按步给分，宁可少给不高估。</li></ul>
+<h2>三、答案速查（家长批改用）</h2>
+<div class="ansgrid"><span class="chip"><b>1.</b>B</span><span class="chip"><b>2.</b>D</span><span class="chip"><b>3.</b>A</span><span class="chip"><b>4.</b>A</span><span class="chip"><b>5.</b>B</span><span class="chip"><b>6.</b>A</span><span class="chip"><b>7.</b>B</span><span class="chip"><b>8.</b>C</span><span class="chip"><b>9.</b>C</span><span class="chip"><b>10.</b>A</span><span class="chip"><b>11.</b>分数：-0.8、2/3；负整数：-4</span><span class="chip"><b>12.</b>7；0</span><span class="chip"><b>13.</b>±5；-2、-1、0、1、2</span><span class="chip"><b>14.</b>&gt;</span><span class="chip"><b>15.</b>x=2；y=-3</span><span class="chip"><b>16.</b>见解析</span><span class="chip"><b>17.</b>见解析</span><span class="chip"><b>18.</b>见解析</span><span class="chip"><b>19.</b>见解析</span><span class="chip"><b>20.</b>见解析</span></div>
+<p>（第 16~20 题的完整步骤和按步给分标准在教师版“逐题解析”里；批改时记住一条：孩子写了过程就按步给分，宁可少给不高估。）</p>
+<h2>四、怎么解读结果（短板总结）</h2>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<p><strong>三档话术：</strong></p>
+<ul><li><strong>85 分以上</strong>：夸过程不夸聪明——“你计算先定符号再动笔”“数轴画得很规范”，把好习惯说出来，比“真聪明”管用。</li><li><strong>70~84 分</strong>：和孩子一起从下面的登记表里挑最弱的一个知识点，本周只补它，不要七八个一起补。</li><li><strong>70 分以下（尤其 60 以下）</strong>：第一个月的分数不等于能力。先回课本第 1 章把例题重读一遍，只重做本卷错题，不刷题、不报班；7~10 天后只复测错题。</li></ul>
+<p><strong>第一个月分数 ≠ 能力</strong>：这份卷子是用来“找短板”的，不是用来定性的。找到薄弱点，就是这次自检最大的收获。</p>
+<h3>短板登记表（与孩子一起填）</h3>
+<table><tr><th>知识点</th><th>扣分</th><th>严重度（要补 / 需巩固）</th><th>建议动作（人话）</th></tr><tr><td>KP1 负数与相反意义的量</td><td></td><td></td><td>读课本第 1 章负数那一节 + 重做第 1、2 题</td></tr><tr><td>KP2 有理数分类</td><td></td><td></td><td>把课本上的分类表抄一遍，重做第 3、4、11 题</td></tr><tr><td>KP3 数轴</td><td></td><td></td><td>动手画 5 条数轴（三要素齐全），重做第 5、6、18 题</td></tr><tr><td>KP4 相反数</td><td></td><td></td><td>亲子互报数字说相反数，来 10 组，重做第 7、8、12 题</td></tr><tr><td>KP5 绝对值</td><td></td><td></td><td>让孩子用“到 0 的距离”给你讲一遍，重做第 9、13 题</td></tr><tr><td>KP6 有理数大小比较</td><td></td><td></td><td>报 10 对负数让孩子排大小，重做第 10、14 题</td></tr><tr><td>KP7 有理数加减运算</td><td></td><td></td><td>每天 5 道加减口算，只盯“先定符号”这一步，重做第 16、17、19 题</td></tr><tr><td>KP8 数形结合与规律探索</td><td></td><td></td><td>一起在数轴上把第 20 题的跳蚤跳 6 次画出来，重做第 15、20 题</td></tr></table>
+<h2>五、常见误区与家庭话术</h2>
+<p>1. <strong>误区：“-3 的绝对值是 -3。”</strong> 绝对值是“到 0 的距离”，距离没有负的，|-3| = 3。可照说：“你从家走 3 步，不管朝哪个方向，走的距离都是 3 步——绝对值就是这段距离，永远不带负号。”<br>
+2. <strong>误区：符号丢错</strong>（-5+3 算成 8，或结果漏写负号）。可照说：“计算只分两步——第一步定符号，第二步算数字。你把这两步写出来，我只检查这两步。” 陪练：每天 5 道加减小题，只看“符号定得对不对”，不追求数量。<br>
+3. <strong>误区：“0 不是正数也不是负数，它是不是没家？”</strong> 可照说：“0 是正负的分界线本身，它没有正负，但它属于整数家族，也是有理数。”<br>
+4. <strong>误区：“一看就会，一做就废。”</strong> 可照说：“别心算跳步，把每一步写出来——写出来的步骤就是得分点。” 每次只盯错因（错在哪一步、为什么错），不盯分数。</p>
+<p>（数学卷纸面测不到的能力主要是口算熟练度和数感：家长可加一个 1 分钟替代小测——口算 8 道一位数加减，看正确率是否 100%，错了不批评，只记录。）</p>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g7-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+</body>
+</html>

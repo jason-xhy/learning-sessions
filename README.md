@@ -18,7 +18,7 @@
 | 固定课序，人人一样 | 先做诊断测评，按**你的**缺口图排课序 |
 | 讲完即止 | 每课带检索练习，测验引擎即时反馈，测的是骨架牢固度 |
 | 知识点罗列，无处复核 | 结论全部锚定规范章节 + 内核行号，任何人可对照原文验证 |
-| 学不学得会靠自觉 | **AI 陪学原生**：`setup.sh` 一键接上任意 AI 助手，它会重新诊断你的基线、定制课序、随你的进度写出新课——课程是会生长的 |
+| 学不学得会靠自觉 | **AI 陪学原生**：陪学接入脚本 `setup.sh` 一键接上任意 AI 助手，它会重新诊断你的基线、定制课序、随你的进度写出新课——课程是会生长的（脚本随私有仓分发，见下） |
 
 ## 科目
 
@@ -35,7 +35,7 @@
 ## 怎么学
 
 - **自学**：进科目文件夹，从根目录的 `0001-knowledge-map-diagnostic.html` 诊断测评开始（即时判分，解析即锚点卡），按 `LEARNERS.md` 路由表选课。
-- **陪学（AI 助手）**：跑科目里的 `bash setup.sh`——把陪学协议幂等合入你的 `AGENTS.md`，并从上游装 `/teach` 技能（网络不通自动回退自学）；然后对 AI 说"按 AGENTS.md 当我的老师"，它会**先重新诊断你的基线**再按缺口定制课序。
+- **陪学（AI 助手）**：跑接入脚本 `setup.sh`——把陪学协议幂等合入你的 `AGENTS.md`，并从上游装 `/teach` 技能（网络不通自动回退自学）；然后对 AI 说"按 AGENTS.md 当我的老师"，它会**先重新诊断你的基线**再按缺口定制课序。脚本与构建工具不在本公开仓，随私有仓 learning-sessions-plan 的 `tools/learning-sessions/` 分发（本仓为纯交付物仓，2026-09-26 起）。
 
 ## 约定
 
@@ -44,5 +44,5 @@
 
 ## Credits
 
-- 教学框架（MISSION / 学习记录 / 检索练习 / 先诊断后教学）源自 [mattpocock/skills](https://github.com/mattpocock/skills)（MIT，`skills/productivity/teach`）；本仓不内嵌其代码，`setup.sh` 运行时从上游拉取。
+- 教学框架（MISSION / 学习记录 / 检索练习 / 先诊断后教学）源自 [mattpocock/skills](https://github.com/mattpocock/skills)（MIT，`skills/productivity/teach`）；本仓不内嵌其代码，接入脚本 `setup.sh` 运行时从上游拉取（脚本随私有仓分发）。
 - 课件中的内核源码片段属 [Linux kernel](https://github.com/torvalds/linux)（GPLv2），为教学评注性短摘录。

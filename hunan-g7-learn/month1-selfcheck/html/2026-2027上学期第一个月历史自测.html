@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月历史自测</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g7-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>历史·七年级上学期第一个月自我检测</h1>
+<div class="meta">满分 100 分 ｜ 建议用时 40 分钟 ｜ 做完先自己批改，再请家长抽 3 题复核</div>
+<blockquote>使用说明（先读再动笔）：限时 40 分钟，独立完成，不翻书不问人；做题时不要往下翻——答案在后面。做完先自己批改，再请家长抽 3 题复核。诚信计分：错了不丢人，漏出来的短板才是我们要找的宝贝。</blockquote>
+<details class="rules"><summary>计分规则与进度差异（先读再动笔）</summary>
+<ul><li>第 1~20 题（选择题）：对一题得 3 分，答错或不答不得分。</li><li>第 21、22 题（材料解析题）：对照采分点按步给分——每个采分点单独判，意思接近即可给分，拿不准就少给、不高估。第 21 题小问分值为 6+6+8，第 22 题小问分值为 6+6+8。例如 21(1) 共 6 分 = 房屋样式 2 分 + 农作物 2 分 + 流域 2 分，写对一处得 2 分。</li><li>总分 = 选择题得分 + 材料题得分，满分 100。</li></ul>
+<p>怎么算分：<br>
+等级对照表：</p>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<p>（若按进度差异说明跳做了一部分题，先把得分换算成百分制，再对照上表。）</p>
+
+</details>
+<div class="toolbar noprint">
+  <span class="chip" id="timerChip">⏱ 未开始 ／ 建议用时 40 分钟</span>
+  <span class="chip" id="progChip">已作答 0 ／ 22 题</span>
+  <button class="btn" id="btnPrint">打印</button>
+  <button class="btn btn-danger" id="btnClear">清空重来</button>
+</div>
+<p class="meta noprint">进度自动保存在本机浏览器（清理浏览器数据会丢；换设备不带过去）。不支持保存的浏览器请一次做完再交卷。</p>
+<p class="warnbox noprint" id="storeWarn" hidden>此浏览器不支持自动保存进度——请一次做完再退出。</p>
+<section id="exam">
+<h3>一、选择题（本题 20 小题，每小题 3 分，共 60 分。在每小题给出的四个选项中，只有一项是符合题目要求的。）</h3>
+<div class="q" id="q1" data-no="1" data-type="choice" data-score="3"><div class="qtext"><span class="qno">1.</span><p>我国境内目前已知最早的古人类之一，是距今约 170 万年的元谋人。元谋人遗址位于今天的（3分）<br>
+A. 北京市周口店<br>
+B. 陕西省西安市<br>
+C. 云南省元谋县<br>
+D. 浙江省余姚市</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q2" data-no="2" data-type="choice" data-score="3"><div class="qtext"><span class="qno">2.</span><p>下列关于北京人的叙述，正确的是（3分）<br>
+A. 使用打制石器<br>
+B. 已经种植水稻<br>
+C. 会建造干栏式房屋<br>
+D. 普遍使用磨制石器</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q3" data-no="3" data-type="choice" data-score="3"><div class="qtext"><span class="qno">3.</span><p>在北京人遗址（距今约 70 万~20 万年）中，考古学家发现了厚厚的灰烬层。这说明北京人（3分）<br>
+A. 已经会烧制陶器<br>
+B. 已经开始种植农作物<br>
+C. 已经掌握人工取火技术<br>
+D. 已经会使用天然火并会保存火种</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q4" data-no="4" data-type="choice" data-score="3"><div class="qtext"><span class="qno">4.</span><p>山顶洞人遗址出土了一枚骨针，针眼很小。这说明山顶洞人（3分）<br>
+A. 已经掌握磨光和钻孔技术<br>
+B. 完全不会制作工具<br>
+C. 已经学会种植水稻<br>
+D. 已经住上干栏式房屋</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q5" data-no="5" data-type="choice" data-score="3"><div class="qtext"><span class="qno">5.</span><p>距今约 7000 年，生活在长江流域、住干栏式房屋、种植水稻的原始居民是（3分）<br>
+A. 半坡居民<br>
+B. 河姆渡居民<br>
+C. 北京人<br>
+D. 山顶洞人</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q6" data-no="6" data-type="choice" data-score="3"><div class="qtext"><span class="qno">6.</span><p>半坡居民生活在黄河流域。他们种植的主要粮食作物是（3分）<br>
+A. 水稻<br>
+B. 小麦<br>
+C. 粟<br>
+D. 大豆</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q7" data-no="7" data-type="choice" data-score="3"><div class="qtext"><span class="qno">7.</span><p>河姆渡居民的干栏式房屋，人住在上面，下面架空。这种建筑方式主要是为了（3分）<br>
+A. 防潮通风，适应长江流域温暖湿润的气候<br>
+B. 让屋里冬暖夏凉，适应北方气候<br>
+C. 节省木材<br>
+D. 方便随时搬迁</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q8" data-no="8" data-type="choice" data-score="3"><div class="qtext"><span class="qno">8.</span><p>半坡居民的半地穴式房屋，一半在地下。这种房屋主要是为了适应（3分）<br>
+A. 长江流域潮湿闷热的气候<br>
+B. 河网密布的水乡环境<br>
+C. 黄河流域寒冷干燥的气候<br>
+D. 山地崎岖的地形</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q9" data-no="9" data-type="choice" data-score="3"><div class="qtext"><span class="qno">9.</span><p>原始农业兴起和发展的重要标志是（3分）<br>
+A. 打制石器的广泛使用<br>
+B. 采集和狩猎仍是唯一食物来源<br>
+C. 居无定所、经常迁徙<br>
+D. 农作物种植、家畜饲养的出现以及聚落、磨制石器的发展</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q10" data-no="10" data-type="choice" data-score="3"><div class="qtext"><span class="qno">10.</span><p>在河姆渡遗址和半坡遗址中，考古学家分别出土的农作物应该是（3分）<br>
+A. 粟、水稻<br>
+B. 水稻、粟<br>
+C. 水稻、玉米<br>
+D. 粟、小麦</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q11" data-no="11" data-type="choice" data-score="3"><div class="qtext"><span class="qno">11.</span><p>传说中，教人们开垦耕种、种植五谷，被后世尊为"神农氏"的是（3分）<br>
+A. 黄帝<br>
+B. 蚩尤<br>
+C. 仓颉<br>
+D. 炎帝</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q12" data-no="12" data-type="choice" data-score="3"><div class="qtext"><span class="qno">12.</span><p>相传建造宫室、制作衣裳、挖掘水井、制造船只，为后世衣食住行奠定基础的传说人物是（3分）<br>
+A. 炎帝<br>
+B. 蚩尤<br>
+C. 黄帝<br>
+D. 仓颉</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q13" data-no="13" data-type="choice" data-score="3"><div class="qtext"><span class="qno">13.</span><p>海内外华人常自豪地自称"炎黄子孙"。这一称呼直接来源于（3分）<br>
+A. 炎帝、黄帝部落结成联盟并逐渐形成华夏族的传说<br>
+B. 河姆渡人最早住进干栏式房屋的传说<br>
+C. 仓颉发明文字的传说<br>
+D. 北京人保存火种的传说</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q14" data-no="14" data-type="choice" data-score="3"><div class="qtext"><span class="qno">14.</span><p>下列各项中，不属于传说中黄帝发明创造的是（3分）<br>
+A. 建造宫室<br>
+B. 挖掘水井<br>
+C. 制作衣裳<br>
+D. 尝遍百草、为民找药</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q15" data-no="15" data-type="choice" data-score="3"><div class="qtext"><span class="qno">15.</span><p>良渚古城遗址位于长江下游，距今约 5300~4300 年。考古发现证实，良渚古城所在的地区当时（3分）<br>
+A. 还没有出现农业生产<br>
+B. 已经出现早期国家，进入文明社会<br>
+C. 居民仍住在天然山洞里<br>
+D. 是黄河流域的中心城市</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q16" data-no="16" data-type="choice" data-score="3"><div class="qtext"><span class="qno">16.</span><p>良渚古城的贵族墓葬与平民墓葬，随葬品差别悬殊。这说明当时（3分）<br>
+A. 社会已经出现明显的阶级分化<br>
+B. 贫富差别还没有出现<br>
+C. 居民刚学会打制石器<br>
+D. 还没有出现农业</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q17" data-no="17" data-type="choice" data-score="3"><div class="qtext"><span class="qno">17.</span><p>中华文明的起源具有"多元一体"的特征。其中"多元"指的是（3分）<br>
+A. 中华文明由多个国家共同创造<br>
+B. 一个民族使用多种语言文字<br>
+C. 史前文化起源有多个中心，如黄河流域、长江流域，各具特色<br>
+D. 一年之中有多个重要节日</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q18" data-no="18" data-type="choice" data-score="3"><div class="qtext"><span class="qno">18.</span><p>下列材料中，属于考古发现（实物证据）的是（3分）<br>
+A. 神农尝百草的故事<br>
+B. 河姆渡遗址出土的骨耜<br>
+C. 老人讲述的远古传说<br>
+D. 纪录片复原的原始村落画面</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q19" data-no="19" data-type="choice" data-score="3"><div class="qtext"><span class="qno">19.</span><p>对于炎帝、黄帝这样的远古传说，下列认识正确的是（3分）<br>
+A. 传说毫无价值，应当全部抛弃<br>
+B. 传说蕴含一定的历史信息，但需要考古发现来印证<br>
+C. 传说代代相传，都可直接当作史实<br>
+D. 传说情节越精彩，可信度就越高</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q20" data-no="20" data-type="choice" data-score="3"><div class="qtext"><span class="qno">20.</span><p>某考古队在长江下游发掘出一处距今约 5000 年的遗址：有古城墙、宫殿基址、大片炭化稻谷和成组玉器。要论证"这里已出现早期国家、进入文明社会"，最有力的依据是（3分）<br>
+A. 上述考古实证<br>
+B. 当地流传的民歌<br>
+C. 一位游客的大胆想象<br>
+D. 网络论坛上的争论</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>二、材料解析题（本题 2 小题，共 40 分。阅读材料，结合所学知识回答问题。）</h3>
+<div class="q" id="q21" data-no="21" data-type="self" data-score="20"><div class="qtext"><span class="qno">21.</span><p>阅读下列材料，回答问题。（20分）</p>
+<p>材料一 距今约 7000 年的河姆渡遗址位于长江中下游地区。这里的房屋先打入木桩作地基，上面架设木板、搭建房间，人住在上层，下面架空，可以堆放杂物。遗址中出土了大量人工栽培水稻的谷壳、稻秆，还有翻土用的骨耜。</p>
+<p>材料二 距今约 6000 年的半坡遗址位于黄河流域。这里的房屋一半挖进地下，以坑壁作墙壁，屋顶用草泥搭盖，屋里还有取暖的火塘。遗址中发现了成堆的粟粒和储存粮食的窖穴，以及绘有鱼纹等图案的彩陶。</p>
+<p>（1）根据材料一，写出河姆渡居民房屋的样式和他们种植的农作物，并指出河姆渡遗址所在的流域。（6分）<br>
+（2）根据材料二，写出半坡居民房屋的样式和他们种植的主要粮食作物，并指出半坡遗址所在的流域。（6分）<br>
+（3）对比两则材料并结合所学知识，说说我国史前居民的生产生活与自然环境之间有什么关系？（8分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q22" data-no="22" data-type="self" data-score="20"><div class="qtext"><span class="qno">22.</span><p>阅读下列材料，回答问题。（20分）</p>
+<p>材料一 相传，距今约四五千年，炎帝部落和黄帝部落生活在黄河流域。炎帝教人们开垦耕种、亲尝百草为人找药；黄帝建造宫室、制作衣裳、挖掘水井。两大部落联合击败蚩尤后结成联盟，逐渐形成华夏族，后人尊崇炎帝和黄帝为人文初祖。</p>
+<p>材料二 良渚古城遗址（距今约 5300~4300 年）位于长江下游，有规模宏大的城址、复杂的水利系统，出土了大量精美玉器，贵族墓葬与平民墓葬的随葬品差别明显。考古发现证实，距今约 5000 年，长江下游地区已经出现早期国家，进入了文明社会。</p>
+<p>（1）材料一讲述的内容属于传说还是考古发现？这类材料对认识远古历史有什么价值？（6分）<br>
+（2）材料二属于哪一类史料？它对认识中华文明的起源有什么作用？（6分）<br>
+（3）综合两则材料并结合所学知识，指出中华文明起源具有的特征，并说说我们应当怎样对待传说与考古发现。（8分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+</section>
+<div class="submitbar noprint"><button class="btn" id="btnSubmit">交卷批改</button><span id="submitHint"></span></div>
+<section id="review" hidden>
+<h2>批改说明</h2>
+<h3>答案速查</h3>
+<h3>逐题解析</h3>
+<h3>答案速查（批改卡）</h3>
+<div class="ansgrid" id="ansgrid"></div>
+</section>
+<section id="results" hidden></section>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g7-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+<script>
+const DATA = {"subject":"历史","year":"2026-2027","term":"上学期第一个月","duration":40,"total":100,"items":[{"no":1,"score":3,"kp":"KP1","difficulty":"易","match":"强"},{"no":2,"score":3,"kp":"KP1","difficulty":"易","match":"强"},{"no":3,"score":3,"kp":"KP1","difficulty":"易","match":"强"},{"no":4,"score":3,"kp":"KP1","difficulty":"中","match":"中"},{"no":5,"score":3,"kp":"KP2","difficulty":"易","match":"强"},{"no":6,"score":3,"kp":"KP2","difficulty":"易","match":"强"},{"no":7,"score":3,"kp":"KP2","difficulty":"中","match":"中"},{"no":8,"score":3,"kp":"KP2","difficulty":"易","match":"强"},{"no":9,"score":3,"kp":"KP2","difficulty":"中","match":"中"},{"no":10,"score":3,"kp":"KP2","difficulty":"易","match":"强"},{"no":11,"score":3,"kp":"KP3","difficulty":"易","match":"强"},{"no":12,"score":3,"kp":"KP3","difficulty":"易","match":"强"},{"no":13,"score":3,"kp":"KP3","difficulty":"中","match":"中"},{"no":14,"score":3,"kp":"KP3","difficulty":"易","match":"强"},{"no":15,"score":3,"kp":"KP4","difficulty":"中","match":"中"},{"no":16,"score":3,"kp":"KP4","difficulty":"中","match":"中"},{"no":17,"score":3,"kp":"KP4","difficulty":"易","match":"强"},{"no":18,"score":3,"kp":"KP5","difficulty":"易","match":"强"},{"no":19,"score":3,"kp":"KP5","difficulty":"较难","match":"中"},{"no":20,"score":3,"kp":"KP5","difficulty":"较难","match":"拓展"},{"no":21,"score":20,"kp":"KP2","difficulty":"中","match":"中"},{"no":22,"score":20,"kp":"KP5","difficulty":"较难","match":"拓展"}],"answers":{"1":"C","2":"A","3":"D","4":"A","5":"B","6":"C","7":"A","8":"C","9":"D","10":"B","11":"D","12":"C","13":"A","14":"D","15":"B","16":"A","17":"C","18":"B","19":"B","20":"A","21":"见解析","22":"见解析"},"types":{"1":"choice","2":"choice","3":"choice","4":"choice","5":"choice","6":"choice","7":"choice","8":"choice","9":"choice","10":"choice","11":"choice","12":"choice","13":"choice","14":"choice","15":"choice","16":"choice","17":"choice","18":"choice","19":"choice","20":"choice","21":"self","22":"self"},"kpNames":{"KP1":"我国境内早期人类","KP2":"原始农业与史前定居生活","KP3":"炎黄传说与华夏形成","KP4":"中华文明起源特征（多元一体·考古实证）","KP5":"传说与史实的区分"}};
+const SOLS = {"1":"选择题（每小题 3 分，给判错点各一句）\n\n1. C　元谋人（距今约 170 万年）遗址在云南省元谋县，是我国境内已知最早的古人类之一。排除：A 周口店是北京人、山顶洞人遗址；B 西安是半坡遗址所在地；D 余姚是河姆渡遗址所在地。","2":"2. A　北京人使用打制石器，属旧石器时代。排除：B 水稻是河姆渡居民种植的；C 干栏式房屋是河姆渡居民建造的；D 磨制石器到半坡、河姆渡所处的新石器时代才普遍使用。","3":"3. D　灰烬层说明北京人已会使用天然火并能保存火种。排除：C 人工取火是山顶洞人可能已掌握的技术，北京人尚未掌握；A 陶器是新石器时代才出现的；B 北京人不会种植农作物。","4":"4. A　针眼很小的骨针说明山顶洞人已掌握磨光和钻孔技术（可用骨针缝制衣物）。排除：B 与事实相反，骨针本身就是制作工具的证据；C、D 都是河姆渡居民的成就。","5":"5. B　河姆渡居民的四大特征：约 7000 年前、长江流域、干栏式房屋、水稻。排除：A 半坡居民在黄河流域、住半地穴式房屋、种粟；C、D 是旧石器时代人类，不会农耕建房。","6":"6. C　半坡居民种粟（小米）。排除：A 水稻是河姆渡居民（长江流域）种植的；B、D 均非半坡居民培育的主要粮食作物。","7":"7. A　干栏式房屋通风防潮，适应长江流域温暖湿润的气候。排除：B \"冬暖夏凉\"是半坡半地穴式房屋的特点，属张冠李戴；C 干栏式建筑用木较多，并不省材；D 河姆渡人已定居，无需搬迁。","8":"8. C　半地穴式房屋一半在地下，冬暖夏凉，适应黄河流域寒冷干燥的气候。排除：A、B 是长江流域的环境特点；D 与半坡所在的平原地形不符。","9":"9. D　农作物种植、家畜饲养的出现以及聚落、磨制石器的发展，是原始农业兴起和发展的重要标志。排除：A、B、C 恰是原始农业出现之前的状态，方向相反。","10":"10. B　河姆渡种水稻、半坡种粟。排除：A 将两者对调；C 玉米、D 小麦均非这两种先民培育的作物。","11":"11. D　炎帝教民开垦耕种、种植五谷，故被尊为\"神农氏\"。排除：A 黄帝的传说是宫室、衣裳、水井、船只；B 蚩尤是被击败的部落首领；C 仓颉的传说是发明文字。","12":"12. C　传说中黄帝建造宫室、制作衣裳、挖掘水井、制造船只，为后世衣食住行奠定基础。排除：A 炎帝的贡献侧重农耕与医药；B 蚩尤无此类传说；D 仓颉的传说是造字。","13":"13. A　\"炎黄子孙\"直接来源于炎帝、黄帝部落结成联盟并逐渐形成华夏族的传说。排除：B 干栏式房屋是河姆渡人住的，张冠李戴；C、D 与这一称呼无直接关系。","14":"14. D　\"尝遍百草、为民找药\"是炎帝（神农氏）的传说，不属于黄帝。排除：A、B、C 恰是传说中黄帝的贡献，本题为选非题。","15":"15. B　良渚考古实证：距今约 5000 年，长江下游地区已经出现早期国家，进入文明社会。排除：A 良渚稻作农业发达；C 良渚建有宏大古城，不住山洞；D 良渚在长江流域，不在黄河流域。","16":"16. A　墓葬随葬品差别悬殊，说明当时社会已出现明显的阶级分化。排除：B 与材料信息相反；C 良渚属新石器时代，磨制石器早已使用；D 良渚有炭化稻谷，农业发达。","17":"17. C　\"多元\"指史前文化起源有多个中心（黄河流域、长江流域等），各具特色。排除：A \"多个国家\"曲解了概念；B 语言文字与文明起源中心无关；D 节日与文明起源无关。","18":"18. B　骨耜是从遗址出土的实物，属考古发现。排除：A、C 都是口耳相传的故事传说；D 是现代人的复原创作，不是当时的遗存。","19":"19. B　传说蕴含一定的历史信息，但需要考古发现来印证——既不抹杀传说的价值，也不把传说直接当史实。排除：A 全盘否定传说的价值；C、D 都把传说直接等同于史实。","20":"20. A　论证历史结论最有力的依据是考古实证本身（第一手证据）。排除：B、C、D 都不是第一手证据，无法证明\"早期国家\"的存在。","21":"材料解析题（示例答案 + 采分点分步分）\n\n21.（20 分）\n（1）房屋样式：干栏式房屋（2 分）；农作物：水稻（2 分）；流域：长江流域（2 分）。\n（2）房屋样式：半地穴式房屋（2 分）；主要粮食作物：粟（2 分）；流域：黄河流域（2 分）。\n（3）示例答案：长江流域温暖湿润、河网密布，所以河姆渡人住通风防潮的干栏式房屋、种喜水的水稻；黄河流域冬季寒冷干燥，所以半坡人住保暖的半地穴式房屋、种耐旱的粟（4 分，两个流域各 2 分）。这说明史前居民能够因地制宜，让房屋样式和种植的作物与当地自然环境相适应（2 分）；生产发展使人们过上定居生活，促进了原始农业的兴起（2 分）。","22":"22.（20 分）\n（1）属于传说（2 分）。价值：传说中蕴含着一定的历史信息（2 分）；传说可以与考古发现相互印证，帮助我们从侧面了解还没有文字记载的远古历史（2 分）。\n（2）属于考古发现（实物史料）（2 分）。作用：考古实证能直接证实当时的历史，是最可靠的依据（2 分）；良渚的考古发现证实了距今约 5000 年长江下游地区已经出现早期国家、进入文明社会（2 分）。\n（3）特征：中华文明的起源具有\"多元一体\"的特征——黄河流域（炎黄传说）、长江流域（良渚古城）等多个中心各具特色，又逐渐交流融合，汇成一体（4 分：点出\"多元一体\"2 分，展开\"多中心、相交融\"2 分）。态度：传说不能直接当作史实，要用考古发现加以印证（2 分）；同时珍视传说中蕴含的历史信息，把传说与考古证据结合起来认识中华文明的起源（2 分）。"};
+/*SCORE-CORE-START*/
+function gradeOf(pct){
+  if(pct===null||pct===undefined||isNaN(pct)) return null;
+  if(pct>=85) return {g:"优",t:"本月骨架扎实，保持节奏"};
+  if(pct>=70) return {g:"良",t:"大盘没问题，个别点要回炉"};
+  if(pct>=60) return {g:"合格",t:"有明确短板，按下面清单补"};
+  return {g:"待加强",t:"第一个月很常见！先回课本，不着急刷题报班"};
+}
+function verdictOf(rate){ if(rate>=0.8) return "扎实"; if(rate>=0.5) return "需巩固"; return "要补"; }
+function qVerdict(data, st, it){
+  if(st.skip && st.skip[it.no]) return "skip";
+  var t = data.types[it.no];
+  if(t==="choice"||t==="judge"){
+    if(st.override && st.override[it.no])
+      return st.override[it.no]==="对" ? "full" : "zero";
+    if(!st.ans || !st.ans[it.no]) return "miss";
+    return st.ans[it.no]===data.answers[it.no] ? "full" : "zero";
+  }
+  var v = st.score ? st.score[it.no] : undefined;
+  if(typeof v!=="number") return "unjudged";
+  if(v>=it.score) return "full";
+  if(v>0) return v;
+  return "zero";
+}
+function computeResults(data, st){
+  var earned=0, full=0, kps={}, missed=[], unjudged=[];
+  // 第一遍：总分与缺勤标记（跳过题不计入总分）
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    full += it.score;
+    var pts = 0;
+    if(v==="full") pts = it.score;
+    else if(typeof v==="number") pts = v;
+    else if(v==="miss") missed.push(it.no);
+    else if(v==="unjudged") unjudged.push(it.no);
+    earned += pts;
+  });
+  // 第二遍：KP 汇总先只记被测题（整 KP 全跳过 → 无档 → 不出行）。
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    var pts = (v==="full") ? it.score : (typeof v==="number" ? v : 0);
+    String(it.kp).split("+").forEach(function(k){
+      if(!kps[k]) kps[k]={earned:0,full:0,nos:[],skips:[]};
+      kps[k].earned += pts; kps[k].full += it.score;
+      if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+    });
+  });
+  // 第三遍：部分跳过的 KP —— 跳过题计入满分与关联题号（得分率保守不高估）。
+  data.items.forEach(function(it){
+    if(!(st.skip && st.skip[it.no])) return;
+    String(it.kp).split("+").forEach(function(k){
+      if(kps[k]){
+        kps[k].full += it.score;
+        if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+        kps[k].skips.push(it.no);
+      }
+    });
+  });
+  var pct = full>0 ? Math.round(earned/full*1000)/10 : null;
+  var grade = gradeOf(pct);
+  var kpRows = Object.keys(kps).map(function(k){
+    var r = kps[k];
+    return {kp:k, name:(data.kpNames&&data.kpNames[k])||k, earned:r.earned,
+            full:r.full, nos:r.nos, skips:r.skips,
+            rate:r.full? r.earned/r.full : null,
+            verdict:r.full? verdictOf(r.earned/r.full) : null};
+  }).sort(function(a,b){ return a.rate-b.rate; });
+  var weak = kpRows.filter(function(r){ return r.rate!==null && r.rate<0.8; }).slice(0,2);
+  return {earned:earned, full:full, pct:pct, grade:grade, kpRows:kpRows,
+          weak:weak, missed:missed, unjudged:unjudged};
+}
+/*SCORE-CORE-END*/
+
+var KEY = "g7m1-" + DATA.subject;
+function $(s, el){ return (el||document).querySelector(s); }
+function $all(s, el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); }
+var storeOK = true;
+function loadState(){
+  try{ var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; }
+  catch(e){ storeOK = false; return null; }
+}
+function saveState(){
+  try{ localStorage.setItem(KEY, JSON.stringify(st)); }
+  catch(e){ if(storeOK){ storeOK = false; $("#storeWarn").hidden = false; } }
+}
+var st = loadState() || {ans:{}, fill:{}, score:{}, skip:{}, override:{},
+                         submitted:false, start:null};
+if(!st.ans) st.ans = {}; if(!st.fill) st.fill = {};
+if(!st.score) st.score = {}; if(!st.skip) st.skip = {};
+if(!st.override) st.override = {};
+
+function startTimerIfNeeded(){
+  if(!st.start){ st.start = Date.now(); saveState(); }
+}
+setInterval(function(){
+  if(!st.start) return;
+  var s = Math.floor((Date.now()-st.start)/1000);
+  var mm = String(Math.floor(s/60)).padStart(2,"0"), ss = String(s%60).padStart(2,"0");
+  $("#timerChip").textContent = "⏱ " + mm + ":" + ss + " ／ 建议用时 " + DATA.duration + " 分钟";
+}, 1000);
+
+$all(".q").forEach(function(q){
+  var no = q.getAttribute("data-no"), typ = q.getAttribute("data-type");
+  $all("button.opt", q).forEach(function(b){
+    b.addEventListener("click", function(){
+      startTimerIfNeeded();
+      st.ans[no] = (st.ans[no] === b.getAttribute("data-v")) ? null : b.getAttribute("data-v");
+      if(!st.ans[no]) delete st.ans[no];
+      saveState(); paintQ(q); refresh();
+    });
+  });
+  var fill = $(".fillin", q);
+  if(fill) fill.addEventListener("input", function(){
+    startTimerIfNeeded();
+    if(fill.value) st.fill[no] = fill.value; else delete st.fill[no];
+    saveState();
+  });
+  var sk = $(".skip input", q);
+  if(sk) sk.addEventListener("change", function(){
+    startTimerIfNeeded();
+    if(sk.checked) st.skip[no] = true; else delete st.skip[no];
+    saveState(); paintQ(q); refresh();
+  });
+});
+
+function paintQ(q){
+  var no = q.getAttribute("data-no");
+  $all("button.opt", q).forEach(function(b){
+    b.classList.toggle("sel", st.ans[no] === b.getAttribute("data-v"));
+  });
+  if($(".skip input", q)) $(".skip input", q).checked = !!st.skip[no];
+}
+
+function fillAnsgrid(){
+  $("#ansgrid").innerHTML = Object.keys(DATA.answers).map(function(k){
+    return '<span class="chip"><b>' + k + '.</b>' + escHtml(DATA.answers[k]) + '</span>';
+  }).join("");
+}
+
+function verdictLabel(v, it){
+  if(v==="skip") return ["warn","已跳过（不计分）"];
+  if(v==="full") return ["ok","✓ 对（"+it.score+" 分）"];
+  if(v==="miss") return ["bad","✗ 漏做（0 分）"];
+  if(v==="zero") return ["bad","✗ 错（0 分）"];
+  if(v==="unjudged") return ["warn","待自评给分"];
+  return ["warn","自评 "+v+" ／ "+it.score+" 分"];
+}
+
+function recompute(){
+  var res = computeResults(DATA, st);
+  $all(".q").forEach(function(q){
+    var no = q.getAttribute("data-no");
+    var it = DATA.items.filter(function(x){ return String(x.no)===no; })[0];
+    var v = qVerdict(DATA, st, it);
+    var el = $(".verdict", q);
+    var lab = verdictLabel(v, it);
+    el.className = "verdict " + lab[0];
+    var over = st.override[no] ? "（已按家长复核改判）" : "";
+    el.textContent = st.submitted ? lab[1] + over : "";
+    var rv = $(".reveal", q);
+    if(st.submitted){
+      rv.hidden = false;
+      var parts = [];
+      if(DATA.answers[no] && DATA.answers[no] !== "见解析")
+        parts.push('<div class="ref">参考答案：' + escHtml(DATA.answers[no]) + '</div>');
+      parts.push('<div class="sol">' + escHtml(SOLS[no] || "（无解析）") + '</div>');
+      if(DATA.types[no]==="self"||DATA.types[no]==="fill"){
+        parts.push('<div class="stepper noprint"><button class="dec" aria-label="减">−</button>' +
+          '<span class="score"></span><button class="inc" aria-label="加">＋</button>' +
+          '<span class="muted">／ 满分 ' + it.score + ' 分（宁可少给不高估）</span></div>');
+      }
+      if(DATA.types[no]==="choice"||DATA.types[no]==="judge"){
+        parts.push('<button class="btn noprint gai" data-no="' + no + '">家长复核改判</button>');
+      }
+      rv.innerHTML = parts.join("");
+      var sc = st.score[no];
+      if(typeof sc!=="number") sc = 0;
+      var scoreEl = $(".stepper .score", rv);
+      if(scoreEl) scoreEl.textContent = sc + " 分";
+      var dec = $(".stepper .dec", rv), inc = $(".stepper .inc", rv);
+      if(dec) dec.addEventListener("click", function(){
+        st.score[no] = Math.max(0, (typeof st.score[no]==="number"? st.score[no] : 0) - 1);
+        saveState(); paintScore(no); refresh();
+      });
+      if(inc) inc.addEventListener("click", function(){
+        st.score[no] = Math.min(it.score, (typeof st.score[no]==="number"? st.score[no] : 0) + 1);
+        saveState(); paintScore(no); refresh();
+      });
+      var gai = $(".gai", rv);
+      if(gai) gai.addEventListener("click", function(){
+        var cur = qVerdict(DATA, st, it);
+        st.override[no] = (cur === "full") ? "错" : "对";
+        saveState(); refresh();
+      });
+    } else { rv.hidden = true; rv.innerHTML = ""; }
+  });
+  return res;
+}
+
+function paintScore(no){
+  var q = $("#q" + no);
+  var sc = st.score[no]; if(typeof sc!=="number") sc = 0;
+  var el = $(".stepper .score", q); if(el) el.textContent = sc + " 分";
+}
+
+function refresh(){
+  var res = recompute();
+  var answered = Object.keys(st.ans).length + Object.keys(st.score).length;
+  $("#progChip").textContent = "已作答/已判 " + answered + " ／ " + DATA.items.length + " 题";
+  var nTodo = res.missed.length + res.unjudged.length;
+  $("#submitHint").textContent = nTodo ? ("还有 " + nTodo + " 题未作答或未判分，可先交卷再补。") : "";
+  if(!st.submitted){ $("#results").hidden = true; $("#review").hidden = true; return; }
+  document.body.classList.add("revealed");
+  $("#review").hidden = false;
+  fillAnsgrid();
+  var R = $("#results");
+  R.hidden = false;
+  var h = [];
+  if(res.full === 0){
+    h.push('<div class="warnbox">全卷都标记了跳过，无法评级。去掉"跳过"或先做题。</div>');
+  } else {
+    h.push('<div class="resline">得分：<b>' + res.earned + '</b> ／ 已做题满分 ' + res.full +
+      ' ｜ 折算 <b>' + res.pct + '</b> 分 ｜ 等级 <span class="gradebadge">' +
+      (res.grade ? res.grade.g : "—") + '</span> <span class="muted">' +
+      (res.grade ? res.grade.t : "") + '</span></div>');
+  }
+  if(res.missed.length)
+    h.push('<div class="warnbox">第 ' + res.missed.join("、") + ' 题未作答，按 0 分计；补答后自动重算。</div>');
+  if(res.unjudged.length)
+    h.push('<div class="warnbox">第 ' + res.unjudged.join("、") + ' 题还没自评给分，判完自动重算。</div>');
+  h.push('<h3>按知识点登记（自动汇总）</h3>');
+  h.push('<table><thead><tr><th>知识点</th><th>关联题号</th><th>得分</th><th>满分</th><th>结论</th></tr></thead><tbody>');
+  res.kpRows.forEach(function(r){
+    var nosTxt = r.nos.join(", ") +
+      (r.skips.length ? "（" + r.skips.join("、") + " 跳过，计入满分）" : "");
+    h.push('<tr><td>' + escHtml(r.kp + " " + r.name) + '</td><td>' + escHtml(nosTxt) +
+      '</td><td>' + r.earned + '</td><td>' + r.full + '</td><td>' + escHtml(r.verdict || "—") + '</td></tr>');
+  });
+  h.push('</tbody></table>');
+  h.push('<p class="muted">结论口径：得分率 ≥80% 扎实、50~79% 需巩固、&lt;50% 要补；跳过题计入所在知识点的满分（宁可不高估）。</p>');
+  h.push('<h3>我的短板清单（最先补，≤2 个）</h3>');
+  if(res.weak.length){
+    h.push('<ol>');
+    res.weak.forEach(function(r){
+      h.push('<li><b>' + escHtml(r.kp + " " + r.name) + '</b>（第 ' + r.nos.join("、") +
+        ' 题）：把课本对应章节再读一遍；重做本卷第 ' + r.nos.join("、") +
+        ' 题；错题抄进错题本。</li>');
+    });
+    h.push('</ol>');
+  } else if(res.full > 0){
+    h.push('<p>本月各知识点都扎实，保持节奏。</p>');
+  }
+  h.push('<p>约定复测时间：＿＿＿＿＿＿（建议 7~10 天后只重做错题）</p>');
+  h.push('<h3>成绩单摘要（截图保存，或发给老师/家长）</h3>');
+  h.push('<div class="summarybox">' + escHtml(DATA.subject) + ' · ' + escHtml(DATA.year + DATA.term + "自测") +
+    '<br>得分 ' + res.earned + '／' + res.full + '（已做题折算 ' + (res.pct===null?"—":res.pct) + ' 分，等级 ' +
+    (res.grade ? res.grade.g : "—") + '）<br>要补：' +
+    (res.weak.length ? res.weak.map(function(r){ return escHtml(r.kp + " " + r.name); }).join("；") : "无（全部扎实）") +
+    '<br>日期：＿＿＿＿＿＿　复核：家长抽 3 题已核对 □</div>');
+  R.innerHTML = h.join("");
+}
+
+function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+$("#btnSubmit").addEventListener("click", function(){
+  startTimerIfNeeded();
+  if(!st.submitted && !confirm("确认交卷批改？交卷后公布参考答案与解析。"))
+    return;
+  st.submitted = true;
+  saveState(); refresh();
+  $("#review").scrollIntoView({behavior:"smooth"});
+});
+$("#btnClear").addEventListener("click", function(){
+  if(confirm("清空本卷全部作答与计分？此操作不可恢复。")){
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    location.reload();
+  }
+});
+$("#btnPrint").addEventListener("click", function(){ window.print(); });
+
+(function init(){
+  $all(".q").forEach(paintQ);
+  if(!storeOK) $("#storeWarn").hidden = false;
+  refresh();
+})();
+
+</script>
+</body>
+</html>

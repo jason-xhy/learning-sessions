@@ -5,7 +5,7 @@
 ## 快速开始（两条路径）
 
 - **自学模式（无 AI）**：浏览器直接打开根目录的 **`0001-knowledge-map-diagnostic.html`**（手机可用），带孩子做 60 题体系诊断（语文/数学/英语各 20 题，分三部分可分次做，每次 15~20 分钟；即时判分，解析即方法卡）→ 按**分领域得分**对照 `LEARNERS.md` 路由表找补强方向（细节课在 `lessons/`，按缺口生成）→ 每课末尾测验自检。**刚上四上？下学期内容的题答错属正常，不算缺口。**
-- **陪学模式（有 AI 助手）**：在科目文件夹里跑 `bash setup.sh`——①把陪学协议幂等合入你的 `AGENTS.md`（不覆盖已有内容）；②从上游拉取开源 `/teach` 技能（网络不通自动回退自学模式）。然后对 AI 工具说"按 AGENTS.md 当我的老师"（ZCode 里 `/teach`），它会先重新诊断孩子的基线、与家长对齐目标、按缺口定制课程——单次 15~25 分钟，遵守双减作业红线，课是跟着孩子的缺口生长的。
+- **陪学模式（有 AI 助手）**：在科目文件夹里跑 `setup.sh`（随私有仓 learning-sessions-plan（tools/learning-sessions/hunan-g4-learn/，公开仓只含交付物）分发）——①把陪学协议幂等合入你的 `AGENTS.md`（不覆盖已有内容）；②从上游拉取开源 `/teach` 技能（网络不通自动回退自学模式）。然后对 AI 工具说"按 AGENTS.md 当我的老师"（ZCode 里 `/teach`），它会先重新诊断孩子的基线、与家长对齐目标、按缺口定制课程——单次 15~25 分钟，遵守双减作业红线，课是跟着孩子的缺口生长的。
 
 ## 文件地图
 
@@ -29,5 +29,5 @@
 
 本包以 [MIT](LICENSE) 开源，建于以下资源之上：
 
-- [mattpocock/skills](https://github.com/mattpocock/skills)（MIT）——教学框架（先诊断后教学/MISSION/学习记录/检索练习）源自其 `skills/productivity/teach`；本包不内嵌其代码，`setup.sh` 运行时从上游拉取。
+- [mattpocock/skills](https://github.com/mattpocock/skills)（MIT）——教学框架（先诊断后教学/MISSION/学习记录/检索练习）源自其 `skills/productivity/teach`；本包不内嵌其代码，接入脚本 `setup.sh` 运行时从上游拉取（脚本随私有仓分发）。
 - 《义务教育课程标准（2022年版）》（教育部）——本包引用其学段要求作为目标锚点；课标原文版权归教育部及编写组所有。

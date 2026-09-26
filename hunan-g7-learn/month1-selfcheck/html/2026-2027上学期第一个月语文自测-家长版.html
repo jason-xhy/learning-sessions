@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月语文自测-家长版</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g7-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>语文·七年级上学期第一个月自我检测<span class="muted">（家长版）</span></h1>
+<p>这一页写给家长：不讲题，只讲四件事——孩子这个月学了什么、怎么组织这次自检、怎么批改、结果怎么看待。</p>
+<h2>一、进度速览（孩子这个月学了什么）</h2>
+<p>这个月孩子学的是统编新教材第一单元，主题是"四季美景"——读三篇写景散文（《春》《济南的冬天》《雨的四季》），背四首古诗词（《观沧海》《闻王昌龄左迁龙标遥有此寄》《次北固山下》《天净沙·秋思》），再学着写一段观察景物的短文。<strong>本月没有文言文，考试也不考文言文。</strong></p>
+<table><tr><th>周次</th><th>学的内容（常见安排）</th></tr><tr><td>第 1 周</td><td>《春》：练习朗读，认识比喻、拟人</td></tr><tr><td>第 2 周</td><td>《济南的冬天》《雨的四季》：学概括景物特点和赏析写景句</td></tr><tr><td>第 3 周</td><td>古诗词四首：背诵、默写，体会画面和感情</td></tr><tr><td>第 4 周</td><td>写作课"热爱写作，学会观察"+ 单元梳理复习</td></tr></table>
+<p>七个知识点，每条给您一句人话解释：</p>
+<ul><li>KP1 字音字形：把字读准、写对。比如"应和"在这里读 yìng hè，不读 hé。家里可以让孩子当小老师，给您报一组本课词语的读音。</li><li>KP2 词语理解与运用：能说出词语在句子里是什么意思，比如"心旷神怡"就是心里痛快、精神放松。</li><li>KP3 古诗默写：四首古诗要会背、会写，一个字都不能错——中考规矩是错一个字整空不给分。</li><li>KP4 古诗赏析：能说出诗句写了什么画面、用了什么手法、表达什么感情。比如"我寄愁心与明月"是把月亮当人写，托月亮给朋友带去牵挂。</li><li>KP5 写景散文阅读：读《春》这类文章，能说出"写了什么景、按什么顺序、哪里写得妙"，还会做朗读设计——哪里重读、哪里停顿。</li><li>KP6 修辞辨析与仿写：认得出比喻和拟人，还能照着例句自己写一句。</li><li>KP7 微写作：200~250 字的小作文，观察一处景物，抓住它的特点写清楚。</li></ul>
+<p>进度差异说明：各校进度有快慢——古诗还没讲完的，第 1~8、13、14 题可不做；写作课还没上的，第 12、21 题可不做；其余照做，等级按做过的题折算。</p>
+<h2>二、怎么组织这次自检（10 分钟准备）</h2>
+<p>1. 打印学生版；答案页先折起来或裁下来，别让孩子提前看到。<br>
+2. 一次只测这一科，不连考第二科；计时 60 分钟，中途不打扰、不提醒。<br>
+3. 时间到就收卷，没做完的按空处理——这也是重要信息。<br>
+4. 先让孩子自己对着学生版答案批改，再由您抽 3 题复核；抽到不一致的，以您的为准，温和地指出来。<br>
+5. 微写作（第 21 题）按"内容 10 + 语言 10 + 书写结构 10"三块打分，采分细则在教师版解析里；宁少给、不高估。</p>
+<h2>三、答案速查（家长批改用）</h2>
+<div class="ansgrid"><span class="chip"><b>1.</b>以观沧海</span><span class="chip"><b>2.</b>百草丰茂</span><span class="chip"><b>3.</b>杨花落尽子规啼</span><span class="chip"><b>4.</b>随君直到夜郎西</span><span class="chip"><b>5.</b>风正一帆悬</span><span class="chip"><b>6.</b>海日生残夜</span><span class="chip"><b>7.</b>古道西风瘦马</span><span class="chip"><b>8.</b>断肠人在天涯</span><span class="chip"><b>9.</b>① 吝啬 ② hè</span><span class="chip"><b>10.</b>心旷神怡：心情舒畅，精神愉快</span><span class="chip"><b>11.</b>第 ② 句是拟人</span><span class="chip"><b>12.</b>见解析</span><span class="chip"><b>13.</b>见解析</span><span class="chip"><b>14.</b>见解析</span><span class="chip"><b>15.</b>见解析</span><span class="chip"><b>16.</b>见解析</span><span class="chip"><b>17.</b>见解析</span><span class="chip"><b>18.</b>见解析</span><span class="chip"><b>19.</b>见解析</span><span class="chip"><b>20.</b>见解析</span><span class="chip"><b>21.</b>见解析</span></div>
+<h2>四、怎么解读结果（短板总结）</h2>
+<p>等级对照表：</p>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<p>三档话术：</p>
+<ul><li>85 分以上，这样夸：夸具体行为，不夸聪明——"你 8 个默写空一个字没错，说明背功扎实；散文题的采分点都踩到了，阅读习惯好。"</li><li>70~84 分，这样说：先肯定，再聚焦——"整体不错，咱们只挑最弱的一两个知识点补，不用全卷重来。"</li><li>70 分以下，这样陪：先稳情绪，再回课本——"第一个月的分数说明不了什么。这周咱们把课文和四首古诗重新读、重新背，一周后只重做错题。"不报班、不刷题。</li></ul>
+<p>请记住：<strong>第一个月的分数不等于能力</strong>。这次检测唯一的目的，是找到要补的点，让孩子愿意"再试一次"。</p>
+<h3>短板登记表（与孩子一起填）</h3>
+<table><tr><th>知识点</th><th>扣分</th><th>严重度（要补 / 需巩固）</th><th>建议动作（人话）</th></tr><tr><td>KP1 字音字形</td><td></td><td></td><td>本单元字词听写一遍，错的写三遍；重做第 9 题</td></tr><tr><td>KP2 词语理解与运用</td><td></td><td></td><td>让孩子先说词义、再说句子里指什么；重做第 10 题</td></tr><tr><td>KP3 古诗默写</td><td></td><td></td><td>每天背默一首，错字圈出来连写三遍；重做第 1~8 题</td></tr><tr><td>KP4 古诗赏析</td><td></td><td></td><td>请孩子讲"这句写了什么画面、什么心情"；重做第 13、14 题</td></tr><tr><td>KP5 写景散文阅读</td><td></td><td></td><td>重读《济南的冬天》雪景段，说说"妙"在哪里；重做第 15~20 题</td></tr><tr><td>KP6 修辞辨析与仿写</td><td></td><td></td><td>从课文里各找一个比喻句、拟人句，再各仿写一句；重做第 11、12 题</td></tr><tr><td>KP7 微写作</td><td></td><td></td><td>带孩子在小区或江边看 10 分钟再改写；按量表重改第 21 题</td></tr></table>
+<h2>五、常见误区与家庭话术</h2>
+<p>1. 误区："默写错一个字，意思对就算对。"中考的规矩是错一字整空零分。可以说："咱们按中考规矩来，错一个字这空就不给分——现在多写三遍，考试就少丢两分。"<br>
+2. 误区："阅读答案写得越长越好。"语文阅读是踩点给分，先想清楚"这题要我答什么点"再动笔。可以说："别急着写长，先说给我听：这题问你手法还是问感情？"<br>
+3. 误区："作文靠天赋，练了也没用。"第一个月的作文只看三件事——抓特征、按顺序、用修辞。可以说："不求文笔惊艳，先把'写了什么、按什么顺序、哪里最特别'说明白。"<br>
+4. 误区："朗读是花架子，考试不考。"重音、停连其实是理解句子的小口子。纸面测不到，给您一个替代小测：请孩子朗读"最妙的是下点小雪呀"，您听重音落在哪个字上，再请他说为什么——说得清，就是真懂了。</p>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g7-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+</body>
+</html>

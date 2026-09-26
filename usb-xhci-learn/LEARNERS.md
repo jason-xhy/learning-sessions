@@ -11,7 +11,7 @@
 4. 深究任何主题：先 grep `规范全文精读摘要库.md`，再读 `specs/` 原文（见 `specs/README.md` 下载指引）。
 
 **② 陪学模式（有 AI 助手，体验完整）**
-解压后跑一次 `bash setup.sh`，它做两件事：①把 `TEACHING-PROTOCOL.md`（陪学协议）**幂等合入**你的 `AGENTS.md`（标记块包裹、不覆盖你已有的内容，`AGENTS_FILE=路径` 可指定别的文件）；②从上游开源仓（github.com/mattpocock/skills）拉取 `/teach` 技能装到 `TEACH_SKILLS_DIR`（默认 `~/.zcode/skills`）——**网络不通则自动回退自学模式**，并给出提示。之后对任意 AI 工具说"按 AGENTS.md 当我的老师"（或 ZCode 里键入 `/teach`）即可开始：陪学会**先重新诊断你的基线**、画你的缺口图、再按缺口定制课程——个人文件（MISSION/learning-records）会被按你重置。
+解压后跑一次 `setup.sh`（随私有仓 learning-sessions-plan（tools/learning-sessions/usb-xhci-learn/，公开仓只含交付物）分发），它做两件事：①把 `TEACHING-PROTOCOL.md`（陪学协议）**幂等合入**你的 `AGENTS.md`（标记块包裹、不覆盖你已有的内容，`AGENTS_FILE=路径` 可指定别的文件）；②从上游开源仓（github.com/mattpocock/skills）拉取 `/teach` 技能装到 `TEACH_SKILLS_DIR`（默认 `~/.zcode/skills`）——**网络不通则自动回退自学模式**，并给出提示。之后对任意 AI 工具说"按 AGENTS.md 当我的老师"（或 ZCode 里键入 `/teach`）即可开始：陪学会**先重新诊断你的基线**、画你的缺口图、再按缺口定制课程——个人文件（MISSION/learning-records）会被按你重置。
 
 ## 领域 → 课程路由表
 

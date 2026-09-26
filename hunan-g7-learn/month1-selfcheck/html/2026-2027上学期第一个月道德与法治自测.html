@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月道德与法治自测</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g7-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>道德与法治·七年级上学期第一个月自我检测</h1>
+<div class="meta">满分 100 分 ｜ 建议用时 40 分钟 ｜ 做完先自己批改，再请家长抽 3 题复核</div>
+<blockquote>使用说明（先读再动笔）：限时 40 分钟，独立完成，不翻书不问人；做题时不要往下翻——答案在后面。做完先自己批改，再请家长抽 3 题复核。诚信计分：错了不丢人，漏出来的短板才是我们要找的宝贝。</blockquote>
+<details class="rules"><summary>计分规则与进度差异（先读再动笔）</summary>
+<p>怎么算分：判断题（第 1~10 题）对一题得 1 分；选择题（第 11~25 题）对一题得 3 分；情境分析题（第 26~28 题）对照采分点按步给分——采分点在教师版"逐题解析"里，可以请家长帮你对照，宁可少给、不高估。<br>
+情境题自评说明：不要求和示例答案一字不差。每个小问按要点给分：意思相近、结合了材料、写出了具体做法，都给分；只喊口号（比如只写一句"要认识自己"）拿不到满分。<br>
+进度差异提示：若学校本月还没讲到第三课，可跳过第 5、6、10、22、23、24、25、28 题；用"得分 ÷ 已做题总分 × 100"换算后，再对照下表定等级。</p>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<p><strong>进度差异说明</strong>：个别学校本月只讲到第二课。未讲到第三课的学校，判断第 5、6、10 题，选择题第 22~25 题以及第 28 题可跳过；等级按已做题换算（得分 ÷ 已做题总分 × 100，再对照学生版等级表）。</p>
+</details>
+<div class="toolbar noprint">
+  <span class="chip" id="timerChip">⏱ 未开始 ／ 建议用时 40 分钟</span>
+  <span class="chip" id="progChip">已作答 0 ／ 28 题</span>
+  <button class="btn" id="btnPrint">打印</button>
+  <button class="btn btn-danger" id="btnClear">清空重来</button>
+</div>
+<p class="meta noprint">进度自动保存在本机浏览器（清理浏览器数据会丢；换设备不带过去）。不支持保存的浏览器请一次做完再交卷。</p>
+<p class="warnbox noprint" id="storeWarn" hidden>此浏览器不支持自动保存进度——请一次做完再退出。</p>
+<section id="exam">
+<h3>一、判断题（本题 10 小题，共 10 分）</h3>
+<p class="qintro">（答题说明：你认为正确的答"对"，错误的答"错"。每小题 1 分。）</p>
+<div class="q" id="q1" data-no="1" data-type="judge" data-score="1"><div class="qtext"><span class="qno">1.</span><p>跨进中学大门，我们站在一个新的起点上：新环境、新同学、新课程，都可能是我们成长的礼物。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q2" data-no="2" data-type="judge" data-score="1"><div class="qtext"><span class="qno">2.</span><p>初中生活不需要规划，走一步看一步就行。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q3" data-no="3" data-type="judge" data-score="1"><div class="qtext"><span class="qno">3.</span><p>我们可以通过自我评价认识自己，也可以通过他人评价认识自己。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q4" data-no="4" data-type="judge" data-score="1"><div class="qtext"><span class="qno">4.</span><p>做更好的自己，需要接纳自己：既接纳自己的优点，也接纳自己的不完美。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q5" data-no="5" data-type="judge" data-score="1"><div class="qtext"><span class="qno">5.</span><p>梦想只要天天挂在嘴边，不用行动就会实现。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q6" data-no="6" data-type="judge" data-score="1"><div class="qtext"><span class="qno">6.</span><p>学习不只是获取书本知识，还包括能力的培养和如何做人。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q7" data-no="7" data-type="judge" data-score="1"><div class="qtext"><span class="qno">7.</span><p>学习计划一经制订，无论情况怎么变都不能调整。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q8" data-no="8" data-type="judge" data-score="1"><div class="qtext"><span class="qno">8.</span><p>对他人的评价，我们既要重视，又要冷静分析：不盲从，也不忽视。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q9" data-no="9" data-type="judge" data-score="1"><div class="qtext"><span class="qno">9.</span><p>做更好的自己，就要把自己的缺点藏起来，不让别人发现。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q10" data-no="10" data-type="judge" data-score="1"><div class="qtext"><span class="qno">10.</span><p>少年的梦想与时代的脉搏紧密相连，与中国梦密不可分。（1分）</p></div><div class="opts noprint widget"><button class="opt" data-v="对">对</button><button class="opt" data-v="错">错</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>二、选择题（本题 15 小题，共 45 分）</h3>
+<p class="qintro">（答题说明：每小题只有一个最符合题意的选项，把字母填进括号。每小题 3 分。）</p>
+<div class="q" id="q11" data-no="11" data-type="choice" data-score="3"><div class="qtext"><span class="qno">11.</span><p>小湘走进新校园，认识了来自不同小学的新同学，发现初中要学的科目也变多了。对中学生活，认识正确的是（ ）<br>
+A. 中学生活和小学没有区别，不用在意<br>
+B. 中学生活带来新的机会和可能，也带来新的目标和挑战<br>
+C. 科目变多只会带来麻烦<br>
+D. 新同学太多，干脆谁都不理</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q12" data-no="12" data-type="choice" data-score="3"><div class="qtext"><span class="qno">12.</span><p>中学生活给我们送来一份特别的"成长的礼物"。下面最贴近这份"礼物"的是（ ）<br>
+A. 作业更多、考试更难<br>
+B. 离开父母管束，想干什么就干什么<br>
+C. 中学生活只是小学生活的简单重复<br>
+D. 更多发展自我的机会，激励我们不断实现自我超越</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q13" data-no="13" data-type="choice" data-score="3"><div class="qtext"><span class="qno">13.</span><p>有同学说："定了目标也没用，还不如不定。"下列说法最能反驳他的是（ ）<br>
+A. 目标只是写给老师看的<br>
+B. 目标定得越高越好<br>
+C. 明确的目标能给我们的成长指引方向、增添动力<br>
+D. 有了目标，梦想就自动实现</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q14" data-no="14" data-type="choice" data-score="3"><div class="qtext"><span class="qno">14.</span><p>制订初中生活规划时，下列做法最合理的是（ ）<br>
+A. 计划精确到每一分钟，一点空闲都不留<br>
+B. 从自己的实际出发，目标明确、切实可行，并留有余地<br>
+C. 照搬同桌的计划，省事<br>
+D. 计划做好后锁进抽屉，从不回头看</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q15" data-no="15" data-type="choice" data-score="3"><div class="qtext"><span class="qno">15.</span><p>老师在班会上写下"知人者智，自知者明"。这句话提醒我们（ ）<br>
+A. 要正确认识自己，才能更好地促进自我发展<br>
+B. 认识自己就是为了和别人比较<br>
+C. 自己的情况自己最清楚，不需要别人的评价<br>
+D. 只要了解别人就行，不用了解自己</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q16" data-no="16" data-type="choice" data-score="3"><div class="qtext"><span class="qno">16.</span><p>想更全面地认识自己，小湘可以（　）<br>
+①从身体、心理、社会等方面观察自己<br>
+②通过自我评价，反思自己的表现<br>
+③重视他人评价，听听老师和同学的看法<br>
+④只听表扬，不听任何批评<br>
+A. ①②③　　B. ①②④　　C. ①③④　　D. ②③④</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q17" data-no="17" data-type="choice" data-score="3"><div class="qtext"><span class="qno">17.</span><p>小湘认为自己数学解题思路不错，同桌却提醒他"步骤不规范，常丢过程分"。面对同桌的评价，小湘应该（ ）<br>
+A. 一概不听，坚持己见<br>
+B. 立刻全盘否定自己，觉得自己一无是处<br>
+C. 冷静分析：说得有道理就改进，不合理的也不过度敏感<br>
+D. 以后不再和同桌说话</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q18" data-no="18" data-type="choice" data-score="3"><div class="qtext"><span class="qno">18.</span><p>"天生我材必有用。"做更好的自己，首先要（ ）<br>
+A. 学会接纳与欣赏自己<br>
+B. 处处与别人比较，比过别人才开心<br>
+C. 只看自己的优点，回避自己的不足<br>
+D. 事事都追求十全十美</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q19" data-no="19" data-type="choice" data-score="3"><div class="qtext"><span class="qno">19.</span><p>小湘跑得快，入选了校田径队，但数学基础较弱。下列选择可取的是（ ）<br>
+A. 只练体育，数学干脆放弃<br>
+B. 只学数学，退出田径队<br>
+C. 扬长避短：合理安排时间，训练学习两不误<br>
+D. 反正自己不完美，干脆躺平</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q20" data-no="20" data-type="choice" data-score="3"><div class="qtext"><span class="qno">20.</span><p>关于改正缺点，下列做法正确的是（ ）<br>
+A. 缺点是天生带来的，改不了<br>
+B. 写下具体的改进办法，从容易的事情做起，坚持一段时间<br>
+C. 等长大后自然就好了<br>
+D. 只要不被别人发现，就不用改</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q21" data-no="21" data-type="choice" data-score="3"><div class="qtext"><span class="qno">21.</span><p>下列关于激发潜能的说法，正确的是（ ）<br>
+A. 潜能生下来就固定了，激发不了<br>
+B. 潜能只属于少数有天赋的人<br>
+C. 珍惜自己的热爱，通过积极行动、坚持练习，潜能可以被激发<br>
+D. 激发潜能主要靠运气</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q22" data-no="22" data-type="choice" data-score="3"><div class="qtext"><span class="qno">22.</span><p>袁隆平院士年轻时立下学农的志向，几十年扎根稻田，培育杂交水稻。这告诉我们（ ）<br>
+A. 少年的梦想与个人的人生目标紧密相连，能激励我们不断奋进<br>
+B. 梦想只是随口一说，与人生目标无关<br>
+C. 志向是大人的事，中学生谈梦想太早<br>
+D. 有了梦想就不需要努力</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q23" data-no="23" data-type="choice" data-score="3"><div class="qtext"><span class="qno">23.</span><p>袁隆平的"禾下乘凉梦"，让更多人端稳饭碗，也与国家的粮食安全紧紧连在一起。这说明少年的梦想（ ）<br>
+A. 只关乎个人前途，与国家无关<br>
+B. 与时代的脉搏紧密相连，与中国梦密不可分<br>
+C. 离我们中学生太遥远，想想就好<br>
+D. 越离奇越有价值</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q24" data-no="24" data-type="choice" data-score="3"><div class="qtext"><span class="qno">24.</span><p>"梦想始于当下。"对中学生来说，把梦想变成现实，最需要（ ）<br>
+A. 等机会从天而降<br>
+B. 画一张漂亮的蓝图就够了<br>
+C. 从今天的学习和行动做起，一步一个脚印<br>
+D. 先痛痛快快玩三年再说</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q25" data-no="25" data-type="choice" data-score="3"><div class="qtext"><span class="qno">25.</span><p>小湘觉得"学习就是背书、刷题"。以下认识能帮助他改进的是（ ）<br>
+A. 学习只发生在教室里<br>
+B. 学会学习，要发现并保持学习兴趣，掌握科学的方法，养成良好的习惯<br>
+C. 学习就是为了考试排名<br>
+D. 只要熬夜苦读，就一定能学好</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>三、情境分析题（本题 3 小题，共 45 分）</h3>
+<p class="qintro">（答题说明：结合材料作答，写出具体的想法和做法；意思相近、言之有理均可得分。）</p>
+<div class="q" id="q26" data-no="26" data-type="self" data-score="15"><div class="qtext"><span class="qno">26.</span><p>阅读材料，回答问题。（15分）<br>
+小湘是长沙市某中学的七年级新生。开学半个月，他又兴奋又有点手忙脚乱：校园更大了，科目一下子多了好几门；班级要竞选班干部，社团开始招新，身边的同学一个个都很优秀。妈妈对他说："初中三年怎么过，可以先想一想、写下来。"<br>
+(1) 结合材料，说说中学生活给小湘带来了哪些新的机会与新的挑战。（7分）<br>
+(2) 请帮小湘写一份简单的初中生活规划：列出 1 个学期目标，并写出 2 条落实做法。（8分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q27" data-no="27" data-type="self" data-score="15"><div class="qtext"><span class="qno">27.</span><p>阅读材料，回答问题。（15分）<br>
+班级开展"闪光卡"活动，请同学互相写下彼此的闪光点。同学送给小湘的卡片上写着："你数学特别好，讲题思路清楚；可你上课从来不敢举手发言，其实你的答案常常很棒！"小湘看着卡片愣住了：他从没想过自己在别人眼中是这个样子，也从没意识到"不敢发言"这件事。<br>
+(1) 材料中的小湘是通过哪些途径认识自己的？请结合材料说明。（7分）<br>
+(2) 结合材料，谈谈小湘可以怎样"做更好的自己"。（8分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q28" data-no="28" data-type="self" data-score="15"><div class="qtext"><span class="qno">28.</span><p>阅读材料，回答问题。（15分）<br>
+"人就像种子，要做一粒好种子。"袁隆平院士被誉为"杂交水稻之父"。他从湖南怀化安江农校的一块试验田起步，几十年如一日扎根稻田，怀着"禾下乘凉梦"和"杂交水稻覆盖全球梦"，把一生写在祖国大地上，让更多人远离饥饿。<br>
+(1) 结合材料，说说少年梦想的特点。（7分）<br>
+(2) "梦想始于当下。"结合材料，谈谈学习与梦想的关系，以及中学生应当怎样学习。（8分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+</section>
+<div class="submitbar noprint"><button class="btn" id="btnSubmit">交卷批改</button><span id="submitHint"></span></div>
+<section id="review" hidden>
+<h2>批改说明</h2>
+<h3>答案速查</h3>
+<h3>逐题解析</h3>
+<h3>答案速查（批改卡）</h3>
+<div class="ansgrid" id="ansgrid"></div>
+</section>
+<section id="results" hidden></section>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g7-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+<script>
+const DATA = {"subject":"道德与法治","year":"2026-2027","term":"上学期第一个月","duration":40,"total":100,"items":[{"no":1,"score":1,"kp":"KP1","difficulty":"易","match":"强"},{"no":2,"score":1,"kp":"KP2","difficulty":"易","match":"强"},{"no":3,"score":1,"kp":"KP3","difficulty":"易","match":"强"},{"no":4,"score":1,"kp":"KP4","difficulty":"中","match":"中"},{"no":5,"score":1,"kp":"KP5","difficulty":"易","match":"强"},{"no":6,"score":1,"kp":"KP6","difficulty":"易","match":"强"},{"no":7,"score":1,"kp":"KP2","difficulty":"中","match":"中"},{"no":8,"score":1,"kp":"KP3","difficulty":"易","match":"强"},{"no":9,"score":1,"kp":"KP4","difficulty":"易","match":"强"},{"no":10,"score":1,"kp":"KP5","difficulty":"易","match":"强"},{"no":11,"score":3,"kp":"KP1","difficulty":"易","match":"强"},{"no":12,"score":3,"kp":"KP1","difficulty":"易","match":"强"},{"no":13,"score":3,"kp":"KP2","difficulty":"易","match":"强"},{"no":14,"score":3,"kp":"KP2","difficulty":"中","match":"中"},{"no":15,"score":3,"kp":"KP3","difficulty":"易","match":"强"},{"no":16,"score":3,"kp":"KP3","difficulty":"中","match":"中"},{"no":17,"score":3,"kp":"KP3","difficulty":"中","match":"中"},{"no":18,"score":3,"kp":"KP4","difficulty":"易","match":"强"},{"no":19,"score":3,"kp":"KP4","difficulty":"中","match":"中"},{"no":20,"score":3,"kp":"KP4","difficulty":"易","match":"强"},{"no":21,"score":3,"kp":"KP4","difficulty":"中","match":"中"},{"no":22,"score":3,"kp":"KP5","difficulty":"易","match":"强"},{"no":23,"score":3,"kp":"KP5","difficulty":"较难","match":"中"},{"no":24,"score":3,"kp":"KP5","difficulty":"易","match":"强"},{"no":25,"score":3,"kp":"KP6","difficulty":"中","match":"中"},{"no":26,"score":15,"kp":"KP1+KP2","difficulty":"中","match":"拓展"},{"no":27,"score":15,"kp":"KP3+KP4","difficulty":"较难","match":"拓展"},{"no":28,"score":15,"kp":"KP5+KP6","difficulty":"较难","match":"拓展"}],"answers":{"1":"对","2":"错","3":"对","4":"对","5":"错","6":"对","7":"错","8":"对","9":"错","10":"对","11":"B","12":"D","13":"C","14":"B","15":"A","16":"A","17":"C","18":"A","19":"C","20":"B","21":"C","22":"A","23":"B","24":"C","25":"B","26":"见解析","27":"见解析","28":"见解析"},"types":{"1":"judge","2":"judge","3":"judge","4":"judge","5":"judge","6":"judge","7":"judge","8":"judge","9":"judge","10":"judge","11":"choice","12":"choice","13":"choice","14":"choice","15":"choice","16":"choice","17":"choice","18":"choice","19":"choice","20":"choice","21":"choice","22":"choice","23":"choice","24":"choice","25":"choice","26":"self","27":"self","28":"self"},"kpNames":{"KP1":"中学生活新起点","KP2":"规划初中生活","KP3":"认识自己的内容与途径","KP4":"做更好的自己","KP5":"少年有梦","KP6":"学习成就梦想"}};
+const SOLS = {"1":"判断题（每题一句判错点 / 判断依据）\n\n1. 对——中学生活是新起点，新环境与新机会是成长的礼物（第一课\"奏响中学序曲\"）。","2":"2. 错——\"凡事预则立，不预则废\"：初中生活需要规划，走一步看一步会陷入被动。","3":"3. 对——认识自己的两条主要途径：自我评价、他人评价。","4":"4. 对——接纳自己的全部（包括不完美），是欣赏和完善自己的前提。","5":"5. 错——把\"有梦\"当成\"自动实现\"：梦想的实现要靠今天的行动，\"梦想始于当下\"。","6":"6. 对——学习包括知识的获取、能力的培养和如何做人，生活处处有学习。","7":"7. 错——把计划当成死规矩：实际情况变化时计划应作调整，调整不等于失败。","8":"8. 对——对待他人评价的正确态度：重视但冷静分析，不盲从、不忽视。","9":"9. 错——把\"做更好的自己\"偷换成\"掩盖缺点\"：缺点要主动改正，不是藏起来。","10":"10. 对——少年梦想的特点之一：与时代的脉搏紧密相连，与中国梦密不可分。","11":"选择题（每题一句排除理由）\n\n11. B。A 否认初中生活的变化；C 只见麻烦不见机会；D 消极回避——B 全面正确。","12":"12. D。\"成长的礼物\"指更多发展机会与自我超越；A 是挑战不是礼物；B 心态错误；C 否认了\"新\"。","13":"13. C。目标的意义在于指引方向、激发动力；A 消极，B 目标并非越高越好，D 绝对化。","14":"14. B。规划要从实际出发、切实可行、留有余地；A 过满难执行；C 照搬他人；D 定而不做。","15":"15. A。\"自知者明\"点出正确认识自己才能促进自我发展；B 是功利比较，C 拒绝他人评价，D 与句意相反。","16":"16. A。①②③都是认识自己的正确途径；④只听表扬必然片面。","17":"17. C。正确态度是冷静分析、有则改之；A、D 拒绝沟通，B 过度自我否定。","18":"18. A。做更好的自己，先学会接纳与欣赏自己；B 处处比较徒增焦虑，C 回避不足，D 追求完美不可取。","19":"19. C。扬长避短、统筹安排；A、B 单一发展，D 自我放弃。","20":"20. B。改正缺点：写出具体办法、从容易处做起、坚持下去；A、C 放任不管，D 掩盖问题。","21":"21. C。潜能可以通过珍惜热爱、积极行动、坚持练习被激发；A、B 否认潜能的普遍性与可开发性，D 靠运气错误。","22":"22. A。材料突出\"立下志向、一生坚守\"——梦想与人生目标紧密相连并激励奋进；B、C 否定梦想的意义，D 否定努力。","23":"23. B。\"禾下乘凉梦\"连着国家粮食安全，体现个人梦想与时代脉搏、中国梦相连；A 只见个人，C、D 认识错误。此题较难，难在要从材料读出\"个人—国家\"的联系。","24":"24. C。梦想的实现要落到当下的学习与行动中；A 坐等机会，B 空有蓝图，D 荒废光阴。","25":"25. B。学会学习＝发现并保持兴趣＋掌握科学方法＋养成良好习惯；A 场所绝对化，C 功利化，D 熬夜苦读方法不当。","26":"情境分析题（开放题，言之有理即可；先给采分点分步分，再给示例答案）\n\n26.（15 分）\n第(1)问（7 分）采分点：新机会 4 分（新学校新同学新老师、更多样的课程、社团与竞选等发展自我的平台，答出 2 点即可，每点 2 分）；新挑战 3 分（科目增多节奏加快、身边同学优秀带来的压力、人际与时间安排的适应，答出 2 点即可）。\n示例答案：新机会——小湘来到更大的校园，能结识新同学、新老师，还能参加社团招新、竞选班干部，这些都是发展自我的新机会。新挑战——科目一下子变多、学习节奏加快，身边优秀的同学很多，怎样安排时间、怎样融入新集体，都是小湘要面对的挑战。\n第(2)问（8 分）采分点：学期目标 3 分（明确、切实可行，写清\"做什么、达到什么程度\"）；落实做法 4 分（每条 2 分，要求具体、可操作）；结合自身实际、表达完整 1 分。\n示例答案：目标——这学期学会管理时间，各科作业按时完成，期中考试争取进入班级中上游。做法——①每天放学后先列作业清单，按先难后易的顺序完成；②每周日晚用 20 分钟回顾一周计划完成情况，调整下周安排。","27":"27.（15 分）\n第(1)问（7 分）采分点：通过他人评价认识自己 4 分（同学的\"闪光卡\"反馈）；通过自我评价认识自己 3 分（对照卡片回想、反思自己的课堂表现）。\n示例答案：①他人评价——同学的\"闪光卡\"让小湘第一次知道自己在别人眼中\"数学好、不敢发言\"，这是通过他人评价认识自己；②自我评价——小湘对照卡片回想、反思自己平时上课的表现，这是通过自我评价认识自己。\n第(2)问（8 分）采分点：正确对待他人评价 2 分（冷静分析、虚心接受）；接纳自己 2 分（既欣赏\"数学好\"，也接纳\"不敢发言\"的不完美）；主动改正缺点、有具体做法 2 分；激发潜能、积极展示自我 2 分。\n示例答案：小湘可以冷静分析同学的提醒，有道理就虚心接受；接纳自己——欣赏\"数学好\"的自己，也接纳\"不敢发言\"这个暂时的不完美；再主动改正缺点——这周先在数学课上举手回答一次，下周在语文课上也争取发言，从小的台阶做起；坚持下去，还能激发自己的潜能，做更好的自己。","28":"28.（15 分）\n第(1)问（7 分）采分点：少年的梦想与个人的人生目标紧密相连 3 分（袁隆平立下志向、一生坚守）；少年的梦想与时代的脉搏紧密相连、与中国梦密不可分 4 分（结合\"禾下乘凉梦\"\"覆盖全球梦\"与国家粮食安全作答）。\n示例答案：少年的梦想与个人的人生目标紧密相连——袁隆平年轻时立下学农志向，一生朝着目标奋进；少年的梦想又与时代的脉搏紧密相连、与中国梦密不可分——他把\"禾下乘凉梦\"\"杂交水稻覆盖全球梦\"种在祖国大地上，让个人梦想汇入国家发展、人民幸福的大潮。\n第(2)问（8 分）采分点：学习与梦想的关系 4 分（学习成就梦想：今天的学习是为明天实现梦想储备本领，意思相近即可）；怎样学习 3 分（兴趣、方法、习惯各 1 分）；结合材料或自身 1 分。\n示例答案：学习成就梦想——袁隆平的梦想靠几十年学农、钻研、试验一步步实现，我们的梦想也要靠今天一点一滴的学习来铺路。中学生要学会学习：发现并保持对学习的兴趣，像袁老热爱种子一样热爱所学；掌握科学的学习方法，把每天的任务安排清楚；养成良好的学习习惯并坚持下去，把远大的志向变成今天课堂上的一次专注、作业本上的一道认真题。"};
+/*SCORE-CORE-START*/
+function gradeOf(pct){
+  if(pct===null||pct===undefined||isNaN(pct)) return null;
+  if(pct>=85) return {g:"优",t:"本月骨架扎实，保持节奏"};
+  if(pct>=70) return {g:"良",t:"大盘没问题，个别点要回炉"};
+  if(pct>=60) return {g:"合格",t:"有明确短板，按下面清单补"};
+  return {g:"待加强",t:"第一个月很常见！先回课本，不着急刷题报班"};
+}
+function verdictOf(rate){ if(rate>=0.8) return "扎实"; if(rate>=0.5) return "需巩固"; return "要补"; }
+function qVerdict(data, st, it){
+  if(st.skip && st.skip[it.no]) return "skip";
+  var t = data.types[it.no];
+  if(t==="choice"||t==="judge"){
+    if(st.override && st.override[it.no])
+      return st.override[it.no]==="对" ? "full" : "zero";
+    if(!st.ans || !st.ans[it.no]) return "miss";
+    return st.ans[it.no]===data.answers[it.no] ? "full" : "zero";
+  }
+  var v = st.score ? st.score[it.no] : undefined;
+  if(typeof v!=="number") return "unjudged";
+  if(v>=it.score) return "full";
+  if(v>0) return v;
+  return "zero";
+}
+function computeResults(data, st){
+  var earned=0, full=0, kps={}, missed=[], unjudged=[];
+  // 第一遍：总分与缺勤标记（跳过题不计入总分）
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    full += it.score;
+    var pts = 0;
+    if(v==="full") pts = it.score;
+    else if(typeof v==="number") pts = v;
+    else if(v==="miss") missed.push(it.no);
+    else if(v==="unjudged") unjudged.push(it.no);
+    earned += pts;
+  });
+  // 第二遍：KP 汇总先只记被测题（整 KP 全跳过 → 无档 → 不出行）。
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    var pts = (v==="full") ? it.score : (typeof v==="number" ? v : 0);
+    String(it.kp).split("+").forEach(function(k){
+      if(!kps[k]) kps[k]={earned:0,full:0,nos:[],skips:[]};
+      kps[k].earned += pts; kps[k].full += it.score;
+      if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+    });
+  });
+  // 第三遍：部分跳过的 KP —— 跳过题计入满分与关联题号（得分率保守不高估）。
+  data.items.forEach(function(it){
+    if(!(st.skip && st.skip[it.no])) return;
+    String(it.kp).split("+").forEach(function(k){
+      if(kps[k]){
+        kps[k].full += it.score;
+        if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+        kps[k].skips.push(it.no);
+      }
+    });
+  });
+  var pct = full>0 ? Math.round(earned/full*1000)/10 : null;
+  var grade = gradeOf(pct);
+  var kpRows = Object.keys(kps).map(function(k){
+    var r = kps[k];
+    return {kp:k, name:(data.kpNames&&data.kpNames[k])||k, earned:r.earned,
+            full:r.full, nos:r.nos, skips:r.skips,
+            rate:r.full? r.earned/r.full : null,
+            verdict:r.full? verdictOf(r.earned/r.full) : null};
+  }).sort(function(a,b){ return a.rate-b.rate; });
+  var weak = kpRows.filter(function(r){ return r.rate!==null && r.rate<0.8; }).slice(0,2);
+  return {earned:earned, full:full, pct:pct, grade:grade, kpRows:kpRows,
+          weak:weak, missed:missed, unjudged:unjudged};
+}
+/*SCORE-CORE-END*/
+
+var KEY = "g7m1-" + DATA.subject;
+function $(s, el){ return (el||document).querySelector(s); }
+function $all(s, el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); }
+var storeOK = true;
+function loadState(){
+  try{ var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; }
+  catch(e){ storeOK = false; return null; }
+}
+function saveState(){
+  try{ localStorage.setItem(KEY, JSON.stringify(st)); }
+  catch(e){ if(storeOK){ storeOK = false; $("#storeWarn").hidden = false; } }
+}
+var st = loadState() || {ans:{}, fill:{}, score:{}, skip:{}, override:{},
+                         submitted:false, start:null};
+if(!st.ans) st.ans = {}; if(!st.fill) st.fill = {};
+if(!st.score) st.score = {}; if(!st.skip) st.skip = {};
+if(!st.override) st.override = {};
+
+function startTimerIfNeeded(){
+  if(!st.start){ st.start = Date.now(); saveState(); }
+}
+setInterval(function(){
+  if(!st.start) return;
+  var s = Math.floor((Date.now()-st.start)/1000);
+  var mm = String(Math.floor(s/60)).padStart(2,"0"), ss = String(s%60).padStart(2,"0");
+  $("#timerChip").textContent = "⏱ " + mm + ":" + ss + " ／ 建议用时 " + DATA.duration + " 分钟";
+}, 1000);
+
+$all(".q").forEach(function(q){
+  var no = q.getAttribute("data-no"), typ = q.getAttribute("data-type");
+  $all("button.opt", q).forEach(function(b){
+    b.addEventListener("click", function(){
+      startTimerIfNeeded();
+      st.ans[no] = (st.ans[no] === b.getAttribute("data-v")) ? null : b.getAttribute("data-v");
+      if(!st.ans[no]) delete st.ans[no];
+      saveState(); paintQ(q); refresh();
+    });
+  });
+  var fill = $(".fillin", q);
+  if(fill) fill.addEventListener("input", function(){
+    startTimerIfNeeded();
+    if(fill.value) st.fill[no] = fill.value; else delete st.fill[no];
+    saveState();
+  });
+  var sk = $(".skip input", q);
+  if(sk) sk.addEventListener("change", function(){
+    startTimerIfNeeded();
+    if(sk.checked) st.skip[no] = true; else delete st.skip[no];
+    saveState(); paintQ(q); refresh();
+  });
+});
+
+function paintQ(q){
+  var no = q.getAttribute("data-no");
+  $all("button.opt", q).forEach(function(b){
+    b.classList.toggle("sel", st.ans[no] === b.getAttribute("data-v"));
+  });
+  if($(".skip input", q)) $(".skip input", q).checked = !!st.skip[no];
+}
+
+function fillAnsgrid(){
+  $("#ansgrid").innerHTML = Object.keys(DATA.answers).map(function(k){
+    return '<span class="chip"><b>' + k + '.</b>' + escHtml(DATA.answers[k]) + '</span>';
+  }).join("");
+}
+
+function verdictLabel(v, it){
+  if(v==="skip") return ["warn","已跳过（不计分）"];
+  if(v==="full") return ["ok","✓ 对（"+it.score+" 分）"];
+  if(v==="miss") return ["bad","✗ 漏做（0 分）"];
+  if(v==="zero") return ["bad","✗ 错（0 分）"];
+  if(v==="unjudged") return ["warn","待自评给分"];
+  return ["warn","自评 "+v+" ／ "+it.score+" 分"];
+}
+
+function recompute(){
+  var res = computeResults(DATA, st);
+  $all(".q").forEach(function(q){
+    var no = q.getAttribute("data-no");
+    var it = DATA.items.filter(function(x){ return String(x.no)===no; })[0];
+    var v = qVerdict(DATA, st, it);
+    var el = $(".verdict", q);
+    var lab = verdictLabel(v, it);
+    el.className = "verdict " + lab[0];
+    var over = st.override[no] ? "（已按家长复核改判）" : "";
+    el.textContent = st.submitted ? lab[1] + over : "";
+    var rv = $(".reveal", q);
+    if(st.submitted){
+      rv.hidden = false;
+      var parts = [];
+      if(DATA.answers[no] && DATA.answers[no] !== "见解析")
+        parts.push('<div class="ref">参考答案：' + escHtml(DATA.answers[no]) + '</div>');
+      parts.push('<div class="sol">' + escHtml(SOLS[no] || "（无解析）") + '</div>');
+      if(DATA.types[no]==="self"||DATA.types[no]==="fill"){
+        parts.push('<div class="stepper noprint"><button class="dec" aria-label="减">−</button>' +
+          '<span class="score"></span><button class="inc" aria-label="加">＋</button>' +
+          '<span class="muted">／ 满分 ' + it.score + ' 分（宁可少给不高估）</span></div>');
+      }
+      if(DATA.types[no]==="choice"||DATA.types[no]==="judge"){
+        parts.push('<button class="btn noprint gai" data-no="' + no + '">家长复核改判</button>');
+      }
+      rv.innerHTML = parts.join("");
+      var sc = st.score[no];
+      if(typeof sc!=="number") sc = 0;
+      var scoreEl = $(".stepper .score", rv);
+      if(scoreEl) scoreEl.textContent = sc + " 分";
+      var dec = $(".stepper .dec", rv), inc = $(".stepper .inc", rv);
+      if(dec) dec.addEventListener("click", function(){
+        st.score[no] = Math.max(0, (typeof st.score[no]==="number"? st.score[no] : 0) - 1);
+        saveState(); paintScore(no); refresh();
+      });
+      if(inc) inc.addEventListener("click", function(){
+        st.score[no] = Math.min(it.score, (typeof st.score[no]==="number"? st.score[no] : 0) + 1);
+        saveState(); paintScore(no); refresh();
+      });
+      var gai = $(".gai", rv);
+      if(gai) gai.addEventListener("click", function(){
+        var cur = qVerdict(DATA, st, it);
+        st.override[no] = (cur === "full") ? "错" : "对";
+        saveState(); refresh();
+      });
+    } else { rv.hidden = true; rv.innerHTML = ""; }
+  });
+  return res;
+}
+
+function paintScore(no){
+  var q = $("#q" + no);
+  var sc = st.score[no]; if(typeof sc!=="number") sc = 0;
+  var el = $(".stepper .score", q); if(el) el.textContent = sc + " 分";
+}
+
+function refresh(){
+  var res = recompute();
+  var answered = Object.keys(st.ans).length + Object.keys(st.score).length;
+  $("#progChip").textContent = "已作答/已判 " + answered + " ／ " + DATA.items.length + " 题";
+  var nTodo = res.missed.length + res.unjudged.length;
+  $("#submitHint").textContent = nTodo ? ("还有 " + nTodo + " 题未作答或未判分，可先交卷再补。") : "";
+  if(!st.submitted){ $("#results").hidden = true; $("#review").hidden = true; return; }
+  document.body.classList.add("revealed");
+  $("#review").hidden = false;
+  fillAnsgrid();
+  var R = $("#results");
+  R.hidden = false;
+  var h = [];
+  if(res.full === 0){
+    h.push('<div class="warnbox">全卷都标记了跳过，无法评级。去掉"跳过"或先做题。</div>');
+  } else {
+    h.push('<div class="resline">得分：<b>' + res.earned + '</b> ／ 已做题满分 ' + res.full +
+      ' ｜ 折算 <b>' + res.pct + '</b> 分 ｜ 等级 <span class="gradebadge">' +
+      (res.grade ? res.grade.g : "—") + '</span> <span class="muted">' +
+      (res.grade ? res.grade.t : "") + '</span></div>');
+  }
+  if(res.missed.length)
+    h.push('<div class="warnbox">第 ' + res.missed.join("、") + ' 题未作答，按 0 分计；补答后自动重算。</div>');
+  if(res.unjudged.length)
+    h.push('<div class="warnbox">第 ' + res.unjudged.join("、") + ' 题还没自评给分，判完自动重算。</div>');
+  h.push('<h3>按知识点登记（自动汇总）</h3>');
+  h.push('<table><thead><tr><th>知识点</th><th>关联题号</th><th>得分</th><th>满分</th><th>结论</th></tr></thead><tbody>');
+  res.kpRows.forEach(function(r){
+    var nosTxt = r.nos.join(", ") +
+      (r.skips.length ? "（" + r.skips.join("、") + " 跳过，计入满分）" : "");
+    h.push('<tr><td>' + escHtml(r.kp + " " + r.name) + '</td><td>' + escHtml(nosTxt) +
+      '</td><td>' + r.earned + '</td><td>' + r.full + '</td><td>' + escHtml(r.verdict || "—") + '</td></tr>');
+  });
+  h.push('</tbody></table>');
+  h.push('<p class="muted">结论口径：得分率 ≥80% 扎实、50~79% 需巩固、&lt;50% 要补；跳过题计入所在知识点的满分（宁可不高估）。</p>');
+  h.push('<h3>我的短板清单（最先补，≤2 个）</h3>');
+  if(res.weak.length){
+    h.push('<ol>');
+    res.weak.forEach(function(r){
+      h.push('<li><b>' + escHtml(r.kp + " " + r.name) + '</b>（第 ' + r.nos.join("、") +
+        ' 题）：把课本对应章节再读一遍；重做本卷第 ' + r.nos.join("、") +
+        ' 题；错题抄进错题本。</li>');
+    });
+    h.push('</ol>');
+  } else if(res.full > 0){
+    h.push('<p>本月各知识点都扎实，保持节奏。</p>');
+  }
+  h.push('<p>约定复测时间：＿＿＿＿＿＿（建议 7~10 天后只重做错题）</p>');
+  h.push('<h3>成绩单摘要（截图保存，或发给老师/家长）</h3>');
+  h.push('<div class="summarybox">' + escHtml(DATA.subject) + ' · ' + escHtml(DATA.year + DATA.term + "自测") +
+    '<br>得分 ' + res.earned + '／' + res.full + '（已做题折算 ' + (res.pct===null?"—":res.pct) + ' 分，等级 ' +
+    (res.grade ? res.grade.g : "—") + '）<br>要补：' +
+    (res.weak.length ? res.weak.map(function(r){ return escHtml(r.kp + " " + r.name); }).join("；") : "无（全部扎实）") +
+    '<br>日期：＿＿＿＿＿＿　复核：家长抽 3 题已核对 □</div>');
+  R.innerHTML = h.join("");
+}
+
+function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+$("#btnSubmit").addEventListener("click", function(){
+  startTimerIfNeeded();
+  if(!st.submitted && !confirm("确认交卷批改？交卷后公布参考答案与解析。"))
+    return;
+  st.submitted = true;
+  saveState(); refresh();
+  $("#review").scrollIntoView({behavior:"smooth"});
+});
+$("#btnClear").addEventListener("click", function(){
+  if(confirm("清空本卷全部作答与计分？此操作不可恢复。")){
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    location.reload();
+  }
+});
+$("#btnPrint").addEventListener("click", function(){ window.print(); });
+
+(function init(){
+  $all(".q").forEach(paintQ);
+  if(!storeOK) $("#storeWarn").hidden = false;
+  refresh();
+})();
+
+</script>
+</body>
+</html>

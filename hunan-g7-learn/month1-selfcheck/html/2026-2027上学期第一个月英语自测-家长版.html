@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月英语自测-家长版</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g7-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>英语·七年级上学期第一个月自我检测<span class="muted">（家长版）</span></h1>
+<p>这一页写给家长：不讲题，只讲四件事——孩子这个月学了什么、怎么组织这次自检、怎么批改、结果怎么看待。</p>
+<h2>一、进度速览（孩子这个月学了什么）</h2>
+<p>这个月英语刚开学，主题就一句话：<strong>学会用英语打招呼、介绍自己、认识新朋友</strong>。教材版本不同，进度略有差别：</p>
+<table><tr><th>周次</th><th>单元/主题</th><th>孩子要学会什么</th></tr><tr><td>第 1 周</td><td>Starter Unit 1 Hello!</td><td>问候、告别、说出自己的名字</td></tr><tr><td>第 2 周</td><td>Starter Unit 2 Keep Tidy!</td><td>学习用品名称、a/an、this/that、名词加 s</td></tr><tr><td>第 3 周</td><td>Starter Unit 3 Welcome!</td><td>欢迎、介绍他人、日常应答</td></tr><tr><td>第 4 周</td><td>Unit 1 You and Me</td><td>交新朋友：姓名、年龄、班级、爱好；be 动词</td></tr></table>
+<ul><li>人教 2024 版：Starter Unit 1 Hello! → Starter Unit 2 Keep Tidy! → Starter Unit 3 Welcome! → Unit 1 You and Me；</li><li>仁爱版学校：本月内容对应其 Unit 1 问候与介绍主题，本卷可直接使用。</li></ul>
+<p>九个知识点，每个用一句人话解释（零英语基础也能照着组织）：</p>
+<ul><li>KP1 问候与自我介绍：见面说 Good morning，告别说 Goodbye，介绍自己用 My name is...。家里可以让孩子用英语向您打一次招呼、介绍一次自己。</li><li>KP2 人称代词与 be 动词：中文一个"是"，英语分三个——I am / He(She) is / We(They) are，配错了整句就错。这是本月最重要的一块。</li><li>KP3 指示代词 this/that：this 是"这个"（近处），that 是"那个"（远处）；介绍朋友固定说 This is my friend。</li><li>KP4 冠词 a/an：都表示"一个"，看后面单词的<strong>读音</strong>：第一个音是元音用 an（如 an orange），是辅音用 a（如 a pen）。听音，别看字母。</li><li>KP5 名词单复数：一个东西用单数，两个以上要加 s（two books）。漏加 s 是本月最常见的扣分点。</li><li>KP6 数词与年龄：会认读 0~100 的英文数词；问年龄用 How old are you?，答 I'm twelve。</li><li>KP7 情景交际：Thank you 要接 You're welcome（不用谢）——客套话一问一答是固定搭配。</li><li>KP8 阅读理解：能从短文和对话里找出姓名、年龄、班级、爱好这些信息，还能说出全文大意。</li><li>KP9 书面表达：写一篇 50~60 词的自我介绍小作文，按"内容 8 + 语言 8 + 书写与格式 4"给分。</li></ul>
+<p>进度差异说明：各校 9 月进度不一。若学校本月刚讲到 Starter Units（还没上 Unit 1），孩子可只做第 1~20 题，第 21~31 题选做；只做 1~20 题时满分 50 分，等级换算：43 及以上为优，35~42 为良，30~34 为合格，29 及以下为待加强。</p>
+<h2>二、怎么组织这次自检（10 分钟准备）</h2>
+<p>1. 打印学生版，孩子一个人一张卷；<br>
+2. 一次只测一科、不连考；计时 45 分钟，中途不打扰、不提示；<br>
+3. 做完让孩子先自己批改（答案在学生版后半），家长再抽 3 题复核——抽到不一致以家长为准，温和指出来；<br>
+4. 卷面 100 分之外，别忘了"听力替代小测"（见第五节末尾，10 分钟）：本月 Starter 词汇"会听会拼"纸面测不到，这 10 分钟能补上这一块。</p>
+<h2>三、答案速查（家长批改用）</h2>
+<div class="ansgrid"><span class="chip"><b>1.</b>B</span><span class="chip"><b>2.</b>C</span><span class="chip"><b>3.</b>B</span><span class="chip"><b>4.</b>C</span><span class="chip"><b>5.</b>A</span><span class="chip"><b>6.</b>D</span><span class="chip"><b>7.</b>D</span><span class="chip"><b>8.</b>D</span><span class="chip"><b>9.</b>B</span><span class="chip"><b>10.</b>B</span><span class="chip"><b>11.</b>B</span><span class="chip"><b>12.</b>C</span><span class="chip"><b>13.</b>A</span><span class="chip"><b>14.</b>B</span><span class="chip"><b>15.</b>C</span><span class="chip"><b>16.</b>D</span><span class="chip"><b>17.</b>D</span><span class="chip"><b>18.</b>C</span><span class="chip"><b>19.</b>D</span><span class="chip"><b>20.</b>A</span><span class="chip"><b>21.</b>A</span><span class="chip"><b>22.</b>C</span><span class="chip"><b>23.</b>B</span><span class="chip"><b>24.</b>A</span><span class="chip"><b>25.</b>A</span><span class="chip"><b>26.</b>C</span><span class="chip"><b>27.</b>B</span><span class="chip"><b>28.</b>A</span><span class="chip"><b>29.</b>B</span><span class="chip"><b>30.</b>B</span><span class="chip"><b>31.</b>见解析</span></div>
+<p>第 31 题（书面表达）家长按三步粗评即可：①五个提示点写全了吗（每点约 1 分，结构完整再加 3 分）；②句子里有没有明显错误（be 动词用错、名词漏 s、a/an 用错，每 2 处扣 1 分）；③词数 50~60、书写工整（共 4 分）。拿不准就按 12 分记，并在下面登记表标注"待复核"，教师版里有范文可对照。</p>
+<h2>四、怎么解读结果（短板总结）</h2>
+<p>等级表（与学生版一致）：</p>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<p>只做第 1~20 题：43 及以上优、35~42 良、30~34 合格、29 及以下待加强。</p>
+<p>三档话术：</p>
+<ul><li><strong>85 分及以上，怎么夸</strong>：夸具体的点——"be 动词和 a/an 几乎没丢分，说明你上课跟得很紧。"夸行为不夸聪明，照常安排，不用加码。</li><li><strong>70~84 分，怎么说</strong>："大盘没问题，咱只攻一块。"和孩子一起看下面的短板登记表，找扣分最多的一个知识点，约定 7~10 天后只重做这类错题。</li><li><strong>70 分以下，怎么陪</strong>：第一个月很常见，先不报班、不刷题。陪孩子回课本：Starter Units 课文每天朗读 10 分钟，连读三天，再重做本卷错题。听力替代小测一定做——纸面分数看不见的短板往往在听与拼。</li></ul>
+<p>请记住：第一个月的分数不等于能力，它只回答一个问题——"哪一块还没跟上"。</p>
+<h3>短板登记表（与孩子一起填）</h3>
+<table><tr><th>知识点</th><th>扣分</th><th>严重度（要补 / 需巩固）</th><th>建议动作（人话）</th></tr><tr><td>KP1 问候与自我介绍（第 1、3、14 题）</td><td></td><td></td><td>课本 Starter Unit 1 打招呼部分读 2 遍 + 重做第 1、3 题</td></tr><tr><td>KP2 人称代词与 be 动词（第 5、6、11、15、16、19 题）</td><td></td><td></td><td>抄写并背熟 I am / He is / They are 三句话 + 重做第 5 题</td></tr><tr><td>KP3 指示代词 this/that（第 7 题）</td><td></td><td></td><td>拿实物演示：近处 this、远处 that，再重做第 7 题</td></tr><tr><td>KP4 冠词 a/an（第 4、12 题）</td><td></td><td></td><td>把第 4、12 题里的词读出声听第一个音 + 重做这两题</td></tr><tr><td>KP5 名词单复数（第 8、18 题）</td><td></td><td></td><td>默写 two books、three pencils 各 5 遍 + 重做第 8 题</td></tr><tr><td>KP6 数词与年龄（第 9、10、13 题）</td><td></td><td></td><td>抽认 13 与 30、14 与 40 的英文数词 + 重做第 10 题</td></tr><tr><td>KP7 情景交际（第 2、17、20 题）</td><td></td><td></td><td>把 Thank you—You're welcome 等应答配对读熟 + 重做第 20 题</td></tr><tr><td>KP8 阅读理解（第 21~30 题）</td><td></td><td></td><td>错的篇目再读一遍，口头说出每张"名片卡"的姓名、年龄、班级</td></tr><tr><td>KP9 书面表达（第 31 题）</td><td></td><td></td><td>对照 5 个提示点把缺的句子补写出来，再完整重写一遍</td></tr></table>
+<h2>五、常见误区与家庭话术</h2>
+<p>1. <strong>只盯分数不盯错因</strong>：60 分和 85 分的差距，第一个月往往只是 be 动词和 a/an 两块。可照说："咱们不问为什么丢了 15 分，先看错题集中在哪一行。"<br>
+2. <strong>把"一看就会一做就废"当粗心</strong>：a/an、名词加 s 看着都懂，一动笔就错——那不是粗心，是"听读音"的功夫没到。可照说："把卷子里所有 a/an 的词读出声，听第一个音再选一遍。"<br>
+3. <strong>嫌 50~60 词作文太短</strong>：本月只要求把 5 句简单句写对、写工整，不追求长难句。可照说："5 个提示点各写对一句，比硬凑长句值钱。"<br>
+4. <strong>只练笔试不练听说</strong>：纸面卷测不到听和说，"会写不会说"往往从第一个月就埋下。可照说："每天跟着课本录音读 10 分钟，比多做一张卷子有用。"</p>
+<h3>附：听力替代小测（10 分钟，满分 10 分，不计入卷面 100 分）</h3>
+<p>本月 Starter 单元有一批"四会词"（会读、会认、会拼、会用），纸面试卷测不到"听"。请家长这样组织：</p>
+<p>1. 按下表顺序念英文单词，每个词念两遍，孩子在纸上写拼写；<br>
+2. 每词 2 分，拼写全对才得分；孩子写不出时您可以提示中文意思，提示后写对得 1 分；<br>
+3. 得分单独记在这里：＿＿＿ / 10 分（不计入 100 分）。写对 4 个以上说明 Starter 词汇过关；3 个及以下，把课本 Starter Units 单词表抄写一遍，一周后再测一次。</p>
+<table><tr><th>序号</th><th>中文意思（念词前家长先看一眼）</th><th>参考拼写（批改用）</th></tr><tr><td>1</td><td>钢笔</td><td>pen</td></tr><tr><td>2</td><td>铅笔</td><td>pencil</td></tr><tr><td>3</td><td>尺子</td><td>ruler</td></tr><tr><td>4</td><td>橡皮</td><td>eraser</td></tr><tr><td>5</td><td>书包</td><td>schoolbag</td></tr></table>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g7-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+</body>
+</html>

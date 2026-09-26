@@ -12,7 +12,7 @@
 5. 每课末尾有检索练习自检；测验答案位置已轮换，孩子背不到规律。
 
 **② 陪学模式（有 AI 助手，体验完整）**
-在科目文件夹里跑一次 `bash setup.sh`，它做两件事：①把 `docs/TEACHING-PROTOCOL.md`（陪学协议）**幂等合入**你的 `AGENTS.md`（标记块包裹、不覆盖你已有的内容，`AGENTS_FILE=路径` 可指定别的文件）；②从上游开源仓（github.com/mattpocock/skills）拉取 `/teach` 技能装到 `TEACH_SKILLS_DIR`（默认 `~/.zcode/skills`）——**网络不通则自动回退自学模式**。之后对 AI 工具说"按 AGENTS.md 当我的老师"（ZCode 里 `/teach`）即可开始：陪学老师会**先重新诊断孩子的基线**、与家长对齐目标（当前学期、教材版本、本学期最想解决的 1~2 件事）写入 `MISSION.md`、画出 12 领域缺口图（`learning-records/`），再按缺口逐节定制课程——单次 15~25 分钟，遵守双减作业红线。
+在科目文件夹里跑一次 `setup.sh`（随私有仓 learning-sessions-plan（tools/learning-sessions/hunan-g3-learn/，公开仓只含交付物）分发），它做两件事：①把 `docs/TEACHING-PROTOCOL.md`（陪学协议）**幂等合入**你的 `AGENTS.md`（标记块包裹、不覆盖你已有的内容，`AGENTS_FILE=路径` 可指定别的文件）；②从上游开源仓（github.com/mattpocock/skills）拉取 `/teach` 技能装到 `TEACH_SKILLS_DIR`（默认 `~/.zcode/skills`）——**网络不通则自动回退自学模式**。之后对 AI 工具说"按 AGENTS.md 当我的老师"（ZCode 里 `/teach`）即可开始：陪学老师会**先重新诊断孩子的基线**、与家长对齐目标（当前学期、教材版本、本学期最想解决的 1~2 件事）写入 `MISSION.md`、画出 12 领域缺口图（`learning-records/`），再按缺口逐节定制课程——单次 15~25 分钟，遵守双减作业红线。
 
 ## 领域 → 行动路由表（三年级）
 
