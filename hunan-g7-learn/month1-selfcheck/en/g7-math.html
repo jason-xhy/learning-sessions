@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月数学自测</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g7-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>数学·七年级上学期第一个月自我检测</h1>
+<div class="meta">满分 100 分 ｜ 建议用时 45 分钟 ｜ 做完先自己批改，再请家长抽 3 题复核</div>
+<blockquote>使用说明（先读再动笔）：限时 45 分钟，独立完成，不翻书不问人；做题时不要往下翻——答案在后面。做完先自己批改，再请家长抽 3 题复核。诚信计分：错了不丢人，漏出来的短板才是我们要找的宝贝。</blockquote>
+<details class="rules"><summary>计分规则与进度差异（先读再动笔）</summary>
+<ul><li>选择 1~10：每题 4 分，对一题得一题分。</li><li>填空 11~15：每题 4 分；其中第 11、12、13、15 题有两个空，每空 2 分，只对一个空得 2 分。</li><li>解答 16~20：对照下面的采分点按步给分，<strong>宁可少给不高估</strong>；只有答案没有过程的，按对应小问分值的一半以内给分。</li><li class="sub">16（每小题 2 分）：写出分步过程且符号正确得 1 分，结果正确再得 1 分。</li><li class="sub">17（每小题 4 分）：分步过程（化减为加、通分/算绝对值）对 1 步得 1 分，最多 3 分，结果正确再得 1 分。</li><li class="sub">18、19（每小问 2 分）：列式（或说理）1 分，结果与作答 1 分。</li><li class="sub">20：第（1）问 2 分；第（2）问说出规律 2 分、结果 1 分；第（3）问中间量 1 分、结果 2 分。</li><li>若学校进度较慢、跳做了第 16、17、19 题：按已做题换算——已做题得分 ÷ 已做题满分 × 100，再对下面的等级表。</li></ul>
+<p><strong>怎么算分：</strong><br>
+<strong>等级对照表：</strong></p>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<p><strong>进度差异说明</strong>：两版本教材本月均只讲到“有理数加减法”。个别学校进度快、已讲到乘除法，相关题可自行加练，但本卷不涉及乘除与乘方，无需跳题；若学校进度较慢、尚未讲到加减法，第 16、17、19 题可暂缓作答，等级按已做题换算（已做题得分 ÷ 已做题满分 × 100 再对照等级表）。</p>
+</details>
+<div class="toolbar noprint">
+  <span class="chip" id="timerChip">⏱ 未开始 ／ 建议用时 45 分钟</span>
+  <span class="chip" id="progChip">已作答 0 ／ 20 题</span>
+  <button class="btn" id="btnPrint">打印</button>
+  <button class="btn btn-danger" id="btnClear">清空重来</button>
+</div>
+<p class="meta noprint">进度自动保存在本机浏览器（清理浏览器数据会丢；换设备不带过去）。不支持保存的浏览器请一次做完再交卷。</p>
+<p class="warnbox noprint" id="storeWarn" hidden>此浏览器不支持自动保存进度——请一次做完再退出。</p>
+<section id="exam">
+<h3>一、选择题（本题 10 小题，每小题 4 分，共 40 分）</h3>
+<div class="q" id="q1" data-no="1" data-type="choice" data-score="4"><div class="qtext"><span class="qno">1.</span><p>湘江长沙段某日水位比基准水位高出 0.4 米，记作 +0.4 米；另一日比基准水位低 0.3 米，应记作（　　）<br>
+   A. +0.3 米　B. -0.3 米　C. +0.4 米　D. -0.4 米（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q2" data-no="2" data-type="choice" data-score="4"><div class="qtext"><span class="qno">2.</span><p>下列各组量中，不具有相反意义的是（　　）<br>
+   A. 收入 200 元与支出 150 元　B. 向东走 5 米与向西走 3 米　C. 水位上升 0.4 米与下降 0.6 米　D. 长沙到株洲 60 千米与跑步锻炼 30 分钟（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q3" data-no="3" data-type="choice" data-score="4"><div class="qtext"><span class="qno">3.</span><p>在 -3，1/2，-2.5，0，7 这五个数中，负分数有（　　）<br>
+   A. 1 个　B. 2 个　C. 3 个　D. 4 个（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q4" data-no="4" data-type="choice" data-score="4"><div class="qtext"><span class="qno">4.</span><p>下列说法正确的是（　　）<br>
+   A. 0 既不是正数，也不是负数，但 0 是整数　B. 一个有理数不是正数就是负数　C. 正数和负数统称有理数　D. 0 是最小的正整数（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q5" data-no="5" data-type="choice" data-score="4"><div class="qtext"><span class="qno">5.</span><p>下列关于数轴的说法，正确的是（　　）<br>
+   A. 任意一条直线都是数轴　B. 数轴上，右边的点表示的数总比左边的点表示的数大　C. 画数轴时，单位长度的大小必须与别的数轴相同　D. 数轴上只能表示正数（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q6" data-no="6" data-type="choice" data-score="4"><div class="qtext"><span class="qno">6.</span><p>在数轴上，点 P 到表示 -1 的点的距离是 2 个单位长度，且点 P 在原点的右侧，则点 P 表示的数是（　　）<br>
+   A. 1　B. -3　C. 1 或 -3　D. 3（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q7" data-no="7" data-type="choice" data-score="4"><div class="qtext"><span class="qno">7.</span><p>-6 的相反数是（　　）<br>
+   A. -6　B. 6　C. 1/6　D. -1/6（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q8" data-no="8" data-type="choice" data-score="4"><div class="qtext"><span class="qno">8.</span><p>下列各对数中，互为相反数的是（　　）<br>
+   A. +（-2）与 -2　B. -（-6）与 6　C. -（-7）与 -7　D. -3 与 +（-3）（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q9" data-no="9" data-type="choice" data-score="4"><div class="qtext"><span class="qno">9.</span><p>一个数的绝对值是 3，这个数是（　　）<br>
+   A. 3　B. -3　C. ±3　D. 1/3（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q10" data-no="10" data-type="choice" data-score="4"><div class="qtext"><span class="qno">10.</span><p>大于 -2 且小于 3 的整数共有（　　）<br>
+   A. 4 个　B. 5 个　C. 6 个　D. 7 个（4分）</p></div><div class="opts noprint widget"><button class="opt" data-v="A">A</button><button class="opt" data-v="B">B</button><button class="opt" data-v="C">C</button><button class="opt" data-v="D">D</button></div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>二、填空题（本题 5 小题，每小题 4 分，共 20 分）</h3>
+<div class="q" id="q11" data-no="11" data-type="self" data-score="4"><div class="qtext"><span class="qno">11.</span><p>在 -0.8，5，-4，2/3，0 中，属于分数的是＿＿＿＿，属于负整数的是＿＿＿＿。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q12" data-no="12" data-type="self" data-score="4"><div class="qtext"><span class="qno">12.</span><p>-7 的相反数是＿＿＿＿；相反数等于它本身的数是＿＿＿＿。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q13" data-no="13" data-type="self" data-score="4"><div class="qtext"><span class="qno">13.</span><p>绝对值等于 5 的数是＿＿＿＿；绝对值小于 3 的整数有＿＿＿＿。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q14" data-no="14" data-type="self" data-score="4"><div class="qtext"><span class="qno">14.</span><p>比较大小：-2/3＿＿＿＿-0.7（填“&gt;”“&lt;”或“=”）。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q15" data-no="15" data-type="self" data-score="4"><div class="qtext"><span class="qno">15.</span><p>若 |x-2| + |y+3| = 0，则 x =＿＿＿＿，y =＿＿＿＿。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>三、解答题（本题 5 小题，共 40 分）</h3>
+<div class="q" id="q16" data-no="16" data-type="self" data-score="8"><div class="qtext"><span class="qno">16.</span><p>计算下列各题（每小题 2 分，共 8 分）：<br>
+（1）（-3）+（-9）<br>
+（2）15+（-22）<br>
+（3）0-（-7）<br>
+（4）（-8）+6-（-10）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q17" data-no="17" data-type="self" data-score="8"><div class="qtext"><span class="qno">17.</span><p>计算下列各题（每小题 4 分，共 8 分）：<br>
+（1）（-1/2）+（-1/3）-（-5/6）<br>
+（2）（-7）-|-4|+（-6）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q18" data-no="18" data-type="self" data-score="8"><div class="qtext"><span class="qno">18.</span><p>已知数轴上点 A 表示 -3，点 B 表示 1，点 C 表示 4。（本题 8 分，每小问 2 分）<br>
+（1）画一条数轴，并在数轴上标出点 A、B、C；<br>
+（2）用“&lt;”把 -3、1、4 连接起来；<br>
+（3）点 A 与点 C 之间的距离是多少个单位长度？<br>
+（4）数轴上有一点 D，它表示的数与点 A 表示的数互为相反数：点 D 表示什么数？它到原点的距离是多少个单位长度？</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q19" data-no="19" data-type="self" data-score="8"><div class="qtext"><span class="qno">19.</span><p>湘江长沙段某水文站以 30 米为基准记录水位：比基准高出记为正，比基准低记为负。9 月 1 日至 9 月 5 日的记录如下表。（本题 8 分，每小问 2 分）</p>
+<table><tr><th>日期</th><th>9月1日</th><th>9月2日</th><th>9月3日</th><th>9月4日</th><th>9月5日</th></tr><tr><td>水位记录（米）</td><td>+0.6</td><td>-0.3</td><td>+0.5</td><td>-0.5</td><td>+0.2</td></tr></table>
+<p>（1）9 月 2 日的实际水位是多少米？<br>
+（2）这 5 天中，哪一天水位最高？哪一天水位最低？<br>
+（3）水位最高的一天比最低的一天高多少米？<br>
+（4）把 5 天的水位记录相加，和是多少？和为正数，说明这 5 天水位总体比基准高还是低？</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q20" data-no="20" data-type="self" data-score="8"><div class="qtext"><span class="qno">20.</span><p>电子跳蚤在数轴上跳动：从原点出发，第 1 次向左跳 1 个单位长度，落在表示 -1 的点上；第 2 次向右跳 2 个单位长度，落在表示 1 的点上；第 3 次向左跳 3 个单位长度，落在表示 -2 的点上；第 4 次向右跳 4 个单位长度，落在表示 2 的点上；……按这个规律继续跳下去。（本题 8 分）<br>
+（1）第 6 次跳动后，跳蚤落在表示什么数的点上？（2 分）<br>
+（2）第 100 次跳动后，跳蚤落在表示什么数的点上？写出你的思考过程。（3 分）<br>
+（3）第 2025 次跳动后，跳蚤落在表示什么数的点上？（3 分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+</section>
+<div class="submitbar noprint"><button class="btn" id="btnSubmit">交卷批改</button><span id="submitHint"></span></div>
+<section id="review" hidden>
+<h2>批改说明</h2>
+<h3>答案速查</h3>
+<h3>逐题解析</h3>
+<h3>答案速查（批改卡）</h3>
+<div class="ansgrid" id="ansgrid"></div>
+</section>
+<section id="results" hidden></section>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g7-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+<script>
+const DATA = {"subject":"数学","year":"2026-2027","term":"上学期第一个月","duration":45,"total":100,"items":[{"no":1,"score":4,"kp":"KP1","difficulty":"易","match":"强"},{"no":2,"score":4,"kp":"KP1","difficulty":"易","match":"强"},{"no":3,"score":4,"kp":"KP2","difficulty":"中","match":"强"},{"no":4,"score":4,"kp":"KP2","difficulty":"中","match":"强"},{"no":5,"score":4,"kp":"KP3","difficulty":"易","match":"强"},{"no":6,"score":4,"kp":"KP3","difficulty":"中","match":"强"},{"no":7,"score":4,"kp":"KP4","difficulty":"易","match":"强"},{"no":8,"score":4,"kp":"KP4","difficulty":"中","match":"中"},{"no":9,"score":4,"kp":"KP5","difficulty":"易","match":"强"},{"no":10,"score":4,"kp":"KP6","difficulty":"易","match":"中"},{"no":11,"score":4,"kp":"KP2","difficulty":"易","match":"强"},{"no":12,"score":4,"kp":"KP4","difficulty":"易","match":"强"},{"no":13,"score":4,"kp":"KP5","difficulty":"中","match":"中"},{"no":14,"score":4,"kp":"KP6","difficulty":"中","match":"中"},{"no":15,"score":4,"kp":"KP8","difficulty":"较难","match":"拓展"},{"no":16,"score":8,"kp":"KP7","difficulty":"易","match":"强"},{"no":17,"score":8,"kp":"KP7","difficulty":"中","match":"中"},{"no":18,"score":8,"kp":"KP3","difficulty":"中","match":"中"},{"no":19,"score":8,"kp":"KP7","difficulty":"中","match":"中"},{"no":20,"score":8,"kp":"KP8","difficulty":"较难","match":"拓展"}],"answers":{"1":"B","2":"D","3":"A","4":"A","5":"B","6":"A","7":"B","8":"C","9":"C","10":"A","11":"分数：-0.8、2/3；负整数：-4","12":"7；0","13":"±5；-2、-1、0、1、2","14":">","15":"x=2；y=-3","16":"见解析","17":"见解析","18":"见解析","19":"见解析","20":"见解析"},"types":{"1":"choice","2":"choice","3":"choice","4":"choice","5":"choice","6":"choice","7":"choice","8":"choice","9":"choice","10":"choice","11":"self","12":"self","13":"self","14":"self","15":"self","16":"self","17":"self","18":"self","19":"self","20":"self"},"kpNames":{"KP1":"负数与相反意义的量","KP2":"有理数分类","KP3":"数轴","KP4":"相反数","KP5":"绝对值","KP6":"有理数大小比较","KP8":"数形结合与规律探索","KP7":"有理数加减运算"}};
+const SOLS = {"1":"选择题（每题 4 分）\n\n1. B。 比基准低记为负，低于 0.3 米记作 -0.3 米。判错点：把“低于”误记为正，或照抄题干里的 0.4。","2":"2. D。 “长沙到株洲的路程”与“跑步的时间”不是同一类量，谈不上相反意义；A 收与支、B 东与西、C 升与降都是相反意义的量。判错点：只看数字不看量的种类。","3":"3. A。 五个数中只有 -2.5 是负分数（有限小数是分数）；-3 是负整数，1/2 是正分数，0 和 7 是整数。判错点：不知道有限小数属于分数，或误把 -3 当负分数。","4":"4. A。 0 既不是正数也不是负数，但它是整数。B 忘了 0 也是有理数；C 应为“整数和分数统称有理数”；D 最小的正整数是 1。判错点：以为“不是正数就是负数”。","5":"5. B。 数轴上右边的点表示的数总比左边的点表示的数大。A 缺“原点、正方向、单位长度”三要素；C 单位长度可以自定；D 负数同样能在数轴上表示。判错点：以为画一条直线就是数轴。","6":"6. A。 到 -1 距离为 2 个单位长度的点表示 -3 或 1；又要求点 P 在原点右侧，所以是 1。判错点：没看清“原点右侧”这一条件而选 C。","7":"7. B。 只有符号不同的两个数互为相反数，-6 的相反数是 6。判错点：与倒数混淆而选 C。","8":"8. C。 先化简再判断：-（-7）= 7，与 -7 互为相反数。A 化简得 -2 与 -2（相等），B 化简得 6 与 6（相等），D 化简得 -3 与 -3（相等）。判错点：双重符号化简出错。","9":"9. C。 |3| = |-3| = 3，绝对值等于 3 的数是 3 或 -3。判错点：漏掉负数解。","10":"10. A。 大于 -2 且小于 3 的整数是 -1、0、1、2，共 4 个。判错点：把端点 -2 或 3 也算进去，或漏掉 0。","11":"填空题（每题 4 分）\n\n11. 分数：-0.8、2/3；负整数：-4。判错点：忘记有限小数属于分数；把 0 归入正数。","12":"12. 7；0。判错点：相反数等于它本身的数只有 0，答“没有”或“任何数”都错。","13":"13. ±5；-2、-1、0、1、2。判错点：绝对值等于 5 漏掉 -5；“绝对值小于 3”漏掉 0 或负数。","14":"14. >。 2/3 ≈ 0.67 < 0.7；两个负数比大小，绝对值大的反而小，所以 -2/3 > -0.7。判错点：误以为 2/3 > 0.7 而填“<”。","15":"15. x = 2，y = -3。绝对值不小于 0，两个非负数相加等于 0，只能每一项都为 0：x-2 = 0 且 y+3 = 0。判错点：想不到“非负数之和为 0，则每一项都为 0”。","16":"解答题\n\n16.（每小题 2 分）\n（1）（-3）+（-9）\n同号两数相加，取相同的符号，并把绝对值相加：\n3 + 9 = 12\n所以（-3）+（-9）= -12\n\n（2）15+（-22）\n异号两数相加，取绝对值较大的加数的符号（负），再用较大的绝对值减去较小的绝对值：\n22 - 15 = 7\n所以 15+（-22）= -7\n\n（3）0-（-7）\n减去一个数，等于加上这个数的相反数：\n0-（-7）= 0+7\n= 7\n\n（4）（-8）+6-（-10）\n先化减为加：（-8）+6+10\n= [（-8）+6]+10\n= -2+10\n= 8","17":"17.（每小题 4 分）\n（1）（-1/2）+（-1/3）-（-5/6）\n第一步，化减为加：原式 =（-1/2）+（-1/3）+（+5/6）\n第二步，通分（分母统一为 6）：=（-3/6）+（-2/6）+（+5/6）\n第三步，从左往右加：=（-5/6）+（+5/6）\n第四步，互为相反数相加得 0：= 0\n\n（2）（-7）-|-4|+（-6）\n第一步，先算绝对值：|-4| = 4\n原式 =（-7）-4+（-6）\n第二步，化减为加：=（-7）+（-4）+（-6）\n第三步，同号相加：= -（7+4+6）\n= -17","18":"18.（每小问 2 分）\n（1）画图要点：画一条直线，定出原点 O、正方向（向右）、单位长度三要素；从原点向左 3 个单位标点 A，向右 1 个单位标点 B，向右 4 个单位标点 C。画出规范数轴得 1 分，三点位置全对再得 1 分。\n（2）-3 < 1 < 4（数轴上右边的数总比左边的大）。全对得 2 分。\n（3）点 A 与点 C 之间的距离 = 4-（-3）= 4+3 = 7（个单位长度）。列式正确得 1 分，结果正确得 1 分。\n（4）点 A 表示 -3，-3 的相反数是 3，所以点 D 表示 3；点 D 到原点的距离是 |3| = 3（个单位长度）。求出点 D 表示 3 得 1 分，答出距离 3 得 1 分。","19":"19.（每小问 2 分）\n（1）30+（-0.3）= 29.7（米），9 月 2 日实际水位 29.7 米。列式 1 分，结果 1 分。\n（2）记录中 +0.6 最大、-0.5 最小：9 月 1 日水位最高，9 月 4 日水位最低。两天各 1 分。\n（3）0.6-（-0.5）= 0.6+0.5 = 1.1（米）。列式 1 分，结果 1 分。\n（4）（+0.6）+（-0.3）+（+0.5）+（-0.5）+（+0.2）\n按顺序计算：\n0.6-0.3 = 0.3\n0.3+0.5 = 0.8\n0.8-0.5 = 0.3\n0.3+0.2 = 0.5\n和为 +0.5 米；和为正数，说明这 5 天水位总体比基准高（累计高出 0.5 米）。求和正确 1 分，答出“高于基准”1 分。","20":"20.\n（1）（2 分）前 6 次跳动的位置：0-1+2-3+4-5+6\n=（-1+2）+（-3+4）+（-5+6）\n= 1+1+1\n= 3\n跳蚤落在表示 3 的点上。\n（2）（3 分）每两次为一组：向左跳 1 再向右跳 2，每跳完一组，位置向右前进 1 个单位长度。100 次正好是 50 组，共向右 50 个单位长度，落在表示 50 的点上。说出“每两次一组、每组向右 1”得 2 分，结果 50 得 1 分。\n（3）（3 分）先看偶数次：第 2 次后落在 1，第 4 次后落在 2，第 6 次后落在 3，即第 n 次偶数跳动后落在表示“次数的一半”的点上。2024 的一半是 1012，所以第 2024 次后落在表示 1012 的点；第 2025 次向左跳 2025 个单位长度：1012-2025 = -1013。落在表示 -1013 的点上。求出中间量 1012 得 1 分，算出 -1013 得 2 分。"};
+/*SCORE-CORE-START*/
+function gradeOf(pct){
+  if(pct===null||pct===undefined||isNaN(pct)) return null;
+  if(pct>=85) return {g:"优",t:"本月骨架扎实，保持节奏"};
+  if(pct>=70) return {g:"良",t:"大盘没问题，个别点要回炉"};
+  if(pct>=60) return {g:"合格",t:"有明确短板，按下面清单补"};
+  return {g:"待加强",t:"第一个月很常见！先回课本，不着急刷题报班"};
+}
+function verdictOf(rate){ if(rate>=0.8) return "扎实"; if(rate>=0.5) return "需巩固"; return "要补"; }
+function qVerdict(data, st, it){
+  if(st.skip && st.skip[it.no]) return "skip";
+  var t = data.types[it.no];
+  if(t==="choice"||t==="judge"){
+    if(st.override && st.override[it.no])
+      return st.override[it.no]==="对" ? "full" : "zero";
+    if(!st.ans || !st.ans[it.no]) return "miss";
+    return st.ans[it.no]===data.answers[it.no] ? "full" : "zero";
+  }
+  var v = st.score ? st.score[it.no] : undefined;
+  if(typeof v!=="number") return "unjudged";
+  if(v>=it.score) return "full";
+  if(v>0) return v;
+  return "zero";
+}
+function computeResults(data, st){
+  var earned=0, full=0, kps={}, missed=[], unjudged=[];
+  // 第一遍：总分与缺勤标记（跳过题不计入总分）
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    full += it.score;
+    var pts = 0;
+    if(v==="full") pts = it.score;
+    else if(typeof v==="number") pts = v;
+    else if(v==="miss") missed.push(it.no);
+    else if(v==="unjudged") unjudged.push(it.no);
+    earned += pts;
+  });
+  // 第二遍：KP 汇总先只记被测题（整 KP 全跳过 → 无档 → 不出行）。
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    var pts = (v==="full") ? it.score : (typeof v==="number" ? v : 0);
+    String(it.kp).split("+").forEach(function(k){
+      if(!kps[k]) kps[k]={earned:0,full:0,nos:[],skips:[]};
+      kps[k].earned += pts; kps[k].full += it.score;
+      if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+    });
+  });
+  // 第三遍：部分跳过的 KP —— 跳过题计入满分与关联题号（得分率保守不高估）。
+  data.items.forEach(function(it){
+    if(!(st.skip && st.skip[it.no])) return;
+    String(it.kp).split("+").forEach(function(k){
+      if(kps[k]){
+        kps[k].full += it.score;
+        if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+        kps[k].skips.push(it.no);
+      }
+    });
+  });
+  var pct = full>0 ? Math.round(earned/full*1000)/10 : null;
+  var grade = gradeOf(pct);
+  var kpRows = Object.keys(kps).map(function(k){
+    var r = kps[k];
+    return {kp:k, name:(data.kpNames&&data.kpNames[k])||k, earned:r.earned,
+            full:r.full, nos:r.nos, skips:r.skips,
+            rate:r.full? r.earned/r.full : null,
+            verdict:r.full? verdictOf(r.earned/r.full) : null};
+  }).sort(function(a,b){ return a.rate-b.rate; });
+  var weak = kpRows.filter(function(r){ return r.rate!==null && r.rate<0.8; }).slice(0,2);
+  return {earned:earned, full:full, pct:pct, grade:grade, kpRows:kpRows,
+          weak:weak, missed:missed, unjudged:unjudged};
+}
+/*SCORE-CORE-END*/
+
+var KEY = "g7m1-" + DATA.subject;
+function $(s, el){ return (el||document).querySelector(s); }
+function $all(s, el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); }
+var storeOK = true;
+function loadState(){
+  try{ var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; }
+  catch(e){ storeOK = false; return null; }
+}
+function saveState(){
+  try{ localStorage.setItem(KEY, JSON.stringify(st)); }
+  catch(e){ if(storeOK){ storeOK = false; $("#storeWarn").hidden = false; } }
+}
+var st = loadState() || {ans:{}, fill:{}, score:{}, skip:{}, override:{},
+                         submitted:false, start:null};
+if(!st.ans) st.ans = {}; if(!st.fill) st.fill = {};
+if(!st.score) st.score = {}; if(!st.skip) st.skip = {};
+if(!st.override) st.override = {};
+
+function startTimerIfNeeded(){
+  if(!st.start){ st.start = Date.now(); saveState(); }
+}
+setInterval(function(){
+  if(!st.start) return;
+  var s = Math.floor((Date.now()-st.start)/1000);
+  var mm = String(Math.floor(s/60)).padStart(2,"0"), ss = String(s%60).padStart(2,"0");
+  $("#timerChip").textContent = "⏱ " + mm + ":" + ss + " ／ 建议用时 " + DATA.duration + " 分钟";
+}, 1000);
+
+$all(".q").forEach(function(q){
+  var no = q.getAttribute("data-no"), typ = q.getAttribute("data-type");
+  $all("button.opt", q).forEach(function(b){
+    b.addEventListener("click", function(){
+      startTimerIfNeeded();
+      st.ans[no] = (st.ans[no] === b.getAttribute("data-v")) ? null : b.getAttribute("data-v");
+      if(!st.ans[no]) delete st.ans[no];
+      saveState(); paintQ(q); refresh();
+    });
+  });
+  var fill = $(".fillin", q);
+  if(fill) fill.addEventListener("input", function(){
+    startTimerIfNeeded();
+    if(fill.value) st.fill[no] = fill.value; else delete st.fill[no];
+    saveState();
+  });
+  var sk = $(".skip input", q);
+  if(sk) sk.addEventListener("change", function(){
+    startTimerIfNeeded();
+    if(sk.checked) st.skip[no] = true; else delete st.skip[no];
+    saveState(); paintQ(q); refresh();
+  });
+});
+
+function paintQ(q){
+  var no = q.getAttribute("data-no");
+  $all("button.opt", q).forEach(function(b){
+    b.classList.toggle("sel", st.ans[no] === b.getAttribute("data-v"));
+  });
+  if($(".skip input", q)) $(".skip input", q).checked = !!st.skip[no];
+}
+
+function fillAnsgrid(){
+  $("#ansgrid").innerHTML = Object.keys(DATA.answers).map(function(k){
+    return '<span class="chip"><b>' + k + '.</b>' + escHtml(DATA.answers[k]) + '</span>';
+  }).join("");
+}
+
+function verdictLabel(v, it){
+  if(v==="skip") return ["warn","已跳过（不计分）"];
+  if(v==="full") return ["ok","✓ 对（"+it.score+" 分）"];
+  if(v==="miss") return ["bad","✗ 漏做（0 分）"];
+  if(v==="zero") return ["bad","✗ 错（0 分）"];
+  if(v==="unjudged") return ["warn","待自评给分"];
+  return ["warn","自评 "+v+" ／ "+it.score+" 分"];
+}
+
+function recompute(){
+  var res = computeResults(DATA, st);
+  $all(".q").forEach(function(q){
+    var no = q.getAttribute("data-no");
+    var it = DATA.items.filter(function(x){ return String(x.no)===no; })[0];
+    var v = qVerdict(DATA, st, it);
+    var el = $(".verdict", q);
+    var lab = verdictLabel(v, it);
+    el.className = "verdict " + lab[0];
+    var over = st.override[no] ? "（已按家长复核改判）" : "";
+    el.textContent = st.submitted ? lab[1] + over : "";
+    var rv = $(".reveal", q);
+    if(st.submitted){
+      rv.hidden = false;
+      var parts = [];
+      if(DATA.answers[no] && DATA.answers[no] !== "见解析")
+        parts.push('<div class="ref">参考答案：' + escHtml(DATA.answers[no]) + '</div>');
+      parts.push('<div class="sol">' + escHtml(SOLS[no] || "（无解析）") + '</div>');
+      if(DATA.types[no]==="self"||DATA.types[no]==="fill"){
+        parts.push('<div class="stepper noprint"><button class="dec" aria-label="减">−</button>' +
+          '<span class="score"></span><button class="inc" aria-label="加">＋</button>' +
+          '<span class="muted">／ 满分 ' + it.score + ' 分（宁可少给不高估）</span></div>');
+      }
+      if(DATA.types[no]==="choice"||DATA.types[no]==="judge"){
+        parts.push('<button class="btn noprint gai" data-no="' + no + '">家长复核改判</button>');
+      }
+      rv.innerHTML = parts.join("");
+      var sc = st.score[no];
+      if(typeof sc!=="number") sc = 0;
+      var scoreEl = $(".stepper .score", rv);
+      if(scoreEl) scoreEl.textContent = sc + " 分";
+      var dec = $(".stepper .dec", rv), inc = $(".stepper .inc", rv);
+      if(dec) dec.addEventListener("click", function(){
+        st.score[no] = Math.max(0, (typeof st.score[no]==="number"? st.score[no] : 0) - 1);
+        saveState(); paintScore(no); refresh();
+      });
+      if(inc) inc.addEventListener("click", function(){
+        st.score[no] = Math.min(it.score, (typeof st.score[no]==="number"? st.score[no] : 0) + 1);
+        saveState(); paintScore(no); refresh();
+      });
+      var gai = $(".gai", rv);
+      if(gai) gai.addEventListener("click", function(){
+        var cur = qVerdict(DATA, st, it);
+        st.override[no] = (cur === "full") ? "错" : "对";
+        saveState(); refresh();
+      });
+    } else { rv.hidden = true; rv.innerHTML = ""; }
+  });
+  return res;
+}
+
+function paintScore(no){
+  var q = $("#q" + no);
+  var sc = st.score[no]; if(typeof sc!=="number") sc = 0;
+  var el = $(".stepper .score", q); if(el) el.textContent = sc + " 分";
+}
+
+function refresh(){
+  var res = recompute();
+  var answered = Object.keys(st.ans).length + Object.keys(st.score).length;
+  $("#progChip").textContent = "已作答/已判 " + answered + " ／ " + DATA.items.length + " 题";
+  var nTodo = res.missed.length + res.unjudged.length;
+  $("#submitHint").textContent = nTodo ? ("还有 " + nTodo + " 题未作答或未判分，可先交卷再补。") : "";
+  if(!st.submitted){ $("#results").hidden = true; $("#review").hidden = true; return; }
+  document.body.classList.add("revealed");
+  $("#review").hidden = false;
+  fillAnsgrid();
+  var R = $("#results");
+  R.hidden = false;
+  var h = [];
+  if(res.full === 0){
+    h.push('<div class="warnbox">全卷都标记了跳过，无法评级。去掉"跳过"或先做题。</div>');
+  } else {
+    h.push('<div class="resline">得分：<b>' + res.earned + '</b> ／ 已做题满分 ' + res.full +
+      ' ｜ 折算 <b>' + res.pct + '</b> 分 ｜ 等级 <span class="gradebadge">' +
+      (res.grade ? res.grade.g : "—") + '</span> <span class="muted">' +
+      (res.grade ? res.grade.t : "") + '</span></div>');
+  }
+  if(res.missed.length)
+    h.push('<div class="warnbox">第 ' + res.missed.join("、") + ' 题未作答，按 0 分计；补答后自动重算。</div>');
+  if(res.unjudged.length)
+    h.push('<div class="warnbox">第 ' + res.unjudged.join("、") + ' 题还没自评给分，判完自动重算。</div>');
+  h.push('<h3>按知识点登记（自动汇总）</h3>');
+  h.push('<table><thead><tr><th>知识点</th><th>关联题号</th><th>得分</th><th>满分</th><th>结论</th></tr></thead><tbody>');
+  res.kpRows.forEach(function(r){
+    var nosTxt = r.nos.join(", ") +
+      (r.skips.length ? "（" + r.skips.join("、") + " 跳过，计入满分）" : "");
+    h.push('<tr><td>' + escHtml(r.kp + " " + r.name) + '</td><td>' + escHtml(nosTxt) +
+      '</td><td>' + r.earned + '</td><td>' + r.full + '</td><td>' + escHtml(r.verdict || "—") + '</td></tr>');
+  });
+  h.push('</tbody></table>');
+  h.push('<p class="muted">结论口径：得分率 ≥80% 扎实、50~79% 需巩固、&lt;50% 要补；跳过题计入所在知识点的满分（宁可不高估）。</p>');
+  h.push('<h3>我的短板清单（最先补，≤2 个）</h3>');
+  if(res.weak.length){
+    h.push('<ol>');
+    res.weak.forEach(function(r){
+      h.push('<li><b>' + escHtml(r.kp + " " + r.name) + '</b>（第 ' + r.nos.join("、") +
+        ' 题）：把课本对应章节再读一遍；重做本卷第 ' + r.nos.join("、") +
+        ' 题；错题抄进错题本。</li>');
+    });
+    h.push('</ol>');
+  } else if(res.full > 0){
+    h.push('<p>本月各知识点都扎实，保持节奏。</p>');
+  }
+  h.push('<p>约定复测时间：＿＿＿＿＿＿（建议 7~10 天后只重做错题）</p>');
+  h.push('<h3>成绩单摘要（截图保存，或发给老师/家长）</h3>');
+  h.push('<div class="summarybox">' + escHtml(DATA.subject) + ' · ' + escHtml(DATA.year + DATA.term + "自测") +
+    '<br>得分 ' + res.earned + '／' + res.full + '（已做题折算 ' + (res.pct===null?"—":res.pct) + ' 分，等级 ' +
+    (res.grade ? res.grade.g : "—") + '）<br>要补：' +
+    (res.weak.length ? res.weak.map(function(r){ return escHtml(r.kp + " " + r.name); }).join("；") : "无（全部扎实）") +
+    '<br>日期：＿＿＿＿＿＿　复核：家长抽 3 题已核对 □</div>');
+  R.innerHTML = h.join("");
+}
+
+function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+$("#btnSubmit").addEventListener("click", function(){
+  startTimerIfNeeded();
+  if(!st.submitted && !confirm("确认交卷批改？交卷后公布参考答案与解析。"))
+    return;
+  st.submitted = true;
+  saveState(); refresh();
+  $("#review").scrollIntoView({behavior:"smooth"});
+});
+$("#btnClear").addEventListener("click", function(){
+  if(confirm("清空本卷全部作答与计分？此操作不可恢复。")){
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    location.reload();
+  }
+});
+$("#btnPrint").addEventListener("click", function(){ window.print(); });
+
+(function init(){
+  $all(".q").forEach(paintQ);
+  if(!storeOK) $("#storeWarn").hidden = false;
+  refresh();
+})();
+
+</script>
+</body>
+</html>

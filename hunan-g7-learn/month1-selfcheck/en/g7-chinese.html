@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月语文自测</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g7-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>语文·七年级上学期第一个月自我检测</h1>
+<div class="meta">满分 100 分 ｜ 建议用时 60 分钟 ｜ 做完先自己批改，再请家长抽 3 题复核</div>
+<blockquote>使用说明（先读再动笔）：限时 60 分钟，独立完成，不翻书不问人；做题时不要往下翻——答案在后面。做完先自己批改，再请家长抽 3 题复核。诚信计分：错了不丢人，漏出来的短板才是我们要找的宝贝。</blockquote>
+<details class="rules"><summary>计分规则与进度差异（先读再动笔）</summary>
+<p>怎么算分：本卷没有选择、判断题，全是"动笔写"的题——默写每空 2 分，写错、写漏、多添一个字，这一空就不能给分；简答题对照教师版解析里的采分点给分，宁可少给、不要高估；微写作按"内容 10 + 语言 10 + 书写结构 10"三块打分。算出总分后对照下表：</p>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+
+</details>
+<div class="toolbar noprint">
+  <span class="chip" id="timerChip">⏱ 未开始 ／ 建议用时 60 分钟</span>
+  <span class="chip" id="progChip">已作答 0 ／ 21 题</span>
+  <button class="btn" id="btnPrint">打印</button>
+  <button class="btn btn-danger" id="btnClear">清空重来</button>
+</div>
+<p class="meta noprint">进度自动保存在本机浏览器（清理浏览器数据会丢；换设备不带过去）。不支持保存的浏览器请一次做完再交卷。</p>
+<p class="warnbox noprint" id="storeWarn" hidden>此浏览器不支持自动保存进度——请一次做完再退出。</p>
+<section id="exam">
+<h3>一、积累运用（本题 12 小题，共 26 分）</h3>
+<p class="qintro">（一）古诗默写。补写下面名句中的空缺部分，每空 2 分；错字、漏字、添字该空不得分。</p>
+<div class="q" id="q1" data-no="1" data-type="self" data-score="2"><div class="qtext"><span class="qno">1.</span><p>东临碣石，＿＿＿＿。（曹操《观沧海》）（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q2" data-no="2" data-type="self" data-score="2"><div class="qtext"><span class="qno">2.</span><p>树木丛生，＿＿＿＿。（曹操《观沧海》）（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q3" data-no="3" data-type="self" data-score="2"><div class="qtext"><span class="qno">3.</span><p>＿＿＿＿＿＿＿，闻道龙标过五溪。（李白《闻王昌龄左迁龙标遥有此寄》）（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q4" data-no="4" data-type="self" data-score="2"><div class="qtext"><span class="qno">4.</span><p>我寄愁心与明月，＿＿＿＿＿＿＿。（李白《闻王昌龄左迁龙标遥有此寄》）（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q5" data-no="5" data-type="self" data-score="2"><div class="qtext"><span class="qno">5.</span><p>潮平两岸阔，＿＿＿＿＿。（王湾《次北固山下》）（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q6" data-no="6" data-type="self" data-score="2"><div class="qtext"><span class="qno">6.</span><p>＿＿＿＿＿，江春入旧年。（王湾《次北固山下》）（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q7" data-no="7" data-type="self" data-score="2"><div class="qtext"><span class="qno">7.</span><p>枯藤老树昏鸦，小桥流水人家，＿＿＿＿＿＿。（马致远《天净沙·秋思》）（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q8" data-no="8" data-type="self" data-score="2"><div class="qtext"><span class="qno">8.</span><p>马致远《天净沙·秋思》中，直接抒发天涯游子悲伤愁苦之情、点明全曲主旨的句子是：夕阳西下，＿＿＿＿＿＿。（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<p class="qintro">（二）阅读下面的语段，完成 9~12 题。</p>
+<p class="qintro">初秋的清晨，我沿着湘江风光带漫步。江风拂面，带着清新湿润的水汽；橘子洲头的橘树挂满了青黄的果实，在风中轻轻点头。远处的岳麓山层林尽染，像一幅徐徐展开的画卷。秋阳一点儿也不＿＿＿＿（lìn sè），把碎金般的光洒在江面上，江水泛起粼粼波光。林间传来几声鸟鸣，嘹亮而清脆，与江水的低声<strong>应和</strong>着。这样的清晨，真让人心旷神怡。</p>
+<div class="q" id="q9" data-no="9" data-type="self" data-score="2"><div class="qtext"><span class="qno">9.</span><p>① 根据拼音，在语段横线上写出正确的词语：lìn sè（　　　）；② 给语段中加点的"应和"的"和"字注音：＿＿＿。（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q10" data-no="10" data-type="self" data-score="2"><div class="qtext"><span class="qno">10.</span><p>联系语境，说说"心旷神怡"的意思，并写出语段中是什么让"我"心旷神怡。（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q11" data-no="11" data-type="self" data-score="2"><div class="qtext"><span class="qno">11.</span><p>下面两个句子都写了秋风，哪一句运用了拟人的修辞手法？请说明理由。（2分）</p>
+<p>   ① 秋风掠过田野，稻穗沙沙作响。<br>
+   ② 秋风温柔地抚摸着稻田，稻穗羞涩地低下了头。</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q12" data-no="12" data-type="self" data-score="4"><div class="qtext"><span class="qno">12.</span><p>仿照朱自清《春》中的例句，以"秋天"开头，写一个运用比喻或拟人手法的句子。（4分）</p>
+<p>   例句：春天像刚落地的娃娃，从头到脚都是新的，它生长着。<br>
+   我的仿写：＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿＿</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>二、阅读鉴赏（本题 8 小题，共 44 分）</h3>
+<p class="qintro">（一）古诗赏析。阅读《观沧海》，完成 13~14 题。</p>
+<p class="qintro">东临碣石，以观沧海。水何澹澹，山岛竦峙。</p>
+<p class="qintro">树木丛生，百草丰茂。秋风萧瑟，洪波涌起。</p>
+<p class="qintro">日月之行，若出其中；星汉灿烂，若出其里。</p>
+<p class="qintro">幸甚至哉，歌以咏志。</p>
+<p class="qintro">——东汉·曹操《观沧海》</p>
+<div class="q" id="q13" data-no="13" data-type="self" data-score="4"><div class="qtext"><span class="qno">13.</span><p>阅读全诗，回答问题。（4分）</p>
+<p>    ① "水何澹澹，山岛竦峙"描绘了怎样的景象？（2分）<br>
+    ② "日月之行，若出其中；星汉灿烂，若出其里"表现了诗人怎样的胸怀？（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q14" data-no="14" data-type="self" data-score="4"><div class="qtext"><span class="qno">14.</span><p>李白听说王昌龄被贬龙标，写下此诗遥寄友人。阅读全诗，回答问题。（4分）</p>
+<p>    ① "杨花落尽子规啼"写了哪些意象？渲染了怎样的氛围？（2分）<br>
+    ② "我寄愁心与明月，随君直到夜郎西"是怎样表达诗人对友人的情感的？（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<p class="qintro">（二）课内散文阅读。阅读《济南的冬天》选段，完成 15~17 题。</p>
+<p class="qintro">最妙的是下点小雪呀。看吧，山上的矮松越发的青黑，树尖上顶着一髻儿白花，好像日本看护妇。山尖全白了，给蓝天镶上一道银边。山坡上，有的地方雪厚点，有的地方草色还露着；这样，一道儿白，一道儿暗黄，给山们穿上一件带水纹的花衣；看着看着，这件花衣好像被风儿吹动，叫你希望看见一点更美的山的肌肤。等到快日落的时候，微黄的阳光斜射在山腰上，那点薄雪好像忽然害了羞，微微露出点粉色。就是下小雪吧，济南是受不住大雪的，那些小山太秀气！</p>
+<p class="qintro">——老舍《济南的冬天》（选段）</p>
+<div class="q" id="q15" data-no="15" data-type="self" data-score="6"><div class="qtext"><span class="qno">15.</span><p>阅读选段，回答问题。（6分）</p>
+<p>    ① 选段按怎样的顺序描写雪后的山景？（2分）<br>
+    ② 从"山上、山尖、山坡、山腰"中任选两处，用简洁的语言概括各处景致的特点。（4分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q16" data-no="16" data-type="self" data-score="6"><div class="qtext"><span class="qno">16.</span><p>赏析选段中两处加粗句子。（6分）</p>
+<p>    ① <strong>山尖全白了，给蓝天镶上一道银边。</strong>（3分）<br>
+    ② <strong>那点薄雪好像忽然害了羞，微微露出点粉色。</strong>（3分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q17" data-no="17" data-type="self" data-score="6"><div class="qtext"><span class="qno">17.</span><p>班级要举办"课文朗读会"，请你完成下面的朗读设计。（6分）</p>
+<p>    ① "最妙的是下点小雪呀"一句，你会把重音落在哪个词上？为什么？（2分）<br>
+    ② 句末的"呀"应该怎样读？请说出理由。（2分）<br>
+    ③ 结尾"就是下小雪吧，济南是受不住大雪的，那些小山太秀气！"应读出怎样的语气？为什么？（2分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<p class="qintro">（三）课外阅读。阅读下面的材料，完成 18~20 题。</p>
+<p class="qintro"><strong>（阅读材料）湘江边的秋天</strong></p>
+<p class="qintro">九月的湘江边，秋意是悄悄来的。</p>
+<p class="qintro">先是江风变了性子，不再黏热，变得清爽干净，扑在脸上，像浸过井水的毛巾，凉丝丝的。江水退下去一些，露出一线浅滩，几只白鹭立在水边，一动不动，<strong>像守着什么心事</strong>。对岸的岳麓山，绿意里悄悄掺进了黄和红，一层一层的，<strong>像谁打翻了颜料盘</strong>。水边偶尔传来一声鸟鸣，清清亮亮，像落在琴弦上。</p>
+<p class="qintro">沿江的桂花开了，细碎的小花藏在绿叶间，香气却漫得满堤都是，深吸一口，甜到了心里。梧桐叶的边缘泛起浅浅的黄，风一过，便有三两片打着旋儿飘下来，轻轻落在长椅上，像一封封没有署名的信。</p>
+<p class="qintro">傍晚，夕阳把江面铺成一条金红的绸带，白鹭掠过水面，翅膀上驮着光。散步的人们不约而同放慢了脚步——这样的秋天，谁舍得匆匆走过呢？</p>
+<p class="qintro">（本材料为本卷自写的湖南秋景短文，约 300 字）</p>
+<div class="q" id="q18" data-no="18" data-type="self" data-score="6"><div class="qtext"><span class="qno">18.</span><p>阅读材料从哪些感官角度描写湘江边的秋天？请从"视觉、听觉、嗅觉、触觉"中任选三种，分别举出一例。（6分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q19" data-no="19" data-type="self" data-score="6"><div class="qtext"><span class="qno">19.</span><p>请从材料中两处加粗句子中任选一句，结合语境加以赏析。（6分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<div class="q" id="q20" data-no="20" data-type="self" data-score="6"><div class="qtext"><span class="qno">20.</span><p>结尾写道"这样的秋天，谁舍得匆匆走过呢？"这句话表达了作者怎样的思想感情？请结合文中具体内容简要分析。（6分）</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+<h3>三、写作（本题 1 小题，共 30 分）</h3>
+<div class="q" id="q21" data-no="21" data-type="self" data-score="30"><div class="qtext"><span class="qno">21.</span><p>从下面两个题目中任选一题，写一段 200~250 字的写景短文。（30分）</p>
+<p>    题目一：校园（或上下学路上）的秋天。选择一处景物，抓住它在秋天的特征，按一定顺序写下来。<br>
+    题目二：一场秋雨。调动眼、耳、鼻、手等感官，写出这场雨的特点和你的感受。</p>
+<p>    要求：①抓住景物特征来写；②按时间或空间顺序组织；③至少用一处比喻或拟人；④字数 200~250；⑤书写工整，卷面整洁。</p>
+<p>    写完后对照下面的自评量表，做到一条画一个"√"：</p>
+<p>    □ 我抓住了景物在秋天的特征（颜色、形状、声音、气味等）<br>
+    □ 我按一定顺序来写（时间顺序或空间顺序）<br>
+    □ 我用到了比喻或拟人<br>
+    □ 我写出了自己的感受<br>
+    □ 我数了字数：在 200~250 字之间，书写工整</p></div><div class="selfnote">在草稿纸上完成；交卷批改时对照采分点给分。</div><label class="skip noprint"><input type="checkbox"> 未讲到，跳过（不计分）</label><div class="verdict" ></div><div class="reveal" hidden></div></div>
+</section>
+<div class="submitbar noprint"><button class="btn" id="btnSubmit">交卷批改</button><span id="submitHint"></span></div>
+<section id="review" hidden>
+<h2>批改说明</h2>
+<h3>答案速查</h3>
+<h3>逐题解析</h3>
+<h3>答案速查（批改卡）</h3>
+<div class="ansgrid" id="ansgrid"></div>
+</section>
+<section id="results" hidden></section>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g7-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+<script>
+const DATA = {"subject":"语文","year":"2026-2027","term":"上学期第一个月","duration":60,"total":100,"items":[{"no":1,"score":2,"kp":"KP3","difficulty":"易","match":"强"},{"no":2,"score":2,"kp":"KP3","difficulty":"易","match":"强"},{"no":3,"score":2,"kp":"KP3","difficulty":"易","match":"强"},{"no":4,"score":2,"kp":"KP3","difficulty":"易","match":"强"},{"no":5,"score":2,"kp":"KP3","difficulty":"易","match":"强"},{"no":6,"score":2,"kp":"KP3","difficulty":"易","match":"强"},{"no":7,"score":2,"kp":"KP3","difficulty":"易","match":"强"},{"no":8,"score":2,"kp":"KP3","difficulty":"中","match":"强"},{"no":9,"score":2,"kp":"KP1","difficulty":"易","match":"强"},{"no":10,"score":2,"kp":"KP2","difficulty":"中","match":"中"},{"no":11,"score":2,"kp":"KP6","difficulty":"中","match":"中"},{"no":12,"score":4,"kp":"KP6","difficulty":"较难","match":"拓展"},{"no":13,"score":4,"kp":"KP4","difficulty":"中","match":"强"},{"no":14,"score":4,"kp":"KP4","difficulty":"中","match":"强"},{"no":15,"score":6,"kp":"KP5","difficulty":"易","match":"强"},{"no":16,"score":6,"kp":"KP5","difficulty":"易","match":"中"},{"no":17,"score":6,"kp":"KP5","difficulty":"较难","match":"拓展"},{"no":18,"score":6,"kp":"KP5","difficulty":"易","match":"强"},{"no":19,"score":6,"kp":"KP5","difficulty":"易","match":"中"},{"no":20,"score":6,"kp":"KP5","difficulty":"较难","match":"中"},{"no":21,"score":30,"kp":"KP7","difficulty":"中","match":"强"}],"answers":{"1":"以观沧海","2":"百草丰茂","3":"杨花落尽子规啼","4":"随君直到夜郎西","5":"风正一帆悬","6":"海日生残夜","7":"古道西风瘦马","8":"断肠人在天涯","9":"① 吝啬 ② hè","10":"心旷神怡：心情舒畅，精神愉快","11":"第 ② 句是拟人","12":"见解析","13":"见解析","14":"见解析","15":"见解析","16":"见解析","17":"见解析","18":"见解析","19":"见解析","20":"见解析","21":"见解析"},"types":{"1":"self","2":"self","3":"self","4":"self","5":"self","6":"self","7":"self","8":"self","9":"self","10":"self","11":"self","12":"self","13":"self","14":"self","15":"self","16":"self","17":"self","18":"self","19":"self","20":"self","21":"self"},"kpNames":{"KP3":"古诗默写","KP1":"字音字形","KP2":"词语理解与运用","KP6":"修辞辨析与仿写","KP4":"古诗赏析","KP5":"写景散文阅读","KP7":"微写作"}};
+const SOLS = {"1":"默写（1~8 题，每空 2 分，错字、漏字、添字该空不得分）\n\n1. 出自曹操《观沧海》开篇\"东临碣石，以观沧海\"。易错点：\"沧海\"的\"沧\"是三点水，不要写成\"苍\"。","2":"2. 出自《观沧海》\"树木丛生，百草丰茂\"。易错点：\"茂\"字下面不要多一点。","3":"3. 出自李白《闻王昌龄左迁龙标遥有此寄》首句。易错点：\"杨花\"的\"杨\"是木字旁，不要写成\"扬\"；\"啼\"是口字旁。","4":"4. 同上诗末句。易错点：统编教材为\"随君直到夜郎西\"，不是\"随风\"；\"郎\"不要写成\"朗\"。","5":"5. 出自王湾《次北固山下》\"潮平两岸阔，风正一帆悬\"。易错点：\"悬\"上部不要少写。","6":"6. 同诗颈联\"海日生残夜，江春入旧年\"。易错点：\"生\"不要写成\"升\"。","7":"7. 出自马致远《天净沙·秋思》。易错点：\"瘦\"是病字旁，里面不要写错。","8":"8. 理解性默写，考直接抒情、点明主旨句。答案\"夕阳西下，断肠人在天涯\"。易错点：\"天涯\"的\"涯\"不要写成\"崖\"。","9":"积累运用语段题（9~12 题）\n\n9. ① 吝啬（注意\"啬\"的写法，\"墙\"字头下面是\"回\"形结构变形，不要多笔少画）；② \"应和\"的\"和\"读 hè（第四声），（声音）相和、应答之意，本词出自《春》\"跟轻风流水应和着\"，\"应\"在此读 yìng。采分：每小题 1 分，写错该小题不得分。","10":"10. 心旷神怡：心境开阔，心情舒畅，精神愉快（1 分）。语段中让\"我\"心旷神怡的是湘江边清晨的美景——清爽的江风、如画卷般层林尽染的岳麓山、洒满碎金般光斑的江面、清脆的鸟鸣等（答出其中两处即可，1 分）。","11":"11. 第②句运用拟人（1 分）。理由：②中\"温柔地抚摸\"\"羞涩地低下头\"分别赋予秋风、稻穗人的动作和情态，把物当作人来写；而①中\"沙沙作响\"只是客观描摹秋风掠过稻田的声音，没有赋予物以人的情态（1 分）。","12":"12. 示例：秋天像一位沉静的画家，从田野到山冈都是金色的，它挥洒着。评分：恰当运用比喻或拟人 2 分；抓住秋天特征、内容贴切 1 分；与例句句式大体一致、语言通顺 1 分。判错点：只写\"秋天像金色的\"之类没有喻体展开的句子，或虽用\"像\"字却无比喻关系的（如\"秋天像去年一样来了\"），手法分不能给。","13":"古诗赏析（13~14 题）\n\n13. ① \"澹澹\"写大海水波动荡，\"竦峙\"写山岛高高耸立——大海辽阔涌动，山岛巍峨挺立，一动一静，勾勒出苍茫壮观的沧海景象（2 分：抓住两词含义 1 分，描绘出动静结合的画面 1 分）。② 这四句想象奇特：大海仿佛包容了日月星辰的运行，衬托出诗人开阔博大的胸怀和建功立业、一统天下的雄心壮志（2 分：答出\"博大胸怀\"1 分，答出\"雄心壮志／豪迈气概\"1 分）。","14":"14. ① 意象：杨花、子规（杜鹃）（1 分）。飘零落尽的杨花、啼声哀切的子规点明暮春时节，渲染出萧瑟凄清、哀伤惆怅的氛围，暗含对友人贬谪远行的同情与不舍（1 分）。② 诗人把\"愁心\"托付给明月，让明月陪伴友人直到遥远的夜郎西——运用拟人，把明月当作善解人意的信使，表达对友人被贬的深切同情、牵挂与安慰（2 分：指出拟人／托月寄情 1 分，答出同情牵挂之情 1 分）。","15":"课内散文阅读（15~17 题）\n\n15. ① 空间顺序，由高到低：山上→山尖→山坡→山腰（2 分：只答\"空间顺序\"得 1 分，答出由高到低的具体路径得满分）。② 示例：山上——矮松顶着白雪，如\"日本看护妇\"，秀美挺立；山尖——全白，像给蓝天镶上一道银边，洁白明亮；山坡——雪色与草色相间，如穿\"花衣\"，色彩斑斓；山腰——薄雪在夕阳下\"害了羞\"，微微露出粉色，娇美动人（4 分：答出任意两处、特点概括恰当即可，每处 2 分）。","16":"16. ① 运用比喻，把雪后白亮的山尖比作\"银边\"，一个\"镶\"字写出白色山尖衬着蓝天的精巧贴切，突出小雪装点下的小山秀美可爱，流露出作者的喜爱之情（3 分：手法 1 分，结合\"银边\"\"镶\"分析 1 分，情感 1 分）。② 运用拟人，\"害了羞\"把夕阳斜照下薄雪微露粉色的情态，写成少女含羞的样子，生动传神，写出雪的娇美，表达作者的怜爱（3 分：采分点同前）。","17":"17. ① 重音落在\"妙\"（或\"最妙\"）上——\"妙\"是统领全段的文眼，重读能突出雪后山景的可爱，唤起听者的期待（2 分：指出重音 1 分，说清理由 1 分；选其他词言之成理亦可）。② \"呀\"读得轻短、微微上扬，带惊喜赞叹的语气——那是看到小雪后山景时由衷的感叹（2 分：读法 1 分，理由 1 分）。③ 读出轻柔、怜爱（呵护）的语气——\"就是……吧\"是商量、请求的口吻，因为济南的小山\"太秀气\"，受不住大雪；语速放缓、语调轻柔，读出对雪、对小山的珍爱（2 分：语气 1 分，理由 1 分）。","18":"课外阅读（18~20 题）\n\n18. 触觉——江风扑在脸上\"像浸过井水的毛巾，凉丝丝的\"；听觉——\"水边偶尔传来一声鸟鸣，清清亮亮\"；嗅觉——桂花\"香气却漫得满堤都是\"；视觉——岳麓山\"绿意里悄悄掺进了黄和红\"（或夕阳下\"金红的绸带\"）。采分：每种角度 1 分 + 举例恰当 1 分，答出三种即得满分 6 分。","19":"19. 示例一（第一处加粗句）：运用拟人，\"像守着什么心事\"把静立水边的白鹭写成有心事的生灵，画面安静而有情味，衬托出江边清晨的宁静，流露出作者的喜爱与遐想。示例二（第二处加粗句）：运用比喻，把层林初染的岳麓山比作\"打翻的颜料盘\"，生动写出秋山绿、黄、红交织、色彩斑斓的层次之美，传达出作者发现秋色的惊喜。采分：指出手法 2 分；结合句子内容分析 2 分；说出表达效果或情感 2 分。","20":"20. 表达了作者对湘江边秋景的喜爱、陶醉与赞美，对家乡（湖南）秋天的深情（2 分）。结合内容：正因江风清爽、白鹭安静、山色绚烂、桂香甜润、暮江如绸带，景致处处可爱，作者才发出\"谁舍得匆匆走过\"的感慨；反问句把珍爱之情推向高潮（4 分：结合文中两处具体内容分析，每处 2 分）。","21":"微写作（21 题，30 分）\n\n评分量表（三块合计 30 分，宁少给、不高估）：\n\n| 维度 | 分值 | 评分点 |\n|---|---|---|\n| 内容 | 10 | 抓住景物特征 4 分；顺序清晰 3 分；有真实感受 3 分 |\n| 语言 | 10 | 语句通顺 4 分；比喻或拟人运用恰当 4 分；用词准确生动 2 分 |\n| 书写与结构 | 10 | 书写工整、卷面整洁 4 分；标点正确 3 分；一段之内条理清楚 3 分 |\n\n说明：两个题目任选其一，满足要求即同等给分，不设题材偏好；字数不足 200 字酌扣 2~4 分；自评量表不另行给分，用于学生自查。\n\n示例范文（题目一，约 210 字）：校门口的桂花开了。远远望去，那两棵桂树像撑开的绿伞，绿叶间藏着点点金黄。走近了，香气一股一股地涌过来，甜丝丝的，把整个校门都熏香了。细看，小花只有米粒大，四片花瓣挤在一起，一簇一簇躲在叶子后面，像害羞的孩子。一阵风过，几朵小花打着旋儿落在我的书页上，我轻轻拾起一枚，舍不得放下。上学的路每天都走，可只有这个季节，桂树用香气提醒我：秋天来了，要好好看看身边的美好。"};
+/*SCORE-CORE-START*/
+function gradeOf(pct){
+  if(pct===null||pct===undefined||isNaN(pct)) return null;
+  if(pct>=85) return {g:"优",t:"本月骨架扎实，保持节奏"};
+  if(pct>=70) return {g:"良",t:"大盘没问题，个别点要回炉"};
+  if(pct>=60) return {g:"合格",t:"有明确短板，按下面清单补"};
+  return {g:"待加强",t:"第一个月很常见！先回课本，不着急刷题报班"};
+}
+function verdictOf(rate){ if(rate>=0.8) return "扎实"; if(rate>=0.5) return "需巩固"; return "要补"; }
+function qVerdict(data, st, it){
+  if(st.skip && st.skip[it.no]) return "skip";
+  var t = data.types[it.no];
+  if(t==="choice"||t==="judge"){
+    if(st.override && st.override[it.no])
+      return st.override[it.no]==="对" ? "full" : "zero";
+    if(!st.ans || !st.ans[it.no]) return "miss";
+    return st.ans[it.no]===data.answers[it.no] ? "full" : "zero";
+  }
+  var v = st.score ? st.score[it.no] : undefined;
+  if(typeof v!=="number") return "unjudged";
+  if(v>=it.score) return "full";
+  if(v>0) return v;
+  return "zero";
+}
+function computeResults(data, st){
+  var earned=0, full=0, kps={}, missed=[], unjudged=[];
+  // 第一遍：总分与缺勤标记（跳过题不计入总分）
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    full += it.score;
+    var pts = 0;
+    if(v==="full") pts = it.score;
+    else if(typeof v==="number") pts = v;
+    else if(v==="miss") missed.push(it.no);
+    else if(v==="unjudged") unjudged.push(it.no);
+    earned += pts;
+  });
+  // 第二遍：KP 汇总先只记被测题（整 KP 全跳过 → 无档 → 不出行）。
+  data.items.forEach(function(it){
+    var v = qVerdict(data, st, it);
+    if(v==="skip") return;
+    var pts = (v==="full") ? it.score : (typeof v==="number" ? v : 0);
+    String(it.kp).split("+").forEach(function(k){
+      if(!kps[k]) kps[k]={earned:0,full:0,nos:[],skips:[]};
+      kps[k].earned += pts; kps[k].full += it.score;
+      if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+    });
+  });
+  // 第三遍：部分跳过的 KP —— 跳过题计入满分与关联题号（得分率保守不高估）。
+  data.items.forEach(function(it){
+    if(!(st.skip && st.skip[it.no])) return;
+    String(it.kp).split("+").forEach(function(k){
+      if(kps[k]){
+        kps[k].full += it.score;
+        if(kps[k].nos.indexOf(it.no)<0) kps[k].nos.push(it.no);
+        kps[k].skips.push(it.no);
+      }
+    });
+  });
+  var pct = full>0 ? Math.round(earned/full*1000)/10 : null;
+  var grade = gradeOf(pct);
+  var kpRows = Object.keys(kps).map(function(k){
+    var r = kps[k];
+    return {kp:k, name:(data.kpNames&&data.kpNames[k])||k, earned:r.earned,
+            full:r.full, nos:r.nos, skips:r.skips,
+            rate:r.full? r.earned/r.full : null,
+            verdict:r.full? verdictOf(r.earned/r.full) : null};
+  }).sort(function(a,b){ return a.rate-b.rate; });
+  var weak = kpRows.filter(function(r){ return r.rate!==null && r.rate<0.8; }).slice(0,2);
+  return {earned:earned, full:full, pct:pct, grade:grade, kpRows:kpRows,
+          weak:weak, missed:missed, unjudged:unjudged};
+}
+/*SCORE-CORE-END*/
+
+var KEY = "g7m1-" + DATA.subject;
+function $(s, el){ return (el||document).querySelector(s); }
+function $all(s, el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); }
+var storeOK = true;
+function loadState(){
+  try{ var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; }
+  catch(e){ storeOK = false; return null; }
+}
+function saveState(){
+  try{ localStorage.setItem(KEY, JSON.stringify(st)); }
+  catch(e){ if(storeOK){ storeOK = false; $("#storeWarn").hidden = false; } }
+}
+var st = loadState() || {ans:{}, fill:{}, score:{}, skip:{}, override:{},
+                         submitted:false, start:null};
+if(!st.ans) st.ans = {}; if(!st.fill) st.fill = {};
+if(!st.score) st.score = {}; if(!st.skip) st.skip = {};
+if(!st.override) st.override = {};
+
+function startTimerIfNeeded(){
+  if(!st.start){ st.start = Date.now(); saveState(); }
+}
+setInterval(function(){
+  if(!st.start) return;
+  var s = Math.floor((Date.now()-st.start)/1000);
+  var mm = String(Math.floor(s/60)).padStart(2,"0"), ss = String(s%60).padStart(2,"0");
+  $("#timerChip").textContent = "⏱ " + mm + ":" + ss + " ／ 建议用时 " + DATA.duration + " 分钟";
+}, 1000);
+
+$all(".q").forEach(function(q){
+  var no = q.getAttribute("data-no"), typ = q.getAttribute("data-type");
+  $all("button.opt", q).forEach(function(b){
+    b.addEventListener("click", function(){
+      startTimerIfNeeded();
+      st.ans[no] = (st.ans[no] === b.getAttribute("data-v")) ? null : b.getAttribute("data-v");
+      if(!st.ans[no]) delete st.ans[no];
+      saveState(); paintQ(q); refresh();
+    });
+  });
+  var fill = $(".fillin", q);
+  if(fill) fill.addEventListener("input", function(){
+    startTimerIfNeeded();
+    if(fill.value) st.fill[no] = fill.value; else delete st.fill[no];
+    saveState();
+  });
+  var sk = $(".skip input", q);
+  if(sk) sk.addEventListener("change", function(){
+    startTimerIfNeeded();
+    if(sk.checked) st.skip[no] = true; else delete st.skip[no];
+    saveState(); paintQ(q); refresh();
+  });
+});
+
+function paintQ(q){
+  var no = q.getAttribute("data-no");
+  $all("button.opt", q).forEach(function(b){
+    b.classList.toggle("sel", st.ans[no] === b.getAttribute("data-v"));
+  });
+  if($(".skip input", q)) $(".skip input", q).checked = !!st.skip[no];
+}
+
+function fillAnsgrid(){
+  $("#ansgrid").innerHTML = Object.keys(DATA.answers).map(function(k){
+    return '<span class="chip"><b>' + k + '.</b>' + escHtml(DATA.answers[k]) + '</span>';
+  }).join("");
+}
+
+function verdictLabel(v, it){
+  if(v==="skip") return ["warn","已跳过（不计分）"];
+  if(v==="full") return ["ok","✓ 对（"+it.score+" 分）"];
+  if(v==="miss") return ["bad","✗ 漏做（0 分）"];
+  if(v==="zero") return ["bad","✗ 错（0 分）"];
+  if(v==="unjudged") return ["warn","待自评给分"];
+  return ["warn","自评 "+v+" ／ "+it.score+" 分"];
+}
+
+function recompute(){
+  var res = computeResults(DATA, st);
+  $all(".q").forEach(function(q){
+    var no = q.getAttribute("data-no");
+    var it = DATA.items.filter(function(x){ return String(x.no)===no; })[0];
+    var v = qVerdict(DATA, st, it);
+    var el = $(".verdict", q);
+    var lab = verdictLabel(v, it);
+    el.className = "verdict " + lab[0];
+    var over = st.override[no] ? "（已按家长复核改判）" : "";
+    el.textContent = st.submitted ? lab[1] + over : "";
+    var rv = $(".reveal", q);
+    if(st.submitted){
+      rv.hidden = false;
+      var parts = [];
+      if(DATA.answers[no] && DATA.answers[no] !== "见解析")
+        parts.push('<div class="ref">参考答案：' + escHtml(DATA.answers[no]) + '</div>');
+      parts.push('<div class="sol">' + escHtml(SOLS[no] || "（无解析）") + '</div>');
+      if(DATA.types[no]==="self"||DATA.types[no]==="fill"){
+        parts.push('<div class="stepper noprint"><button class="dec" aria-label="减">−</button>' +
+          '<span class="score"></span><button class="inc" aria-label="加">＋</button>' +
+          '<span class="muted">／ 满分 ' + it.score + ' 分（宁可少给不高估）</span></div>');
+      }
+      if(DATA.types[no]==="choice"||DATA.types[no]==="judge"){
+        parts.push('<button class="btn noprint gai" data-no="' + no + '">家长复核改判</button>');
+      }
+      rv.innerHTML = parts.join("");
+      var sc = st.score[no];
+      if(typeof sc!=="number") sc = 0;
+      var scoreEl = $(".stepper .score", rv);
+      if(scoreEl) scoreEl.textContent = sc + " 分";
+      var dec = $(".stepper .dec", rv), inc = $(".stepper .inc", rv);
+      if(dec) dec.addEventListener("click", function(){
+        st.score[no] = Math.max(0, (typeof st.score[no]==="number"? st.score[no] : 0) - 1);
+        saveState(); paintScore(no); refresh();
+      });
+      if(inc) inc.addEventListener("click", function(){
+        st.score[no] = Math.min(it.score, (typeof st.score[no]==="number"? st.score[no] : 0) + 1);
+        saveState(); paintScore(no); refresh();
+      });
+      var gai = $(".gai", rv);
+      if(gai) gai.addEventListener("click", function(){
+        var cur = qVerdict(DATA, st, it);
+        st.override[no] = (cur === "full") ? "错" : "对";
+        saveState(); refresh();
+      });
+    } else { rv.hidden = true; rv.innerHTML = ""; }
+  });
+  return res;
+}
+
+function paintScore(no){
+  var q = $("#q" + no);
+  var sc = st.score[no]; if(typeof sc!=="number") sc = 0;
+  var el = $(".stepper .score", q); if(el) el.textContent = sc + " 分";
+}
+
+function refresh(){
+  var res = recompute();
+  var answered = Object.keys(st.ans).length + Object.keys(st.score).length;
+  $("#progChip").textContent = "已作答/已判 " + answered + " ／ " + DATA.items.length + " 题";
+  var nTodo = res.missed.length + res.unjudged.length;
+  $("#submitHint").textContent = nTodo ? ("还有 " + nTodo + " 题未作答或未判分，可先交卷再补。") : "";
+  if(!st.submitted){ $("#results").hidden = true; $("#review").hidden = true; return; }
+  document.body.classList.add("revealed");
+  $("#review").hidden = false;
+  fillAnsgrid();
+  var R = $("#results");
+  R.hidden = false;
+  var h = [];
+  if(res.full === 0){
+    h.push('<div class="warnbox">全卷都标记了跳过，无法评级。去掉"跳过"或先做题。</div>');
+  } else {
+    h.push('<div class="resline">得分：<b>' + res.earned + '</b> ／ 已做题满分 ' + res.full +
+      ' ｜ 折算 <b>' + res.pct + '</b> 分 ｜ 等级 <span class="gradebadge">' +
+      (res.grade ? res.grade.g : "—") + '</span> <span class="muted">' +
+      (res.grade ? res.grade.t : "") + '</span></div>');
+  }
+  if(res.missed.length)
+    h.push('<div class="warnbox">第 ' + res.missed.join("、") + ' 题未作答，按 0 分计；补答后自动重算。</div>');
+  if(res.unjudged.length)
+    h.push('<div class="warnbox">第 ' + res.unjudged.join("、") + ' 题还没自评给分，判完自动重算。</div>');
+  h.push('<h3>按知识点登记（自动汇总）</h3>');
+  h.push('<table><thead><tr><th>知识点</th><th>关联题号</th><th>得分</th><th>满分</th><th>结论</th></tr></thead><tbody>');
+  res.kpRows.forEach(function(r){
+    var nosTxt = r.nos.join(", ") +
+      (r.skips.length ? "（" + r.skips.join("、") + " 跳过，计入满分）" : "");
+    h.push('<tr><td>' + escHtml(r.kp + " " + r.name) + '</td><td>' + escHtml(nosTxt) +
+      '</td><td>' + r.earned + '</td><td>' + r.full + '</td><td>' + escHtml(r.verdict || "—") + '</td></tr>');
+  });
+  h.push('</tbody></table>');
+  h.push('<p class="muted">结论口径：得分率 ≥80% 扎实、50~79% 需巩固、&lt;50% 要补；跳过题计入所在知识点的满分（宁可不高估）。</p>');
+  h.push('<h3>我的短板清单（最先补，≤2 个）</h3>');
+  if(res.weak.length){
+    h.push('<ol>');
+    res.weak.forEach(function(r){
+      h.push('<li><b>' + escHtml(r.kp + " " + r.name) + '</b>（第 ' + r.nos.join("、") +
+        ' 题）：把课本对应章节再读一遍；重做本卷第 ' + r.nos.join("、") +
+        ' 题；错题抄进错题本。</li>');
+    });
+    h.push('</ol>');
+  } else if(res.full > 0){
+    h.push('<p>本月各知识点都扎实，保持节奏。</p>');
+  }
+  h.push('<p>约定复测时间：＿＿＿＿＿＿（建议 7~10 天后只重做错题）</p>');
+  h.push('<h3>成绩单摘要（截图保存，或发给老师/家长）</h3>');
+  h.push('<div class="summarybox">' + escHtml(DATA.subject) + ' · ' + escHtml(DATA.year + DATA.term + "自测") +
+    '<br>得分 ' + res.earned + '／' + res.full + '（已做题折算 ' + (res.pct===null?"—":res.pct) + ' 分，等级 ' +
+    (res.grade ? res.grade.g : "—") + '）<br>要补：' +
+    (res.weak.length ? res.weak.map(function(r){ return escHtml(r.kp + " " + r.name); }).join("；") : "无（全部扎实）") +
+    '<br>日期：＿＿＿＿＿＿　复核：家长抽 3 题已核对 □</div>');
+  R.innerHTML = h.join("");
+}
+
+function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+$("#btnSubmit").addEventListener("click", function(){
+  startTimerIfNeeded();
+  if(!st.submitted && !confirm("确认交卷批改？交卷后公布参考答案与解析。"))
+    return;
+  st.submitted = true;
+  saveState(); refresh();
+  $("#review").scrollIntoView({behavior:"smooth"});
+});
+$("#btnClear").addEventListener("click", function(){
+  if(confirm("清空本卷全部作答与计分？此操作不可恢复。")){
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    location.reload();
+  }
+});
+$("#btnPrint").addEventListener("click", function(){ window.print(); });
+
+(function init(){
+  $all(".q").forEach(paintQ);
+  if(!storeOK) $("#storeWarn").hidden = false;
+  refresh();
+})();
+
+</script>
+</body>
+</html>
