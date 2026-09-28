@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-2027上学期第一个月英语自测-家长版</title>
+<style>
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da;--good:#1a7f37;--bad:#c62828}
+*{box-sizing:border-box}
+body{margin:0;padding:1.2rem 1rem 3rem;background:var(--paper);color:var(--ink);font-family:"Noto Serif CJK SC","Noto Serif SC","Source Han Serif SC",serif;font-size:1.02rem;line-height:1.7}
+main{max-width:46rem;margin:0 auto}
+.kicker{color:var(--accent);font-size:.82rem;letter-spacing:.12em}
+h1{font-size:1.45rem;border-bottom:2px solid var(--ink);padding-bottom:.35rem;line-height:1.4}
+h2{font-size:1.2rem;margin-top:2rem}
+h3{font-size:1.05rem;margin-top:1.5rem}
+.meta{color:var(--muted);font-size:.92rem;margin:.4rem 0}
+blockquote{border-left:3px solid var(--accent);background:#faf8f2;padding:.5rem .9rem;margin:1rem 0;font-size:.95rem}
+table{border-collapse:collapse;margin:1rem 0;font-size:.92rem;display:block;overflow-x:auto;max-width:100%}
+th,td{border:1px solid var(--line);padding:.3rem .55rem;text-align:left}
+th{background:#f0efe6}
+.qtext,.reveal,.summarybox{overflow-wrap:break-word}
+@media (max-width:480px){body{font-size:.96rem;padding:1rem .7rem 2.5rem}th,td{padding:.22rem .38rem;font-size:.88rem}}
+pre.fence{background:#f4f4ee;padding:.7rem .9rem;overflow:auto;font-size:.88rem;line-height:1.55}
+code{font-family:"Noto Sans Mono CJK SC","Noto Sans Mono",monospace;font-size:.9em;background:#f4f4ee;padding:.05em .3em;border-radius:3px}
+details.rules{border:1px solid var(--line);border-radius:6px;padding:.5rem .9rem;margin:1rem 0;background:#fffdf6}
+details.rules summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.mermaid-src{margin:1rem 0}
+details.mermaid-src summary{cursor:pointer;color:var(--muted)}
+.q{border:1px solid var(--line);border-radius:6px;background:#fff;padding:.8rem 1rem;margin:.9rem 0}
+.qtext p{margin:.2rem 0}
+.qintro{font-size:.95rem;margin:.9rem 0 .2rem}
+.qno{font-weight:700;color:var(--accent);margin-right:.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+button.opt,.btn{font:inherit;font-size:.95rem;padding:.35rem .85rem;border:1px solid var(--line);border-radius:5px;background:#fbfbf6;cursor:pointer}
+button.opt:hover{border-color:var(--accent)}
+button.opt.sel{border-color:var(--accent);background:#f7eaea;color:var(--accent);font-weight:700}
+.fillin{font:inherit;font-size:.95rem;padding:.3rem .5rem;border:1px solid var(--line);border-radius:5px;width:min(100%,22rem);background:#fff}
+.selfnote{color:var(--muted);font-size:.88rem;margin-top:.5rem}
+.skip{display:block;color:var(--muted);font-size:.85rem;margin-top:.5rem}
+.verdict{margin-top:.55rem;font-size:.95rem;font-weight:600}
+.verdict.ok{color:var(--good)}.verdict.bad{color:var(--bad)}.verdict.warn{color:#b26a00}
+.reveal{margin-top:.6rem;border-left:3px solid var(--muted);background:#f7f6ee;padding:.5rem .8rem;font-size:.92rem}
+.reveal .ref{font-weight:600}
+.reveal .sol{white-space:pre-wrap;margin-top:.35rem}
+.stepper{display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem}
+.stepper button{font:inherit;width:2rem;height:1.9rem;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:#fff;cursor:pointer}
+.stepper .score{min-width:3.4rem;text-align:center;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:1rem 0;position:sticky;top:0;background:var(--paper);padding:.45rem 0;border-bottom:1px dashed var(--line);z-index:5}
+.chip{border:1px solid var(--line);border-radius:999px;padding:.15rem .7rem;font-size:.85rem;color:var(--muted);background:#fff}
+.btn-danger{border-color:var(--bad);color:var(--bad);background:#fff}
+.submitbar{margin:1.4rem 0;text-align:center}
+.submitbar .btn{font-size:1.05rem;padding:.55rem 2rem;background:var(--ink);color:#fff;border:1px solid var(--ink)}
+#submitHint{color:var(--muted);font-size:.88rem;margin-left:.5rem}
+.ansgrid{display:flex;flex-wrap:wrap;gap:.35rem;margin:.6rem 0}
+.ansgrid .chip{color:var(--ink)}
+.ansgrid .chip b{color:var(--accent);margin-right:.25rem}
+.resline{font-size:1.05rem;margin:.4rem 0}
+.muted{color:var(--muted)}
+.gradebadge{display:inline-block;border:2px solid var(--accent);color:var(--accent);border-radius:6px;padding:.1rem .7rem;font-weight:700}
+.summarybox{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:1rem 1.1rem;margin:1.2rem 0;line-height:1.9}
+.summarybox h3{margin-top:0}
+.warnbox{border:1px solid #b26a00;background:#fdf6e7;color:#7a5200;border-radius:6px;padding:.5rem .8rem;margin:.8rem 0;font-size:.92rem}
+footer{border-top:1px solid var(--line);margin-top:2.5rem;padding-top:.8rem;color:var(--muted);font-size:.85rem;font-style:italic}
+@media print{.noprint,.toolbar,.submitbar,.q .widget,button{display:none!important}
+body{padding:0;background:#fff}.q{border:none;padding:.2rem 0;break-inside:avoid}
+body.revealed .reveal{display:block!important}.summarybox{border-color:#999}}
+</style>
+</head>
+<body>
+<main>
+<header class="kicker">hunan-g2-learn · month1-selfcheck · 2026-2027 上学期第一个月</header>
+<h1>英语·二年级上学期第一个月自我检测<span class="muted">（家长版）</span></h1>
+<p>这一页写给家长：不讲题，只讲四件事——孩子这个月学了什么、怎么组织这次自检、怎么批改、结果怎么看待。</p>
+<h2>一、进度速览（孩子这个月学了什么）</h2>
+<table><tr><th>周次</th><th>教学内容（主题级）</th><th>家里能观察到的迹象</th></tr><tr><td>第 1 周</td><td>Unit 1 Feelings 起步：情绪词 sad / angry / tired / hungry；字母 Aa Bb</td><td>做表情说情绪：I'm happy / I'm tired.</td></tr><tr><td>第 2 周</td><td>Unit 1 收束：I'm hungry. Let's have dinner.；字母 Aa Bb 巩固</td><td>吃饭前会冒一句 I'm hungry</td></tr><tr><td>第 3 周</td><td>Unit 2 起步：食物词 rice / noodles / milk / banana；字母 Cc Dd</td><td>指着家里的食物说英文名</td></tr><tr><td>第 4 周</td><td>Unit 2 收束：I like … and …. / Yummy!；月末自检</td><td>会说我喜欢的两种食物</td></tr></table>
+<p><strong>每个知识点，人话版：</strong></p>
+<ul><li><strong>KP1 字母认读与书写</strong>：就是字母 A 到 D 认读和书写都过关，知道占格。家里可以：字母卡打乱抽认，写对 5 个给个小奖励。</li><li><strong>KP2 主题词汇</strong>：就是rice、milk 这些词看得懂意思。家里可以：指着家里的食物说英文名。</li><li><strong>KP3 表达喜好与情绪</strong>：就是会说 I'm tired、I like rice and milk 这类句子。家里可以：做表情让孩子猜情绪词，再用英语说出来。</li><li><strong>KP4 问候与交际应答</strong>：就是人家问什么、你能接得上。家里可以：家长问 How are you，孩子接 I'm fine, thank you.。</li><li><strong>KP5 书写规范</strong>：就是抄句子时句首大写、词间留空、标点不丢。家里可以：检查孩子英语作业的第一行。</li></ul>
+<p><strong>进度差异说明</strong>：本卷两版教材通用。若孩子课本目录是 Module 1~10（经典版《新标准》），第 11、12、16、18 题可跳过（情绪表达是新版 Unit 1 内容）；若目录是 The ABC song + Unit 1~6（新交际），第 15 题可跳过（I don't like 是经典版 Module 2 内容）。字母教学各校快慢不同——若班级尚未学到字母 Cc，第 1、3 题可跳过。等级按已做题得分折算后对照。</p>
+<h2>二、怎么组织这次自检（10 分钟准备）</h2>
+<p>1. 打印学生版（一科一张）；一次只测一科、不连考——双减红线是每天书面作业总量不超过 60 分钟，本卷用时已按二年级控制。<br>
+2. 全卷 30 分钟内做完；读题慢的孩子，家长可轻声帮读题干，但不提示答案。<br>
+3. 掐表计时，中途不打扰、不提示；做完让孩子先自己批改，家长抽 3 题复核——抽到不一致以家长为准，温和指出来。<br>
+4. 答案在下面“三、答案速查”；主观题（阅读、写话、解决问题）按教师版的采分点给分，拿不准就往低给，短板才不会被藏起来。</p>
+<h2>三、答案速查（家长批改用）</h2>
+<div class="ansgrid"><span class="chip"><b>1.</b>c</span><span class="chip"><b>2.</b>D</span><span class="chip"><b>3.</b>Dd</span><span class="chip"><b>4.</b>Aa</span><span class="chip"><b>5.</b>B</span><span class="chip"><b>6.</b>A</span><span class="chip"><b>7.</b>D</span><span class="chip"><b>8.</b>A</span><span class="chip"><b>9.</b>C</span><span class="chip"><b>10.</b>B</span><span class="chip"><b>11.</b>D</span><span class="chip"><b>12.</b>A</span><span class="chip"><b>13.</b>A</span><span class="chip"><b>14.</b>C</span><span class="chip"><b>15.</b>A</span><span class="chip"><b>16.</b>B</span><span class="chip"><b>17.</b>E</span><span class="chip"><b>18.</b>C</span><span class="chip"><b>19.</b>A</span><span class="chip"><b>20.</b>D</span><span class="chip"><b>21.</b>B</span><span class="chip"><b>22.</b>I like rice.（句首 I 大写）</span><span class="chip"><b>23.</b>见解析</span></div>
+<h2>四、怎么解读结果（短板总结）</h2>
+<table><tr><th>得分</th><th>等级</th><th>一句话解读</th></tr><tr><td>85~100</td><td>优</td><td>本月骨架扎实，保持节奏</td></tr><tr><td>70~84</td><td>良</td><td>大盘没问题，个别点要回炉</td></tr><tr><td>60~69</td><td>合格</td><td>有明确短板，按下面清单补</td></tr><tr><td>60 以下</td><td>待加强</td><td>第一个月很常见！先回课本，不着急刷题报班</td></tr></table>
+<ul><li><strong>85 分以上（优）</strong>——怎么夸：夸具体行为，不夸聪明。“‘三五十五’张口就来”“这个句子的句首大写了”。被夸到点上的孩子才会重复这个行为。</li><li><strong>70~84 分（良）</strong>——怎么说：“大盘很好，咱们挑两个小地方补一补。”和孩子一起从登记表里挑一个最需要补的知识点，约定时间。</li><li><strong>69 分及以下（合格／待加强）</strong>——怎么陪：第一个月的分数≠能力，这是摸底不是审判。顺序是：先回课本读一读，再重做本卷错题，7~10 天后只测错题。连续错同一知识点，把课本对应单元再读一遍。</li><li><strong>进度差异提示</strong>：如果孩子按说明跳过了个别题，把已做题得分折算成 100 分制后再对照上表。</li></ul>
+<h3>短板登记表（与孩子一起填）</h3>
+<table><tr><th>知识点</th><th>扣分</th><th>严重度（要补 / 需巩固）</th><th>建议动作（人话）</th></tr><tr><td>KP1 字母认读与书写</td><td></td><td></td><td>字母卡抽认，错的重写一行</td></tr><tr><td>KP2 主题词汇</td><td></td><td></td><td>食物实物配对认读</td></tr><tr><td>KP3 表达喜好与情绪</td><td></td><td></td><td>和家长演一遍'饿了要吃饭'</td></tr><tr><td>KP4 问候与交际应答</td><td></td><td></td><td>把匹配题里的对话读熟背出</td></tr><tr><td>KP5 书写规范</td><td></td><td></td><td>重抄书写题并互查大小写</td></tr></table>
+<h2>五、常见误区与家庭话术</h2>
+<ul><li><strong>发音不标准就反复纠错</strong>：先保护开口欲望，多说几次自然靠近标准。可以照着说：“说得不错！我们再来说一次试试？”</li><li><strong>只认不写、只写不读</strong>：字母要“认读＋书写”两条腿走路。可以照着说：“这个字母你说对了，写给我看看？”</li><li><strong>怕说错不敢开口</strong>：情绪句、喜好句每天说一句，说错也算数。可以照着说：“来，用 I'm happy 告诉我你现在的心情。”</li></ul>
+<p>替代小测法（听力，纸面测不到）：家长读 5 个词或情绪句（rice ／ noodles ／ I'm tired ／ I'm hungry ／ banana），孩子做动作或指认，记下对了几个。</p>
+<footer>*AI 辅助生成，内容仅供参考，请以教材与老师要求为准；使用前请教师/家长抽查核对。hunan-g2-learn / month1-selfcheck · 2026-09*</footer>
+</main>
+</body>
+</html>
