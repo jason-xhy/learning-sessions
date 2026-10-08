@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0004 · TT 与 split 事务：高速集线器里的翻译官</title>
+<style>
+/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
+   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
+   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
+@font-face {
+  font-family: LiningDigits;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+.player .frame { display: block; margin: 14px 0; }
+.player.js:not(.static) .frame { display: none; }
+.player.js:not(.static) .frame.cur { display: block; margin: 0; }
+.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
+.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
+.player .fbody { font-size: .95rem; line-height: 1.6; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
+.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
+.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
+.player .pdots i.on { background: var(--accent); }
+
+/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
+.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
+.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
+.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
+.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
+.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
+.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
+.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
+.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
+.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
+.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
+.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
+.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
+td.bad { background: #fdeaea; }
+td.good { background: #e9f7ee; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+  .player .frame { display: block !important; }
+  .player .pctl { display: none; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">细节课 · LESSON 0004 · 主线：hub 深入</div>
+  <h1>TT 与 split 事务<br>高速集线器里的翻译官</h1>
+  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75，2026-09-23）——本课全部行号以此树为准</p>
+
+  <h2>整体定位（先挂图）</h2>
+  <p>本课在整体地图（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">课 0001</a>）的 <strong>⑥ hub 层</strong>——USB2 特有的核心机制；并承接 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0003-dual-bus-root-port-standalone.html">课 0003</a> 的"硬件吸收"叙事：<strong>xHCI 时代 split 的执行被吸进控制器硬件</strong>，usbcore 里只剩错误恢复。</p>
+
+  <h2>为什么需要 TT：一个 hub，两个时钟域</h2>
+  <div class="note"><strong>先补两个时间词（§5.3.3、§8.4.3）</strong>：USB 总线的时间由主机用 SOF（Start Of Frame）包"打拍子"——相邻两个 SOF 之间就是一个调度格。全速总线一格 <strong>1 ms</strong>，叫<strong>帧（frame）</strong>：SOF 每 1.00 ms ±0.0005 ms 一个，帧号随帧递增。高速总线把同一毫秒切成 8 格，每格 <strong>125 µs</strong>，叫<strong>微帧（microframe）</strong>：SOF 每 125 µs 一个，但<strong>帧号仍每 1 ms 才变一次</strong>——同一帧内 8 个 SOF 的帧号相同，设备靠比对相邻 SOF 的帧号自己数微帧位置。切细 8 倍的收益：中断/等时的排班粒度从 1 kHz 提到 8 kHz（高带宽端点每微帧还可发 1–3 个事务，§5.9）；周期带宽上限也按各自格子算——FS ≤90% 帧时间、HS ≤80% 微帧时间（§5.6.4/§5.7.4）。</div>
+  <p>高速 hub 的上行口跑 HS 域：<strong>480 Mb/s、微帧 125 µs</strong>；下行口可能挂 FS 设备：<strong>12 Mb/s、帧 1 ms</strong>（§7.1.11/§7.1.12）。两种信令、两个节拍，hub 里的<strong>事务翻译器（Transaction Translator，TT）</strong>负责两边互译。规范的做法非常克制：</p>
+  <div class="note"><strong>split 只存在于主机控制器 ↔ hub 之间，设备永远不可见</strong>（§5.10、§11.1.1）。hub↔设备一侧仍是普通 FS/LS 事务。设备无需知道任何事——这就是兼容性的代价全由主机侧承担的设计。</div>
+  <p>数字直觉：一个 HS 微帧（125 µs）只占 FS 帧（1 ms）的 <strong>1/8</strong>——翻译的实时性压力全压在 hub 的 TT 缓冲与调度上。</p>
+
+  <h2>split 家族 · 按传输类型分治（§11.16-11.20）</h2>
+  <table>
+    <tr><th>传输类型</th><th>split 形态</th><th>TT 侧约束</th></tr>
+    <tr><td>bulk / control</td><td>SSPLIT 起始 + CSPLIT 完成（§11.17）</td><td>每方向至少 <strong>2 个缓冲</strong>——请求与应答异步到达，须同时驻留</td></tr>
+    <tr><td>interrupt</td><td>§11.20</td><td>hub 的 FS handler <strong>不得本地重试</strong>，失败即回报主机</td></tr>
+    <tr><td>isochronous</td><td>SSPLIT 分散进微帧管道（§11.18）</td><td>Y0-Y7 记账；每微帧 FS 侧预算 <strong>187.5 raw 字节</strong>（§11.18.1）</td></tr>
+    <tr><td>（全局）</td><td>TT 状态机按 PID/端点类型分发（§11.16）</td><td>缓冲空间需求公式 §11.19</td></tr>
+  </table>
+
+  <h2>内核落点：软件几乎只剩"擦屁股"</h2>
+  <p>xHCI 把 split 的执行收进了硬件：驱动只把 hub descriptor 里的 TT 信息填进上下文——<code>tt_info</code> 的注释原话是 "used to construct split transaction tokens"（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0003-dual-bus-root-port-standalone.html">课 0003</a> 吸收叙事的又一实证）：</p>
+  <div class="flow">
+    <div class="fnode"><b>构造</b>：xHC 用 TT 信息构造 split 事务令牌（槽上下文字段）
+<pre>/* xhci.h:346（字段注释） */
+* @tt_info:	tt_info is used to construct split transaction tokens</pre>
+<b>换算＋赋值</b>：TT think time 从 hub descriptor 取出、除以 666 减 1 后写进端点上下文的 TT_THINK_TIME 字段
+<pre>/* xhci.c:5337-5342（节选） */
+think_time = tt-&gt;think_time;
+if (think_time != 0)
+        think_time = (think_time / 666) - 1;
+...
+cpu_to_le32(TT_THINK_TIME(think_time));</pre></div>
+    <div class="farrow">↓ 于是 usbcore 侧对 TT 的主动动作只剩一条：错误恢复</div>
+    <div class="fnode"><b>调用</b>：ClearTTBuffer（§11.24.2.3）——控制端点要<strong>两个方向各清一次</strong>（<code>devinfo ^ 0x8000</code> 翻转方向位）
+<pre>/* hub.c:816-831 */
+/* USB 2.0 spec Section 11.24.2.3 */
+static inline int
+hub_clear_tt_buffer(struct usb_device *hdev, u16 devinfo, u16 tt)
+{
+        /* Need to clear both directions for control ep */
+        if (((devinfo &gt;&gt; 11) &amp; USB_ENDPOINT_XFERTYPE_MASK) ==
+                        USB_ENDPOINT_XFER_CONTROL) {
+                int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+                                HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
+                                devinfo ^ 0x8000, tt, NULL, 0, 1000);
+                if (status)
+                        return status;
+        }
+        return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+                        HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
+                        tt, NULL, 0, 1000);
+}</pre></div>
+    <div class="fnode">此动作在异步工作项里执行（错误事件 → clear_work）
+<pre>/* hub.c:840 / :1587 */
+static void hub_tt_work(struct work_struct *work)
+INIT_WORK(&amp;hub-&gt;tt.clear_work, hub_tt_work);</pre></div>
+  </div>
+
+  <h2>评审视角</h2>
+  <ul>
+    <li>TT 类补丁分两族：<strong>xHCI 内部的 split 调度</strong>（对表 §11.16-11.23 + 上下文构造字段）与 <strong>usbcore 的 ClearTTBuffer 恢复路径</strong>（对表 §11.24.2.3）。两族锚点不同，别混审。</li>
+    <li>数字复核清单：微帧 125 µs / FS 帧 1 ms、8 微帧=1 帧（§7.1.12、§8.4.3）、每微帧 187.5 raw 字节（§11.18.1）、每方向 ≥2 缓冲（§11.17）、interrupt 禁止本地重试（§11.20）。</li>
+  </ul>
+
+  <h2>检索练习 · 4 题</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：USB 2.0 主规范 §11.16-11.24（<code>specs/usb20x/</code>）；速查先 grep <a href="../notes/规范全文精读摘要库.md">规范全文精读摘要库</a> 的 11.16-11.23 条目。内核：<code>hub.c:816-840</code>、<code>xhci.c:5277-5342</code>、<code>xhci.h:346</code>。</li>
+    <li>两道错题（缓冲乒乓/重试权属）已在 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">课 0005</a> 补缺。</li>
+    <li>hub 主线剩余候选：<strong>枚举状态机</strong>（§9.1 设备六态，偏 usbcore）或 hub 电源/过流（§11.2/§7.2）。</li>
+  </ul>
+
+  <footer>课 0004 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0003-dual-bus-root-port-standalone.html">0003 双总线根端口</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005 TT 缓冲与重试</a> ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a></footer>
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: 'TT 翻译',
+    prompt: 'split 事务存在于哪一段路径上？',
+    options: ['hub 与下游 FS/LS 设备之间', '设备内部端点与缓冲之间', '主机控制器与 hub 之间', '总线上所有段都能看到'],
+    answer: 2,
+    explain: 'C 对。SSPLIT/CSPLIT 只在主机控制器与 hub 之间使用，设备不可见（§5.10、§11.1.1）；hub↔设备一侧仍是普通 FS/LS 事务——兼容的代价全由主机侧承担，设备无需感知。' },
+  { tag: 'split 家族',
+    prompt: 'bulk/control 的 split 为什么 TT 至少需要 2 个缓冲（每方向）？',
+    options: ['请求与应答异步到达，须同时驻留两侧', '规范要求双倍冗余以便校验', '一个给 SSPLIT、一个给 SOF', '为了同时服务两个下行端口'],
+    answer: 0,
+    explain: 'A 对。§11.17：每方向至少 2 个 bulk/control 缓冲——SSPLIT 送达后 hub 异步等待 FS 设备应答（可能 NAK 多次），期间数据必须驻留 TT；CSPLIT 取结果与接收新 SSPLIT 可能交叠，单缓冲会自阻塞。' },
+  { tag: 'split 家族',
+    prompt: 'interrupt 事务的 split，hub 的 FS handler 能否本地重试？',
+    options: ['可以，重试直到设备应答', '不得本地重试，失败即回报主机', '仅等时事务禁止本地重试', '由 TT 缓冲余量动态决定'],
+    answer: 1,
+    explain: 'B 对。§11.20 明文：FS handler 不得对 interrupt 事务做本地重试，失败直接向主机回报。这与等时的"一次机会"（§5.6.5 无握手不重传）是两条不同的规则——前者是 TT 行为约束，后者是传输类型语义。' },
+  { tag: '内核落点',
+    prompt: 'xHCI 时代，usbcore 对 TT 的主动动作还剩什么？',
+    options: ['软件排布每微帧的 CSPLIT 时刻表', '为 TT 缓冲动态分配内存池', '重传 hub 上失败的 FS 事务', 'ClearTTBuffer 错误恢复（hub.c:816-840）'],
+    answer: 3,
+    explain: 'D 对。split 的构造与调度由 xHC 硬件承担——驱动只填上下文：tt_info "used to construct split transaction tokens"（xhci.h:346）、think_time/666-1 进 TT_THINK_TIME（xhci.c:5337-5342）。usbcore 侧只剩错误恢复：hub_clear_tt_buffer（hub.c:816-831，§11.24.2.3，控制端点双向各清一次 devinfo^0x8000），经 hub_tt_work 异步执行（:840、:1587）。' }
+]);
+</script>
+</body>
+</html>

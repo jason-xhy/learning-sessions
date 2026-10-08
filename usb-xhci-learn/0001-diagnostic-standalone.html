@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- 单文件版：由 scripts/build-standalone.py 自动生成，勿手改；源文件与完整课程见 https://github.com/jason-xhy/learning-sessions -->
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -12,10 +11,18 @@
   --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
 }
 * { box-sizing: border-box; }
+/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
+   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
+   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
+@font-face {
+  font-family: LiningDigits;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
 body {
   margin: 0; padding: 2rem 1rem 4rem;
   background: var(--paper); color: var(--ink);
-  font-family: "Noto Serif CJK SC", "Noto Serif SC", "Source Han Serif SC", serif;
+  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
   font-size: 1.05rem; line-height: 1.65;
 }
 main { max-width: 46rem; margin: 0 auto; }
@@ -24,7 +31,7 @@ h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4r
 h2 { font-size: 1.25rem; margin-top: 2.2rem; }
 .kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
 a { color: var(--accent); }
-code, .mono { font-family: "Noto Sans Mono CJK SC", "Noto Sans Mono", monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
 .note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
 table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
 th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
@@ -67,8 +74,39 @@ th { background: #f0efe6; }
 .ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
 figure { margin: 1.2rem 0; }
 figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
-.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "Noto Sans Mono CJK SC", "Noto Sans Mono", monospace; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
 .diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+.player .frame { display: block; margin: 14px 0; }
+.player.js:not(.static) .frame { display: none; }
+.player.js:not(.static) .frame.cur { display: block; margin: 0; }
+.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
+.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
+.player .fbody { font-size: .95rem; line-height: 1.6; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
+.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
+.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
+.player .pdots i.on { background: var(--accent); }
+
+/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
+.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
+.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
+.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
+.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
+.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
+.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
+.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
+.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
+.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
+.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
+.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
+.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
+td.bad { background: #fdeaea; }
+td.good { background: #e9f7ee; }
 
 footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
 
@@ -76,6 +114,8 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   body { background: #fff; padding: 0; font-size: 10.5pt; }
   .opt:disabled { opacity: 1; }
   .explain { display: block; }
+  .player .frame { display: block !important; }
+  .player .pctl { display: none; }
 }
 
 </style>
@@ -85,6 +125,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <div class="kicker">诊断测评 · LESSON 0001</div>
   <h1>USB 2.0 / USB 3.2 / xHCI 知识体系地图测评</h1>
   <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+
   <p>你的使命是对 USB 栈补丁做<strong>规范章节级的权威评审</strong>。三本规范你已通读，但通读 ≠ 体系。本课不教新细节——它量的是<strong>骨架</strong>：哪本规范管哪层、各子系统如何咬合。30 题覆盖 7 个领域，结果用来画<strong>缺口图</strong>，之后的每一节细节课都按缺口定制，且永远先在整体地图上定位再下钻。</p>
 
   <div class="note"><strong>怎么作答：</strong>凭第一印象，不确定就选最像的——测的是体系骨架的牢固度，不是背书。每题答完立即出对错与解析；全部答完后点<strong>复制总结发给老师</strong>，把结果粘回会话，我会据此写学习基线（learning record）并定制下一课。</div>
@@ -108,12 +149,12 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 
   <h2>主源与下一步</h2>
   <ul>
-    <li><strong>主源</strong>：<a href="https://github.com/jason-xhy/learning-sessions/tree/main/usb-xhci-learn/specs">xHCI 1.2 主规范（645 页）</a>；USB2 / USB3.2 全本在 <a href="https://github.com/jason-xhy/learning-sessions/tree/main/usb-xhci-learn/specs">specs/</a>。逐章速查先 grep <a href="https://github.com/jason-xhy/learning-sessions/blob/main/usb-xhci-learn/notes/规范全文精读摘要库.md">规范全文精读摘要库</a>，命中就不必重读原文。</li>
+    <li><strong>主源</strong>：<a href="https://github.com/jason-xhy/learning-sessions/tree/main/usb-xhci-learn/specs">xHCI 1.2 主规范（645 页）</a>；USB2 / USB3.2 全本在 <a href="https://github.com/jason-xhy/learning-sessions/tree/main/usb-xhci-learn/specs">specs/</a>。逐章速查先 grep <a href="notes/规范全文精读摘要库.md">规范全文精读摘要库</a>，命中就不必重读原文。</li>
     <li>答完把总结粘回会话：我会写 <code>learning-records</code> 基线 + 缺口图，下一课直接打最大缺口。</li>
     <li>任何一题看解析仍不明白——<strong>直接问老师（会话里的 agent）</strong>，问到懂为止，这正是它存在的意义。</li>
   </ul>
 
-  <footer>课 0001 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：无 ｜ 下一课：<a href="https://github.com/jason-xhy/learning-sessions/blob/main/usb-xhci-learn/lessons/0002-hub-attach-chain.html">0002 hub 事件链路</a> ｜ 相关：<a href="https://github.com/jason-xhy/learning-sessions/blob/main/usb-xhci-learn/notes/USB2.0-USB3.2-xHCI-传输流程学习笔记.md">传输流程学习笔记</a> · <a href="https://github.com/jason-xhy/learning-sessions/blob/main/usb-xhci-learn/notes/Linux-xHCI实现与规范差异分析.md">实现-规范差异分析</a></footer>
+  <footer>课 0001 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：无 ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">0002 hub 事件链路</a> ｜ 相关：<a href="notes/USB2.0-USB3.2-xHCI-传输流程学习笔记.md">传输流程学习笔记</a> · <a href="notes/Linux-xHCI实现与规范差异分析.md">实现-规范差异分析</a></footer>
 </main>
 <script>
 /* quiz.js — teach workspace 可复用测验引擎。
@@ -236,7 +277,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: '四种传输类型中，"不保证送达、传错直接丢弃"的是哪种？',
     options: ['等时传输 Isochronous', '批量传输 Bulk', '中断传输 Interrupt', '控制传输 Control'],
     answer: 0,
-    explain: 'A 对。等时无握手包、无重试（USB2 §5.9）；USB3 等时同样不重传（数据包可被 nullify 但不做端到端重发）——保速率、不保完整。批量保证送达但无时限；中断有界延迟；控制必须送达（枚举依赖它）。' },
+    explain: 'A 对。等时无握手包、无重试（USB2 §5.6.5）；USB3 等时同样不重传（数据包可被 nullify 但不做端到端重发）——保速率、不保完整。批量保证送达但无时限；中断有界延迟；控制必须送达（枚举依赖它）。' },
   { tag: '传输模型',
     prompt: 'SuperSpeed 等时端点错过服务间隔后，规范/控制器侧的处理是？',
     options: ['硬件自动重传该数据', '端点停顿暂停等时流', '触发链路复位重建', '作废数据等待下一间隔'],
@@ -256,7 +297,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: '等时端点的服务周期（bInterval 换算后的微帧数）必须满足什么约束？',
     options: ['必须是 2 的整数次幂个（微）帧', '任意整数值均可', '必须等于 1', '必须大于等于 8'],
     answer: 0,
-    explain: 'A 对。§5.12.7：等时服务的周期必须是 2 的整数次幂个（微）帧——主机据此做确定性调度，任意值会破坏帧表预算。' },
+    explain: 'A 对。§5.6.4：等时服务周期 = 2^(bInterval−1) 个（微）帧——必须是 2 的整数次幂，主机据此做确定性调度，任意值会破坏帧表预算。（§5.12.7 实为等时的错误处理小节，勿混）' },
   { tag: '枚举与拓扑',
     prompt: '设备上电到可被驱动绑定，主机侧最少必须完成的一串动作是？',
     options: ['读描述符→复位→设地址→配置', '复位→设地址→读描述符→配置', '设地址→配置→复位→读描述符', '配置→读描述符→设地址→复位'],
@@ -291,7 +332,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: '驱动把 TRB 挂上 Transfer Ring 之后，让控制器真正开工的动作是？',
     options: ['写 Event Ring 指针', '重置端点上下文', '重发 Setup 事务', '写 Doorbell 寄存器'],
     answer: 3,
-    explain: 'D 对。TRB 入环只是"作业写好了"，写 Doorbell（第 5 章 Doorbell Array）才是敲门开工；Stream ID 也是经 doorbell 传递的（摘要库附录 C 引文）。内核路径：组环→xhci_ring_ep_doorbell 写寄存器→完成事件回 Event Ring。' },
+    explain: 'D 对。TRB 入环只是"作业写好了"，写 Doorbell（§5.6 Doorbell Registers，操作模型 §4.7）才是敲门开工；Stream ID 也是经 doorbell 传递的（摘要库附录 C 引文）。内核路径：组环→xhci_ring_ep_doorbell 写寄存器→完成事件回 Event Ring。' },
   { tag: 'xHCI 骨架',
     prompt: 'xHCI 事件 TRB 里 Completion Code = 13（十进制）对应？',
     options: ['环满 Event Ring Full', '短包 Short Packet', '无应答 No Ping Response', '下溢 Ring Underrun'],

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0002 · 设备插入后，主机侧发生了什么</title>
+<style>
+/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
+   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
+   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
+@font-face {
+  font-family: LiningDigits;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+.player .frame { display: block; margin: 14px 0; }
+.player.js:not(.static) .frame { display: none; }
+.player.js:not(.static) .frame.cur { display: block; margin: 0; }
+.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
+.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
+.player .fbody { font-size: .95rem; line-height: 1.6; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
+.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
+.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
+.player .pdots i.on { background: var(--accent); }
+
+/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
+.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
+.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
+.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
+.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
+.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
+.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
+.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
+.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
+.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
+.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
+.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
+.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
+td.bad { background: #fdeaea; }
+td.good { background: #e9f7ee; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+  .player .frame { display: block !important; }
+  .player .pctl { display: none; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">细节课 · LESSON 0002 · 主线：hub 深入</div>
+  <h1>设备插入后，主机侧发生了什么</h1>
+  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75，2026-09-23）——本课全部行号以此树为准</p>
+
+  <h2>整体定位（先挂图）</h2>
+  <p>本课在整体地图（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">课 0001</a>）的第 <strong>⑥⑤⑦</strong> 层：hub 子系统负责<strong>发现与复位</strong>，设备框架负责<strong>地址与描述符</strong>，xHCI 负责<strong>默认管道的传输执行</strong>。看完链路最后会回到这张图。</p>
+  <div class="map">
+    <div class="layer"><b>⑦ xHCI 执行</b><span class="src">默认管道=控制传输（fig4）</span></div>
+    <div class="layer" style="background:#fdf6ec"><b>⑥ hub 发现/复位/去抖</b><span class="src">USB2 §11.5、§7.1.7.3/5</span></div>
+    <div class="layer" style="background:#fdf6ec"><b>⑤ 设备框架：地址/描述符/配置</b><span class="src">USB2 §9</span></div>
+    <div class="layer"><b>④ 传输类型（控制传输为主角）</b><span class="src">USB2 §5.5</span></div>
+    <div class="layer"><b>…①②③ 电气/链路/协议</b><span class="src">复位定速发生在①</span></div>
+  </div>
+
+  <h2>七步链路（USB2 视角）</h2>
+  <div class="step"><div class="stepnum">1</div><div><b>物理连接</b>：<strong>谁拉 VBUS</strong>——主机经集线器下行口供电（§7.2 电源分配），hub 不发电、只转发；<strong>谁拉 D+</strong>——设备侧经 1.5 kΩ 上拉到 3.0–3.6 V 声明"我在"（§7.1.5），hub 侧用 15 kΩ 下拉采样分压，且上拉电源须随 VBUS 断开而关断。设备须在 VBUS 达 4.01 V 后 <strong>100 ms</strong> 内完成 attach。<span class="where">§7.1.7.3 Fig 7-29（TSIGATT<100ms、TATTDB 去抖 ≥100ms、TRSTRCY 复位恢复 10ms）</span></div></div>
+  <figure>
+    <svg viewBox="0 0 880 330" role="img" aria-label="VBUS 与 attach 信号时序" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <rect x="60" y="30" width="200" height="255" fill="#fff3c4" opacity="0.35"/>
+      <rect x="300" y="30" width="200" height="255" fill="#e9f7ee" opacity="0.55"/>
+      <rect x="600" y="170" width="120" height="115" fill="#fdeaea" opacity="0.6"/>
+      <g font-size="12.5" fill="#a00000">
+        <text x="160" y="24" text-anchor="middle">TSIGATT &lt;100 ms</text>
+        <text x="400" y="24" text-anchor="middle">TATTDB 去抖 ≥100 ms（内核 25ms 步进 × 稳定 100ms）</text>
+        <text x="660" y="163" text-anchor="middle">复位 SE0（步骤⑥）</text>
+      </g>
+      <line x1="60" y1="285" x2="860" y2="285" stroke="#707070" stroke-width="1"/>
+      <g font-size="12" fill="#707070" text-anchor="middle">
+        <text x="60" y="303">0</text><text x="260" y="303">100 ms</text><text x="460" y="303">200 ms</text><text x="660" y="303">300 ms</text><text x="860" y="303">400 ms</text>
+      </g>
+      <text x="14" y="80" font-size="13" fill="#1a1a1a">VBUS</text>
+      <polyline points="60,110 120,45 860,45" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+      <line x1="60" y1="58" x2="860" y2="58" stroke="#a00000" stroke-width="1" stroke-dasharray="5 4"/>
+      <text x="850" y="72" font-size="12" fill="#a00000" text-anchor="end">4.01 V 阈值</text>
+      <text x="130" y="40" font-size="12" fill="#1a5fb4">标称 +5 V · 主机经 hub 下行口供电（§7.2）</text>
+      <line x1="105" y1="58" x2="105" y2="285" stroke="#707070" stroke-width="1" stroke-dasharray="3 4" opacity="0.7"/>
+      <text x="14" y="215" font-size="13" fill="#1a1a1a">D+</text>
+      <polyline points="60,245 200,245 200,185 600,185 600,245 720,245 720,185 860,185" fill="none" stroke="#1a1a1a" stroke-width="2"/>
+      <text x="212" y="176" font-size="12" fill="#1a5fb4">3.3 V：设备侧 1.5 kΩ 上拉＝attach 声明（§7.1.5）</text>
+      <circle cx="200" cy="215" r="3" fill="#a00000"/>
+      <text x="207" y="238" font-size="11.5" fill="#a00000">上升 ≤2.5 µs，本尺度不可见</text>
+      <text x="70" y="262" font-size="11.5" fill="#1a5fb4">hub 侧 15 kΩ 下拉采样（Rpd，§7.1.5）</text>
+      <line x1="540" y1="150" x2="540" y2="285" stroke="#1a5fb4" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="540" y="142" font-size="12.5" fill="#1a5fb4" text-anchor="middle">hub 上报连接变化 → 进入步骤 ②-④</text>
+      <text x="660" y="322" font-size="12" fill="#707070" text-anchor="middle">复位后 TRSTRCY 10 ms 恢复，再走枚举（步骤⑥⑦）</text>
+    </svg>
+    <figcaption>步骤① 一页看懂：供电方（主机→hub 下行口）拉 VBUS，受电方（设备）拉 D+ 声明 attach → hub 去抖 ≥100 ms → 上报端口变化 → 复位/枚举。数字对表 USB2 §7.1.5 / §7.1.7.3 Fig 7-29。</figcaption>
+  </figure>
+  <div class="step"><div class="stepnum">2</div><div><b>hub 中断管道上报</b>：hub 通过其中断端点报告端口位图，内核 <code>hub_irq</code> 收下位图存入 <code>event_bits</code>；连续 <strong>10 次</strong>传输错误则置 <code>hub-&gt;error</code> 转恢复路径。<span class="where">hub.c:776（:792 10 次阈值）</span></div></div>
+  <div class="step"><div class="stepnum">3</div><div><b>工作队列处理</b>：所有 hub 共用一个 work 循环 <code>hub_event</code>，逐端口调 <code>port_event</code>（过流/_resume/连接变化分类处理）。<span class="where">hub.c:5887 → :5759（work 注册 :1976）</span></div></div>
+  <div class="step"><div class="stepnum">4</div><div><b>连接变化</b>：<code>hub_port_connect_change</code> 先尝试<strong>复活</strong>已有设备（重读设备描述符做 <code>descriptors_changed</code> 比对，USB3 的连接由主机控制器硬件自动初始化）；复活失败才走 <code>hub_port_connect</code> 全新枚举。<span class="where">hub.c:5650（复活 :5674-5699，转 connect :5720）</span></div></div>
+  <h3 style="margin:1.4rem 0 0">步骤 ②-④ 控制流 · 节点 = 代码行为 + 源码片段</h3>
+  <div class="flow">
+    <div class="fnode"><span class="ftag">②</span><b>赋值</b>：把中断端点送来的端口位图逐字节移位拼装，写入 <code>event_bits[0]</code>
+<pre>/* hub.c:799-803 */
+bits = 0;
+for (i = 0; i &lt; urb-&gt;actual_length; ++i)
+        bits |= ((unsigned long) ((*hub-&gt;buffer)[i])) &lt;&lt; (i*8);
+hub-&gt;event_bits[0] = bits;</pre></div>
+    <div class="fbranch">
+      <div class="fnode"><b>判断</b>（status==0 成功路径）：清错误计数（赋值 0），唤醒工作队列
+<pre>/* hub.c:806-810 */
+hub-&gt;nerrors = 0;
+/* Something happened, let hub_wq figure it out */
+kick_hub_wq(hub);</pre></div>
+      <div class="fnode"><b>判断</b>（status&lt;0 失败路径）：先自增再比较，&lt;10 次则 goto 重提交；第 10 次把状态存入 hub-&gt;error
+<pre>/* hub.c:792-794 */
+if ((++hub-&gt;nerrors &lt; 10) || hub-&gt;error)
+        goto resubmit;
+hub-&gt;error = status;</pre></div>
+    </div>
+    <div class="farrow">↓ 成功路径</div>
+    <div class="fnode"><span class="ftag">③</span><b>判断＋循环</b>：hub_event 对每个端口检查 <code>change_bits</code>/<code>wakeup_bits</code>，命中者压住 runtime pm 后进入分派
+<pre>/* hub.c:5963-5968 */
+pm_runtime_get_noresume(&amp;port_dev-&gt;dev);
+pm_runtime_barrier(&amp;port_dev-&gt;dev);
+usb_lock_port(port_dev);
+port_event(hub, i);
+usb_unlock_port(port_dev);
+pm_runtime_put_sync(&amp;port_dev-&gt;dev);</pre></div>
+    <div class="farrow">↓ 连接变化位</div>
+    <div class="fnode"><span class="ftag">④</span><b>判断</b>：老设备还在且端口使能 → 复活校验；<b>赋值</b>：status=0 表示无事可做
+<pre>/* hub.c:5675-5690（节选） */
+if ((portstatus &amp; USB_PORT_STAT_CONNECTION) &amp;&amp; udev &amp;&amp;
+                udev-&gt;state != USB_STATE_NOTATTACHED) {
+        if (portstatus &amp; USB_PORT_STAT_ENABLE) {
+                descr = usb_get_device_descriptor(udev);
+                ...
+                if (descriptors_changed(udev, descr,
+                                udev-&gt;bos)) {</pre></div>
+    <div class="fbranch">
+      <div class="fnode">复活成功：<b>判断</b> status==0 → 直接返回（设备还在，不重新枚举）
+<pre>/* hub.c:5715-5717 */
+/* successfully revalidated the connection */
+if (status == 0)
+        return;</pre></div>
+      <div class="fnode">复活失败/新设备 → <b>调用</b> hub_port_connect（接步骤⑤⑥⑦）
+<pre>/* hub.c:5719-5721 */
+usb_unlock_port(port_dev);
+hub_port_connect(hub, port1, portstatus, portchange);
+usb_lock_port(port_dev);</pre></div>
+    </div>
+  </div>
+  <div class="step"><div class="stepnum">5</div><div><b>去抖</b>：<code>hub_port_debounce</code> 每 <strong>25 ms</strong> 步进采样，连续稳定 <strong>≥100 ms</strong> 才认为接稳；总超时 <strong>2 s</strong> 放弃。对表规范 TATTDB ≥100 ms（数值一致）。<span class="where">hub.c:4709（宏 :138-140：STEP 25 / STABLE 100 / TIMEOUT 2000）</span></div></div>
+  <h3 style="margin:1.4rem 0 0">步骤 ⑤ 去抖循环 · 源码即状态机</h3>
+  <div class="flow">
+    <div class="fnode"><b>调用＋判断</b>：读端口状态；<b>判断</b>：无连接变化位 且 连接位与上次采样相同 → 稳定计数累加，否则清零并记住新状态
+<pre>/* hub.c:4717-4732（节选） */
+for (total_time = 0; ; total_time += HUB_DEBOUNCE_STEP) {
+        ret = usb_hub_port_status(hub, port1, &amp;portstatus, &amp;portchange);
+        if (ret &lt; 0)
+                return ret;
+        if (!(portchange &amp; USB_PORT_STAT_C_CONNECTION) &amp;&amp;
+             (portstatus &amp; USB_PORT_STAT_CONNECTION) == connection) {
+                if (!must_be_connected ||
+                     (connection == USB_PORT_STAT_CONNECTION))
+                        stable_time += HUB_DEBOUNCE_STEP;
+                if (stable_time &gt;= HUB_DEBOUNCE_STABLE)
+                        break;
+        } else {
+                stable_time = 0;
+                connection = portstatus &amp; USB_PORT_STAT_CONNECTION;
+        }</pre></div>
+    <div class="fnode"><b>赋值＋调用</b>：每轮清掉连接变化位；<b>判断</b>：总时长到 2 s 即退出；sleep 25 ms
+<pre>/* hub.c:4734-4741（节选） */
+if (portchange &amp; USB_PORT_STAT_C_CONNECTION) {
+        usb_clear_port_feature(hub-&gt;hdev, port1,
+                        USB_PORT_FEAT_C_CONNECTION);
+}
+if (total_time &gt;= HUB_DEBOUNCE_TIMEOUT)
+        break;
+msleep(HUB_DEBOUNCE_STEP);</pre></div>
+    <div class="fbranch">
+      <div class="fnode">出口一：<b>判断</b>稳定不足 100 ms → 超时失败
+<pre>/* hub.c:4747-4749 */
+if (stable_time &lt; HUB_DEBOUNCE_STABLE)
+        return -ETIMEDOUT;
+return portstatus;</pre></div>
+      <div class="fnode">出口二：stable ≥ 100 ms → 以最终 portstatus 返回（步骤⑥用同一份状态）</div>
+    </div>
+    <div class="farrow">↺ 未达标 → 回到采样（整个函数就是"采样→比较→累加/清零→睡 25ms"的状态机）</div>
+  </div>
+  <div class="step"><div class="stepnum">6</div><div><b>复位定速</b>：<code>hub_port_init</code> 先 <code>hub_port_reset</code>——初值根口 <strong>60 ms</strong> / 普通口 <strong>10 ms</strong> / 低速口 <strong>200 ms</strong>，总超时 800 ms<span class="diff">实现≠规范：内核初值 60ms &gt; 规范最小 50ms，多留裕量</span>；规范要求 TDRST≥10ms、根口 TDRSTR≥50ms（允许间断：每段 ≥10ms、间隔 <3ms）、复位恢复 TRSTRCY 10ms。复位后速度已知，ep0 包长：SS/SSP=512、HS=64、LS=8、<strong>FS 先猜 64 再按 bMaxPacketSize0 修正</strong>。<span class="where">hub.c:4915、:3063（时序宏 :2914-2918；ep0 :4971-4989；根口注释自带 §7.1.7.5 引用）</span></div></div>
+  <h3 style="margin:1.4rem 0 0">步骤 ⑥ hub_port_init 顺序 · 源码片段</h3>
+  <div class="flow">
+    <div class="fnode"><b>赋值</b>：按端口角色选复位等待初值（根口/普通口/低速口三档）
+<pre>/* hub.c:2914-2918（宏定义） */
+#define HUB_ROOT_RESET_TIME	60	/* times are in msec */
+#define HUB_SHORT_RESET_TIME	10
+#define HUB_BH_RESET_TIME	50
+#define HUB_LONG_RESET_TIME	200
+#define HUB_RESET_TIMEOUT	800
+
+/* hub.c:4939-4948（选值） */
+if (!hdev-&gt;parent) {
+        delay = HUB_ROOT_RESET_TIME;    /* 根口：规范 §7.1.7.5 */
+...
+if (oldspeed == USB_SPEED_LOW)
+        delay = HUB_LONG_RESET_TIME;</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>调用</b>：发复位并等待完成（速度在复位后即知）
+<pre>/* hub.c:4952 */
+retval = hub_port_reset(hub, port1, udev, delay, false);</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>判断</b>：复位不得换速（SS 升速是唯一豁免），违者失败
+<pre>/* hub.c:4959-4964 */
+if (oldspeed != USB_SPEED_UNKNOWN &amp;&amp; oldspeed != udev-&gt;speed &amp;&amp;
+    !(oldspeed == USB_SPEED_SUPER &amp;&amp; udev-&gt;speed &gt; oldspeed)) {
+        dev_dbg(&amp;udev-&gt;dev, "device reset changed speed!\n");
+        goto fail;
+}</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>判断＋赋值</b>：按速度定 ep0 包长——SS/SSP 512、HS 64、LS 8 是定值；FS 需试探（§5.5.3：8/16/32/64）<span class="diff">实现≠规范：内核一次读 64 字节缓冲，§5.5.3 允许只读前 8 字节定 wMaxPacketSize</span>
+<pre>/* hub.c:4971-4985（节选） */
+switch (udev-&gt;speed) {
+case USB_SPEED_SUPER_PLUS:
+case USB_SPEED_SUPER:
+        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(512);
+        break;
+case USB_SPEED_HIGH:            /* fixed at 64 */
+        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);
+        break;
+case USB_SPEED_FULL:            /* 8, 16, 32, or 64 */
+        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);</pre></div>
+    <div class="farrow">↓ 进入 SET_ADDRESS 与描述符读取（步骤⑦）</div>
+  </div>
+  <div class="step"><div class="stepnum">7</div><div><b>设备框架收尾</b>：SET_ADDRESS → 读全量描述符 → <code>usb_new_device</code> 取配置描述符、announce、绑定驱动。此后的每次默认管道读写，都是一记控制传输（见下图）。<span class="where">hub.c:2652</span></div></div>
+
+  <figure style="margin:1.4rem 0">
+    <img src="../figures/fig4-control.png" alt="控制传输主机侧完整流程（已归档 fig4）" style="max-width:100%;border:1px solid var(--line)">
+    <figcaption style="color:var(--muted);font-size:.88rem">第 6-7 步的默认管道执行 = 控制传输主机侧完整流程（课 0001 地图第 ④⑦ 层，fig4 已过视觉验收）。</figcaption>
+  </figure>
+
+  <div class="note"><strong>USB3 差异一行记</strong>：同一个 <code>hub_event</code> 循环；但连接由 HC 硬件自动建立（hub.c:5677 注释）、<code>port_event</code> 多处理 link state 与 warm reset、无 TT/split。延伸疑问"USB3.x 走到根端口为何又是 USB2 形态"见 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0003-dual-bus-root-port-standalone.html">课 0003</a>。</div>
+
+  <h2>补 Q6 缺口：为什么是最多 5 级非根 hub</h2>
+  <p>你唯一答错的题。数字：<strong>含根层共 7 层，主机到设备路径最多 5 个非根 hub，compound device 占 2 层、禁接第 7 层，第 7 层只能接 function</strong>（§4.1.1）；地址空间 127（§3.3）。</p>
+  <p>这不是随意限制，而是<strong>每级都在花钱</strong>，5 级正好是预算花完的位置：</p>
+  <ul>
+    <li><strong>SYNC 逐级缩短</strong>：每级 hub 重发 SYNC 最多吃掉起始 4 bit，5 级后 SYNC 最短 12 bit——接收方按最坏 12 bit 设计锁定窗口（§7.1.10）。再来一级就没有余量了。</li>
+    <li><strong>时延与抖动预算</strong>：FS 上行缆+hub 总时延 ≤70 ns（THDD1，§7.1.14.1）；每 hub 另加 ≤4 HS bit 抖动（§7.1.12）。级数直接吃帧时序余量。</li>
+  </ul>
+  <p>记忆钩子：<strong>7 层塔、5 级梯、塔顶只住 function</strong>。compound device（带内置 hub 的设备）一来就占 2 层，所以它接不上塔顶。</p>
+
+  <h2>检索练习 · 4 题</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：USB 2.0 主规范 <code>specs/usb20x/</code> 下的 usb_20.pdf §7.1.7.3/§7.1.7.5/§11；内核侧直接读 <code>drivers/usb/core/hub.c</code>（基线见页脚）。速查卡：<a href="../reference/hub-attach-chain.html">Hub 事件链路速查卡</a>。</li>
+    <li>解析看不懂的题、或链路上想再挖的环（比如复活逻辑 <code>descriptors_changed</code>、warm reset）——<strong>直接问老师</strong>。</li>
+    <li>下一课候选：<strong>TT/SPLIT 深入</strong>（§11.16-11.23）或<strong>枚举细节</strong>（SET_ADDRESS 前后的设备状态机 §9.1）。</li>
+  </ul>
+
+  <footer>课 0002 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 知识体系诊断</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0003-dual-bus-root-port-standalone.html">0003 双总线根端口</a> ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a> · <a href="../notes/Linux-xHCI实现与规范差异分析.md">实现-规范差异分析</a></footer>
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '链路时序',
+    prompt: '内核认为端口"接稳"之前，要求连接状态连续稳定多久（去抖阈值）？',
+    options: ['25 ms', '100 ms', '200 ms', '2000 ms'],
+    answer: 1,
+    explain: 'B 对。hub_port_debounce（hub.c:4709）每 25 ms 步进采样，连续稳定 ≥100 ms 才算接稳（HUB_DEBOUNCE_STABLE，:140），对表规范 TATTDB ≥100 ms（§7.1.7.3 Fig 7-29）——此阈值实现与规范一致；但总超时 2000 ms 是实现自定，规范未定义。25 ms 是步进、200 ms 是低速复位初值，别混。' },
+  { tag: '链路时序',
+    prompt: '根 hub 端口复位的内核等待初值是多少？',
+    options: ['10 ms', '50 ms', '60 ms', '200 ms'],
+    answer: 2,
+    explain: 'C 对。HUB_ROOT_RESET_TIME=60（hub.c:2914），hub_port_init 的注释点名它来自 USB2 §7.1.7.5。【实现≠规范】规范只要求根口 TDRSTR ≥50 ms（允许间断：每段 ≥10 ms、间隔 <3 ms），内核取 60 ms 多留 10 ms 裕量；普通口 10 ms（HUB_SHORT_RESET_TIME）、低速口 200 ms、总超时 800 ms 均为实现自定数值。' },
+  { tag: '内核机制',
+    prompt: 'hub_irq 连续多少次传输错误后停止重提交、转入 error 恢复路径？',
+    options: ['16 次', '3 次', '8 次', '10 次'],
+    answer: 3,
+    explain: 'D 对。hub_irq（hub.c:792-794）里 ++hub->nerrors < 10 则重提交；第 10 次置 hub->error，由 hub_event 走 hub 重置恢复。【实现≠规范·层次不同】§4.5.2 的"出错传输最多尝试 3 次"是单次传输的硬件/协议层重试上限，这里的 10 次是软件 URB 重提交上限——两个不同层面的计数器，数值无对应关系。' },
+  { tag: '枚举细节',
+    prompt: '复位定速后，全速（FS）设备 ep0 的 wMaxPacketSize 如何确定？',
+    options: ['先猜 64，读 bMaxPacketSize0 后修正', '固定 64，规范保证无需修正', '固定 8，由低速规则决定', '由端点描述符的 bInterval 推出'],
+    answer: 0,
+    explain: 'A 对。hub_port_init（hub.c:4979-4985）：FS 的 ep0 可以是 8/16/32/64（§5.5.3），内核先按 64 猜、读设备描述符的 bMaxPacketSize0 再修正；SS/SSP=512、HS=64、LS=8 是定值。【实现≠规范】§5.5.3 允许主机只读描述符前 8 字节来确定 wMaxPacketSize，内核实际一次读 64 字节缓冲（GET_DESCRIPTOR_BUFSIZE，hub.c:4932）——读法不同，判据相同。' }
+]);
+</script>
+</body>
+</html>

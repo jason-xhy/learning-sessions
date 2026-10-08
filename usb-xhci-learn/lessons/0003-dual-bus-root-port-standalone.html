@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0003 · 一根线缆里的两套总线</title>
+<style>
+/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
+   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
+   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
+@font-face {
+  font-family: LiningDigits;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+.player .frame { display: block; margin: 14px 0; }
+.player.js:not(.static) .frame { display: none; }
+.player.js:not(.static) .frame.cur { display: block; margin: 0; }
+.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
+.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
+.player .fbody { font-size: .95rem; line-height: 1.6; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
+.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
+.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
+.player .pdots i.on { background: var(--accent); }
+
+/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
+.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
+.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
+.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
+.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
+.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
+.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
+.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
+.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
+.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
+.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
+.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
+.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
+td.bad { background: #fdeaea; }
+td.good { background: #e9f7ee; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+  .player .frame { display: block !important; }
+  .player .pctl { display: none; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">细节课 · LESSON 0003 · 主线：hub 深入</div>
+  <h1>一根线缆里的两套总线<br>——USB3.x 走到根端口，为什么又是 USB2 形态</h1>
+  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+
+
+  <h2>整体定位（先挂图）</h2>
+  <p>来自 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">课 0002</a> 的疑问：USB3.x 明明有自己的总线形态（地图 <strong>①②③</strong> 层），怎么过了 xHC、到了根端口路径，软件看到的又是 USB2 那一套？答案分三层——物理、硬件、软件接口——最后回到地图收束。</p>
+
+  <h2>一图收束</h2>
+  <div class="flow">
+    <div class="fnode"><b>同一连接器，两套总线并存</b>：USB2 数据对（D+/D-）＋ SuperSpeed 收发对（SSTX/SSRX，Gen2x2 再翻倍）＋共享 VBUS。USB3.x 从未"替换掉"USB2 电气形态，而是把它包进了同一根线。</div>
+    <div class="farrow">↓ 兼容性的物理基础</div>
+    <div class="fnode"><b>SS/HS 设备在 USB2 对上始终保持 FS 形态</b>：D+ 经 1.5 kΩ 上拉到 3.0–3.6 V（0→VIH ≤2.5 µs）；<strong>HS 设备初始也以 FS 附着</strong>（§7.1.5、§7.1.5.2）。所以插进任何口，USB2 侧的连接检测永远在场。</div>
+    <div class="fbranch">
+      <div class="fnode">口是 SS-capable：SS 侧开始链路训练（Polling.LFPS，§6.9）；训练成功即走 SS——设备随后撤掉 USB2 上拉（USB2 侧沉默）；训练失败则回退 USB2 形态枚举（USB3.2 Table 7-15 回退序：…→USB2.0）</div>
+      <div class="fnode">口是 USB2-only：SS 对上什么也不发生，设备以 USB2 形态直接枚举</div>
+    </div>
+    <div class="farrow">↓ 关键分界：xHC 把 USB3 自己的①②层"吸收"进硬件</div>
+    <div class="fnode"><b>链路训练、Hot/Warm Reset 全在控制器硬件里完成，软件只见结果</b>。两代复位形态天差地别——USB2 是 SE0（根口 ≥50 ms），USB3 是 LFPS 长 burst（Warm Reset 80–120 ms → Rx.Detect 重训练，§6.9.3/§7.4.2）——但对软件都收敛成"端口状态寄存器里的一位"。内核原话："USB-3 connections are initialized automatically by the hostcontroller hardware"（hub.c:5677）。</div>
+    <div class="farrow">↓ 硬件向上暴露的接口</div>
+    <div class="fnode"><b>PORTSC 统一端口模型 = USB2 ch11 端口语义 ＋ SS 扩展位</b>（PLS 链路状态、WPR warm reset 等）。xHCI 用 <strong>§3.5 Root Hub Management</strong> 把根集线器伪装成标准 hub；§5.4 操作寄存器里 PORTSC（§5.4.8）的状态/变化位（CSC/PRC/PEC…）与 USB2 §11 的 C_PORT_CONNECTION 家族同构。</div>
+    <div class="farrow">↓ 软件侧落点</div>
+    <div class="fnode"><b>内核里一个 xHC 生成两套根 hub</b>：<code>usb2_rhub</code>（xhci.c:5379）与 <code>usb3_rhub</code>（xhci.c:372），共享物理根口。于是 <strong>同一个 hub.c、同一个 hub_event 循环、同一套 ch9 设备框架服务两代</strong>——这就是课 0002 七步链路两代通用的根因。</div>
+  </div>
+
+  <div class="note"><strong>动手验证（1 分钟）</strong>：在装了 xHCI 的机器上 <code>ls /sys/bus/usb/devices/</code>——根 hub 成对出现（如 usb1 与 usb2），分别挂在 USB2 总线与 SS 总线上；<code>lsusb -t</code> 能看到两代总线树。这就是"两套根 hub"的现场。</div>
+
+  <h2>为什么规范要这样设计</h2>
+  <p>USB 3.x 在 <strong>③协议层以上（ch8 协议、ch9 设备框架）刻意沿用 USB2</strong>（课 0001 Q2/Q12 的"哪些层共享"接缝）。"描述符、标准请求、hub 模型一次编写、两代通用"是 USB3 对操作系统的兼容承诺；xHC 是这个承诺的主机侧落点——<strong>把新形态挡在硬件里，把旧形态留给软件</strong>。评审视角：凡 xHCI/usbcore 补丁里出现"USB3 特有状态位"，它一定对应某个被硬件吸收的链路层事件（PLS↔LTSSM 状态、WPR↔Warm Reset、PRC↔复位完成），对表时两边都要查。</p>
+
+  <h2>检索练习 · 3 题</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：xHCI 1.2 <a href="https://github.com/jason-xhy/learning-sessions/tree/main/usb-xhci-learn/specs">specs/xhci_1.2_2019.pdf</a> §3.5、§5.4；USB2 §7.1.5；USB3.2 §6.9/§7.4（specs/ 下）。内核：<code>drivers/usb/host/xhci.c</code>（usb2_rhub/usb3_rhub）、<code>drivers/usb/core/hub.c:5677</code>。</li>
+    <li>继续主线：正支已开 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0004-tt-split-standalone.html">课 0004 · TT 与 split 事务</a>；枚举细节（设备状态机 §9.1）保留为候选。</li>
+  </ul>
+
+  <footer>课 0003 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">0002 hub 事件链路</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0004-tt-split-standalone.html">0004 TT 与 split</a> ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a></footer>
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '双总线',
+    prompt: 'SuperSpeed 设备插到 USB2-only 口上为什么也能正常枚举？',
+    options: ['SS 设备自动降级重写固件', '线缆含 USB2 对，SS 设备在其上保持 FS 形态', 'USB2 口会模拟 SS 握手应答', 'VBUS 升压后进入兼容模式'],
+    answer: 1,
+    explain: 'B 对。USB3.x 连接器里 USB2 数据对（D+/D-）与 SS 收发对并存，SS/HS 设备在 USB2 对上始终保持 FS 形态（D+ 经 1.5 kΩ 上拉，§7.1.5；HS 设备初始也以 FS 附着，§7.1.5.2）。插 USB2-only 口时 SS 侧完全沉默，USB2 形态直接完成枚举。' },
+  { tag: '硬件吸收',
+    prompt: 'USB3 的链路训练（Polling.LFPS、均衡）由谁完成？',
+    options: ['hub_event 工作队列', 'usbcore 枚举代码', 'xHC 硬件自动，软件只见结果', '根 hub 描述符配置'],
+    answer: 2,
+    explain: 'C 对。链路训练、Hot/Warm Reset 都是 LTSSM/LFPS 事件（§6.9/§7.4），由 xHC 硬件吸收；软件只在 PORTSC 上看到结果。内核原话："USB-3 connections are initialized automatically by the hostcontroller hardware"（hub.c:5677）。两代复位形态完全不同（SE0 vs LFPS 长 burst 80-120 ms），对软件却是同一个"写复位位、等变化位"。' },
+  { tag: '内核结构',
+    prompt: '内核里一个 xHC 控制器生成几个根 hub？',
+    options: ['两个：USB2 总线与 SS 总线各一', '一个：端口按代混编在同一 hub', '每个物理口生成一个', '按已接入速率动态生成'],
+    answer: 0,
+    explain: 'A 对。xhci.c 里 usb2_rhub（:5379）与 usb3_rhub（:372）两套根 hub 结构共享物理根口，分别注册在 USB2 总线与 SS 总线上；/sys/bus/usb/devices 下可见成对根 hub（如 usb1、usb2）。正因如此，hub.c 的同一个 hub_event 循环和同一套 ch9 框架能服务两代设备。' }
+]);
+</script>
+</body>
+</html>

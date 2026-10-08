@@ -124,10 +124,12 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 <main>
   <div class="kicker">转线开篇 · LESSON 0006 · xHC 线第 1 课（hub 线 0002–0005 已收官）</div>
   <h1>一次控制传输的旅程<br>urb → ring → TRB → doorbell → event → CC → 回调</h1>
+  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.7 / §4.9 / §4.10 / §4.11 / §6.4 / §6.5——解剖标本：M4.5 自研引擎 v0.3 仿真日志（九条事件全序实测）</p>
 
   <h2>整体定位（先挂图：hub 线看到的"主机"，本线开箱）</h2>
-  <p>hub 线五课里（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain.html">0002</a>–<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry.html">0005</a>），"主机"始终是一个黑盒：复位时序、描述符请求、TT split——我们一直站在<strong>设备与 hub 侧</strong>看主机的行为。本课把黑盒打开：<strong>usbcore 之下、xHC 之内</strong>，一次控制传输是怎么走完全程的。你在 0001 诊断里 xHCI 骨架域 3/3 全对（三种环 / Doorbell / Table 6-90）——骨架已成体系，xHC 线钻的正是<strong>骨架之上的动态细节</strong>。</p>
+  <p>hub 线五课里（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">0002</a>–<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005</a>），"主机"始终是一个黑盒：复位时序、描述符请求、TT split——我们一直站在<strong>设备与 hub 侧</strong>看主机的行为。本课把黑盒打开：<strong>usbcore 之下、xHC 之内</strong>，一次控制传输是怎么走完全程的。你在 0001 诊断里 xHCI 骨架域 3/3 全对（三种环 / Doorbell / Table 6-90）——骨架已成体系，xHC 线钻的正是<strong>骨架之上的动态细节</strong>。</p>
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g font-size="12.5" fill="#1a2b4a">
@@ -443,7 +445,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
     <li>想再挖：流协议（Streams §4.12）、多中断器（§4.17）、命令环停止/恢复（CRCR CA/CS 位）——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0006 · 2026-10-08 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 标本：M4.5 引擎 v0.3（m45_xhci.log 全 PASS）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry.html">0005 TT 缓冲与重试</a> ｜ 下一课：待定（rhub 端口课 / 命令环深钻）｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-knowledge-map-diagnostic.html">0001 骨架诊断</a></footer>
+  <footer>课 0006 · 2026-10-08 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 标本：M4.5 引擎 v0.3（m45_xhci.log 全 PASS）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005 TT 缓冲与重试</a> ｜ 下一课：待定（rhub 端口课 / 命令环深钻）｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
 </main>
 <script>
 /* quiz.js — teach workspace 可复用测验引擎。

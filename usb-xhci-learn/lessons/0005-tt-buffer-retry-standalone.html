@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0005 · SSPLIT 与 CSPLIT 之间：TT 缓冲与重试的规则</title>
+<style>
+/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
+   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
+   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
+@font-face {
+  font-family: LiningDigits;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+.player .frame { display: block; margin: 14px 0; }
+.player.js:not(.static) .frame { display: none; }
+.player.js:not(.static) .frame.cur { display: block; margin: 0; }
+.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
+.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
+.player .fbody { font-size: .95rem; line-height: 1.6; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
+.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
+.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
+.player .pdots i.on { background: var(--accent); }
+
+/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
+.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
+.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
+.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
+.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
+.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
+.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
+.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
+.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
+.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
+.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
+.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
+.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
+td.bad { background: #fdeaea; }
+td.good { background: #e9f7ee; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+  .player .frame { display: block !important; }
+  .player .pctl { display: none; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">补缺课 · LESSON 0005 · 主线：hub 深入（缺口驱动：课 0004 Q2/Q3）</div>
+  <h1>SSPLIT 与 CSPLIT 之间<br>TT 缓冲与重试的规则</h1>
+  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75，2026-09-23）——规范锚点：USB2 §11.17/§11.18/§11.20/§5.3.2</p>
+
+  <h2>整体定位（先挂图）</h2>
+  <p>本课钻进 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0004-tt-split-standalone.html">课 0004</a> ⑥层 TT 的内部，打你测评错的两题：<strong>缓冲为什么要两个</strong>（Q2）与<strong>重试权属在谁</strong>（Q3）。两题同源：split 把一次搬运拆成时间上解耦的两段，规则全是围绕这个解耦设计的。</p>
+
+  <h2>时间解耦：SSPLIT 和 CSPLIT 之间隔着一个真实事务</h2>
+  <p>HS 微帧 125 µs；FS 侧一次满载 64 字节 bulk 事务，光 DATA 字段就要 64×8÷12Mb/s ≈ <strong>43 µs</strong>，——整笔再添 token、CRC16、握手与包间隙后约 50–60 µs，单看时长仍装得进一个微帧，但装得进 ≠ 能同微帧闭环：FS 事务的起点是 SSPLIT 在本微帧内交付完的时刻（bulk 的 SSPLIT 吃微帧剩余带宽，位置不保证靠前），完成时刻主机在 HS 侧既看不见也算不准。规范因此立法解耦：CSPLIT 绝不与 SSPLIT 同微帧（非周期最早 M+1、共 M+1..M+3 三次机会，附录 A——同微帧 CSPLIT 即错误案例 "CS too early"；周期 interrupt 定死预算微帧之后，§11.18.4③）——于是 SSPLIT（交付）与 CSPLIT（取结果）必然是<strong>两个不同微帧里的独立事务</strong>——中间夹着 hub ↔ FS 设备的真实异步执行：</p>
+  <figure>
+    <svg viewBox="0 0 880 300" role="img" aria-label="SSPLIT 与 CSPLIT 时间解耦" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <g stroke="#e3e3da" stroke-width="1">
+        <line x1="60" y1="40" x2="60" y2="230"/><line x1="210" y1="40" x2="210" y2="230"/><line x1="360" y1="40" x2="360" y2="230"/><line x1="510" y1="40" x2="510" y2="230"/><line x1="660" y1="40" x2="660" y2="230"/><line x1="810" y1="40" x2="810" y2="230"/>
+      </g>
+      <g font-size="12.5" fill="#707070" text-anchor="middle">
+        <text x="135" y="32">微帧 Y0</text><text x="285" y="32">Y1</text><text x="435" y="32">Y2</text><text x="585" y="32">Y3</text><text x="735" y="32">Y4</text>
+      </g>
+      <rect x="70" y="55" width="90" height="30" fill="#e9f7ee" stroke="#1a7f37"/>
+      <text x="115" y="74" font-size="12" fill="#1a7f37" text-anchor="middle">SSPLIT#1</text>
+      <rect x="220" y="95" width="90" height="30" fill="#e9f7ee" stroke="#1a7f37"/>
+      <text x="265" y="114" font-size="12" fill="#1a7f37" text-anchor="middle">SSPLIT#2</text>
+      <rect x="100" y="150" width="300" height="34" fill="#e8f0fb" stroke="#1a5fb4"/>
+      <text x="250" y="171" font-size="12.5" fill="#1a5fb4" text-anchor="middle">FS 域：事务#1 真实执行 ≈43µs＋开销（常跨微帧）</text>
+      <rect x="370" y="55" width="90" height="30" fill="#fff3c4" stroke="#a00000"/>
+      <text x="415" y="74" font-size="12" fill="#a00000" text-anchor="middle">CSPLIT#1</text>
+      <rect x="520" y="55" width="90" height="30" fill="#fff3c4" stroke="#a00000"/>
+      <text x="565" y="74" font-size="12" fill="#a00000" text-anchor="middle">CSPLIT#2</text>
+      <line x1="265" y1="125" x2="265" y2="150" stroke="#707070" stroke-dasharray="3 3"/>
+      <line x1="415" y1="85" x2="415" y2="150" stroke="#707070" stroke-dasharray="3 3"/>
+      <rect x="220" y="200" width="240" height="26" fill="#fdeaea"/>
+      <text x="340" y="217" font-size="12" fill="#c62828" text-anchor="middle">若单缓冲：SSPLIT#2 只能被 NAK，空转一个微帧</text>
+    </svg>
+    <figcaption>SSPLIT#1 进缓冲后，FS 事务在后台真跑几十微秒；期间 SSPLIT#2 照常到达——<strong>两个缓冲恰好一个"在飞"、一个"接新"</strong>。这就是 §11.17.4 "at least two transactions of non-periodic buffering" 的全部动机。</figcaption>
+  </figure>
+
+  <h2>规则一 · 缓冲（Q2）：双缓冲乒乓与四种握手语义</h2>
+  <p>§11.17/§11.17.4：每个 TT 的非周期方向（bulk/control）<strong>至少 2 个事务缓冲</strong>。配套的握手语义表（§11.17.1）——每条都有明确含义：</p>
+  <table>
+    <tr><th>场景</th><th>hub 回应</th><th>err_count</th></tr>
+    <tr><td>TT 无空间接新 SSPLIT</td><td><strong>NAK</strong>（空转但不罚）</td><td>不增</td></tr>
+    <tr><td>该端点已有 pending/ready 结果</td><td><strong>ACK</strong> 但忽略数据</td><td>不增</td></tr>
+    <tr><td>CSPLIT 到但事务还没跑完</td><td><strong>NYET</strong>（下个微帧再来）</td><td>不增</td></tr>
+    <tr><td>CSPLIT 到但找不到匹配缓冲</td><td><strong>STALL</strong>（协议违例）</td><td>按错误处理</td></tr>
+  </table>
+  <p>另外每端点任一时刻只允许 <strong>1 个缓冲结果</strong>（Compare_buffs 规则，§11.17.1）——双缓冲是"在飞＋接新"，不是"堆两个结果"。</p>
+  <p>规范为什么定"至少 2 个"？只有 1 个会怎样？逐帧推演（无 JS 时全部帧定格可读）：</p>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>正常流水：SSPLIT#1 入缓冲 A，FS 事务在飞</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
+          <div class="u"><b>Y1</b>（等 FS 执行）</div>
+          <div class="u"><b>Y2</b>（…）</div>
+          <div class="u"><b>Y3</b>（…）</div>
+        </div>
+        <div class="buftt">
+          <div class="slot busy">缓冲 A｜事务#1 在飞：TT 正对下游发 FS 事务</div>
+          <div class="slot free">缓冲 B｜空</div>
+        </div>
+        主机在 Y0 用 SSPLIT 把 bulk 事务高速递进 TT（HS 域里一眨眼）；TT 收下后立刻在下游 FS 总线开跑——64 字节数据光传输就 ≈43 µs，<strong>而起点已在本微帧中段（SSPLIT 交付之后），常跨出这个微帧；且无论跨不跨，主机都不在本微帧内问结果——CSPLIT 最早 M+1，这笔活对主机必然落到后续微帧</strong>。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>交叠时刻：SSPLIT#2 到达，A 未腾空 → 进 B</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
+          <div class="u"><b>Y1</b><span class="chSS">SSPLIT#2 ▸</span></div>
+          <div class="u"><b>Y2</b>（…）</div>
+          <div class="u"><b>Y3</b>（…）</div>
+        </div>
+        <div class="buftt">
+          <div class="slot busy">缓冲 A｜事务#1：还没被 CSPLIT 回收</div>
+          <div class="slot busy">缓冲 B｜事务#2：接新</div>
+        </div>
+        <strong>规范要防的就是这一格</strong>：HS 域的节奏不等人——A 还占着，SSPLIT#2 已经到了。请求与应答异步到达、须同时驻留（§11.17）——第二级缓冲就是为这个交叠存在的。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>乒乓回收：CSPLIT#1 取走结果，A 即刻腾空</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
+          <div class="u"><b>Y1</b><span class="chSS">SSPLIT#2 ▸</span></div>
+          <div class="u"><b>Y2</b><span class="chCS">◂ CSPLIT#1</span></div>
+          <div class="u"><b>Y3</b><span class="chCS">◂ CSPLIT#2</span></div>
+        </div>
+        <div class="buftt">
+          <div class="slot free">缓冲 A｜已回收——可接 SSPLIT#3</div>
+          <div class="slot busy">缓冲 B｜事务#2：在飞</div>
+        </div>
+        CSPLIT 在 Y2 把结果取走，A 马上回到可用状态，正好接下一趟活。两级轮换（乒乓），<strong>上游微帧节奏与下游帧节奏互不卡死</strong>——这就是"一个在飞、一个接新"。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>反例：若只有 1 个缓冲——NAK 空转与自阻塞</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
+          <div class="u"><b>Y1</b><span class="chSS">SSPLIT#2 ▸</span> <span class="chNAK">✗ NAK</span></div>
+          <div class="u"><b>Y2</b><span class="chCS">◂ CSPLIT#1</span> <span class="chSS">SSPLIT#2 重发 ▸</span></div>
+          <div class="u"><b>Y3</b>（若仍对撞 → 再 NAK）</div>
+        </div>
+        <div class="buftt">
+          <div class="slot busy">缓冲 A｜事务#1 在飞——#2 没有地方放</div>
+          <div class="slot none">（第二个缓冲不存在）</div>
+        </div>
+        TT 无空间只能回 <strong>NAK</strong>（不罚但空转，§11.17.1）：SSPLIT#2 白跑一趟、下个微帧重发——<strong>HS 上游带宽被空转吞掉，下游设备却闲着等活</strong>。负载一重，交付时刻反复撞上回收时刻 → 持续 NAK，吞吐塌进"自阻塞"。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 5 帧</span><span>为什么恰好 ≥2：下限管"不塌方"，上限交成本</span></div>
+      <div class="fbody">
+        <table>
+          <tr><th>缓冲数</th><th>后果</th></tr>
+          <tr><td>1</td><td class="bad">请求与应答应同时驻留做不到 → 第 4 帧的空转/自阻塞</td></tr>
+          <tr><td><strong>≥2（规范下限，§11.17.4）</strong></td><td>恰好覆盖"一个在飞＋一个接新"的异步两层</td></tr>
+          <tr><td>更多</td><td>厂商可选的性能余量（§11.19 只给空间公式不强制）——吃成本，不吃正确性</td></tr>
+        </table>
+        闸门仍在：每端点任一时刻只许 <strong>1 个结果缓冲</strong>（Compare_buffs，§11.17.1）——双缓冲是<strong>流水位</strong>，不是囤货位。一句收拢：<strong>双缓冲是流水线的最小深度，不是冗余备份</strong>。
+      </div>
+    </div>
+  </div>
+
+  <h2>规则二 · 重试权属（Q3）：三层对照，谁的地盘听谁的</h2>
+  <div class="flow">
+    <div class="fnode"><b>TT 本地（FS handler）——只限非周期的事务错误</b>：bulk/control 在 FS 域遭遇传输错误（bit 错/超时）可本地重试，<strong>3 次后以 stall 状态回报</strong>；但对 ACK/NAK/STALL 等握手结果<strong>不得重试</strong>（§11.17.2）。
+<pre>/* 摘要库 §11.17.2 引文 */
+"If the transaction experiences a transaction error three times,
+ the full-/low-speed handler will reflect this as a stall status result"</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>主机侧——three strikes 与 halt</b>：err_count &lt; 3 主机重试；≥ 3 做端点 halt；halt 之后软件发 <strong>Clear_TT_Buffer</strong> 清 TT 的 busy 缓冲（§11.17.1/§11.17.5）——这正是 <code>hub_clear_tt_buffer</code>（hub.c:816-831）存在的理由，课 0004 的内核锚点在这里接上规范。
+<pre>/* 摘要库 §11.17.1 引文 */
+"it increments an error count (err_count) and, if the count is less
+ than three..., it will retry the transaction. If the err_count is
+ greater or equal to three..., the host controller does endpoint
+ halt processing"</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>periodic（interrupt/iso）——TT 完全不本地重试</b>：§11.20.1（interrupt）与 §11.21（iso）明文。因为 interrupt 活在主机的微帧管道里（§11.18.4：SSPLIT/CSPLIT 在哪个微帧都排得死死的），NAK 不是错误而是"没就绪"的合法状态（§5.3.2），hub 若自作主张重试会（a）吃掉 187.5 字节/微帧的 FS 预算（b）打乱主机按 bInterval 的服务记账（c）重复执行风险。<strong>结果如实经 CSPLIT 回报（iso OUT 例外：根本没有 CSPLIT，§11.21），处置权在主机且语义分岔——interrupt 按服务节奏重新轮询；iso 无握手无重试（§5.6.5），坏周期直接放弃、下一周期传新数据</strong>；periodic 的 CSPLIT 遇传输错误也是主机侧"立即重试"（§11.18.4⑥），不是 TT 的活。</div>
+  </div>
+  <p>重试权属的立法理由，同样逐帧推演——先看契约，再推演"假如 TT 自作主张重试"会闯什么祸（§11.17.2/§11.20）：</p>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>契约：排班权在主机，TT 只是执行者</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>主机排的周期预算</b>端点X interrupt</div>
+          <div class="u"><b>同一 FS 帧预算</b>端点Y iso</div>
+          <div class="u"><b>同一 FS 帧预算</b>端点Z interrupt</div>
+          <div class="u"><b>…</b>（§11.18.4 微帧管道）</div>
+        </div>
+        periodic 传输活在主机的微帧管道里：哪个微帧发 SSPLIT、哪个微帧收 CSPLIT、下游 FS 时间分给谁，全是主机排好的（FS 侧每微帧 187.5 raw 字节的预算记账，§11.18.1）。TT 的职责边界：<strong>照单执行、如实回报</strong>。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>设备 NAK：不是错误，是"没就绪"</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 M</b><span class="chSS">SSPLIT(IN) ▸</span></div>
+          <div class="u"><b>FS 侧</b>IN → 设备 → <span class="chNAK">NAK</span></div>
+          <div class="u"><b>微帧 M+2</b><span class="chCS">◂ CSPLIT 报 NAK</span></div>
+        </div>
+        interrupt IN，设备还没备好数据，回 NAK——§5.3.2 里这是<strong>握手不是错误</strong>。TT 把 NAK 原样经 CSPLIT 交回主机："何时再试"的决策立刻回到排班者手里。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>反例推演：假如 TT 自作主张重试</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>FS 下游</b>IN → <span class="chNAK">NAK</span>（排班内的那次）</div>
+          <div class="u"><b>私自 +1</b>IN → <span class="chNAK">NAK</span></div>
+          <div class="u"><b>私自 +2</b>IN → <span class="chNAK">NAK</span></div>
+          <div class="u"><b>被挤的邻居</b>端点Y iso 时隙 ✗</div>
+        </div>
+        设想一个"好心"的 TT 在下游马上再发一次 IN，又 NAK，再发……<strong>下游 FS 时间是主机已经分给别人的预算</strong>——私自重试吃掉的每一微秒，都是从同 hub 下其它端点嘴里抢的。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>不这样设计的四个代价</span></div>
+      <div class="fbody">
+        <ul>
+          <li><strong>带宽超支</strong>：挤占别的端点的预留时隙——iso 无重传（§5.6.5），被挤＝直接丢数据；</li>
+          <li><strong>记账失真</strong>：主机按 bInterval 记账"本周期是否已服务"，TT 私自多跑打乱服务节奏；</li>
+          <li><strong>重复执行</strong>：设备恰好在某次私自重试时备好 → 同一逻辑请求被执行两次；</li>
+          <li><strong>谎报成功</strong>：重试碰巧成功，主机看到"成功"却不知失败发生过——错误统计与恢复决策全部失真。</li>
+        </ul>
+        四条合起来就是 §11.20 的立法理由：<strong>periodic 的结果（含失败）必须如实上报（iso OUT 无 CSPLIT、无从上报，§11.21），处置由主机按服务语义分岔——interrupt 按服务节奏重新轮询；iso 素来无握手无重试（§5.6.5），该周期即放弃</strong>；CSPLIT 自身遇传输错误也是主机侧立即重试（§11.18.4⑥），仍不是 TT 的活。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 5 帧</span><span>对照收拢：非周期为什么反而允许 TT 重试</span></div>
+      <div class="fbody">
+        <table>
+          <tr><th></th><th>bulk/control（非周期）</th><th>interrupt/iso（periodic）</th></tr>
+          <tr><td>吃的带宽</td><td>剩余带宽（best-effort），不占排班预算</td><td>预算管道里的每一笔都动别人的奶酪</td></tr>
+          <tr><td>TT 重试</td><td class="good">允许，3 次封顶后以 stall 如实回报（§11.17.2）</td><td class="bad">一个都不许（§11.20.1/§11.21）</td></tr>
+        </table>
+        非周期允许 TT 吸收 FS 域的瞬时 bit 错，是因为重试<strong>不破坏任何人的契约</strong>（要么成功要么 stall，结果如实上报）；periodic 不允许，是因为每次重试都在花别人的预算。一句话：<strong>重试决策权跟着调度权走</strong>。
+      </div>
+    </div>
+  </div>
+  <div class="note"><strong>一句话收拢两道错题</strong>：Q2——解耦需要排队，双缓冲=一个在飞一个接新；Q3——重试决策权跟着调度权走：非周期事务错误归 TT（3 次封顶），握手结果与全部 periodic 归主机——interrupt＝主机按服务节奏再试，iso＝永不重试、当期放弃（§5.6.5）。</div>
+
+  <h2>检索练习 · 4 题（新角度回测）</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：USB 2.0 §11.17（360-372）/§11.18（372-382）/§11.20（382-394），<code>specs/usb20x/</code>；速查先 grep <a href="../notes/规范全文精读摘要库.md">规范全文精读摘要库</a>。内核：<code>hub.c:816-840</code>（ClearTTBuffer）。</li>
+    <li>想再挖：TT 缓冲量公式（§11.19：SSPLIT 级 &lt;752 字节、CSPLIT 级 2×188 字节）或 periodic 管道的 Y0-Y7 细则（§11.18.7/.8）——<strong>直接问老师</strong>。</li>
+  </ul>
+
+  <footer>课 0005 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0004-tt-split-standalone.html">0004 TT 与 split</a> ｜ 下一课：待定 ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a></footer>
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+/* player.js — 分帧放映机（课程族共享，配 course.css 的 .player 段）
+ * 静态优先：无 JS 时所有帧默认 CSS 全部可见（一帧一张定格）；
+ * 本脚本 init 首行给 .player 加 'js' 类后才进入播放模式（只显当前帧）。
+ * 托管页面上全部放映机：上一帧/播放(2.6s 自动)/下一帧/重置/展开全部帧
+ * + 圆点导航 + "第 N/M 帧"计数；到尾帧自动停播；手翻即停播。 */
+(function () {
+  'use strict';
+  document.querySelectorAll('.player').forEach(function (pl) {
+    pl.classList.add('js');
+    var frames = Array.prototype.slice.call(pl.querySelectorAll('.frame'));
+    if (!frames.length) return;
+    var idx = 0, timer = null;
+
+    var ctl = document.createElement('div');
+    ctl.className = 'pctl';
+    ctl.innerHTML =
+      '<button type="button" data-a="prev">上一帧</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一帧</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<button type="button" data-a="all">展开全部帧</button>' +
+      '<span class="pcount"></span><span class="pdots"></span>';
+    pl.appendChild(ctl);
+    var count = ctl.querySelector('.pcount');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+    var dotsBox = ctl.querySelector('.pdots');
+    frames.forEach(function (f, i) {
+      var d = document.createElement('i');
+      d.title = '第 ' + (i + 1) + ' 帧';
+      d.addEventListener('click', function () { manual(i); });
+      dotsBox.appendChild(d);
+    });
+    var dots = Array.prototype.slice.call(dotsBox.children);
+
+    function stop() {
+      if (timer) { clearInterval(timer); timer = null; }
+      playBtn.textContent = '播放';
+    }
+    function go(i) {
+      idx = (i + frames.length) % frames.length;
+      frames.forEach(function (f, k) { f.classList.toggle('cur', k === idx); });
+      dots.forEach(function (d, k) { d.classList.toggle('on', k === idx); });
+      count.textContent = '第 ' + (idx + 1) + '/' + frames.length + ' 帧';
+      if (idx === frames.length - 1) stop();
+    }
+    /* 手动导航才退出"展开全部帧"；预置的 static（打印/静态验收态）不被 init 翻掉 */
+    function manual(i) {
+      stop();
+      pl.classList.remove('static');
+      go(i);
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { manual(idx - 1); }
+      else if (a === 'next') { manual(idx + 1); }
+      else if (a === 'reset') { manual(0); }
+      else if (a === 'all') { stop(); pl.classList.toggle('static'); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        pl.classList.remove('static');
+        if (idx === frames.length - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === frames.length - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2600);
+      }
+    });
+    go(0);
+  });
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '缓冲乒乓',
+    prompt: 'SSPLIT 与对应的 CSPLIT 之间，隔着什么？',
+    options: ['一次真实的 FS/LS 事务异步执行', '一次 HS 域的带宽重协商', '一次 hub 内部 TT 状态机复位', '一次 SOF 帧起始包的同步等待'],
+    answer: 0,
+    explain: 'A 对。SSPLIT 交付后 hub↔FS 设备真实执行几十微秒（64 字节 bulk 光数据 ≈43µs），常跨进后续微帧——且无论跨不跨，CSPLIT 都被规范定死在后续微帧（非周期最早 M+1，附录 A "CS too early"=错误案例），是另一个微帧里的独立事务。时间解耦是缓冲与重试两条规则的共同根源。' },
+  { tag: '缓冲乒乓',
+    prompt: '新 SSPLIT 到达但 TT 的非周期缓冲全忙，hub 回什么、计不计错？',
+    options: ['NYET，err_count 加 1', 'ACK，err_count 加 1', 'NAK，err_count 不增', 'STALL，err_count 不增'],
+    answer: 2,
+    explain: 'C 对。§11.17.1：TT 无空间回 NAK、不增 err_count（空转但不罚）；"已有 pending/ready 回 ACK 但忽略数据"；"CSPLIT 未完成回 NYET"；"CSPLIT 无匹配缓冲回 STALL（协议违例）"。四个语义各司其职，评测 TT 补丁时逐条对表。' },
+  { tag: '重试权属',
+    prompt: 'bulk 事务在 FS 域遭遇传输错误，TT 的 FS handler 怎么处置？',
+    options: ['立即上报主机等裁决', '本地重试，3 次后以 stall 回报', '本地无限重试直到成功', '丢弃数据等待主机轮询'],
+    answer: 1,
+    explain: 'B 对。§11.17.2：非周期的事务错误（bit 错/超时）允许 TT 本地重试，3 次后以 stall 状态结果回报；但对 ACK/NAK/STALL 等握手结果不得本地重试。对照：interrupt 是"完全不本地重试"（§11.20）——非周期与 periodic 的分界。' },
+  { tag: '重试权属',
+    prompt: 'CSPLIT 时发现 FS 设备当初 NAK 了（interrupt IN），谁决定何时再试、按什么节奏？',
+    options: ['TT 按 187.5 字节预算重试', 'hub 立即本地重发 IN', 'TT 与主机协商后重试', '主机按端点 bInterval 节奏重新调度'],
+    answer: 3,
+    explain: 'D 对。NAK 是"没就绪"的合法状态（§5.3.2），不是错误；hub 经 CSPLIT 如实回报，重试决策在主机——与 interrupt 端点的 bInterval 服务节奏、微帧管道调度（§11.18.4）和带宽记账保持一致。TT 本地重试会破坏这套契约（§11.20 禁止）。' }
+]);
+</script>
+</body>
+</html>

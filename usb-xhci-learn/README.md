@@ -6,11 +6,12 @@
 
 - 已完成：0001 体系诊断（92%）· 0002 hub 事件链路（4/4，10-08 间隔 13 天重测 4/4 保持）· 0003 双总线根端口（3/3，10-08 重测 3/3 保持）· 0004 TT 与 split（首测 2/4 → 10-08 重测 4/4 补缺闭环）· 0005 TT 缓冲与重试（10-08 首次落档测评 4/4，13 天新角度回测）
 - **当前：xHC 线开篇——0006 一次控制传输的旅程（urb→ring→TRB→doorbell→event→CC→回调；[在线单文件版](lessons/0006-xhc-transfer-journey-standalone.html)已上线，待测评）**
+- 在线浏览（GitHub Pages）：全部六课均有单文件版（样式/测验/动画内联，课间链接互通）——[0001 诊断](0001-diagnostic-standalone.html) · [0002 hub 链路](lessons/0002-hub-attach-chain-standalone.html) · [0003 双总线](lessons/0003-dual-bus-root-port-standalone.html) · [0004 TT/split](lessons/0004-tt-split-standalone.html) · [0005 TT 缓冲重试](lessons/0005-tt-buffer-retry-standalone.html) · [0006 控制传输旅程](lessons/0006-xhc-transfer-journey-standalone.html)
 - 下一课候选：rhub 双根端口课（衔接 0003 双总线）· 命令环深钻（CRCR/停止恢复）
 
 ## 快速开始（两条路径）
 
-- **自学模式（无 AI）**：浏览器打开根目录的 `0001-knowledge-map-diagnostic.html` 做十二题诊断（即时判分，解析即锚点卡）→ 按**分领域得分**对照 `LEARNERS.md` 路由表选课 → 每课末尾测验自检。
+- **自学模式（无 AI）**：在线直接从 [0001 单文件版](0001-diagnostic-standalone.html) 开始（30 题 7 领域诊断，即时判分，解析即锚点卡）；离线解压包则浏览器打开根目录的 `0001-knowledge-map-diagnostic.html` → 按**分领域得分**对照 `LEARNERS.md` 路由表选课 → 每课末尾测验自检。
 - **陪学模式（有 AI 助手）**：解压后跑 `setup.sh`（随私有仓 learning-sessions-plan（tools/learning-sessions/usb-xhci-learn/，公开仓只含交付物）分发）——①把陪学协议幂等合入你的 `AGENTS.md`（不覆盖已有内容）；②从上游拉取开源 `/teach` 技能（网络不通自动回退自学模式）。然后对 AI 工具说"按 AGENTS.md 当我的老师"（ZCode 里 `/teach`），它会先重新诊断你的基线、按缺口定制课程。
 
 ## 文件地图
@@ -19,7 +20,7 @@
 |---|---|
 | `0001-knowledge-map-diagnostic.html` | **入口**：知识体系诊断测评 |
 | `setup.sh` | 陪学环境一键配置（随私有仓 learning-sessions-plan（tools/learning-sessions/usb-xhci-learn/，公开仓只含交付物）分发） |
-| `lessons/` | 0002 起的细节课（每课带检索练习） |
+| `lessons/` | 0002 起的细节课（每课带检索练习；`*-standalone.html` 为在线单文件版） |
 | `reference/` | 速查卡（压缩的考点，可打印） |
 | `assets/` | 课程共享样式与测验引擎 |
 | `figures/` | 流程图与波形图 |
