@@ -15,7 +15,7 @@
   <p>本课钻进 <a href="0004-tt-split.html">课 0004</a> ⑥层 TT 的内部，打你测评错的两题：<strong>缓冲为什么要两个</strong>（Q2）与<strong>重试权属在谁</strong>（Q3）。两题同源：split 把一次搬运拆成时间上解耦的两段，规则全是围绕这个解耦设计的。</p>
 
   <h2>时间解耦：SSPLIT 和 CSPLIT 之间隔着一个真实事务</h2>
-  <p>HS 微帧 125 µs；FS 侧一次满载 64 字节 bulk 事务，光数据就要 64×8÷12Mb/s ≈ <strong>43 µs</strong>，加协议开销轻松跨过微帧边界。于是 SSPLIT（交付）与 CSPLIT（取结果）必然是<strong>两个不同微帧里的独立事务</strong>——中间夹着 hub ↔ FS 设备的真实异步执行：</p>
+  <p>HS 微帧 125 µs；FS 侧一次满载 64 字节 bulk 事务，光 DATA 字段就要 64×8÷12Mb/s ≈ <strong>43 µs</strong>，——整笔再添 token、CRC16、握手与包间隙后约 50–60 µs，单看时长仍装得进一个微帧，但装得进 ≠ 能同微帧闭环：FS 事务的起点是 SSPLIT 在本微帧内交付完的时刻（bulk 的 SSPLIT 吃微帧剩余带宽，位置不保证靠前），完成时刻主机在 HS 侧既看不见也算不准。规范因此立法解耦：CSPLIT 绝不与 SSPLIT 同微帧（非周期最早 M+1、共 M+1..M+3 三次机会，附录 A——同微帧 CSPLIT 即错误案例 "CS too early"；周期 interrupt 定死预算微帧之后，§11.18.4③）——于是 SSPLIT（交付）与 CSPLIT（取结果）必然是<strong>两个不同微帧里的独立事务</strong>——中间夹着 hub ↔ FS 设备的真实异步执行：</p>
   <figure>
     <svg viewBox="0 0 880 300" role="img" aria-label="SSPLIT 与 CSPLIT 时间解耦" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g stroke="#e3e3da" stroke-width="1">
@@ -29,7 +29,7 @@
       <rect x="220" y="95" width="90" height="30" fill="#e9f7ee" stroke="#1a7f37"/>
       <text x="265" y="114" font-size="12" fill="#1a7f37" text-anchor="middle">SSPLIT#2</text>
       <rect x="100" y="150" width="300" height="34" fill="#e8f0fb" stroke="#1a5fb4"/>
-      <text x="250" y="171" font-size="12.5" fill="#1a5fb4" text-anchor="middle">FS 域：事务#1 真实执行 ≈43µs＋开销（跨微帧）</text>
+      <text x="250" y="171" font-size="12.5" fill="#1a5fb4" text-anchor="middle">FS 域：事务#1 真实执行 ≈43µs＋开销（常跨微帧）</text>
       <rect x="370" y="55" width="90" height="30" fill="#fff3c4" stroke="#a00000"/>
       <text x="415" y="74" font-size="12" fill="#a00000" text-anchor="middle">CSPLIT#1</text>
       <rect x="520" y="55" width="90" height="30" fill="#fff3c4" stroke="#a00000"/>
@@ -52,6 +52,85 @@
     <tr><td>CSPLIT 到但找不到匹配缓冲</td><td><strong>STALL</strong>（协议违例）</td><td>按错误处理</td></tr>
   </table>
   <p>另外每端点任一时刻只允许 <strong>1 个缓冲结果</strong>（Compare_buffs 规则，§11.17.1）——双缓冲是"在飞＋接新"，不是"堆两个结果"。</p>
+  <p>规范为什么定"至少 2 个"？只有 1 个会怎样？逐帧推演（无 JS 时全部帧定格可读）：</p>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>正常流水：SSPLIT#1 入缓冲 A，FS 事务在飞</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
+          <div class="u"><b>Y1</b>（等 FS 执行）</div>
+          <div class="u"><b>Y2</b>（…）</div>
+          <div class="u"><b>Y3</b>（…）</div>
+        </div>
+        <div class="buftt">
+          <div class="slot busy">缓冲 A｜事务#1 在飞：TT 正对下游发 FS 事务</div>
+          <div class="slot free">缓冲 B｜空</div>
+        </div>
+        主机在 Y0 用 SSPLIT 把 bulk 事务高速递进 TT（HS 域里一眨眼）；TT 收下后立刻在下游 FS 总线开跑——64 字节数据光传输就 ≈43 µs，<strong>而起点已在本微帧中段（SSPLIT 交付之后），常跨出这个微帧；且无论跨不跨，主机都不在本微帧内问结果——CSPLIT 最早 M+1，这笔活对主机必然落到后续微帧</strong>。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>交叠时刻：SSPLIT#2 到达，A 未腾空 → 进 B</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
+          <div class="u"><b>Y1</b><span class="chSS">SSPLIT#2 ▸</span></div>
+          <div class="u"><b>Y2</b>（…）</div>
+          <div class="u"><b>Y3</b>（…）</div>
+        </div>
+        <div class="buftt">
+          <div class="slot busy">缓冲 A｜事务#1：还没被 CSPLIT 回收</div>
+          <div class="slot busy">缓冲 B｜事务#2：接新</div>
+        </div>
+        <strong>规范要防的就是这一格</strong>：HS 域的节奏不等人——A 还占着，SSPLIT#2 已经到了。请求与应答异步到达、须同时驻留（§11.17）——第二级缓冲就是为这个交叠存在的。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>乒乓回收：CSPLIT#1 取走结果，A 即刻腾空</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
+          <div class="u"><b>Y1</b><span class="chSS">SSPLIT#2 ▸</span></div>
+          <div class="u"><b>Y2</b><span class="chCS">◂ CSPLIT#1</span></div>
+          <div class="u"><b>Y3</b><span class="chCS">◂ CSPLIT#2</span></div>
+        </div>
+        <div class="buftt">
+          <div class="slot free">缓冲 A｜已回收——可接 SSPLIT#3</div>
+          <div class="slot busy">缓冲 B｜事务#2：在飞</div>
+        </div>
+        CSPLIT 在 Y2 把结果取走，A 马上回到可用状态，正好接下一趟活。两级轮换（乒乓），<strong>上游微帧节奏与下游帧节奏互不卡死</strong>——这就是"一个在飞、一个接新"。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>反例：若只有 1 个缓冲——NAK 空转与自阻塞</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
+          <div class="u"><b>Y1</b><span class="chSS">SSPLIT#2 ▸</span> <span class="chNAK">✗ NAK</span></div>
+          <div class="u"><b>Y2</b><span class="chCS">◂ CSPLIT#1</span> <span class="chSS">SSPLIT#2 重发 ▸</span></div>
+          <div class="u"><b>Y3</b>（若仍对撞 → 再 NAK）</div>
+        </div>
+        <div class="buftt">
+          <div class="slot busy">缓冲 A｜事务#1 在飞——#2 没有地方放</div>
+          <div class="slot none">（第二个缓冲不存在）</div>
+        </div>
+        TT 无空间只能回 <strong>NAK</strong>（不罚但空转，§11.17.1）：SSPLIT#2 白跑一趟、下个微帧重发——<strong>HS 上游带宽被空转吞掉，下游设备却闲着等活</strong>。负载一重，交付时刻反复撞上回收时刻 → 持续 NAK，吞吐塌进"自阻塞"。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 5 帧</span><span>为什么恰好 ≥2：下限管"不塌方"，上限交成本</span></div>
+      <div class="fbody">
+        <table>
+          <tr><th>缓冲数</th><th>后果</th></tr>
+          <tr><td>1</td><td class="bad">请求与应答应同时驻留做不到 → 第 4 帧的空转/自阻塞</td></tr>
+          <tr><td><strong>≥2（规范下限，§11.17.4）</strong></td><td>恰好覆盖"一个在飞＋一个接新"的异步两层</td></tr>
+          <tr><td>更多</td><td>厂商可选的性能余量（§11.19 只给空间公式不强制）——吃成本，不吃正确性</td></tr>
+        </table>
+        闸门仍在：每端点任一时刻只许 <strong>1 个结果缓冲</strong>（Compare_buffs，§11.17.1）——双缓冲是<strong>流水位</strong>，不是囤货位。一句收拢：<strong>双缓冲是流水线的最小深度，不是冗余备份</strong>。
+      </div>
+    </div>
+  </div>
 
   <h2>规则二 · 重试权属（Q3）：三层对照，谁的地盘听谁的</h2>
   <div class="flow">
@@ -67,9 +146,70 @@
  greater or equal to three..., the host controller does endpoint
  halt processing"</pre></div>
     <div class="farrow">↓</div>
-    <div class="fnode"><b>periodic（interrupt/iso）——TT 完全不本地重试</b>：§11.20 明文。因为 interrupt 活在主机的微帧管道里（§11.18.4：SSPLIT/CSPLIT 在哪个微帧都排得死死的），NAK 不是错误而是"没就绪"的合法状态（§5.3.2），hub 若自作主张重试会（a）吃掉 187.5 字节/微帧的 FS 预算（b）打乱主机按 bInterval 的服务记账（c）重复执行风险。<strong>结果如实经 CSPLIT 回报，何时再试由主机按服务节奏决定</strong>；periodic 的 CSPLIT 遇传输错误也是主机侧"立即重试"（§11.18.4⑥），不是 TT 的活。</div>
+    <div class="fnode"><b>periodic（interrupt/iso）——TT 完全不本地重试</b>：§11.20.1（interrupt）与 §11.21（iso）明文。因为 interrupt 活在主机的微帧管道里（§11.18.4：SSPLIT/CSPLIT 在哪个微帧都排得死死的），NAK 不是错误而是"没就绪"的合法状态（§5.3.2），hub 若自作主张重试会（a）吃掉 187.5 字节/微帧的 FS 预算（b）打乱主机按 bInterval 的服务记账（c）重复执行风险。<strong>结果如实经 CSPLIT 回报（iso OUT 例外：根本没有 CSPLIT，§11.21），处置权在主机且语义分岔——interrupt 按服务节奏重新轮询；iso 无握手无重试（§5.6.5），坏周期直接放弃、下一周期传新数据</strong>；periodic 的 CSPLIT 遇传输错误也是主机侧"立即重试"（§11.18.4⑥），不是 TT 的活。</div>
   </div>
-  <div class="note"><strong>一句话收拢两道错题</strong>：Q2——解耦需要排队，双缓冲=一个在飞一个接新；Q3——重试决策权跟着调度权走：非周期事务错误归 TT（3 次封顶），握手结果与全部 periodic 归主机。</div>
+  <p>重试权属的立法理由，同样逐帧推演——先看契约，再推演"假如 TT 自作主张重试"会闯什么祸（§11.17.2/§11.20）：</p>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>契约：排班权在主机，TT 只是执行者</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>主机排的周期预算</b>端点X interrupt</div>
+          <div class="u"><b>同一 FS 帧预算</b>端点Y iso</div>
+          <div class="u"><b>同一 FS 帧预算</b>端点Z interrupt</div>
+          <div class="u"><b>…</b>（§11.18.4 微帧管道）</div>
+        </div>
+        periodic 传输活在主机的微帧管道里：哪个微帧发 SSPLIT、哪个微帧收 CSPLIT、下游 FS 时间分给谁，全是主机排好的（FS 侧每微帧 187.5 raw 字节的预算记账，§11.18.1）。TT 的职责边界：<strong>照单执行、如实回报</strong>。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>设备 NAK：不是错误，是"没就绪"</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>微帧 M</b><span class="chSS">SSPLIT(IN) ▸</span></div>
+          <div class="u"><b>FS 侧</b>IN → 设备 → <span class="chNAK">NAK</span></div>
+          <div class="u"><b>微帧 M+2</b><span class="chCS">◂ CSPLIT 报 NAK</span></div>
+        </div>
+        interrupt IN，设备还没备好数据，回 NAK——§5.3.2 里这是<strong>握手不是错误</strong>。TT 把 NAK 原样经 CSPLIT 交回主机："何时再试"的决策立刻回到排班者手里。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>反例推演：假如 TT 自作主张重试</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>FS 下游</b>IN → <span class="chNAK">NAK</span>（排班内的那次）</div>
+          <div class="u"><b>私自 +1</b>IN → <span class="chNAK">NAK</span></div>
+          <div class="u"><b>私自 +2</b>IN → <span class="chNAK">NAK</span></div>
+          <div class="u"><b>被挤的邻居</b>端点Y iso 时隙 ✗</div>
+        </div>
+        设想一个"好心"的 TT 在下游马上再发一次 IN，又 NAK，再发……<strong>下游 FS 时间是主机已经分给别人的预算</strong>——私自重试吃掉的每一微秒，都是从同 hub 下其它端点嘴里抢的。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>不这样设计的四个代价</span></div>
+      <div class="fbody">
+        <ul>
+          <li><strong>带宽超支</strong>：挤占别的端点的预留时隙——iso 无重传（§5.6.5），被挤＝直接丢数据；</li>
+          <li><strong>记账失真</strong>：主机按 bInterval 记账"本周期是否已服务"，TT 私自多跑打乱服务节奏；</li>
+          <li><strong>重复执行</strong>：设备恰好在某次私自重试时备好 → 同一逻辑请求被执行两次；</li>
+          <li><strong>谎报成功</strong>：重试碰巧成功，主机看到"成功"却不知失败发生过——错误统计与恢复决策全部失真。</li>
+        </ul>
+        四条合起来就是 §11.20 的立法理由：<strong>periodic 的结果（含失败）必须如实上报（iso OUT 无 CSPLIT、无从上报，§11.21），处置由主机按服务语义分岔——interrupt 按服务节奏重新轮询；iso 素来无握手无重试（§5.6.5），该周期即放弃</strong>；CSPLIT 自身遇传输错误也是主机侧立即重试（§11.18.4⑥），仍不是 TT 的活。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 5 帧</span><span>对照收拢：非周期为什么反而允许 TT 重试</span></div>
+      <div class="fbody">
+        <table>
+          <tr><th></th><th>bulk/control（非周期）</th><th>interrupt/iso（periodic）</th></tr>
+          <tr><td>吃的带宽</td><td>剩余带宽（best-effort），不占排班预算</td><td>预算管道里的每一笔都动别人的奶酪</td></tr>
+          <tr><td>TT 重试</td><td class="good">允许，3 次封顶后以 stall 如实回报（§11.17.2）</td><td class="bad">一个都不许（§11.20.1/§11.21）</td></tr>
+        </table>
+        非周期允许 TT 吸收 FS 域的瞬时 bit 错，是因为重试<strong>不破坏任何人的契约</strong>（要么成功要么 stall，结果如实上报）；periodic 不允许，是因为每次重试都在花别人的预算。一句话：<strong>重试决策权跟着调度权走</strong>。
+      </div>
+    </div>
+  </div>
+  <div class="note"><strong>一句话收拢两道错题</strong>：Q2——解耦需要排队，双缓冲=一个在飞一个接新；Q3——重试决策权跟着调度权走：非周期事务错误归 TT（3 次封顶），握手结果与全部 periodic 归主机——interrupt＝主机按服务节奏再试，iso＝永不重试、当期放弃（§5.6.5）。</div>
 
   <h2>检索练习 · 4 题（新角度回测）</h2>
   <div id="quiz"></div>
@@ -83,13 +223,14 @@
   <footer>课 0005 · 2026-09-25 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75，2026-09-23）｜ 上一课：<a href="0004-tt-split.html">0004 TT 与 split</a> ｜ 下一课：待定 ｜ 相关：<a href="../reference/hub-attach-chain.html">链路速查卡</a></footer>
 </main>
 <script src="../assets/quiz.js"></script>
+<script src="../assets/player.js"></script>
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '缓冲乒乓',
     prompt: 'SSPLIT 与对应的 CSPLIT 之间，隔着什么？',
     options: ['一次真实的 FS/LS 事务异步执行', '一次 HS 域的带宽重协商', '一次 hub 内部 TT 状态机复位', '一次 SOF 帧起始包的同步等待'],
     answer: 0,
-    explain: 'A 对。SSPLIT 交付后 hub↔FS 设备真实执行几十微秒（64 字节 bulk 光数据 ≈43µs），必然跨进后续微帧——CSPLIT 是另一个微帧里的独立事务。时间解耦是缓冲与重试两条规则的共同根源。' },
+    explain: 'A 对。SSPLIT 交付后 hub↔FS 设备真实执行几十微秒（64 字节 bulk 光数据 ≈43µs），常跨进后续微帧——且无论跨不跨，CSPLIT 都被规范定死在后续微帧（非周期最早 M+1，附录 A "CS too early"=错误案例），是另一个微帧里的独立事务。时间解耦是缓冲与重试两条规则的共同根源。' },
   { tag: '缓冲乒乓',
     prompt: '新 SSPLIT 到达但 TT 的非周期缓冲全忙，hub 回什么、计不计错？',
     options: ['NYET，err_count 加 1', 'ACK，err_count 加 1', 'NAK，err_count 不增', 'STALL，err_count 不增'],

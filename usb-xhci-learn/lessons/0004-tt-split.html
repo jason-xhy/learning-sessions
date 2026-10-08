@@ -12,10 +12,11 @@
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75，2026-09-23）——本课全部行号以此树为准</p>
 
   <h2>整体定位（先挂图）</h2>
-  <p>本课在整体地图（<a href="../0001-knowledge-map-diagnostic.html">课 0001</a>）的 <strong>⑥ hub 层</strong>——USB2 特有的核心机制；并承接 <a href="0003-dual-bus-root-port.html">课 0003</a> 的"硬件吸收"叙事：<strong>xHCI 时代 split 的执行被吸进控制器硬件</strong>，usbcore 里只剩错误恢复。</p>
+  <p>本课在整体地图（<a href="0001-knowledge-map-diagnostic.html">课 0001</a>）的 <strong>⑥ hub 层</strong>——USB2 特有的核心机制；并承接 <a href="0003-dual-bus-root-port.html">课 0003</a> 的"硬件吸收"叙事：<strong>xHCI 时代 split 的执行被吸进控制器硬件</strong>，usbcore 里只剩错误恢复。</p>
 
   <h2>为什么需要 TT：一个 hub，两个时钟域</h2>
-  <p>高速 hub 的上行口跑 HS 域：<strong>480 Mb/s、微帧 125 µs</strong>；下行口可能挂 FS 设备：**12 Mb/s、帧 1 ms**（§7.1.11/§7.1.12）。两种信令、两个节拍，hub 里的<strong>事务翻译器（Transaction Translator，TT）</strong>负责两边互译。规范的做法非常克制：</p>
+  <div class="note"><strong>先补两个时间词（§5.3.3、§8.4.3）</strong>：USB 总线的时间由主机用 SOF（Start Of Frame）包"打拍子"——相邻两个 SOF 之间就是一个调度格。全速总线一格 <strong>1 ms</strong>，叫<strong>帧（frame）</strong>：SOF 每 1.00 ms ±0.0005 ms 一个，帧号随帧递增。高速总线把同一毫秒切成 8 格，每格 <strong>125 µs</strong>，叫<strong>微帧（microframe）</strong>：SOF 每 125 µs 一个，但<strong>帧号仍每 1 ms 才变一次</strong>——同一帧内 8 个 SOF 的帧号相同，设备靠比对相邻 SOF 的帧号自己数微帧位置。切细 8 倍的收益：中断/等时的排班粒度从 1 kHz 提到 8 kHz（高带宽端点每微帧还可发 1–3 个事务，§5.9）；周期带宽上限也按各自格子算——FS ≤90% 帧时间、HS ≤80% 微帧时间（§5.6.4/§5.7.4）。</div>
+  <p>高速 hub 的上行口跑 HS 域：<strong>480 Mb/s、微帧 125 µs</strong>；下行口可能挂 FS 设备：<strong>12 Mb/s、帧 1 ms</strong>（§7.1.11/§7.1.12）。两种信令、两个节拍，hub 里的<strong>事务翻译器（Transaction Translator，TT）</strong>负责两边互译。规范的做法非常克制：</p>
   <div class="note"><strong>split 只存在于主机控制器 ↔ hub 之间，设备永远不可见</strong>（§5.10、§11.1.1）。hub↔设备一侧仍是普通 FS/LS 事务。设备无需知道任何事——这就是兼容性的代价全由主机侧承担的设计。</div>
   <p>数字直觉：一个 HS 微帧（125 µs）只占 FS 帧（1 ms）的 <strong>1/8</strong>——翻译的实时性压力全压在 hub 的 TT 缓冲与调度上。</p>
 
@@ -32,7 +33,7 @@
   <p>xHCI 把 split 的执行收进了硬件：驱动只把 hub descriptor 里的 TT 信息填进上下文——<code>tt_info</code> 的注释原话是 "used to construct split transaction tokens"（<a href="0003-dual-bus-root-port.html">课 0003</a> 吸收叙事的又一实证）：</p>
   <div class="flow">
     <div class="fnode"><b>构造</b>：xHC 用 TT 信息构造 split 事务令牌（槽上下文字段）
-<pre>/* xhci.h:344（字段注释） */
+<pre>/* xhci.h:346（字段注释） */
 * @tt_info:	tt_info is used to construct split transaction tokens</pre>
 <b>换算＋赋值</b>：TT think time 从 hub descriptor 取出、除以 666 减 1 后写进端点上下文的 TT_THINK_TIME 字段
 <pre>/* xhci.c:5337-5342（节选） */
@@ -70,7 +71,7 @@ INIT_WORK(&amp;hub-&gt;tt.clear_work, hub_tt_work);</pre></div>
   <h2>评审视角</h2>
   <ul>
     <li>TT 类补丁分两族：<strong>xHCI 内部的 split 调度</strong>（对表 §11.16-11.23 + 上下文构造字段）与 <strong>usbcore 的 ClearTTBuffer 恢复路径</strong>（对表 §11.24.2.3）。两族锚点不同，别混审。</li>
-    <li>数字复核清单：微帧 125 µs / FS 帧 1 ms（§7.1.12）、每微帧 187.5 raw 字节（§11.18.1）、每方向 ≥2 缓冲（§11.17）、interrupt 禁止本地重试（§11.20）。</li>
+    <li>数字复核清单：微帧 125 µs / FS 帧 1 ms、8 微帧=1 帧（§7.1.12、§8.4.3）、每微帧 187.5 raw 字节（§11.18.1）、每方向 ≥2 缓冲（§11.17）、interrupt 禁止本地重试（§11.20）。</li>
   </ul>
 
   <h2>检索练习 · 4 题</h2>
@@ -78,7 +79,7 @@ INIT_WORK(&amp;hub-&gt;tt.clear_work, hub_tt_work);</pre></div>
 
   <h2>主源与下一步</h2>
   <ul>
-    <li><strong>主源</strong>：USB 2.0 主规范 §11.16-11.24（<code>specs/usb20x/</code>）；速查先 grep <a href="../notes/规范全文精读摘要库.md">规范全文精读摘要库</a> 的 11.16-11.23 条目。内核：<code>hub.c:816-840</code>、<code>xhci.c:5277-5342</code>、<code>xhci.h:344</code>。</li>
+    <li><strong>主源</strong>：USB 2.0 主规范 §11.16-11.24（<code>specs/usb20x/</code>）；速查先 grep <a href="../notes/规范全文精读摘要库.md">规范全文精读摘要库</a> 的 11.16-11.23 条目。内核：<code>hub.c:816-840</code>、<code>xhci.c:5277-5342</code>、<code>xhci.h:346</code>。</li>
     <li>两道错题（缓冲乒乓/重试权属）已在 <a href="0005-tt-buffer-retry.html">课 0005</a> 补缺。</li>
     <li>hub 主线剩余候选：<strong>枚举状态机</strong>（§9.1 设备六态，偏 usbcore）或 hub 电源/过流（§11.2/§7.2）。</li>
   </ul>
@@ -102,12 +103,12 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: 'interrupt 事务的 split，hub 的 FS handler 能否本地重试？',
     options: ['可以，重试直到设备应答', '不得本地重试，失败即回报主机', '仅等时事务禁止本地重试', '由 TT 缓冲余量动态决定'],
     answer: 1,
-    explain: 'B 对。§11.20 明文：FS handler 不得对 interrupt 事务做本地重试，失败直接向主机回报。这与等时的"一次机会"（§5.9 无握手不重传）是两条不同的规则——前者是 TT 行为约束，后者是传输类型语义。' },
+    explain: 'B 对。§11.20 明文：FS handler 不得对 interrupt 事务做本地重试，失败直接向主机回报。这与等时的"一次机会"（§5.6.5 无握手不重传）是两条不同的规则——前者是 TT 行为约束，后者是传输类型语义。' },
   { tag: '内核落点',
     prompt: 'xHCI 时代，usbcore 对 TT 的主动动作还剩什么？',
     options: ['软件排布每微帧的 CSPLIT 时刻表', '为 TT 缓冲动态分配内存池', '重传 hub 上失败的 FS 事务', 'ClearTTBuffer 错误恢复（hub.c:816-840）'],
     answer: 3,
-    explain: 'D 对。split 的构造与调度由 xHC 硬件承担——驱动只填上下文：tt_info "used to construct split transaction tokens"（xhci.h:344）、think_time/666-1 进 TT_THINK_TIME（xhci.c:5337-5342）。usbcore 侧只剩错误恢复：hub_clear_tt_buffer（hub.c:816-831，§11.24.2.3，控制端点双向各清一次 devinfo^0x8000），经 hub_tt_work 异步执行（:840、:1587）。' }
+    explain: 'D 对。split 的构造与调度由 xHC 硬件承担——驱动只填上下文：tt_info "used to construct split transaction tokens"（xhci.h:346）、think_time/666-1 进 TT_THINK_TIME（xhci.c:5337-5342）。usbcore 侧只剩错误恢复：hub_clear_tt_buffer（hub.c:816-831，§11.24.2.3，控制端点双向各清一次 devinfo^0x8000），经 hub_tt_work 异步执行（:840、:1587）。' }
 ]);
 </script>
 </body>
