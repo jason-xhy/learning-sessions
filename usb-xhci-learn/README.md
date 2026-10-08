@@ -22,7 +22,7 @@
 | `setup.sh` | 陪学环境一键配置（随私有仓 learning-sessions-plan（tools/learning-sessions/usb-xhci-learn/，公开仓只含交付物）分发） |
 | `lessons/` | 0002 起的细节课（每课带检索练习；`*-standalone.html` 为在线单文件版） |
 | `reference/` | 速查卡（压缩的考点，可打印） |
-| `assets/` | 课程共享样式与测验引擎 |
+| `assets/` | 课程共享样式与测验引擎（**不随公开仓分发**，随私有仓 setup.sh 链路携带；在线浏览用各课 standalone 单文件版） |
 | `figures/` | 流程图与波形图 |
 | `notes/` | 三规范精读摘要库、传输流程笔记、实现-规范差异分析、核对清单 |
 | `docs/TEACHING-PROTOCOL.md` | AI 陪学协议（setup.sh 合入 AGENTS.md 用） |
