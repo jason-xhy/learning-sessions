@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0006 · 一次控制传输的旅程：urb→ring→TRB→doorbell→event→CC</title>
+<style>
+/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
+   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
+   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
+@font-face {
+  font-family: LiningDigits;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+.player .frame { display: block; margin: 14px 0; }
+.player.js:not(.static) .frame { display: none; }
+.player.js:not(.static) .frame.cur { display: block; margin: 0; }
+.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
+.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
+.player .fbody { font-size: .95rem; line-height: 1.6; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
+.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
+.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
+.player .pdots i.on { background: var(--accent); }
+
+/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
+.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
+.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
+.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
+.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
+.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
+.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
+.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
+.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
+.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
+.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
+.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
+.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
+td.bad { background: #fdeaea; }
+td.good { background: #e9f7ee; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+  .player .frame { display: block !important; }
+  .player .pctl { display: none; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">转线开篇 · LESSON 0006 · xHC 线第 1 课（hub 线 0002–0005 已收官）</div>
+  <h1>一次控制传输的旅程<br>urb → ring → TRB → doorbell → event → CC → 回调</h1>
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.7 / §4.9 / §4.10 / §4.11 / §6.4 / §6.5——解剖标本：M4.5 自研引擎 v0.3 仿真日志（九条事件全序实测）</p>
+
+  <h2>整体定位（先挂图：hub 线看到的"主机"，本线开箱）</h2>
+  <p>hub 线五课里（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain.html">0002</a>–<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry.html">0005</a>），"主机"始终是一个黑盒：复位时序、描述符请求、TT split——我们一直站在<strong>设备与 hub 侧</strong>看主机的行为。本课把黑盒打开：<strong>usbcore 之下、xHC 之内</strong>，一次控制传输是怎么走完全程的。你在 0001 诊断里 xHCI 骨架域 3/3 全对（三种环 / Doorbell / Table 6-90）——骨架已成体系，xHC 线钻的正是<strong>骨架之上的动态细节</strong>。</p>
+  <figure>
+    <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <g font-size="12.5" fill="#1a2b4a">
+        <rect x="18" y="60" width="150" height="230" rx="6" fill="#f6f6f1" stroke="#c9c9bd"/>
+        <text x="93" y="48" text-anchor="middle" font-weight="600">usbcore（hub 线视角）</text>
+        <rect x="34" y="80" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
+        <text x="93" y="98" text-anchor="middle">usb_control_msg</text>
+        <text x="93" y="113" text-anchor="middle" font-size="11">→ usb_submit_urb</text>
+        <rect x="34" y="150" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
+        <text x="93" y="168" text-anchor="middle"> urb→complete 回调</text>
+        <text x="93" y="183" text-anchor="middle" font-size="11">（下一轮请求再排）</text>
+        <text x="93" y="262" text-anchor="middle" font-size="11" fill="#707070">hub 线五课讲的复位时序、</text>
+        <text x="93" y="277" text-anchor="middle" font-size="11" fill="#707070">TT 规则，是设备看到的</text>
+        <text x="93" y="292" text-anchor="middle" font-size="11" fill="#707070">这套机制的行为面</text>
+
+        <rect x="218" y="60" width="170" height="230" rx="6" fill="#eef3fa" stroke="#1a5fb4"/>
+        <text x="303" y="48" text-anchor="middle" font-weight="600">xhci-hcd 驱动（软件）</text>
+        <rect x="232" y="80" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+        <text x="303" y="98" text-anchor="middle">① xhci_urb_enqueue</text>
+        <text x="303" y="113" text-anchor="middle" font-size="11">xhci.c:1620</text>
+        <rect x="232" y="140" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+        <text x="303" y="158" text-anchor="middle">② TRB 化三段编排</text>
+        <text x="303" y="173" text-anchor="middle" font-size="11">queue_ctrl_tx :3775</text>
+        <rect x="232" y="255" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+        <text x="303" y="273" text-anchor="middle">⑤⑥ 事件消费与回调</text>
+        <text x="303" y="288" text-anchor="middle" font-size="11">xhci-ring.c :3092/:807</text>
+
+        <rect x="438" y="60" width="180" height="230" rx="6" fill="#f2f0fa" stroke="#6a4fc4"/>
+        <text x="528" y="48" text-anchor="middle" font-weight="600">共享主存：环（软件写、xHC 读）</text>
+        <rect x="452" y="80" width="152" height="46" fill="#fff" stroke="#6a4fc4" rx="4"/>
+        <text x="528" y="98" text-anchor="middle">endpoint / command ring</text>
+        <text x="528" y="113" text-anchor="middle" font-size="11">TRB ×N + Link TRB 回绕</text>
+        <rect x="452" y="255" width="152" height="46" fill="#fff" stroke="#6a4fc4" rx="4"/>
+        <text x="528" y="273" text-anchor="middle">event ring（xHC 写、软件读）</text>
+        <text x="528" y="288" text-anchor="middle" font-size="11">ERST 段表 §6.5</text>
+
+        <rect x="668" y="60" width="190" height="230" rx="6" fill="#e9f7ee" stroke="#1a7f37"/>
+        <text x="763" y="48" text-anchor="middle" font-weight="600">xHC 硬件（MMIO + USB 线上）</text>
+        <rect x="682" y="80" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
+        <text x="763" y="98" text-anchor="middle">doorbell 寄存器 §4.7/§5.6</text>
+        <text x="763" y="113" text-anchor="middle" font-size="11">writel(DB_VALUE) 敲 ③</text>
+        <rect x="682" y="140" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
+        <text x="763" y="158" text-anchor="middle">④ 取指执行：沿环消费 TRB</text>
+        <text x="763" y="173" text-anchor="middle" font-size="11">cycle 匹配才取（§4.9.2）</text>
+        <rect x="682" y="200" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
+        <text x="763" y="218" text-anchor="middle">USB 线上事务 + 完成码</text>
+        <text x="763" y="233" text-anchor="middle" font-size="11">SET_ADDRESS/IN 握手…</text>
+
+        <g stroke="#707070" stroke-width="1.6" fill="#707070" marker-end="url(#ah)"/>
+        <defs><marker id="ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#707070"/></marker></defs>
+        <line x1="152" y1="100" x2="230" y2="100" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="374" y1="103" x2="450" y2="103" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="604" y1="103" x2="680" y2="103" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="763" y1="126" x2="763" y2="138" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="763" y1="186" x2="763" y2="198" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <path d="M 682 278 L 384 278 L 384 303 L 374 303" fill="none" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="232" y1="303" x2="152" y2="303" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <path d="M 604 278 L 604 320 L 528 320 L 528 301" fill="none" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)" stroke-dasharray="4 3"/>
+        <g font-size="12" font-weight="700">
+          <circle cx="162" cy="92" r="9" fill="#1a2b4a"/><text x="162" y="96" text-anchor="middle" fill="#fff">1</text>
+          <circle cx="392" cy="92" r="9" fill="#1a2b4a"/><text x="392" y="96" text-anchor="middle" fill="#fff">2</text>
+          <circle cx="622" cy="92" r="9" fill="#1a7f37"/><text x="622" y="96" text-anchor="middle" fill="#fff">3</text>
+          <circle cx="763" cy="163" r="9" fill="#1a7f37"/><text x="763" y="167" text-anchor="middle" fill="#fff">4</text>
+          <circle cx="500" cy="278" r="9" fill="#a00000"/><text x="500" y="282" text-anchor="middle" fill="#fff">5</text>
+          <circle cx="190" cy="296" r="9" fill="#a00000"/><text x="190" y="300" text-anchor="middle" fill="#fff">6</text>
+        </g>
+      </g>
+    </svg>
+    <figcaption>六站旅程：<strong>①驱动入队 → ②TRB 化排环 → ③原子发布+敲 doorbell → ④xHC 取指执行（cycle 消费+线上事务）→ ⑤事件回程（event ring+完成码）→ ⑥回调 usbcore</strong>。蓝=软件写，紫=共享内存环，绿=xHC 硬件，红=回程。</figcaption>
+  </figure>
+
+  <h2>六站旅程（每站一个内核锚点）</h2>
+  <div class="flow">
+    <div class="fnode"><b>① 驱动入队——usbcore 把 urb 交给 xhci-hcd</b>：usbcore 调 hcd 的 <code>urb_enqueue</code> 方法，按端点类型分派；控制传输走 <code>xhci_queue_ctrl_tx</code>（xhci.c:1697）。
+<pre>/* xhci.c:1695-1700 */
+	switch (usb_endpoint_type(&urb->ep->desc)) {
+	case USB_ENDPOINT_XFER_CONTROL:
+		ret = xhci_queue_ctrl_tx(xhci, GFP_ATOMIC, urb,
+					 slot_id, ep_index);
+		break;</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>② TRB 化——一次控制传输 = Setup/Data/Status 三段 TRB</b>：urb 被改写成 TRB 链排进 endpoint ring（§4.9.1：TD=Transfer Descriptor）。Setup 段 8 字节 setup 包<strong>内联进 TRB</strong>（IDT，Immediate Data，Table 6-23）；Data 段带 DMA 缓冲指针（IN 方向加 ISP=短包即中断）；Status 段置 IOC=完成即产事件（§4.10.4）。<strong>关键动作：先存 start_cycle，三段全部排完才回头翻首 TRB 的 cycle</strong>——半成品 TD 对硬件不可见。
+<pre>/* xhci-ring.c:3832-3838 */
+	/*
+	 * Don't give the first TRB to the hardware (by toggling the cycle bit)
+	 * until we've finished creating all the other TRBs.  The ring's cycle
+	 * state may change as we enqueue the other TRBs, so save it too.
+	 */
+	start_trb = &ep_ring->enqueue->generic;
+	start_cycle = ep_ring->cycle_state;</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>③ 原子发布 + 敲门铃</b>：Status TRB 排完（IOC 位，xhci-ring.c:3915），调 <code>giveback_first_trb</code>（:3437）——<code>wmb()</code> 写屏障保证"TRB 数据先落、cycle 位后翻"，然后 MMIO 写 doorbell 寄存器（§4.7 Doorbells；寄存器位面 §5.6）：<code>writel</code> 后紧跟 <code>readl</code> 刷写。门铃值=目标端点号（DB_TARGET）。
+<pre>/* xhci-ring.c:3446-3459（基线 :3437） */
+	/*
+	 * Pass all the TRBs to the hardware at once and make sure this write
+	 * isn't reordered.
+	 */
+	wmb();
+	if (start_cycle)
+		start_trb->field[3] |= cpu_to_le32(start_cycle);
+	else
+		start_trb->field[3] &= cpu_to_le32(~TRB_CYCLE);
+	xhci_ring_ep_doorbell(xhci, slot_id, ep_index, stream_id);</pre>
+<pre>/* xhci-ring.c:569-571（xhci_ring_ep_doorbell :551） */
+	writel(DB_VALUE(ep_index, stream_id), db_addr);
+	/* flush the write */
+	readl(db_addr);</pre>
+      小字：五种端点态不敲铃（<code>EP_STOP_CMD_PENDING|SET_DEQ_PENDING|EP_HALTED|EP_CLEARING_TT|EP_DROP_PENDING</code>，:551 函数头）——halt 中的端点敲了也白敲，还可能打断停止流程。</div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>④ xHC 取指执行——cycle 匹配才取，取完上线</b>：xHC 沿环扫描，<strong>只消费 cycle 位等于当前轮次的 TRB</strong>（§4.9.2），把三段 TD 翻译成线上事务：Setup 包→数据包→状态握手。控制传输的<strong>地址阶段特殊</strong>：Address Device 命令 BSR=0 时，<strong>SET_ADDRESS 由 xHC 自己上线</strong>（驱动从不单独排 SET_ADDRESS 的 TD，§4.6.5）——你在 hub 线 0002 看到的"设备拿到地址 1"，xHC 侧就是这一步。</div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>⑤ 事件回程——event ring + 完成码 CC</b>：xHC 把结果写进 event ring（xHC 生产、软件消费的环，§4.9.4），拉 MSI/线中断。驱动中断入口 <code>xhci_handle_events</code>（:3092）循环消费：<code>unhandled_event_trb</code>（:137）做 cycle 校验，<code>xhci_handle_event_trb</code>（:2992）按类型分派——命令完成→<code>handle_cmd_completion</code>（:1803），传输完成→<code>handle_tx_event</code>（:2632）。完成码 CC 在事件 DW2[31:24]（Table 6-37/6-40），全表=Table 6-91（Success=1、Short Packet=13…）。<code>handle_cmd_completion</code> 还做<strong>回执配对</strong>：事件里的命令 TRB 指针必须等于命令环 dequeue，否则丢弃（防错配）。
+<pre>/* xhci-ring.c:137-141（消费侧 cycle 校验） */
+static bool unhandled_event_trb(struct xhci_ring *ring)
+{
+	return ((le32_to_cpu(ring->dequeue->event_cmd.flags) & TRB_CYCLE) ==
+		ring->cycle_state);
+}</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>⑥ 回调——urb 回到 usbcore</b>：TD 全部完成（<code>last_td_in_urb</code>）后 <code>xhci_giveback_urb_in_irq</code>（:807）调 <code>usb_hcd_giveback_urb</code>（:824）→ urb->complete 回调 → usbcore 发下一轮请求。至此闭环，六站走完。</div>
+  </div>
+
+  <h2>钻点一 · cycle bit：环的生产/消费合同</h2>
+  <p>环形缓冲没有"空/满"标志位——软件与 xHC 是两个独立时钟域的写者/读者，xHCI 的立法答案是 <strong>cycle bit</strong>（TRB 控制字段 bit0，§4.11.1 TRB Template）：<strong>每个环有当前轮次（0 或 1），生产者填好 TRB 数据后把 cycle 置成当前轮次=发布；消费者只取 cycle 匹配的 TRB；写者追上读者一圈后轮次翻转，旧 TRB 的 cycle 自然失效</strong>。三种环的角色分工内核注释一句话说尽：</p>
+  <div class="note"><code>xhci-ring.c:276</code> 注释原文："See Cycle bit rules. <strong>SW is the consumer for the event ring only.</strong>"——传输环/命令环：软件生产、xHC 消费；事件环：xHC 生产、软件消费。生产/消费两侧各有一套翻转逻辑。</div>
+  <figure>
+    <svg viewBox="0 0 880 250" role="img" aria-label="endpoint ring 俯视：TRB 槽、cycle 着色、Link TRB 回绕" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <g font-size="12">
+        <text x="440" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#1a2b4a">endpoint ring（一行的环：末槽 Link TRB 弯回首槽）</text>
+        <g>
+          <rect x="40"  y="55" width="88" height="58" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+          <rect x="132" y="55" width="88" height="58" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+          <rect x="224" y="55" width="88" height="58" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+          <rect x="316" y="55" width="88" height="58" fill="#f4f4ef" stroke="#b9b9ac"/>
+          <rect x="408" y="55" width="88" height="58" fill="#f4f4ef" stroke="#b9b9ac"/>
+          <rect x="500" y="55" width="88" height="58" fill="#f4f4ef" stroke="#b9b9ac"/>
+          <rect x="592" y="55" width="88" height="58" fill="#f4f4ef" stroke="#b9b9ac"/>
+          <rect x="684" y="55" width="88" height="58" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
+        </g>
+        <g text-anchor="middle">
+          <text x="84"  y="78" font-weight="600">Setup</text><text x="84"  y="96" fill="#1a7f37" font-size="11">cyc=1·IDT</text>
+          <text x="176" y="78" font-weight="600">Data</text><text x="176" y="96" fill="#1a7f37" font-size="11">cyc=1·ISP</text>
+          <text x="268" y="78" font-weight="600">Status</text><text x="268" y="96" fill="#1a7f37" font-size="11">cyc=1·IOC</text>
+          <text x="360" y="78" fill="#909084">空</text><text x="360" y="96" fill="#909084" font-size="11">cyc=0</text>
+          <text x="452" y="78" fill="#909084">空</text><text x="452" y="96" fill="#909084" font-size="11">cyc=0</text>
+          <text x="544" y="78" fill="#909084">空</text><text x="544" y="96" fill="#909084" font-size="11">cyc=0</text>
+          <text x="636" y="78" fill="#909084">空</text><text x="636" y="96" fill="#909084" font-size="11">cyc=0</text>
+          <text x="728" y="78" font-weight="600" fill="#6a4fc4">Link</text><text x="728" y="96" fill="#6a4fc4" font-size="11">回绕+Toggle</text>
+        </g>
+        <path d="M 728 113 C 728 160, 84 160, 84 118" fill="none" stroke="#6a4fc4" stroke-width="1.8" marker-end="url(#ah2)"/>
+        <defs><marker id="ah2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#6a4fc4"/></marker></defs>
+        <text x="406" y="152" text-anchor="middle" fill="#6a4fc4" font-size="11.5">Link TRB：下一槽指针弯回首槽（环的接缝）</text>
+        <g font-size="12.5" font-weight="700">
+          <text x="312" y="205" fill="#1a5fb4">▲ enqueue（软件，刚排完 Status）</text>
+          <text x="60" y="205" fill="#1a7f37">▼ xHC dequeue（消费中）</text>
+        </g>
+        <line x1="84" y1="118" x2="84" y2="185" stroke="#1a7f37" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <line x1="268" y1="118" x2="330" y2="185" stroke="#1a5fb4" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <text x="440" y="232" text-anchor="middle" font-size="11.5" fill="#707070">绿=cycle 等于当前轮次（1）→对 xHC 可见；灰=旧轮次（0）→已被消费/未发布；xHC 追 enqueue 一圈后，Link TRB 的 Toggle Cycle 位让轮次翻转为 0</text>
+      </g>
+    </svg>
+    <figcaption>生产侧翻转（<code>inc_enq_past_link</code>，xhci-ring.c:234）三步：<strong>①先把 Link TRB 自己的 cycle 翻转（"交给硬件"）②若 Link 带 Toggle Cycle 位，环轮次 <code>cycle_state ^= 1</code> ③游标跳到下一段首 TRB</strong>。消费侧（事件环）见下。</figcaption>
+  </figure>
+  <p>生产者侧的翻转带着一道写屏障——先把 TRB 数据写完，再动 cycle，顺序不可颠倒：</p>
+  <div class="flow">
+    <div class="fnode"><b>生产者：跨段时翻 Link TRB + 轮次取反</b>（传输环，软件是生产者）：
+<pre>/* xhci-ring.c:255-262（inc_enq_past_link :234） */
+		/* Give this link TRB to the hardware */
+		wmb();
+		ring->enqueue->link.control ^= cpu_to_le32(TRB_CYCLE);
+
+		/* Toggle the cycle bit after the last ring segment. */
+		if (link_trb_toggles_cycle(ring->enqueue))
+			ring->cycle_state ^= 1;</pre>
+<span class="diff">实现≠规范</span> 这里藏着一段规范史：xHCI 0.95 说 Link TRB 不得带 chain 位、0.96 errata 才修正——内核对 0.95 老硬件保留 chain 位不改写的兼容分支（<code>xhci_link_chain_quirk</code>，:234 函数头注释）。评审老控制器代码时会再遇到它。</div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>消费者：cycle 匹配才处理，跨段尾时轮次取反</b>（事件环，软件是消费者）——<code>unhandled_event_trb</code>（:137）判"还有没有要处理的事件"，<code>inc_deq</code>（:188）推进游标并在<strong>整个环的最后一个 TRB</strong> 处翻转软件侧轮次：
+<pre>/* xhci-ring.c:191-198（inc_deq :188，事件环特例） */
+	/* event ring doesn't have link trbs, check for last trb */
+	if (ring->type == TYPE_EVENT) {
+		if (!last_trb_on_seg(ring->deq_seg, ring->dequeue)) {
+			ring->dequeue++;
+			return;
+		}
+		if (last_trb_on_ring(ring, ring->deq_seg, ring->dequeue))
+			ring->cycle_state ^= 1;</pre></div>
+  </div>
+  <div class="note">一句话收拢：<strong>cycle bit 是无锁环形缓冲的空满合同——数据先落、cycle 后翻（wmb 保证）；谁生产谁翻转发布，谁消费谁校验匹配；跨圈由 Toggle Cycle 位让双方轮次同步翻转</strong>。</div>
+
+  <h2>钻点二 · Link TRB 与回绕：事件环为什么没有</h2>
+  <table>
+    <tr><th></th><th>传输环 / 命令环</th><th>事件环（§4.9.4）</th></tr>
+    <tr><td>段尾标记</td><td><strong>Link TRB</strong>（§4.11.5，Fig 4-15）——下一槽指针+Toggle Cycle+Chain</td><td><strong>无 Link TRB</strong>——段的范围由 <strong>ERST 段表</strong>（§6.5）的"基址+大小"声明</td></tr>
+    <tr><td>回绕机制</td><td>xHC 扫到 Link TRB，跳指针、按需翻轮次</td><td>xHC 写到段尾（地址=基址+（大小−1）×16）即回下一段/首段；软件侧 <code>inc_deq</code> 用 <code>last_trb_on_seg/last_trb_on_ring</code> 判段尾（:191-198）</td></tr>
+    <tr><td>多段衔接</td><td>Link TRB 链成环</td><td>ERST 条目数组顺序衔接（Event Ring Segment Table，Table 6-95）</td></tr>
+    <tr><td>游标寄存器</td><td>命令环 CRCR（§5.x，RsvdP 位防软件偷写）</td><td>ERDP（软件消费到哪，§4.9.4：软件写 ERDP 必须"前进"，xhci-ring.c:3026 注释原引）</td></tr>
+  </table>
+  <p>为什么事件环不需要 Link TRB？<strong>传输环的接缝必须在数据流里自描述</strong>（xHC 扫描时只认 TRB）；<strong>事件环的几何在 ERST 表里外置声明</strong>（段表本身就是"环的说明书"）——两套方案解决同一个问题：环没有尽头，接缝处不能被当成普通 TRB 误解。<span class="diff">实现≠规范</span> 内核对特定厂商硬件还有一个规范没有的防御：ETRON 主控上若 Setup/Data 段恰好跨 Link TRB 会被打断，驱动主动垫一个 No-Op TRB 避开接缝（<code>queue_ctrl_tx</code> 头部 quirk 分支，xhci-ring.c:3775 起）——评审 quirk 补丁时先问"它防的是哪家硬件的什么行为"。</p>
+
+  <h2>标本解剖 · M4.5 set_address 全握手（自研引擎实测）</h2>
+  <p>以下数字全部来自我们亲手实现的 xHC 引擎 v0.3 仿真（M4.5，合同（作者工作区在案）与日志在案）：<strong>事件环只有 6 槽——刻意取小逼出回绕</strong>，正好把 0001 骨架里的"三种环"动起来给你看。九条事件全序 = 端口插入 → EnableSlot → Addr BSR=1 → 8B 描述符 → Addr BSR=0 → 64B 描述符（短包）→ ConfigureEP → SET_CONFIG：</p>
+  <figure>
+    <svg viewBox="0 0 880 300" role="img" aria-label="事件环 6 槽两轮 9 事件推进图" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <g font-size="12">
+        <text x="440" y="28" text-anchor="middle" font-size="13" font-weight="600" fill="#1a2b4a">event ring 6 槽 × 两轮 × 9 事件（地址尾 4 位，步进 0x10）</text>
+        <g text-anchor="middle">
+          <rect x="60"  y="48" width="118" height="64" fill="#e9f7ee" stroke="#1a7f37"/><text x="119" y="68" font-weight="600">1 PORT</text><text x="119" y="84" font-size="11">6000 · port=1</text><text x="119" y="99" font-size="11" fill="#1a7f37">cyc=1</text>
+          <rect x="190" y="48" width="118" height="64" fill="#e8f0fb" stroke="#1a5fb4"/><text x="249" y="68" font-weight="600">2 CC EnSlot</text><text x="249" y="84" font-size="11">6010 · slot=1</text><text x="249" y="99" font-size="11" fill="#1a5fb4">cyc=1</text>
+          <rect x="320" y="48" width="118" height="64" fill="#e8f0fb" stroke="#1a5fb4"/><text x="379" y="68" font-weight="600">3 CC Addr BSR=1</text><text x="379" y="84" font-size="11">6020 · slot=1</text><text x="379" y="99" font-size="11" fill="#1a5fb4">cyc=1</text>
+          <rect x="450" y="48" width="118" height="64" fill="#fdeaea" stroke="#a00000"/><text x="509" y="68" font-weight="600">4 TR ✓TD1</text><text x="509" y="84" font-size="11">6030 · ep0</text><text x="509" y="99" font-size="11" fill="#a00000">cyc=1</text>
+          <rect x="580" y="48" width="118" height="64" fill="#e8f0fb" stroke="#1a5fb4"/><text x="639" y="68" font-weight="600">5 CC Addr BSR=0</text><text x="639" y="84" font-size="11">6040 · slot=1</text><text x="639" y="99" font-size="11" fill="#1a5fb4">cyc=1</text>
+          <rect x="710" y="48" width="118" height="64" fill="#fdeaea" stroke="#a00000"/><text x="769" y="68" font-weight="600">6 TR Short</text><text x="769" y="84" font-size="11">6050 · 残 46</text><text x="769" y="99" font-size="11" fill="#a00000">cyc=1</text>
+          <rect x="60"  y="175" width="118" height="64" fill="#fdeaea" stroke="#a00000"/><text x="119" y="195" font-weight="600">7 TR ✓TD2</text><text x="119" y="211" font-size="11">6000 · ep0</text><text x="119" y="226" font-size="11" fill="#a00000">cyc=0</text>
+          <rect x="190" y="175" width="118" height="64" fill="#e8f0fb" stroke="#1a5fb4"/><text x="249" y="195" font-weight="600">8 CC CfgEP</text><text x="249" y="211" font-size="11">6010 · slot=1</text><text x="249" y="226" font-size="11" fill="#1a5fb4">cyc=0</text>
+          <rect x="320" y="175" width="118" height="64" fill="#fdeaea" stroke="#a00000"/><text x="379" y="195" font-weight="600">9 TR ✓TD3</text><text x="379" y="211" font-size="11">6020 · ep0</text><text x="379" y="226" font-size="11" fill="#a00000">cyc=0</text>
+        </g>
+        <path d="M 769 112 C 769 150, 119 150, 119 173" fill="none" stroke="#707070" stroke-width="1.8" marker-end="url(#ah3)"/>
+        <defs><marker id="ah3" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#707070"/></marker></defs>
+        <text x="440" y="146" text-anchor="middle" font-size="11.5" fill="#707070">事件 7 回绕 idx5→0，轮次翻转为 0（实测：前 6 条 cyc=1，后 3 条 cyc=0）</text>
+        <text x="60" y="268" font-size="11.5" fill="#707070">上排=第一轮（cyc=1），下排=第二轮（cyc=0）同六槽复用。蓝=命令完成事件（CC），红=传输事件（TR），绿=端口事件。</text>
+        <text x="60" y="288" font-size="11.5" fill="#707070">蓝/红/绿 三类事件正对应 ⑤ 站 <code>xhci_handle_event_trb</code> 的三个分派分支（:2999-3017）。</text>
+      </g>
+    </svg>
+    <figcaption>九条事件全序实测（m45_xhci.log A3 九条逐字段 PASS）。<strong>注意事件 6 与 7：短包 TD 一口气产两条事件</strong>——Short Packet（CC=13，残量 46）落在 Data TRB、Success 落在 Status TRB。</figcaption>
+  </figure>
+  <p>逐帧推演这次枚举的全握手（无 JS 时全部帧定格可读）：</p>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>开场：端口插入，第一颗事件落环</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0 6000</b><span style="color:#1a7f37;font-weight:600">EV1 PORT</span> port=1</div>
+          <div class="u"><b>槽1 6010</b>空 cyc=0</div>
+          <div class="u"><b>槽2 6020</b>空 cyc=0</div>
+          <div class="u"><b>槽3 6030</b>空 cyc=0</div>
+          <div class="u"><b>槽4 6040</b>空 cyc=0</div>
+          <div class="u"><b>槽5 6050</b>空 cyc=0</div>
+        </div>
+        xHC 检测到端口 1 插入（SuperSpeed），把 Port Status Change Event 写进事件环槽 0（cyc=1 发布）并拉中断。hub 线 0002 里"主机开始复位流程"之前，xHC 侧先发生的就是这一颗事件——<strong>枚举的起点是事件，不是轮询</strong>。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>BSR=1 阶段：设备还叫"地址 0"，先取 8 字节描述符</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0</b>EV1 PORT ✓</div>
+          <div class="u"><b>槽1</b><span style="color:#1a5fb4;font-weight:600">EV2 CC EnSlot</span> slot=1</div>
+          <div class="u"><b>槽2</b><span style="color:#1a5fb4;font-weight:600">EV3 CC Addr BSR=1</span></div>
+          <div class="u"><b>槽3</b><span style="color:#a00000;font-weight:600">EV4 TR ✓</span>TD1 Status</div>
+          <div class="u"><b>槽4</b>空</div>
+          <div class="u"><b>槽5</b>空</div>
+        </div>
+        驱动发 Enable Slot → Address Device <strong>BSR=1</strong>（Block Set Address，命令 TRB 的 BSR 位，内核 <code>xhci_queue_address_device</code> xhci-ring.c:4412：SETUP_CONTEXT_ONLY 时打上 TRB_BSR）。BSR=1=<strong>只建上下文不设址</strong>，设备停在地址 0——于是 TD1 的 GET_DESCRIPTOR(8B)（setup8 逐字节 <code>80 06 00 01 00 00 08 00</code>）<strong>在地址 0 上服务</strong>（实测 dev_addr=0 通过设备过滤）。这正是 hub 线 0002 课"先取 8 字节定 ep0 包长"的 xHC 侧实现。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>BSR=0：xHC 亲自上线发 SET_ADDRESS——先于 CCC</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0-3</b>EV1-EV4 ✓</div>
+          <div class="u"><b>槽4</b><span style="color:#1a5fb4;font-weight:600">EV5 CC Addr BSR=0</span> slot=1</div>
+          <div class="u"><b>槽5</b>空</div>
+        </div>
+        <div class="buftt">
+          <div class="slot busy">dev_ctx：Default（addr=0, state=1）→ <b>Addressed（addr=1, state=2）</b></div>
+        </div>
+        驱动发 Address Device <strong>BSR=0</strong>（SETUP_CONTEXT_ADDRESS，内核 <code>xhci_setup_device</code> xhci.c:4318）。<strong>SET_ADDRESS 不是驱动的控制传输</strong>——xHC 在总线上自己发（§4.6.5；引擎钩子日志：SET_ADDRESS wire txn addr=1，4.0µs 完成），<strong>线上事务完成后才写 CCC 事件</strong>（实测日志序：wire txn 行在前、EV5 行在后；A5 断言 PASS）。此后设备在地址 1 服务。规范 §4.3.4 Address Assignment 的两段式（BSR=1 探路、BSR=0 落址）你在 0002 死记过的时序，在这里是两条命令加一颗线上事务。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>64B 描述符短包：双事件 + 环回绕 + cycle 轮转</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0</b><span style="color:#a00000;font-weight:600">EV7 TR ✓TD2</span> cyc=<b>0</b></div>
+          <div class="u"><b>槽1-4</b>EV1-EV5 ✓</div>
+          <div class="u"><b>槽5</b><span style="color:#a00000;font-weight:600">EV6 TR Short</span> 残46 cyc=1</div>
+        </div>
+        TD2=GET_DESCRIPTOR(64B)（<code>80 06 00 01 00 00 40 00</code>）@地址 1。设备只有 18B → <strong>短包</strong>：一条 Short Packet 事件（CC=13，残量 64−18=46）落 Data TRB、一条 Success 落 Status TRB——hub 线 0002 讲的"描述符长度以实际短包为准"，在事件环上是两颗事件。EV6 落槽 5 后<strong>环满回绕</strong>：EV7 落回槽 0，<strong>轮次翻转为 0</strong>（实测：前 6 条 cyc=1、后 3 条 cyc=0）——软件消费者的 <code>cycle_state ^= 1</code>（inc_deq）在这次消费里真实执行了一次。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 5 帧</span><span>收官：配置端点 + SET_CONFIG，九条全序对账</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0</b>EV7 ✓</div>
+          <div class="u"><b>槽1</b><span style="color:#1a5fb4;font-weight:600">EV8 CC CfgEP</span> cyc=0</div>
+          <div class="u"><b>槽2</b><span style="color:#a00000;font-weight:600">EV9 TR ✓TD3</span> cyc=0</div>
+          <div class="u"><b>槽3-5</b>（旧轮已消费）</div>
+        </div>
+        <table>
+          <tr><th>对账项（实测 PASS）</th><th>数值</th></tr>
+          <tr><td>事件总数</td><td>9（引擎产出 = 驱动消费）</td></tr>
+          <tr><td>ep0 门铃次数 ↔ TD 数</td><td>3 ↔ 3（每次门铃恰消费一个 TD，事件数 1/2/1）</td></tr>
+          <tr><td>ep0 hw dequeue</td><td>= TD3 Status+0x10 = <strong>驱动下一入队位</strong>（0x1de0080 两侧相等）</td></tr>
+          <tr><td>命令环游标</td><td>= 末命令+0x10（4 命令无回绕）</td></tr>
+          <tr><td>设备终态</td><td>dev_addr=1、configured=1（18B 描述符逐字节==ROM）</td></tr>
+        </table>
+        TD3=SET_CONFIGURATION(1)（<code>00 09 01 00 00 00 00 00</code>）两段式单 Success 事件。<strong>门铃-消费-事件的闭环六站在九颗事件里全部走过一遍</strong>：③每敲一次铃（3 次）→ ④xHC 消费一个 TD → ⑤事件回程（1/2/1）→ ⑥ usbcore 继续。收尾注记：<span class="diff">标本≠产品</span> 6 槽事件环是仿真<strong>刻意取小逼回绕</strong>（真实 xHC 事件环每段 256/512 TRB）；引擎也不建模 slot state=Configured(3)（§4.3.5 有此态，"已配置"以设备侧 configured 标志观测——引擎边界，M4.5 合同 §2.3）。
+      </div>
+    </div>
+  </div>
+
+  <h2>回到整体（xHC 线的地图钉）</h2>
+  <p>本课走完六站+两个钻点，把它钉回你已经会的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←本课的三段 TD、地址分配←BSR 两段式、设备插拔←PORT 事件。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。0001 骨架图里的三种环，现在对你来说已经是"会动的环"了。</p>
+
+  <h2>检索练习 · 4 题</h2>
+  <div id="quiz"></div>
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：xHCI 1.2（2019）§4.9.2 Transfer Ring Management（p169-178，cycle 规则立法处）+ §4.7 Doorbells（p158），<code>specs/xhci_1.2_2019.pdf</code>；§6.4.5 Table 6-91（CC 码全表，p507）。内核：<code>drivers/usb/host/xhci-ring.c</code>（本课全部行号基线 62f4c998b297）。</li>
+    <li>标本深挖：M4.5 合同（作者工作区在案）（九条全序判据）与 QEMU xHCI lab1 实证（作者工作区在案）（真实虚拟主控的 TRB dump 对照）；<a href="../notes/Linux-xHCI实现与规范差异分析.md">实现与规范差异分析</a>。</li>
+    <li>想再挖：流协议（Streams §4.12）、多中断器（§4.17）、命令环停止/恢复（CRCR CA/CS 位）——<strong>直接问老师</strong>。</li>
+  </ul>
+
+  <footer>课 0006 · 2026-10-08 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 标本：M4.5 引擎 v0.3（m45_xhci.log 全 PASS）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry.html">0005 TT 缓冲与重试</a> ｜ 下一课：待定（rhub 端口课 / 命令环深钻）｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-knowledge-map-diagnostic.html">0001 骨架诊断</a></footer>
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+/* player.js — 分帧放映机（课程族共享，配 course.css 的 .player 段）
+ * 静态优先：无 JS 时所有帧默认 CSS 全部可见（一帧一张定格）；
+ * 本脚本 init 首行给 .player 加 'js' 类后才进入播放模式（只显当前帧）。
+ * 托管页面上全部放映机：上一帧/播放(2.6s 自动)/下一帧/重置/展开全部帧
+ * + 圆点导航 + "第 N/M 帧"计数；到尾帧自动停播；手翻即停播。 */
+(function () {
+  'use strict';
+  document.querySelectorAll('.player').forEach(function (pl) {
+    pl.classList.add('js');
+    var frames = Array.prototype.slice.call(pl.querySelectorAll('.frame'));
+    if (!frames.length) return;
+    var idx = 0, timer = null;
+
+    var ctl = document.createElement('div');
+    ctl.className = 'pctl';
+    ctl.innerHTML =
+      '<button type="button" data-a="prev">上一帧</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一帧</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<button type="button" data-a="all">展开全部帧</button>' +
+      '<span class="pcount"></span><span class="pdots"></span>';
+    pl.appendChild(ctl);
+    var count = ctl.querySelector('.pcount');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+    var dotsBox = ctl.querySelector('.pdots');
+    frames.forEach(function (f, i) {
+      var d = document.createElement('i');
+      d.title = '第 ' + (i + 1) + ' 帧';
+      d.addEventListener('click', function () { manual(i); });
+      dotsBox.appendChild(d);
+    });
+    var dots = Array.prototype.slice.call(dotsBox.children);
+
+    function stop() {
+      if (timer) { clearInterval(timer); timer = null; }
+      playBtn.textContent = '播放';
+    }
+    function go(i) {
+      idx = (i + frames.length) % frames.length;
+      frames.forEach(function (f, k) { f.classList.toggle('cur', k === idx); });
+      dots.forEach(function (d, k) { d.classList.toggle('on', k === idx); });
+      count.textContent = '第 ' + (idx + 1) + '/' + frames.length + ' 帧';
+      if (idx === frames.length - 1) stop();
+    }
+    /* 手动导航才退出"展开全部帧"；预置的 static（打印/静态验收态）不被 init 翻掉 */
+    function manual(i) {
+      stop();
+      pl.classList.remove('static');
+      go(i);
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { manual(idx - 1); }
+      else if (a === 'next') { manual(idx + 1); }
+      else if (a === 'reset') { manual(0); }
+      else if (a === 'all') { stop(); pl.classList.toggle('static'); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        pl.classList.remove('static');
+        if (idx === frames.length - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === frames.length - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2600);
+      }
+    });
+    go(0);
+  });
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '环合同',
+    prompt: '在传输环与事件环上，软件（xhci-hcd 驱动）分别扮演什么角色？',
+    options: ['两个环都是生产者', '两个环都是消费者', '传输环生产、事件环消费', '传输环消费、事件环生产'],
+    answer: 2,
+    explain: 'C 对。xhci-ring.c:276 注释原句 "SW is the consumer for the event ring only"：传输环/命令环上软件生产 TRB、xHC 消费（cycle 由软件在发布时翻转，giveback_first_trb :3437）；事件环反过来，xHC 生产、软件按 cycle 匹配消费（unhandled_event_trb :137）。这一分工决定了两侧各有一套翻转/校验逻辑。' },
+  { tag: '环合同',
+    prompt: 'queue_ctrl_tx 为什么先把 start_cycle 存下来，三段 TRB 全部排完才在 giveback_first_trb 翻首 TRB 的 cycle 位？',
+    options: ['让半成品 TD 对硬件不可见', '省掉一次写屏障开销', '防止门铃寄存器写入丢步', '让 Link TRB 先完成回绕'],
+    answer: 0,
+    explain: 'A 对。xHC 可能已停在该端点环上等新 TRB——若排 Setup 时就翻 cycle，xHC 会立刻取走只有一段的 TD（半成品），数据段/状态段还没写完。先存 start_cycle（xhci-ring.c:3832-3838 注释原意：直到其余 TRB 全部建完才交首 TRB）、全部排完再 wmb()+翻转（:3437），一次发布整个 TD。B 错——wmb 反而多一道屏障；C 是 doorbell 写的 readl flush 问题；D 与发布时机无关。' },
+  { tag: '回绕机制',
+    prompt: '事件环上没有 Link TRB——段尾回绕靠什么界定？',
+    options: ['Link TRB 的 Toggle Cycle 位', 'ERST 段表条目声明基址+大小', '向门铃寄存器写零值', 'CRCR 寄存器的 RsvdP 位'],
+    answer: 1,
+    explain: 'B 对。事件环几何外置于 ERST 段表（§6.5，Table 6-95）：每条目给段基址与大小，xHC 写到段尾即回绕；软件侧 inc_deq 对 TYPE_EVENT 走特例（xhci-ring.c:191-198），用 last_trb_on_seg/last_trb_on_ring 判段尾并在整环末翻转轮次。A 是传输环的机制（§4.11.5）；C 无此语义；D 是命令环 CRCR 的防写位。' },
+  { tag: '标本时序',
+    prompt: 'M4.5 标本实测：Address Device（BSR=0）的命令完成事件 CCC 到达之前，线上发生了什么？',
+    options: ['驱动先排了一个 SET_ADDRESS 的 TD', 'xHC 自己在总线上发 SET_ADDRESS 并等它完成', '设备主动向主机发起 SET_ADDRESS', '什么都没发生，设址在 CCC 之后异步进行'],
+    answer: 1,
+    explain: 'B 对。BSR=0 即执行设址（§4.6.5）：SET_ADDRESS 是 xHC 在总线上自己发的事务，驱动从不为它排 TD（内核 xhci_setup_device xhci.c:4318；引擎日志实测 wire txn addr=1 在前、EV5 CCC 在后，A5 断言 PASS）。对比 BSR=1=只建上下文不设址（TRB_BSR 位，xhci-ring.c:4412），设备停在地址 0 服务 8B 描述符请求——规范 §4.3.4 两段式的动态面。' }
+]);
+</script>
+</body>
+</html>
