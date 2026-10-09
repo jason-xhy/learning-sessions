@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0008 · 旅程实战与命运：M4.5 标本、错误路径与 ep_state</title>
+<style>
+/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
+   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
+   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
+@font-face {
+  font-family: LiningDigits;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+.player .frame { display: block; margin: 14px 0; }
+.player.js:not(.static) .frame { display: none; }
+.player.js:not(.static) .frame.cur { display: block; margin: 0; }
+.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
+.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
+.player .fbody { font-size: .95rem; line-height: 1.6; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
+.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
+.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
+.player .pdots i.on { background: var(--accent); }
+
+/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
+.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
+.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
+.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
+.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
+.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
+.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
+.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
+.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
+.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
+.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
+.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
+.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
+td.bad { background: #fdeaea; }
+td.good { background: #e9f7ee; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+  .player .frame { display: block !important; }
+  .player .pctl { display: none; }
+}
+
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">LESSON 0008 · xHC 线第 3 课（前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）</div>
+  <h1>旅程实战与命运<br>M4.5 标本九事件 × 错误路径全图 × ep_state 十旗标</h1>
+  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.10.2 Errors（p195-203）/ §4.8.3 Endpoint Context State（p162）/ §4.6.8-4.6.10（Reset/Stop Endpoint、Set TR Dequeue，p128/133/141）/ §6.4.5 Table 6-91 CC 码全表（p507）——解剖标本：M4.5 自研引擎 v0.3 仿真日志（九条事件全序实测）</p>
+
+  <h2>整体定位（happy path 走完了，本课看真实标本与出错的命运）</h2>
+  <p>xHC 线两课攒齐了两张图：0006 的<strong>零件图</strong>（提单字段、槽/TD/段/环、切分语法、几何）与 0007 的<strong>运转图</strong>（cycle 合同、接缝、四把钥匙、六站旅程）——但都停在 happy path：事件全是 Success/Short Packet，端点从不出错。本课收官三件事：①用我们亲手实现的 <strong>M4.5 引擎标本</strong>把 set_address 全握手的九条事件逐帧跑一遍——数字全部出自实测日志，含短包双事件、事件环回绕与轮转；②把<strong>四种传输各自的错误路径</strong>拆成两张判决表（CC 码→errno→端点后果；分派与重试策略）；③拆开软件侧的第二台状态机 <strong>ep_state 十旗标</strong>，用五帧动画走完 STALL 从判决到恢复的软硬协同。下页的全景图仍是坐标：本课深钻的是④⑤两站的出错面，与⑥站回调延迟的微观来源。</p>
+
+  <figure>
+    <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <g font-size="12.5" fill="#1a2b4a">
+        <rect x="18" y="60" width="150" height="230" rx="6" fill="#f6f6f1" stroke="#c9c9bd"/>
+        <text x="93" y="48" text-anchor="middle" font-weight="600">usbcore（hub 线视角）</text>
+        <rect x="34" y="80" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
+        <text x="93" y="98" text-anchor="middle">usb_control_msg</text>
+        <text x="93" y="113" text-anchor="middle" font-size="11">→ usb_submit_urb</text>
+        <rect x="34" y="150" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
+        <text x="93" y="168" text-anchor="middle">urb→complete 回调</text>
+        <text x="93" y="183" text-anchor="middle" font-size="11">（下一轮请求再排）</text>
+        <text x="93" y="262" text-anchor="middle" font-size="11" fill="#707070">hub 线五课讲的复位时序、</text>
+        <text x="93" y="277" text-anchor="middle" font-size="11" fill="#707070">TT 规则，是设备看到的</text>
+        <text x="93" y="292" text-anchor="middle" font-size="11" fill="#707070">这套机制的行为面</text>
+
+        <rect x="218" y="60" width="170" height="230" rx="6" fill="#eef3fa" stroke="#1a5fb4"/>
+        <text x="303" y="48" text-anchor="middle" font-weight="600">xhci-hcd 驱动（软件）</text>
+        <rect x="232" y="80" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+        <text x="303" y="98" text-anchor="middle">① xhci_urb_enqueue</text>
+        <text x="303" y="113" text-anchor="middle" font-size="11">xhci.c:1620</text>
+        <rect x="232" y="140" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+        <text x="303" y="158" text-anchor="middle">② TRB 化三段编排</text>
+        <text x="303" y="173" text-anchor="middle" font-size="11">queue_ctrl_tx :3775</text>
+        <rect x="232" y="255" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+        <text x="303" y="273" text-anchor="middle">⑤⑥ 事件消费与回调</text>
+        <text x="303" y="288" text-anchor="middle" font-size="11">xhci-ring.c :3092/:807</text>
+
+        <rect x="438" y="60" width="180" height="230" rx="6" fill="#f2f0fa" stroke="#6a4fc4"/>
+        <text x="528" y="48" text-anchor="middle" font-weight="600">共享主存：环（软件写、xHC 读）</text>
+        <rect x="452" y="80" width="152" height="46" fill="#fff" stroke="#6a4fc4" rx="4"/>
+        <text x="528" y="98" text-anchor="middle">endpoint / command ring</text>
+        <text x="528" y="113" text-anchor="middle" font-size="11">TRB ×N + Link TRB 回绕</text>
+        <rect x="452" y="255" width="152" height="46" fill="#fff" stroke="#6a4fc4" rx="4"/>
+        <text x="528" y="273" text-anchor="middle">event ring（xHC 写、软件读）</text>
+        <text x="528" y="288" text-anchor="middle" font-size="11">ERST 段表 §6.5</text>
+
+        <rect x="668" y="60" width="190" height="230" rx="6" fill="#e9f7ee" stroke="#1a7f37"/>
+        <text x="763" y="48" text-anchor="middle" font-weight="600">xHC 硬件（MMIO + USB 线上）</text>
+        <rect x="682" y="80" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
+        <text x="763" y="98" text-anchor="middle">doorbell 寄存器 §4.7/§5.6</text>
+        <text x="763" y="113" text-anchor="middle" font-size="11">writel(DB_VALUE) 敲 ③</text>
+        <rect x="682" y="140" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
+        <text x="763" y="158" text-anchor="middle">④ 取指执行：沿环消费 TRB</text>
+        <text x="763" y="173" text-anchor="middle" font-size="11">cycle 匹配才取（§4.9.2）</text>
+        <rect x="682" y="200" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
+        <text x="763" y="218" text-anchor="middle">USB 线上事务 + 完成码</text>
+        <text x="763" y="233" text-anchor="middle" font-size="11">SET_ADDRESS/IN 握手…</text>
+
+        <g stroke="#707070" stroke-width="1.6" fill="#707070" marker-end="url(#ah)"/>
+        <defs><marker id="ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#707070"/></marker></defs>
+        <line x1="152" y1="100" x2="230" y2="100" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="374" y1="103" x2="450" y2="103" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="604" y1="103" x2="680" y2="103" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="763" y1="126" x2="763" y2="138" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="763" y1="186" x2="763" y2="198" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <path d="M 763 246 L 763 278 L 610 278" fill="none" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="452" y1="278" x2="378" y2="278" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)" stroke-dasharray="4 3"/>
+        <path d="M 232 278 L 186 278 L 186 171 L 156 171" fill="none" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <g font-size="12" font-weight="700">
+          <circle cx="162" cy="92" r="9" fill="#1a2b4a"/><text x="162" y="96" text-anchor="middle" fill="#fff">1</text>
+          <circle cx="392" cy="92" r="9" fill="#1a2b4a"/><text x="392" y="96" text-anchor="middle" fill="#fff">2</text>
+          <circle cx="622" cy="92" r="9" fill="#1a7f37"/><text x="622" y="96" text-anchor="middle" fill="#fff">3</text>
+          <circle cx="763" cy="163" r="9" fill="#1a7f37"/><text x="763" y="167" text-anchor="middle" fill="#fff">4</text>
+          <circle cx="690" cy="278" r="9" fill="#a00000"/><text x="690" y="282" text-anchor="middle" fill="#fff">5</text>
+          <circle cx="186" cy="225" r="9" fill="#a00000"/><text x="186" y="229" text-anchor="middle" fill="#fff">6</text>
+        </g>
+      </g>
+    </svg>
+    <figcaption>六站旅程：<strong>①驱动入队 → ②TRB 化排环 → ③原子发布+敲 doorbell → ④xHC 取指执行（cycle 消费+线上事务）→ ⑤事件回程（event ring+完成码）→ ⑥回调 usbcore</strong>。蓝=软件写，紫=共享内存环，绿=xHC 硬件，红=回程。</figcaption>
+  </figure>
+
+  <h2>标本解剖 · M4.5 set_address 全握手（自研引擎实测）</h2>
+  <p>以下数字全部来自我们亲手实现的 xHC 引擎 v0.3 仿真（M4.5，合同（作者工作区在案）与日志在案）：<strong>事件环只有 6 槽——刻意取小逼出回绕</strong>，正好把 0001 骨架里的"三种环"动起来给你看。九条事件全序 = 端口插入 → EnableSlot → Addr BSR=1 → 8B 描述符 → Addr BSR=0 → 64B 描述符（短包）→ ConfigureEP → SET_CONFIG：</p>
+  <figure>
+    <svg viewBox="0 0 880 300" role="img" aria-label="事件环 6 槽两轮 9 事件推进图" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <g font-size="12">
+        <text x="440" y="28" text-anchor="middle" font-size="13" font-weight="600" fill="#1a2b4a">event ring 6 槽 × 两轮 × 9 事件（地址尾 4 位，步进 0x10）</text>
+        <g text-anchor="middle">
+          <rect x="60"  y="48" width="118" height="64" fill="#e9f7ee" stroke="#1a7f37"/><text x="119" y="68" font-weight="600">1 PORT</text><text x="119" y="84" font-size="11">6000 · port=1</text><text x="119" y="99" font-size="11" fill="#1a7f37">cyc=1</text>
+          <rect x="190" y="48" width="118" height="64" fill="#e8f0fb" stroke="#1a5fb4"/><text x="249" y="68" font-weight="600">2 CC EnSlot</text><text x="249" y="84" font-size="11">6010 · slot=1</text><text x="249" y="99" font-size="11" fill="#1a5fb4">cyc=1</text>
+          <rect x="320" y="48" width="118" height="64" fill="#e8f0fb" stroke="#1a5fb4"/><text x="379" y="68" font-weight="600">3 CC Addr BSR=1</text><text x="379" y="84" font-size="11">6020 · slot=1</text><text x="379" y="99" font-size="11" fill="#1a5fb4">cyc=1</text>
+          <rect x="450" y="48" width="118" height="64" fill="#fdeaea" stroke="#a00000"/><text x="509" y="68" font-weight="600">4 TR ✓TD1</text><text x="509" y="84" font-size="11">6030 · ep0</text><text x="509" y="99" font-size="11" fill="#a00000">cyc=1</text>
+          <rect x="580" y="48" width="118" height="64" fill="#e8f0fb" stroke="#1a5fb4"/><text x="639" y="68" font-weight="600">5 CC Addr BSR=0</text><text x="639" y="84" font-size="11">6040 · slot=1</text><text x="639" y="99" font-size="11" fill="#1a5fb4">cyc=1</text>
+          <rect x="710" y="48" width="118" height="64" fill="#fdeaea" stroke="#a00000"/><text x="769" y="68" font-weight="600">6 TR Short</text><text x="769" y="84" font-size="11">6050 · 残 46</text><text x="769" y="99" font-size="11" fill="#a00000">cyc=1</text>
+          <rect x="60"  y="175" width="118" height="64" fill="#fdeaea" stroke="#a00000"/><text x="119" y="195" font-weight="600">7 TR ✓TD2</text><text x="119" y="211" font-size="11">6000 · ep0</text><text x="119" y="226" font-size="11" fill="#a00000">cyc=0</text>
+          <rect x="190" y="175" width="118" height="64" fill="#e8f0fb" stroke="#1a5fb4"/><text x="249" y="195" font-weight="600">8 CC CfgEP</text><text x="249" y="211" font-size="11">6010 · slot=1</text><text x="249" y="226" font-size="11" fill="#1a5fb4">cyc=0</text>
+          <rect x="320" y="175" width="118" height="64" fill="#fdeaea" stroke="#a00000"/><text x="379" y="195" font-weight="600">9 TR ✓TD3</text><text x="379" y="211" font-size="11">6020 · ep0</text><text x="379" y="226" font-size="11" fill="#a00000">cyc=0</text>
+        </g>
+        <path d="M 769 112 C 769 150, 119 150, 119 173" fill="none" stroke="#707070" stroke-width="1.8" marker-end="url(#ah3)"/>
+        <defs><marker id="ah3" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#707070"/></marker></defs>
+        <text x="440" y="146" text-anchor="middle" font-size="11.5" fill="#707070">事件 7 回绕 idx5→0，轮次翻转为 0（实测：前 6 条 cyc=1，后 3 条 cyc=0）</text>
+        <text x="60" y="268" font-size="11.5" fill="#707070">上排=第一轮（cyc=1），下排=第二轮（cyc=0）同六槽复用。蓝=命令完成事件（CC），红=传输事件（TR），绿=端口事件。</text>
+        <text x="60" y="288" font-size="11.5" fill="#707070">蓝/红/绿 三类事件正对应 ⑤ 站 <code>xhci_handle_event_trb</code> 的三个分派分支（:2999-3017）。</text>
+      </g>
+    </svg>
+    <figcaption>九条事件全序实测（m45_xhci.log A3 九条逐字段 PASS）。<strong>注意事件 6 与 7：短包 TD 一口气产两条事件</strong>——Short Packet（CC=13，残量 46）落在 Data TRB、Success 落在 Status TRB。</figcaption>
+  </figure>
+  <p>逐帧推演这次枚举的全握手（无 JS 时全部帧定格可读）：</p>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>开场：端口插入，第一颗事件落环</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0 6000</b><span style="color:#1a7f37;font-weight:600">EV1 PORT</span> port=1</div>
+          <div class="u"><b>槽1 6010</b>空 cyc=0</div>
+          <div class="u"><b>槽2 6020</b>空 cyc=0</div>
+          <div class="u"><b>槽3 6030</b>空 cyc=0</div>
+          <div class="u"><b>槽4 6040</b>空 cyc=0</div>
+          <div class="u"><b>槽5 6050</b>空 cyc=0</div>
+        </div>
+        xHC 检测到端口 1 插入（SuperSpeed），把 Port Status Change Event 写进事件环槽 0（cyc=1 发布）并拉中断。hub 线 0002 里"主机开始复位流程"之前，xHC 侧先发生的就是这一颗事件——<strong>枚举的起点是事件，不是轮询</strong>。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>BSR=1 阶段：设备还叫"地址 0"，先取 8 字节描述符</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0</b>EV1 PORT ✓</div>
+          <div class="u"><b>槽1</b><span style="color:#1a5fb4;font-weight:600">EV2 CC EnSlot</span> slot=1</div>
+          <div class="u"><b>槽2</b><span style="color:#1a5fb4;font-weight:600">EV3 CC Addr BSR=1</span></div>
+          <div class="u"><b>槽3</b><span style="color:#a00000;font-weight:600">EV4 TR ✓</span>TD1 Status</div>
+          <div class="u"><b>槽4</b>空</div>
+          <div class="u"><b>槽5</b>空</div>
+        </div>
+        驱动发 Enable Slot → Address Device <strong>BSR=1</strong>（Block Set Address，命令 TRB 的 BSR 位，内核 <code>xhci_queue_address_device</code> xhci-ring.c:4412：SETUP_CONTEXT_ONLY 时打上 TRB_BSR）。BSR=1=<strong>只建上下文不设址</strong>，设备停在地址 0——于是 TD1 的 GET_DESCRIPTOR(8B)（setup8 逐字节 <code>80 06 00 01 00 00 08 00</code>）<strong>在地址 0 上服务</strong>（实测 dev_addr=0 通过设备过滤）。这正是 hub 线 0002 课"先取 8 字节定 ep0 包长"的 xHC 侧实现。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>BSR=0：xHC 亲自上线发 SET_ADDRESS——先于 CCC</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0-3</b>EV1-EV4 ✓</div>
+          <div class="u"><b>槽4</b><span style="color:#1a5fb4;font-weight:600">EV5 CC Addr BSR=0</span> slot=1</div>
+          <div class="u"><b>槽5</b>空</div>
+        </div>
+        <div class="buftt">
+          <div class="slot busy">dev_ctx：Default（addr=0, state=1）→ <b>Addressed（addr=1, state=2）</b></div>
+        </div>
+        驱动发 Address Device <strong>BSR=0</strong>（SETUP_CONTEXT_ADDRESS，内核 <code>xhci_setup_device</code> xhci.c:4318）。<strong>SET_ADDRESS 不是驱动的控制传输</strong>——xHC 在总线上自己发（§4.6.5；引擎钩子日志：SET_ADDRESS wire txn addr=1，4.0µs 完成），<strong>线上事务完成后才写 CCC 事件</strong>（实测日志序：wire txn 行在前、EV5 行在后；A5 断言 PASS）。此后设备在地址 1 服务。规范 §4.3.4 Address Assignment 的两段式（BSR=1 探路、BSR=0 落址）你在 0002 死记过的时序，在这里是两条命令加一颗线上事务。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>64B 描述符短包：双事件 + 环回绕 + cycle 轮转</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0</b><span style="color:#a00000;font-weight:600">EV7 TR ✓TD2</span> cyc=<b>0</b></div>
+          <div class="u"><b>槽1-4</b>EV1-EV5 ✓</div>
+          <div class="u"><b>槽5</b><span style="color:#a00000;font-weight:600">EV6 TR Short</span> 残46 cyc=1</div>
+        </div>
+        TD2=GET_DESCRIPTOR(64B)（<code>80 06 00 01 00 00 40 00</code>）@地址 1。设备只有 18B → <strong>短包</strong>：一条 Short Packet 事件（CC=13，残量 64−18=46）落 Data TRB、一条 Success 落 Status TRB——hub 线 0002 讲的"描述符长度以实际短包为准"，在事件环上是两颗事件。EV6 落槽 5 后<strong>环满回绕</strong>：EV7 落回槽 0，<strong>轮次翻转为 0</strong>（实测：前 6 条 cyc=1、后 3 条 cyc=0）——软件消费者的 <code>cycle_state ^= 1</code>（inc_deq）在这次消费里真实执行了一次。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 5 帧</span><span>收官：配置端点 + SET_CONFIG，九条全序对账</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>槽0</b>EV7 ✓</div>
+          <div class="u"><b>槽1</b><span style="color:#1a5fb4;font-weight:600">EV8 CC CfgEP</span> cyc=0</div>
+          <div class="u"><b>槽2</b><span style="color:#a00000;font-weight:600">EV9 TR ✓TD3</span> cyc=0</div>
+          <div class="u"><b>槽3-5</b>（旧轮已消费）</div>
+        </div>
+        <table>
+          <tr><th>对账项（实测 PASS）</th><th>数值</th></tr>
+          <tr><td>事件总数</td><td>9（引擎产出 = 驱动消费）</td></tr>
+          <tr><td>ep0 门铃次数 ↔ TD 数</td><td>3 ↔ 3（每次门铃恰消费一个 TD，事件数 1/2/1）</td></tr>
+          <tr><td>ep0 hw dequeue</td><td>= TD3 Status+0x10 = <strong>驱动下一入队位</strong>（0x1de0080 两侧相等）</td></tr>
+          <tr><td>命令环游标</td><td>= 末命令+0x10（4 命令无回绕）</td></tr>
+          <tr><td>设备终态</td><td>dev_addr=1、configured=1（18B 描述符逐字节==ROM）</td></tr>
+        </table>
+        TD3=SET_CONFIGURATION(1)（<code>00 09 01 00 00 00 00 00</code>）两段式单 Success 事件。<strong>上一课 0007 的六站闭环在九颗事件里全部走过一遍</strong>：③每敲一次铃（3 次）→ ④xHC 消费一个 TD → ⑤事件回程（1/2/1）→ ⑥ usbcore 继续。收尾注记：<span class="diff">标本≠产品</span> 6 槽事件环是仿真<strong>刻意取小逼回绕</strong>（真实 xHC 事件环每段 256/512 TRB）；引擎也不建模 slot state=Configured(3)（§4.3.5 有此态，"已配置"以设备侧 configured 标志观测——引擎边界，M4.5 合同 §2.3）。
+      </div>
+    </div>
+  </div>
+
+  <h2>钻点一 · 四种传输各自的命运：错误路径全图</h2>
+  <p>六站旅程与 M4.5 标本走的都是 happy path（九颗事件全是 Success/Short Packet）。真实总线上会出错——xHCI 把错误立法成两层：<strong>完成码 CC</strong>（Table 6-91 p507：事件回程携带的"判决书"）与<strong>端点状态后果</strong>（这个判决会不会让 xHC 侧端点停机）。第二层的裁决函数只有一个，值得整段读：</p>
+<pre>/* xhci-ring.c:2204-2231（xhci_halted_host_endpoint）——哪些 CC 让 xHC 端点 halt */
+static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx *ep_ctx,
+				      unsigned int comp_code)
+{
+	int ep_type = CTX_TO_EP_TYPE(le32_to_cpu(ep_ctx-&gt;ep_info2));
+
+	switch (comp_code) {
+	case COMP_STALL_ERROR:
+		/* on xHCI this always halts, including protocol stall */
+		return true;
+	case COMP_BABBLE_DETECTED_ERROR:
+		/*
+		 * The 0.95 spec says a babbling control endpoint is not halted.
+		 * The 0.96 spec says it is. Some HW claims to be 0.95
+		 * compliant, but it halts the control endpoint anyway.
+		 * Check endpoint context if endpoint is halted.
+		 */
+		if (xhci-&gt;hci_version &lt;= 0x95 &amp;&amp; ep_type == CTRL_EP)
+			return GET_EP_CTX_STATE(ep_ctx) == EP_STATE_HALTED;
+
+		fallthrough;
+	case COMP_USB_TRANSACTION_ERROR:
+	case COMP_SPLIT_TRANSACTION_ERROR:
+		/* these errors halt all non-isochronous endpoints */
+		return ep_type != ISOC_IN_EP &amp;&amp; ep_type != ISOC_OUT_EP;
+	}
+
+	return false;
+}</pre>
+  <p>三个立法要点：① <strong>STALL 总是 halt 主机侧端点——包括 ep0 的协议 stall</strong>（设备侧 ep0 stall 只是"本请求不支持"，但 xHC 内部状态照样要 Reset Endpoint 清理；设备侧 halt 由类驱动随后发 CLEAR_FEATURE(ENDPOINT_HALT) 清，:2201-2202 注释）；② Babble 在 0.95/0.96 规范间变过卦，内核对声称 0.95 的老硬件改查 EP 上下文实态（:2213-2221，<span class="diff">实现≠规范</span> 家族的又一枚）；③ <strong>USB Transaction Error / Split Transaction Error halt 一切非等时端点</strong>——等时端点天生豁免（§4.10.2.8：等时错误逐帧上报、传输继续，"错一帧不赖整条流"）。另外 USB Transaction Error 在走到这个裁决函数<strong>之前</strong>，xHC 硬件已经按 EP 上下文的错误计数自行重试过若干轮（§4.10.2.3 / §4.10.2.7 Bus Error Counter）——内核看到的是硬件重试穷尽后的终审判决。</p>
+  <p>把事件回程上的常见 CC 汇成一张判决表（errno 映射出自 handle_tx_event :2705-2799）：</p>
+  <table>
+    <tr><th>CC（码值）</th><th>urb errno</th><th>端点后果</th><th>备注</th></tr>
+    <tr><td class="good">Success(1) / Short Packet(13)</td><td>0</td><td>无</td><td>残量≠0 的 Success 会被改判 Short（:2680-2685）；短包是正常完成</td></tr>
+    <tr><td class="bad">Stall(6)</td><td>-EPIPE</td><td><strong>halt</strong>（含 ep0 协议 stall）</td><td>恢复链见钻点二；设备侧由类驱动 CLEAR_FEATURE 清</td></tr>
+    <tr><td class="bad">Babble(3)</td><td>-EOVERFLOW</td><td>halt</td><td>设备喋喋不休超过包界；0.95 老硬件分支见上</td></tr>
+    <tr><td class="bad">USB Transaction Error(4)</td><td>-EPROTO</td><td>halt（非 iso）</td><td>此前硬件已自行重试（EP ctx 错误计数）；内核还可能软重试（下）</td></tr>
+    <tr><td class="bad">Split Transaction Error(36)</td><td>-EPROTO</td><td>halt（非 iso）</td><td>TT split 出错——连回 0004/0005 课的 TT 世界</td></tr>
+    <tr><td>Data Buffer Error(2)</td><td>-ENOSR</td><td>无</td><td>主机侧内存供不上（:2733-2738），不赖设备</td></tr>
+    <tr><td>TRB Error(5)</td><td>-EILSEQ</td><td>无（Error 态另行）</td><td>TRB 本身非法——多为驱动 bug，先查自己</td></tr>
+    <tr><td class="bad">Missed Service(23)</td><td>—</td><td><strong>无（iso 豁免）</strong></td><td>置 ep-&gt;skip 跳帧（下）</td></tr>
+    <tr><td class="bad">Ring Underrun(14)/Overrun(15)</td><td>—</td><td>无（iso 豁免）</td><td>OUT 环空/IN 环满——软件喂不上（§4.10.3.1）</td></tr>
+    <tr><td>Stopped(26)/Stopped Len Invalid(27)/Stopped Short(28)</td><td>按 TD 记账</td><td>配合 Stop EP 命令</td><td>finish_td 交给 stop_ep 完成处理器（:2256-2264 直接 return）</td></tr>
+  </table>
+  <p>同一颗错误事件落进四种端点，后续命运完全不同——这正是"4 种传输的状态机"差异所在：</p>
+  <table>
+    <tr><th>类型</th><th>TD 形状（0006 三层语法）</th><th>完成分派</th><th>错误处置特点</th></tr>
+    <tr><td><strong>control</strong></td><td>Setup+Data*+Status（唯一多阶段语法）</td><td>process_ctrl_td :2306</td><td>两颗事件会计：Data 事件先记账、Status 事件才收尾；STALL halt 含 ep0；ep0 stall 不清 TT（:2278）</td></tr>
+    <tr><td><strong>bulk</strong></td><td>Normal 链（64K 切分/ZLP 第二 TD）</td><td>process_bulk_intr_td :2505</td><td>软重试原地再战 ≤3 次（下）；短包=正常给回残量</td></tr>
+    <tr><td><strong>interrupt</strong></td><td>同 bulk（:3496 委托）</td><td>同 bulk</td><td>错误路径与 bulk 同构；差异全在周期调度面（§4.14.3）</td></tr>
+    <tr><td><strong>isochronous</strong></td><td>每包一 TD（首 TRB=Isoch 型）</td><td>process_isoc_td :2401</td><td><strong>永不 halt</strong>（§4.10.2.8）；错误逐帧入 iso_frame_desc；Missed Service 跳帧</td></tr>
+  </table>
+  <div class="flow">
+    <div class="fnode"><b>control——三阶段推进就是两次事件会计</b>：Data 阶段的事件先到时，驱动只记 actual_length、置 urb_length_set，<strong>压着不等，直到 Status 事件才收整个 TD</strong>——M4.5 标本的短包双事件（EV6 Short 落 Data、EV7 Success 落 Status）走的就是这条路；Success 只认落在 Status TRB 上的事件（:2323-2327）；数据阶段短包=正常（hub 线 0002"描述符长度以实际短包为准"的内核侧）。
+<pre>/* xhci-ring.c:2378-2387（process_ctrl_td） */
+	/*
+	 * if on data stage then update the actual_length of the URB and flag it
+	 * as set, so it won't be overwritten in the event for the last TRB.
+	 */
+	if (trb_type == TRB_DATA ||
+		trb_type == TRB_NORMAL) {
+		td-&gt;urb_length_set = true;
+		td-&gt;urb-&gt;actual_length = requested - remaining;
+		xhci_dbg(xhci, "Waiting for status stage event\n");
+		return;
+	}</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>bulk/interrupt——软重试：硬件重试穷尽后的第二次机会</b>：USB Transaction Error 落地且非 TT 设备、错误计数未超限（MAX_SOFT_RETRY=3，xhci.h:1271）时，驱动不清错误、不发终审判决，而是<strong>软复位端点原地重试同一个 TD</strong>——Reset Endpoint 命令带上 TSP 位（Transfer State Preserve，:4492-4493）保住 data toggle 与序列号，让重试从断点续传；超过 3 次或 quirk 禁用才走硬复位（清 toggle）。ep-&gt;err_count 在每次成功后清零（:2521）。
+<pre>/* xhci-ring.c:2542-2551（process_bulk_intr_td） */
+	case COMP_USB_TRANSACTION_ERROR:
+		if (xhci-&gt;quirks &amp; XHCI_NO_SOFT_RETRY ||
+		    (ep-&gt;err_count++ &gt; MAX_SOFT_RETRY) ||
+		    le32_to_cpu(slot_ctx-&gt;tt_info) &amp; TT_SLOT)
+			break;
+
+		td-&gt;status = 0;
+
+		xhci_handle_halted_endpoint(xhci, ep, td, EP_SOFT_RESET);
+		return;</pre></div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>isochronous——永不 halt，逐帧判决</b>：错误不进 urb 总账，而是逐包写进 iso_frame_desc[idx]（Babble→-EOVERFLOW、Missed→-EXDEV、Stall/Incompatible→-EPROTO，:2437-2459），<strong>urb 总 status 恒为 0</strong>（:916-918，与 EHCI/UHCI 同构——等时语义看帧不看流）。TD 中段出错时压住等末 TRB 的 IOC 事件一起算（§4.9.1 立法、:2802-2811 注释引 §4.10.2）：
+<pre>/* xhci-ring.c:2493-2497（process_isoc_td） */
+	/* Don't give back TD yet if we encountered an error mid TD */
+	if (td-&gt;error_mid_td &amp;&amp; ep_trb != td-&gt;end_trb) {
+		xhci_dbg(xhci, "Error mid isoc TD, wait for final completion event\n");
+		td-&gt;urb_length_set = true;
+		return;
+	}</pre>
+<b>Missed Service 的跳帧机制</b>（:2762-2773 置 ep-&gt;skip=true；:2847-2931 do-while 循环）：xHC 承认"这个服务区间没轮到你"，驱动从 td_list 头开始<strong>整 TD 整 TD 地跳过</strong>（usbcore 已预置每帧 status=-EXDEV，:2860-2862 注释），直到某颗事件指针重新落进存活的 TD 为止——错过的帧不再补，流照常向前：
+<pre>/* xhci-ring.c:2854-2863（handle_tx_event 跳帧循环） */
+			if (ep-&gt;skip &amp;&amp; usb_endpoint_xfer_isoc(&amp;td-&gt;urb-&gt;ep-&gt;desc)) {
+				/* this event is unlikely to match any TD, don't skip them all */
+				if (trb_comp_code == COMP_STOPPED_LENGTH_INVALID)
+					return 0;
+
+				/*
+				 * TD was missed, skip it. Core already initialized frame-&gt;status
+				 * to -EXDEV and frame-&gt;actual_length to 0, nothing more to do.
+				 */
+				xhci_dequeue_td(xhci, td, ep_ring, 0);</pre></div>
+  </div>
+  <div class="note">一句话收拢：<strong>错误处理的第一道分岔是"会不会 halt"（xhci_halted_host_endpoint），第二道分岔是"按类型分派"（process_ctrl/isoc/bulk_intr_td）</strong>——控制传输按阶段记账、bulk 软重试原地再战、等时永不 halt 逐帧判决。halt 之后的恢复链（Reset Endpoint → Set TR Dequeue → 给回 → CLEAR_FEATURE）是端点级的，与传输类型无关——那是钻点二的主角。</div>
+
+  <h2>钻点二 · ep_state 旗标：软件侧的第二台状态机</h2>
+  <p>上一课 0007 ③站的小字预告过：五种端点态不敲铃。现在把整台机器拆开——xHC 硬件自己有一台端点状态机（Endpoint Context 的 ep_state 字段，§4.8.3 p162，五态），内核在 <code>struct xhci_virt_ep</code> 里又维护一台<strong>软件</strong>状态机（ep_state 位域，十个旗标）——两台机器通过命令环/事件环对话，谁也不同步谁，全靠这些旗标记住"我这边正在进行什么"：</p>
+<pre>/* xhci.h:454-458 硬件侧：EP Context 的五态（§4.8.3） */
+#define EP_STATE_MASK		(0x7)
+#define EP_STATE_DISABLED	0
+#define EP_STATE_RUNNING	1
+#define EP_STATE_HALTED		2
+#define EP_STATE_STOPPED	3
+#define EP_STATE_ERROR		4</pre>
+<pre>/* xhci.h:672-685（struct xhci_virt_ep）软件侧：十个旗标（注释即语义） */
+	unsigned int			ep_state;
+#define SET_DEQ_PENDING		BIT(0)
+#define EP_HALTED		BIT(1)	/* For stall handling */
+#define EP_STOP_CMD_PENDING	BIT(2)	/* For URB cancellation */
+/* Transitioning the endpoint to using streams, don't enqueue URBs */
+#define EP_GETTING_STREAMS	BIT(3)
+#define EP_HAS_STREAMS		BIT(4)
+/* Transitioning the endpoint to not using streams, don't enqueue URBs */
+#define EP_GETTING_NO_STREAMS	BIT(5)
+#define EP_HARD_CLEAR_TOGGLE	BIT(6)
+#define EP_SOFT_CLEAR_TOGGLE	BIT(7)
+/* usb_hub_clear_tt_buffer is in progress */
+#define EP_CLEARING_TT		BIT(8)
+#define EP_DROP_PENDING		BIT(9) /* port disconnect or link error, don't restart */</pre>
+  <p>逐旗标的生命周期（置位/清除/守护动作）：</p>
+  <table>
+    <tr><th>旗标</th><th>置位（谁、何时）</th><th>清除（谁、何时）</th><th>守护动作</th></tr>
+    <tr><td><code>SET_DEQ_PENDING</code></td><td>xhci_move_deq_to_next_td 发 Set TR Dequeue 命令前（:766）</td><td>handle_cmd_set_deq 命令完成（:1544）</td><td>禁敲铃（xHC 不对运行中的环设 deq，:761-764 注释）；取消路径见机行事（:1049/:1849）</td></tr>
+    <tr><td><code>EP_HALTED</code></td><td>xhci_handle_halted_endpoint 发 Reset EP 前（:1020）</td><td>handle_cmd_reset_ep 命令完成（:1589）</td><td>禁敲铃；<strong>入队照收</strong>（prepare_ring :3287"queueing URB anyway"）——URB 排队等恢复，不丢</td></tr>
+    <tr><td><code>EP_STOP_CMD_PENDING</code></td><td>xhci_urb_dequeue（:1869）/xhci_endpoint_reset（:3403）发 Stop EP 时</td><td>handle_cmd_stop_ep 命令完成（:1254/:1307）</td><td>禁敲铃；dequeue 不再重复发 Stop（:1849-1853）——等完成处理器收拾取消的 TD</td></tr>
+    <tr><td><code>EP_GETTING_STREAMS</code>/<code>EP_GETTING_NO_STREAMS</code></td><td>流协议切换中（§4.12）</td><td>切换完成</td><td><strong>拒绝入队</strong>（:1683-1688 -EINVAL）</td></tr>
+    <tr><td><code>EP_HARD_CLEAR_TOGGLE</code></td><td>硬复位路径置位（:1003）——toggle 将由 Reset EP 命令顺带清</td><td>xhci_endpoint_reset 消费（:3361-3365）</td><td>防止 usb_clear_halt 再发 D+A 重清一遍 toggle</td></tr>
+    <tr><td><code>EP_SOFT_CLEAR_TOGGLE</code></td><td>xhci_endpoint_reset 显式清 toggle（:3388，Configure Endpoint D+A 位，§4.6.8 附注）</td><td>复位流程收尾</td><td><strong>拒绝入队</strong>（:1689-1693）；要求 ring 为空（:3396-3401 否则拒绝复位）</td></tr>
+    <tr><td><code>EP_CLEARING_TT</code></td><td>LS/FS 非 interrupt 传输经 TT 出错，finish_td 发起异步清 TT（:2186-2193）</td><td>xhci_clear_tt_buffer_complete 回调（xhci.c:5592）</td><td>禁敲铃——TT buffer 清净之前不给 TT 塞新 split（连回 0004/0005 课）</td></tr>
+    <tr><td><code>EP_DROP_PENDING</code></td><td>断连/链路失活（:997/:1303）</td><td>xhci_reset_device 收尾批量清（:4094）</td><td>禁敲铃+不重启；取消的 TD 直接判 TD_CLEARED（:1067-1070）</td></tr>
+  </table>
+  <p>这张表的公共出口正是 0007 ③站那句小字——门铃守卫（:560-568）：<strong>端点不在可运行态就不催硬件</strong>。敲铃是"有活干"的信号，而 halt/停机/清 TT/设指针期间的敲铃要么白敲、要么踩坏进行中的恢复流程：</p>
+<pre>/* xhci-ring.c:560-568（xhci_ring_ep_doorbell :551） */
+	/* Don't ring the doorbell for this endpoint if there are pending
+	 * cancellations because we don't want to interrupt processing.
+	 * We don't want to restart any stream rings if there's a set dequeue
+	 * pointer command pending because the device can choose to start any
+	 * stream once the endpoint is on the HW schedule.
+	 */
+	if (ep_state &amp; (EP_STOP_CMD_PENDING | SET_DEQ_PENDING | EP_HALTED |
+			EP_CLEARING_TT | EP_DROP_PENDING))
+		return;</pre>
+  <p>TT 那一行值得单独展开——它是 hub 线与 xHC 线的交汇点。LS/FS 设备经 TT 的批量/控制传输出错时（0005 课讲的 TT buffer 残留），finish_td 在进入 halt 恢复前先异步发 CLEAR_TT_BUFFER（usb core 的控制传输），期间置 EP_CLEARING_TT；ep0 的 stall 例外不清 TT（:2278——ep0 不经 TT 缓冲）。清完的回调只做两件事：清旗标、敲门铃——排队等待的 URB 这才被 xHC 看见：</p>
+<pre>/* xhci-ring.c:2186-2193（xhci_clear_hub_tt_buffer） */
+	if (td-&gt;urb-&gt;dev-&gt;tt &amp;&amp; !usb_pipeint(td-&gt;urb-&gt;pipe) &amp;&amp;
+	    (td-&gt;urb-&gt;dev-&gt;tt-&gt;hub != xhci_to_hcd(xhci)-&gt;self.root_hub) &amp;&amp;
+	    !(ep-&gt;ep_state &amp; EP_CLEARING_TT)) {
+		ep-&gt;ep_state |= EP_CLEARING_TT;
+		td-&gt;urb-&gt;ep-&gt;hcpriv = td-&gt;urb-&gt;dev;
+		if (usb_hub_clear_tt_buffer(td-&gt;urb))
+			ep-&gt;ep_state &amp;= ~EP_CLEARING_TT;
+	}</pre>
+<pre>/* xhci.c:5592-5593（xhci_clear_tt_buffer_complete） */
+	xhci-&gt;devs[slot_id]-&gt;eps[ep_index].ep_state &amp;= ~EP_CLEARING_TT;
+	xhci_ring_doorbell_for_active_rings(xhci, slot_id, ep_index);</pre>
+  <p>最后用五帧动画把"两台状态机 + 命令环"协同走一遍——剧情：bulk IN 端点收到一次 <strong>STALL</strong>（功能性 stall），从事件到设备恢复运行的完整软硬协同时序（无 JS 时全部帧定格可读）：</p>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>STALL 判决书到达：Transfer Event(CC=6)</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>软件 ep_state</b>全 0（此前无故障）</div>
+          <div class="u"><b>硬件 EP ctx</b>RUNNING → HALTING</div>
+          <div class="u"><b>命令环</b>—</div>
+          <div class="u"><b>事件环</b><span style="color:#a00000;font-weight:600">Transfer Event：STALL，ep=bulk IN</span></div>
+          <div class="u"><b>urb</b>未给回</div>
+        </div>
+        handle_tx_event 给 td-&gt;status 打上 -EPIPE（:2705-2708），分派 process_bulk_intr_td——错误不是终点，urb 还不能给回：<strong>得先把 xHC 侧端点从 HALTED 状态捞出来，TD 才能销账</strong>。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>finish_td 裁决：halt 成立 → 置旗标 + Reset Endpoint 命令上环</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>软件 ep_state</b><span style="color:#a00000;font-weight:600">EP_HALTED｜EP_HARD_CLEAR_TOGGLE</span></div>
+          <div class="u"><b>硬件 EP ctx</b>HALTED</div>
+          <div class="u"><b>命令环</b><span style="color:#1a5fb4;font-weight:600">Reset Endpoint（硬，TSP=0）</span></div>
+          <div class="u"><b>TD 去向</b>挂入 cancelled_td_list（TD_HALTED，:1004-1007）</div>
+          <div class="u"><b>urb</b>仍未给回</div>
+        </div>
+        finish_td 判 xhci_halted_host_endpoint=true（:2267）；本例非 TT 设备跳过清 TT；xhci_handle_halted_endpoint：<strong>TD 转入取消链表</strong>、置两枚旗标、Reset EP 命令入命令环、敲命令铃（:982-1025）。此后该端点门铃被守卫挡住——排队的新 URB 静静等着。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>Reset EP 完成事件：清 EP_HALTED，但发现 hw_deq 停在取消的 TD 上 → Set TR Dequeue</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>软件 ep_state</b><span style="color:#a00000;font-weight:600">EP_HARD_CLEAR_TOGGLE｜SET_DEQ_PENDING</span>（EP_HALTED 已清）</div>
+          <div class="u"><b>硬件 EP ctx</b>STOPPED</div>
+          <div class="u"><b>命令环</b><span style="color:#1a5fb4;font-weight:600">Set TR Dequeue Pointer（:689）</span></div>
+          <div class="u"><b>环手术</b>cancelled TD 的 TRB 改写成 No-Op（td_to_noop :783）</div>
+          <div class="u"><b>urb</b>仍未给回</div>
+        </div>
+        handle_cmd_reset_ep（:1564）：先 invalidate_cancelled_tds——硬件游标（hw_deq）还压在取消的 TD 里，xHC 缓存的 TRB 必须作废：<strong>TRB 改 No-Op + Set TR Dequeue 命令把游标搬到下一个 TD/入队点</strong>（:1036-1143），SET_DEQ_PENDING 置位（:766）；然后才清 EP_HALTED（:1589）。§4.6.8/§4.6.10 两条命令在这里接力。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>Set TR Deq 完成：游标落地、urb 以 -EPIPE 给回——类驱动这才"看见" stall</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>软件 ep_state</b><span style="color:#a00000;font-weight:600">EP_HARD_CLEAR_TOGGLE</span>（SET_DEQ_PENDING 已清）</div>
+          <div class="u"><b>硬件 EP ctx</b>STOPPED</div>
+          <div class="u"><b>命令环</b>—</div>
+          <div class="u"><b>事件环</b>Command Completion：Set TR Deq ✓</div>
+          <div class="u"><b>urb</b><span style="color:#a00000;font-weight:600">给回：status=-EPIPE</span></div>
+        </div>
+        handle_cmd_set_deq（:1424）：软件侧 ring 游标对齐硬件（:1516-1522）、TD_CLEARING_CACHE→TD_CLEARED→xhci_td_cleanup 给回 urb（:1530-1542）、清 SET_DEQ_PENDING（:1544）。<strong>从 STALL 事件到 urb 给回横跨两条命令</strong>——这就是 urb_complete 回调延迟的微观来源，也是驱动里大量 ep_state 判空检查存在的原因。
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 5 帧</span><span>类驱动 usb_clear_halt：消费硬清旗标，端点回 RUNNING——软硬双机复位</span></div>
+      <div class="fbody">
+        <div class="mfr">
+          <div class="u"><b>软件 ep_state</b>全 0（HARD_CLEAR_TOGGLE 被消费）</div>
+          <div class="u"><b>硬件 EP ctx</b>STOPPED → RUNNING（新 URB 敲铃后）</div>
+          <div class="u"><b>控制 ep0</b><span style="color:#1a5fb4;font-weight:600">CLEAR_FEATURE(ENDPOINT_HALT) 传输</span></div>
+          <div class="u"><b>hcd</b>xhci_endpoint_reset：检得 EP_HARD_CLEAR_TOGGLE → 直接 return（:3361-3365）</div>
+          <div class="u"><b>后续</b>新 URB 入队 → 门铃放行 → 传输恢复</div>
+        </div>
+        类驱动对 -EPIPE 的标准回应是发 CLEAR_FEATURE(ENDPOINT_HALT)（清<strong>设备侧</strong> stall），usb core 随后调 hcd 的 endpoint_reset——内核发现 toggle 已被第 2 帧的 Reset EP 硬清过（旗标在案），免去 Configure Endpoint D+A 重清。此刻软硬两台状态机同回零位。<strong>十个旗标的公共语义一句话：端点不在可运行态，就不催硬件、不收新活、按部就班走命令环</strong>。
+      </div>
+    </div>
+  </div>
+  <div class="note">收拢：xHCI 里"端点的状态"有两份——<strong>硬件 EP ctx 五态（§4.8.3）是 xHC 自己的状态机，软件 ep_state 十旗标（xhci.h:672-685）是驱动的簿记</strong>；两者通过命令环上的 Reset/Stop/Set TR Dequeue 与事件环上的 Transfer/Command Completion 对话。urb_dequeue（:1849-1860）那张"三态让路、两态秒断"的分派表，就是这套簿记的消费端——读懂它，cancel/超时/halt 交织的并发路径就不再神秘。</div>
+
+  <h2>回到整体（xHC 线三课收官的地图钉）</h2>
+  <p>xHC 线三课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、接缝、四把钥匙、六站旅程）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与提单上的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 门铃守卫。0001 骨架图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
+
+  <h2>检索练习 · 6 题</h2>
+  <div id="quiz"></div>
+
+
+  <h2>主源与下一步</h2>
+  <ul>
+    <li><strong>主源</strong>：xHCI 1.2（2019）§4.10.2 Errors（p195-203——.1 Stall、.3 USB Transaction Error、.7 Bus Error Counter、.8 等时端点错误处理）／§4.10.3.1 Ring Overrun and Underrun（p204）／§4.8.3 Endpoint Context State（p162）／§4.6.8-4.6.10（Reset Endpoint／Stop Endpoint／Set TR Dequeue Pointer，p128/133/141）／§6.4.5 Table 6-91（CC 码全表，p507）。内核：<code>drivers/usb/host/xhci-ring.c</code>（本课全部行号基线 62f4c998b297）。</li>
+    <li>标本深挖：M4.5 合同（作者工作区在案）（九条全序判据）与 QEMU xHCI lab1 实证（作者工作区在案）（真实虚拟主控的 TRB dump 对照）；<a href="../notes/Linux-xHCI实现与规范差异分析.md">实现与规范差异分析</a>。</li>
+    <li>前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>（TD 语法/几何）＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>（六站/cycle 合同）。</li>
+    <li>下一课候选：端口与 rhub（usb2_rhub/usb3_rhub 双根 hub，衔接 0003）/ 命令环深钻（CRCR/命令仲裁）——<strong>直接问老师</strong>。</li>
+  </ul>
+
+  <footer>课 0008 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4：本课＝实战与命运面——M4.5 标本九事件＋错误路径全图＋ep_state 十旗标）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 标本：M4.5 引擎 v0.3（m45_xhci.log 全 PASS）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ｜ 下一课：待定（rhub 端口课 / 命令环深钻）｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+/* player.js — 分帧放映机（课程族共享，配 course.css 的 .player 段）
+ * 静态优先：无 JS 时所有帧默认 CSS 全部可见（一帧一张定格）；
+ * 本脚本 init 首行给 .player 加 'js' 类后才进入播放模式（只显当前帧）。
+ * 托管页面上全部放映机：上一帧/播放(2.6s 自动)/下一帧/重置/展开全部帧
+ * + 圆点导航 + "第 N/M 帧"计数；到尾帧自动停播；手翻即停播。 */
+(function () {
+  'use strict';
+  document.querySelectorAll('.player').forEach(function (pl) {
+    pl.classList.add('js');
+    var frames = Array.prototype.slice.call(pl.querySelectorAll('.frame'));
+    if (!frames.length) return;
+    var idx = 0, timer = null;
+
+    var ctl = document.createElement('div');
+    ctl.className = 'pctl';
+    ctl.innerHTML =
+      '<button type="button" data-a="prev">上一帧</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一帧</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<button type="button" data-a="all">展开全部帧</button>' +
+      '<span class="pcount"></span><span class="pdots"></span>';
+    pl.appendChild(ctl);
+    var count = ctl.querySelector('.pcount');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+    var dotsBox = ctl.querySelector('.pdots');
+    frames.forEach(function (f, i) {
+      var d = document.createElement('i');
+      d.title = '第 ' + (i + 1) + ' 帧';
+      d.addEventListener('click', function () { manual(i); });
+      dotsBox.appendChild(d);
+    });
+    var dots = Array.prototype.slice.call(dotsBox.children);
+
+    function stop() {
+      if (timer) { clearInterval(timer); timer = null; }
+      playBtn.textContent = '播放';
+    }
+    function go(i) {
+      idx = (i + frames.length) % frames.length;
+      frames.forEach(function (f, k) { f.classList.toggle('cur', k === idx); });
+      dots.forEach(function (d, k) { d.classList.toggle('on', k === idx); });
+      count.textContent = '第 ' + (idx + 1) + '/' + frames.length + ' 帧';
+      if (idx === frames.length - 1) stop();
+    }
+    /* 手动导航才退出"展开全部帧"；预置的 static（打印/静态验收态）不被 init 翻掉 */
+    function manual(i) {
+      stop();
+      pl.classList.remove('static');
+      go(i);
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { manual(idx - 1); }
+      else if (a === 'next') { manual(idx + 1); }
+      else if (a === 'reset') { manual(0); }
+      else if (a === 'all') { stop(); pl.classList.toggle('static'); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        pl.classList.remove('static');
+        if (idx === frames.length - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === frames.length - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2600);
+      }
+    });
+    go(0);
+  });
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '标本时序',
+    prompt: 'M4.5 标本实测：Address Device（BSR=0）的命令完成事件 CCC 到达之前，线上发生了什么？',
+    options: ['驱动先排了一个 SET_ADDRESS 的 TD', 'xHC 自己在总线上发 SET_ADDRESS 并等它完成', '设备主动向主机发起 SET_ADDRESS', '什么都没发生，设址在 CCC 之后异步进行'],
+    answer: 1,
+    explain: 'B 对。BSR=0 即执行设址（§4.6.5）：SET_ADDRESS 是 xHC 在总线上自己发的事务，驱动从不为它排 TD（内核 xhci_setup_device xhci.c:4318；引擎日志实测 wire txn addr=1 在前、EV5 CCC 在后，A5 断言 PASS）。对比 BSR=1=只建上下文不设址（TRB_BSR 位，xhci-ring.c:4412），设备停在地址 0 服务 8B 描述符请求——规范 §4.3.4 两段式的动态面。' },
+  { tag: '错误路径',
+    prompt: '控制传输 Data 阶段的完成事件先到了，驱动（process_ctrl_td）怎么处理？',
+    options: ['立即以该事件给回 urb', '记下 actual_length 压住不收，等 Status 阶段事件才收整个 TD', '丢弃该事件等设备重发', '原地软重试同一个 TD'],
+    answer: 1,
+    explain: 'B 对（xhci-ring.c:2378-2387）：置 td->urb_length_set、更新 actual_length 后打印 "Waiting for status stage event" 直接 return——控制传输按阶段做两次事件会计，Success 只认落在 Status TRB 上的那颗（:2323-2327）。本课 M4.5 标本的短包双事件（EV6 Short 落 Data、EV7 Success 落 Status）走的就是这条路。A 会把三段 TD 当一段收；C 设备不会重发完成事件；D 是 bulk 的 USB Transaction Error 处置。' },
+  { tag: '错误路径',
+    prompt: '等时端点收到 Missed Service（CC=23）后，驱动的处置是什么？',
+    options: ['按 bInterval 补传错过的帧', '置 ep->skip 整 TD 整 TD 跳过，直到事件指针重新落进存活 TD', 'halt 端点走 Reset EP 恢复链', '丢弃整个 urb 不再上报'],
+    answer: 1,
+    explain: 'B 对（:2762-2773 置 skip；:2854-2863 跳帧循环）：xHC 承认"这个服务区间没轮到你"，驱动从 td_list 头开始整 TD 跳过（usbcore 已预置每帧 status=-EXDEV），流照常向前——错过的帧不补。等时端点永不 halt（§4.10.2.8），A/C 都违背等时语义；D 错误逐帧写进 iso_frame_desc 上报，urb 不丢。' },
+  { tag: '错误路径',
+    prompt: 'bulk IN 传输报来 USB Transaction Error（xHC 硬件重试已穷尽、非 TT 设备、该端点此前无错）——process_bulk_intr_td 的第一反应是什么？',
+    options: ['软复位端点（Reset EP 带 TSP 保 toggle）原地重试同一 TD，最多再来 3 次', '立即硬复位端点并清 data toggle', '直接把 urb 以 -EPROTO 给回', '丢弃该 TD 跳到下一个'],
+    answer: 0,
+    explain: 'A 对（xhci-ring.c:2542-2551）：err_count 未超 MAX_SOFT_RETRY=3（xhci.h:1271）且非 quirk 禁用、非 TT_SLOT 设备 → td->status 清零＋EP_SOFT_RESET（Reset EP 带 TSP 位保住 data toggle/序列，:4492-4493）原地重试。软重试也穷尽才走 EP_HARD_RESET 硬清；B 是超限后的下一步；urb 给回发生在恢复链走完之后（钻点二第 4 帧），不是第一反应。' },
+  { tag: 'ep_state',
+    prompt: 'LS/FS 设备经 TT 的传输出错、EP_CLEARING_TT 置位期间，为什么该端点不敲门铃？',
+    options: ['TT buffer 未清净之前，不能给 TT 塞新的 split 事务', '省电：等 TT 空闲再唤醒 xHC', 'doorbell 寄存器此期间只读', '防止排队中的 URB 丢失'],
+    answer: 0,
+    explain: 'A 对（门铃守卫 :560-568 五旗标之一；置位在 xhci_clear_hub_tt_buffer :2186-2193）：CLEAR_TT_BUFFER 控制传输在路上时催硬件，等于往还没清干净的 TT 缓冲里塞新 split——这正是 0005 课 TT buffer 残留故事的 xHC 侧防线。清完的回调只做两件事：清旗标、敲门铃（xhci.c:5592-5593），排队的 URB 这才被 xHC 看见。B/D 无此语义；C 门铃始终可写。' },
+  { tag: 'ep_state',
+    prompt: 'bulk 端点 STALL 后到该 urb 以 -EPIPE 给回，命令环上依次发生什么？',
+    options: ['Stop Endpoint → Reset Endpoint → 给回', 'Configure Endpoint(D+A) → Reset Endpoint → 给回', 'Disable Slot → Enable Slot → 给回', 'Reset Endpoint → Set TR Dequeue Pointer → 给回'],
+    answer: 3,
+    explain: 'D 对（本课钻点二五帧动画）：STALL 事件→finish_td 判 halt→EP_HALTED＋Reset Endpoint（硬）；Reset EP 完成处理器发现 hw_deq 压在取消 TD 上→td_to_noop＋Set TR Dequeue Pointer（SET_DEQ_PENDING）；Set TR Deq 完成才 td_cleanup 给回 -EPIPE。A 的 Stop Endpoint 属于 URB 取消/停机路径（EP_STOP_CMD_PENDING）；B 的 D+A 属于之后的 usb_clear_halt 阶段（且被 EP_HARD_CLEAR_TOGGLE 消费跳过，:3361-3365）；C 是设备级操作，粒度完全不对。' }
+]);
+</script>
+</body>
+</html>
