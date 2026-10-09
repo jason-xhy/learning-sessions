@@ -129,7 +129,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.7 Doorbells（p158）/ §4.9.2 Transfer Ring Management（p169-178，cycle 规则立法处）/ §4.9.4 事件环（p179）/ §6.5 ERST</p>
 
   <h2>整体定位（零件已认完，本课让环转起来）</h2>
-  <p>上一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>）把静态面钉死：提单 16 字节的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章）、槽→TD→段→环的组织、切分语法与扩容几何——<strong>零件都在桌上，但环还没转</strong>。本课让它们动起来，主角是三个：<strong>cycle 合同</strong>（谁拥有哪颗槽——环形缓冲不用"空/满"标志位的立法答案）、<strong>接缝</strong>（内存里的直线怎么闭合成圆）、<strong>四把钥匙联动</strong>（cycle × toggle cycle × chain × Link 在同一颗环上咬合）。最后把<strong>六站旅程</strong>完整走一遍——下面这张全景图本课全程适用：主角是②③④⑤，即排环、发布、取指与事件回程的反向合同。</p>
+  <p>上一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>）把静态面钉死：提单 16 字节的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章）、槽→TD→段→环的组织、切分语法与扩容几何——<strong>零件都在桌上，但环还没转</strong>。本课让它们动起来，主角是三个：<strong>cycle 合同</strong>（谁拥有哪颗槽——环形缓冲不用"空/满"标志位的立法答案）、<strong>接缝</strong>（内存里的直线怎么闭合成圆）、<strong>四把钥匙联动</strong>（cycle × toggle cycle × chain × Link 在同一颗环上咬合）。最后把<strong>六站旅程</strong>完整走一遍——下面这张全景图本课全程适用：主角是②③④⑤，即排环、发布、取指与事件回程的反向合同。收官的钻点三是「两问两答」——2026-10-09 三课上线当天读者的两个真实追问（分件的是哪把钥匙？为什么非要翻圈？），把四把钥匙的分工逼到墙角再钉一遍。</p>
 
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -1032,10 +1032,441 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
   </div>
   <div class="note">一句话收拢：<strong>cycle bit 是"每颗 TRB 的所有权"——生产者发布时置成当前轮次，消费者取指时对自己的轮次校验；toggle cycle 让两侧在接缝处（且只在接缝处）同时翻圈，chain bit 把 TRB 捆成 TD 并声明边界，Link TRB 身兼指针/TC/自身 cyc/chain 四重身份——四把钥匙咬合，这颗无锁的环才从来不必说出"空"或"满"</strong>。生产/消费两侧的动作对照：软件 giveback_first_trb（发布翻 cycle）↔ xHC 取指校验；软件 inc_enq_past_link（跨缝翻轮次）↔ xHC 按 TC 翻轮次；事件环上两套动作整个对调。</div>
 
-  <h2>回到整体（环转起来了，下一课看实战与命运）</h2>
-  <p>本课走完六站＋cycle 合同＋接缝＋四钥匙联动——0001 骨架图里的"三种环"现在是<strong>会动且你知道为什么动</strong>的环。但到这里为止走的都是 happy path：事件全是 Success/Short Packet，端点从不出错。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）收官三件事：用我们亲手实现的 M4.5 引擎把 set_address 全握手的<strong>九条事件逐帧跑给你看</strong>（数字全部实测，含短包双事件与环回绕轮转）；拆开<strong>错误路径全图</strong>（CC 判决表→四种传输各自的命运）；拆开<strong>ep_state 十旗标</strong>——STALL 到恢复的完整软硬协同时序。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的两段式 BSR、事件环上的九颗回执。</p>
+  <h2>钻点三 · 两问两答：分件的是谁？为什么翻圈？（读者实问）</h2>
+  <p>本节两问都不是编的——三课上线当天（2026-10-09），一位读者读完 0006 当场问出第一问，消化后又追出第二问。两问一前一后，恰好把四把钥匙的分工逼到墙角。先钉两个本节的词（首次出现即定义）：</p>
+  <table>
+    <tr><th>术语</th><th>管什么</th><th>哪几把钥匙</th><th>判的是</th></tr>
+    <tr><td><b>圈界</b></td><td>这颗槽里的提单是第几圈的货</td><td>cycle bit ＋ toggle cycle</td><td>新货（有效）vs 旧货（残影）——所有权</td></tr>
+    <tr><td><b>件界</b></td><td>这颗槽是不是一件货（TD）的尽头</td><td>chain bit ＋ IOC</td><td>TDn vs TDn+1——打包边界＋收口对账</td></tr>
+  </table>
 
-  <h2>检索练习 · 6 题</h2>
+  <div class="note"><b>读者问一（原话复述）</b>：「多段环转一整圈，cycle_state 只翻一次——一个 TD 里的 cycle state 不是都相同吗（除了最后一颗）？那 xHC 怎么区分 TDn 和 TDn+1？」</div>
+  <p>这句提问里藏着一次<strong>钥匙串门</strong>：括号里那条「除最后一颗外都相同」其实是 <strong>chain 的规则</strong>（TD 内除尾 TRB 外 chain=1、尾 chain=0——0006 的钉死句是「边界＝chain 0」），被记到了 cycle 头上。于是前提看起来全对：同圈内 TD 的 cycle 确实全都相同——但「分件」从来不是 cycle 的工作，就像责怪体重秤量不出身高：它不是干这个的。下面四帧让 cycle 与 chain 第一次<strong>同框对照</strong>（此前只有独舞与四钥匙齐转，缺的正是并排的这一帧）。布景、货、色板与联动节完全同一套——还是那三颗 130KB 的 bulk 货：</p>
+  <figure>
+    <svg viewBox="0 0 880 108" role="img" aria-label="读图色板（与联动节同一套）" style="width:100%;background:#fff;border:1px solid #e3e3da">
+      <g font-size="11">
+        <rect x="30"  y="16" width="30" height="20" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/><text x="70" y="30">绿＝有效：cyc＝xHC 当前轮次，可取走</text>
+        <rect x="460" y="16" width="30" height="20" fill="#f4f4ef" stroke="#b9b9ac"/><text x="500" y="30">灰＝空 / 旧轮次（cyc≠轮次）</text>
+        <rect x="30"  y="46" width="30" height="20" fill="#ffffff" stroke="#a5a596" stroke-width="1.4"/><text x="70" y="60">白＝数据已落、首 TRB 的 cyc 反极性压着（未发布）</text>
+        <rect x="460" y="46" width="30" height="20" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4" stroke-dasharray="4 3"/><text x="500" y="60">淡蓝虚线＝已排好、属下一轮次（xHC 还没过缝对表）</text>
+        <rect x="30"  y="76" width="30" height="20" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.3" stroke-dasharray="4 3"/><text x="70" y="90">淡绿虚线✓＝已消费残影（cyc 原样留存，无人擦除）</text>
+        <rect x="460" y="76" width="30" height="20" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/><text x="500" y="90">紫＝Link TRB（接缝）　▲软件 enqueue　▼xHC dequeue</text>
+      </g>
+    </svg>
+    <figcaption>色板与联动节同一套。本节新增的镜头语言只有一种：每颗槽角上的「轮次贴纸」＝槽里印的 cyc 值（问二第 3 帧起用）。</figcaption>
+  </figure>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>同圈的邻居——假悖论定格：六颗 TRB 的 cyc 全部相同</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 212" role="img" aria-label="TD1 与 TD2 同圈相邻，边界处一个大问号" style="width:100%">
+      <g font-size="11">
+      <path d="M 728 42 C 728 14, 84 14, 84 40" fill="none" stroke="#6a4fc4" stroke-width="1.8"/>
+      <polygon points="77,40 91,40 84,47" fill="#6a4fc4"/>
+      <rect x="40" y="44" width="88" height="62" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="84" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD1a·64K</text>
+        <text x="84" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=1</text>
+        <text x="84" y="95" text-anchor="middle" font-size="10.5" fill="#1a7f37">cyc=1</text>
+      <rect x="132" y="44" width="88" height="62" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="176" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD1b·64K</text>
+        <text x="176" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=1</text>
+        <text x="176" y="95" text-anchor="middle" font-size="10.5" fill="#1a7f37">cyc=1</text>
+      <rect x="224" y="44" width="88" height="62" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="268" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD1c·2K</text>
+        <text x="268" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=0·IOC</text>
+        <text x="268" y="95" text-anchor="middle" font-size="10.5" fill="#1a7f37">cyc=1</text>
+      <rect x="316" y="44" width="88" height="62" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="360" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD2a·64K</text>
+        <text x="360" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=1</text>
+        <text x="360" y="95" text-anchor="middle" font-size="10.5" fill="#1a7f37">cyc=1</text>
+      <rect x="408" y="44" width="88" height="62" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="452" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD2b·64K</text>
+        <text x="452" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=1</text>
+        <text x="452" y="95" text-anchor="middle" font-size="10.5" fill="#1a7f37">cyc=1</text>
+      <rect x="500" y="44" width="88" height="62" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="544" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD2c·2K</text>
+        <text x="544" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=0·IOC</text>
+        <text x="544" y="95" text-anchor="middle" font-size="10.5" fill="#1a7f37">cyc=1</text>
+      <rect x="592" y="44" width="88" height="62" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
+        <text x="636" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#909084">空</text>
+        <text x="636" y="95" text-anchor="middle" font-size="10.5" fill="#909084">cyc=0</text>
+      <rect x="684" y="44" width="88" height="62" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
+        <text x="728" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6a4fc4">Link</text>
+        <text x="728" y="81" text-anchor="middle" font-size="10" fill="#707070">回绕到槽0</text>
+        <text x="728" y="95" text-anchor="middle" font-size="10.5" fill="#6a4fc4">cyc=0 · TC=1</text>
+      <line x1="314" y1="38" x2="314" y2="144" stroke="#a00000" stroke-width="1.6" stroke-dasharray="5 4"/>
+      <polygon points="628,120 644,120 636,108" fill="#1a5fb4"/>
+        <text x="647" y="117" font-size="9.5" fill="#1a5fb4">▲enqueue(软件)</text>
+      <polygon points="76,123 92,123 84,135" fill="#1a7f37"/>
+        <text x="95" y="133" font-size="9.5" fill="#1a7f37">▼dequeue(xHC)</text>
+      <line x1="46" y1="150" x2="306" y2="150" stroke="#1a5fb4" stroke-width="2"/>
+        <text x="176" y="164" text-anchor="middle" font-size="10" fill="#1a5fb4">TD1（一件·3 提单）</text>
+      <line x1="322" y1="150" x2="582" y2="150" stroke="#1a5fb4" stroke-width="2"/>
+        <text x="452" y="164" text-anchor="middle" font-size="10" fill="#1a5fb4">TD2（一件·3 提单）</text>
+      <circle cx="314" cy="172" r="11" fill="#a00000"/>
+        <text x="314" y="176" text-anchor="middle" fill="#fff" font-weight="700">?</text>
+      <text x="440" y="176" text-anchor="middle" font-size="10.5" font-weight="600" fill="#a00000">两件之间连一颗空槽都没有——TD 的边界藏在哪？</text>
+      <rect x="40" y="176" width="250" height="30" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/><text x="165" y="195" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">软件 cycle_state = 1</text>
+        <rect x="310" y="176" width="200" height="30" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="410" y="195" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">xHC 轮次 = 1</text>
+        <rect x="530" y="176" width="310" height="30" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="685" y="195" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">门铃：✓ 敲响×2（TD1/TD2 各一铃）</text>
+      </g>
+    </svg>
+        <p><strong>本帧只看槽2 与槽3 这对邻居</strong>：TD1 与 TD2 同圈相邻，六颗 TRB 的 cyc 全部＝1，两件之间连一颗空槽都没有隔开——「cycle 全同 ⇒ 分不出 TD」的前提此刻完全成立。它不是环的缺陷：cycle 从没领过「分件」的任务（下一帧看真正管分件的章）。顺带把假悖论的来路钉死：把 chain 的规则（除尾 TRB 外都相同）背到 cycle 头上，两把钥匙在这一帧确实长得像。</p>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>两枚章·两道关——cycle 与 chain 首次同框对照</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 330" role="img" aria-label="每颗 TRB 过两道关：轮次员与打包员各看各的章" style="width:100%">
+      <g font-size="11">
+        <text x="440" y="24" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1a2b4a">xHC 给每颗 TRB 过两道关：两个检查员各看各的章，互不通气</text>
+        <rect x="40" y="40" width="372" height="64" rx="6" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
+        <text x="56" y="62" font-size="12" font-weight="700" fill="#1a7f37">关卡① 轮次员 —— 判圈界</text>
+        <text x="56" y="80" font-size="10.5" fill="#1a2b4a">只读 DW3 bit0（cyc）：这张单是本轮的吗？对色卡（xHC 当前轮次）</text>
+        <text x="56" y="96" font-size="10.5" fill="#707070">对不上 → 环空即停（§4.9.2，钻点一）</text>
+        <rect x="468" y="40" width="372" height="64" rx="6" fill="#f6f6f1" stroke="#1a2b4a" stroke-width="1.4"/>
+        <text x="484" y="62" font-size="12" font-weight="700" fill="#1a2b4a">关卡② 打包员 —— 判件界</text>
+        <text x="484" y="80" font-size="10.5" fill="#1a2b4a">只读 DW3 bit4（chain）：和下一张还绑着吗？看捆绑绳</text>
+        <text x="484" y="96" font-size="10.5" fill="#707070">绳断 → 本件收口＋交回执（bit5 IOC）</text>
+        <rect x="60" y="140" width="368" height="132" rx="8" fill="#eef7f0" stroke="#1a7f37" stroke-width="1.8"/>
+        <text x="76" y="164" font-size="12.5" font-weight="700" fill="#1a2b4a">槽2 · TD1c（TD1 的尾 TRB）</text>
+        <circle cx="94" cy="192" r="13" fill="#fff" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="94" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="#1a7f37">1</text>
+        <text x="118" y="189" font-size="11" font-weight="600" fill="#1a7f37">关卡①圈章：cyc=1</text>
+        <text x="118" y="205" font-size="10.5" fill="#707070">对上轮次 1 ✓ 本轮的单（圈界·通过）</text>
+        <circle cx="94" cy="234" r="13" fill="#fff" stroke="#a00000" stroke-width="1.6"/>
+        <text x="94" y="238" text-anchor="middle" font-size="12" font-weight="700" fill="#a00000">0</text>
+        <text x="118" y="231" font-size="11" font-weight="600" fill="#a00000">关卡②绳章：chain=0 —— 剪刀落下</text>
+        <text x="118" y="247" font-size="10.5" fill="#a00000">TD1 到此收口；IOC=1 → 出票，票面回指本槽（Table 6-37）</text>
+        <text x="118" y="263" font-size="10.5" fill="#707070">驱动同时记下票根：td-&gt;end_trb（见下方立法码末两行）</text>
+        <rect x="452" y="140" width="368" height="132" rx="8" fill="#eef7f0" stroke="#1a7f37" stroke-width="1.8"/>
+        <text x="468" y="164" font-size="12.5" font-weight="700" fill="#1a2b4a">槽3 · TD2a（TD2 的首 TRB）</text>
+        <circle cx="486" cy="192" r="13" fill="#fff" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="486" y="196" text-anchor="middle" font-size="12" font-weight="700" fill="#1a7f37">1</text>
+        <text x="510" y="189" font-size="11" font-weight="600" fill="#1a7f37">关卡①圈章：cyc=1</text>
+        <text x="510" y="205" font-size="10.5" fill="#707070">对上轮次 1 ✓ 本轮的单（圈界·通过）</text>
+        <circle cx="486" cy="234" r="13" fill="#fff" stroke="#1a5fb4" stroke-width="1.6"/>
+        <text x="486" y="238" text-anchor="middle" font-size="12" font-weight="700" fill="#1a5fb4">1</text>
+        <text x="510" y="231" font-size="11" font-weight="600" fill="#1a5fb4">关卡②绳章：chain=1 —— 绳结继续</text>
+        <text x="510" y="247" font-size="10.5" fill="#1a5fb4">与下一张同件：TD2 从这里开件</text>
+        <text x="510" y="263" font-size="10.5" fill="#707070">尾 TRB 的反例见第 3 帧；首 TRB 的压着见联动第 2 帧</text>
+        <text x="440" y="296" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">两枚章住在 DW3 两个互不相干的位上：bit0（cyc）与 bit4（chain）；bit5（IOC）只在剪断的尾 TRB 点亮</text>
+        <text x="440" y="314" text-anchor="middle" font-size="10.5" fill="#707070">检查员互不通气：轮次员对不上就停环，根本轮不到打包员；打包员只管绳，从不管轮次</text>
+      </g>
+    </svg>
+<pre>/* xhci-ring.c:3694-3698（queue_bulk_tx 非尾 TRB：绑绳） */
+		/* Chain all the TRBs together; clear the chain bit in the last
+		 * TRB to indicate it's the last TRB in the chain.
+		 */
+		if (enqd_len + trb_buff_len &lt; full_len) {
+			field |= TRB_CHAIN;</pre>
+<pre>/* xhci-ring.c:3709-3714（queue_bulk_tx 尾 TRB：剪绳＋出票＋记票根） */
+		if (enqd_len + trb_buff_len &gt;= full_len) {
+			field &amp;= ~TRB_CHAIN;
+			field |= TRB_IOC;
+			more_trbs_coming = false;
+			td-&gt;end_trb = ring-&gt;enqueue;
+			td-&gt;end_seg = ring-&gt;enq_seg;</pre>
+        <p><strong>本帧只看两枚章的分家</strong>：圈章答「新货还是旧货」（bit0），绳章答「同件还是下一件」（bit4）。立法的就是上面两段贴码——排 TD 的软件在 <code>queue_bulk_tx</code> 里逐颗落章：非尾 TRB <code>field |= TRB_CHAIN</code>＝绑绳，尾 TRB <code>field &amp;= ~TRB_CHAIN</code>＋<code>TRB_IOC</code>＝剪绳、点亮回执，并记下票根 <code>td-&gt;end_trb</code>。同圈邻居 cyc 全同根本不妨碍分件——<strong>区分 TDn 与 TDn+1 的从来不是 cycle，是 chain=0 的剪刀＋IOC 的回执</strong>。</p>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>反证：跨缝的一件货，身上同时盖着两个圈的章</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 292" role="img" aria-label="TD3 发布后：首 TRB cyc=1、trailing cyc=0，同件两种圈号" style="width:100%">
+      <g font-size="11">
+      <path d="M 728 42 C 728 14, 84 14, 84 40" fill="none" stroke="#6a4fc4" stroke-width="1.8"/>
+      <polygon points="77,40 91,40 84,47" fill="#6a4fc4"/>
+      <text x="406" y="11" text-anchor="middle" font-size="9.5" fill="#6a4fc4">Link 回绕：段尾弯回首槽</text>
+      <rect x="40" y="44" width="88" height="62" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text x="84" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD3b·64K</text>
+        <text x="84" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=1</text>
+        <text x="84" y="95" text-anchor="middle" font-size="10.5" fill="#1a5fb4">cyc=0·下轮</text>
+      <rect x="132" y="44" width="88" height="62" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text x="176" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD3c·2K</text>
+        <text x="176" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=0·IOC</text>
+        <text x="176" y="95" text-anchor="middle" font-size="10.5" fill="#1a5fb4">cyc=0·下轮</text>
+      <rect x="224" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="268" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD1c</text>
+        <text x="268" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="268" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="316" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="360" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD2a</text>
+        <text x="360" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="360" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="408" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="452" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD2b</text>
+        <text x="452" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="452" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="500" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="544" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD2c</text>
+        <text x="544" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="544" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="592" y="44" width="88" height="62" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="636" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD3a·64K</text>
+        <text x="636" y="81" text-anchor="middle" font-size="10" fill="#707070">chain=1</text>
+        <text x="636" y="95" text-anchor="middle" font-size="10.5" fill="#1a7f37">cyc=1</text>
+      <rect x="684" y="44" width="88" height="62" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
+        <text x="728" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6a4fc4">Link</text>
+        <text x="728" y="81" text-anchor="middle" font-size="10" fill="#707070">回绕到槽0</text>
+        <text x="728" y="95" text-anchor="middle" font-size="10.5" fill="#6a4fc4">cyc=1 · TC=1</text>
+      <text x="440" y="124" text-anchor="middle" font-size="10.5" font-weight="600" fill="#a00000">同一件 TD3：首 TRB cyc=1（缝前的圈）· trailing cyc=0（缝后的圈）——圈号跟缝走，不跟件走</text>
+      <polygon points="260,120 276,120 268,108" fill="#1a5fb4"/>
+        <text x="279" y="117" font-size="9.5" fill="#1a5fb4">▲enqueue(软件)</text>
+      <polygon points="628,123 644,123 636,135" fill="#1a7f37"/>
+        <text x="647" y="133" font-size="9.5" fill="#1a7f37">▼dequeue(xHC)</text>
+      <line x1="46" y1="150" x2="214" y2="150" stroke="#1a5fb4" stroke-width="2"/>
+        <text x="130" y="164" text-anchor="middle" font-size="10" fill="#1a5fb4">跨缝续（同件）</text>
+      <line x1="598" y1="150" x2="674" y2="150" stroke="#1a5fb4" stroke-width="2"/>
+        <text x="636" y="164" text-anchor="middle" font-size="10" fill="#1a5fb4">TD3（跨缝）</text>
+      <rect x="40" y="176" width="250" height="30" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/><text x="165" y="195" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">软件 cycle_state = 0</text>
+        <rect x="310" y="176" width="200" height="30" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="410" y="195" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">xHC 轮次 = 1</text>
+        <rect x="530" y="176" width="310" height="30" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="685" y="195" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">门铃：✓ 敲响（TD3 已发布）</text>
+      </g>
+    </svg>
+        <p><strong>本帧只看一件货身上的两种圈号</strong>：TD3 发布后（槽6 翻成 1），同一件里首 TRB 属缝前的圈、trailing 属缝后的圈（联动第 5 帧排队中途那次轮次翻转的遗产）。<strong>若 cycle 真是件界机制，同一件内圈号就不该中途变</strong>——它偏偏只在「过缝」时变，与件边界毫无对齐关系；反过来说，「TD 内 cycle 恒相同」连不变量都不是（跨缝即破）。这是比职责表更硬的反证：<strong>cycle 不可能承担分件</strong>。另一枚方向性证据：cycle 全环唯一的「反常」在<strong>首</strong> TRB（发布前反极性压着，联动第 2 帧），不在收口的尾——若它管分件，例外该出现在边界处才对。</p>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>一件一票——件界的对账面：票数与票面</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 252" role="img" aria-label="三件货恰三颗事件，票面回指尾 TRB" style="width:100%">
+      <g font-size="11">
+        <text x="440" y="24" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1a2b4a">件界的对账面：一件一票，票面回指尾 TRB</text>
+        <rect x="40" y="48" width="240" height="64" rx="6" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text x="160" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#6b8f7a">TD1 ✓ 已收口</text>
+        <text x="160" y="88" text-anchor="middle" font-size="10.5" fill="#707070">尾 TRB＝TD1c · chain=0 · IOC=1</text>
+        <text x="160" y="104" text-anchor="middle" font-size="10" fill="#909084">票根：td-&gt;end_trb（第 2 帧立法码记下）</text>
+        <rect x="320" y="48" width="240" height="64" rx="6" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text x="440" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#6b8f7a">TD2 ✓ 已收口</text>
+        <text x="440" y="88" text-anchor="middle" font-size="10.5" fill="#707070">尾 TRB＝TD2c · chain=0 · IOC=1</text>
+        <text x="440" y="104" text-anchor="middle" font-size="10" fill="#909084">票根：td-&gt;end_trb</text>
+        <rect x="600" y="48" width="240" height="64" rx="6" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <text x="720" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#6b8f7a">TD3 ✓ 已收口</text>
+        <text x="720" y="88" text-anchor="middle" font-size="10.5" fill="#707070">尾 TRB＝TD3c · chain=0 · IOC=1</text>
+        <text x="720" y="104" text-anchor="middle" font-size="10" fill="#909084">票根：td-&gt;end_trb</text>
+        <line x1="160" y1="112" x2="160" y2="142" stroke="#a00000" stroke-width="1.6"/>
+        <polygon points="154,142 166,142 160,152" fill="#a00000"/>
+        <line x1="440" y1="112" x2="440" y2="142" stroke="#a00000" stroke-width="1.6"/>
+        <polygon points="434,142 446,142 440,152" fill="#a00000"/>
+        <line x1="720" y1="112" x2="720" y2="142" stroke="#a00000" stroke-width="1.6"/>
+        <polygon points="714,142 726,142 720,152" fill="#a00000"/>
+        <rect x="40" y="152" width="240" height="64" rx="6" fill="#fdeaea" stroke="#a00000" stroke-width="1.4"/>
+        <text x="160" y="174" text-anchor="middle" font-size="12" font-weight="700" fill="#a00000">EV1 · Transfer Event</text>
+        <text x="160" y="192" text-anchor="middle" font-size="10.5" fill="#a00000">Success · DW0-1＝尾 TRB（TD1c）地址</text>
+        <text x="160" y="208" text-anchor="middle" font-size="10" fill="#909084">事件身份：Table 6-37（0006 DW0-1 四种身份）</text>
+        <rect x="320" y="152" width="240" height="64" rx="6" fill="#fdeaea" stroke="#a00000" stroke-width="1.4"/>
+        <text x="440" y="174" text-anchor="middle" font-size="12" font-weight="700" fill="#a00000">EV2 · Transfer Event</text>
+        <text x="440" y="192" text-anchor="middle" font-size="10.5" fill="#a00000">Success · DW0-1＝尾 TRB（TD2c）地址</text>
+        <text x="440" y="208" text-anchor="middle" font-size="10" fill="#909084">一件恰一票，不数 TRB</text>
+        <rect x="600" y="152" width="240" height="64" rx="6" fill="#fdeaea" stroke="#a00000" stroke-width="1.4"/>
+        <text x="720" y="174" text-anchor="middle" font-size="12" font-weight="700" fill="#a00000">EV3 · Transfer Event</text>
+        <text x="720" y="192" text-anchor="middle" font-size="10.5" fill="#a00000">Success · DW0-1＝尾 TRB（TD3c）地址</text>
+        <text x="720" y="208" text-anchor="middle" font-size="10" fill="#909084">错误路径票面会指中途——0008 钻点二</text>
+        <text x="440" y="240" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">3 件货＝恰 3 张票：chain 决定在哪剪断 → IOC 决定剪断即出票 → 票面地址决定记在哪件名下</text>
+      </g>
+    </svg>
+        <p><strong>本帧只看事件环的票数与票面</strong>：每颗 TD 恰一颗 Transfer Event（尾 TRB 的 IOC 点亮的回执），事件 DW0-1 回指那颗尾 TRB 的地址——软件拿它反查票根 <code>td-&gt;end_trb</code>（第 2 帧立法码最后两行记下的就是它），完成收货对账。软件侧从来不需要「数 TRB」来对账：件界三件套＝<strong>chain 剪刀（在哪收口）· IOC 回执（收口即出票）· 尾 TRB 指针（票记在哪件名下）</strong>。</p>
+      </div>
+    </div>
+  </div>
+  <div class="note">问一收拢：<strong>圈界（cycle/TC：新货还是旧货）与件界（chain：同件还是下一件）是两道独立的关卡——xHC 对每颗 TRB 各问一遍，两个检查员互不通气</strong>。把 chain 的规则背到 cycle 头上（「除尾 TRB 外都相同」），就会从「cycle 全同」推出「分不出 TD」的假悖论——分件的从来是 chain=0 的剪刀，配 IOC 的一件一票对账；跨缝一件两章（第 3 帧）是「cycle 不可能管分件」的实锤反证。</div>
+
+  <div class="note"><b>读者问二（同日隔一轮的追问）</b>：「TD 已经是最小调度单位了——为什么一圈下来还要按 TC 翻转？这套机制不翻不行吗？」</div>
+  <p>这一问已经越过「记串钥匙」，直指机制的<strong>存在动机</strong>。一句话答案：<strong>TD 回答「这件货怎么执行、何时算完成」；cycle/TC 回答它上游的货架问题——一圈固定格子的货架上，「空」与「有新货」怎么分辨</strong>。把环想成<strong>驿站货架</strong>（比喻：环＝快递驿站里一圈固定的格子架，软件＝贴单员，xHC＝取件员；提单贴在格子上、货不在格子上——0006 的货运比喻原样沿用）。三个约束把「怎么分辨新旧」的答案逼成唯一形状：</p>
+  <div class="flow">
+    <div class="fnode"><b>约束① 格子永不撤、旧单永不撕</b>：xHC 对传输环<strong>只读不写</strong>——取走提单后，单子连同轮次章原样留在格子里（残影，联动第 4 帧）。只看格子内容，货架永远是「满」的。</div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>约束② 两班人马不通电话</b>：CPU 与 xHC 是两个独立时钟域——无锁、无互询；门铃/中断只是「有事情发生」的一锤子通知，不是可查询的状态库。<strong>唯一的常设沟通渠道就是货架本身（共享内存）</strong>——放在任何一方口袋里的「空/满」标志，另一方都看不见。</div>
+    <div class="farrow">↓</div>
+    <div class="fnode"><b>约束③ ⇒ 新旧只能写在每张单子上</b>（自描述）：DW3 bit0 那一枚「轮次贴纸」——单子新不新，看贴纸对不对得上「本周章」（xHC 当前轮次）。下面四帧只谈 cycle 一把钥匙（chain/Link 静音）——钻点一独舞的镜像，但这次问的是「为什么要有它」：</div>
+  </div>
+  <div class="player">
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 1 帧</span><span>货架不撕单——消费完的环在内存里的样子</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 232" role="img" aria-label="全残影环：七颗旧提单原样躺着" style="width:100%">
+      <g font-size="11">
+      <path d="M 728 42 C 728 14, 84 14, 84 40" fill="none" stroke="#6a4fc4" stroke-width="1.8"/>
+      <polygon points="77,40 91,40 84,47" fill="#6a4fc4"/>
+      <rect x="40" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="84" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD3b</text>
+        <text x="84" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="84" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=0</text>
+      <rect x="132" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="176" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD3c</text>
+        <text x="176" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="176" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=0</text>
+      <rect x="224" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="268" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD1c</text>
+        <text x="268" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="268" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="316" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="360" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD2a</text>
+        <text x="360" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="360" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="408" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="452" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD2b</text>
+        <text x="452" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="452" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="500" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="544" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD2c</text>
+        <text x="544" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="544" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="592" y="44" width="88" height="62" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="636" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6b8f7a">✓TD3a</text>
+        <text x="636" y="81" text-anchor="middle" font-size="10" fill="#707070">残影</text>
+        <text x="636" y="95" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+      <rect x="684" y="44" width="88" height="62" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
+        <text x="728" y="64" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6a4fc4">Link</text>
+        <text x="728" y="81" text-anchor="middle" font-size="10" fill="#707070">回绕到槽0</text>
+        <text x="728" y="95" text-anchor="middle" font-size="10.5" fill="#6a4fc4">cyc=1 · TC=1</text>
+      <polygon points="260,120 276,120 268,108" fill="#1a5fb4"/>
+        <text x="279" y="117" font-size="9.5" fill="#1a5fb4">▲enqueue(软件)</text>
+      <polygon points="260,123 276,123 268,135" fill="#1a7f37"/>
+        <text x="279" y="133" font-size="9.5" fill="#1a7f37">▼dequeue(xHC) 停在此</text>
+      <rect x="40" y="150" width="250" height="30" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/><text x="165" y="169" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">软件 cycle_state = 0</text>
+        <rect x="310" y="150" width="200" height="30" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="410" y="169" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">xHC 轮次 = 0</text>
+        <rect x="530" y="150" width="310" height="30" rx="5" fill="#f6f6f1" stroke="#b9b9ac" stroke-width="1.4"/><text x="685" y="169" text-anchor="middle" font-size="11" fill="#1a2b4a">门铃：—</text>
+      <text x="40" y="204" font-size="11" font-weight="600" fill="#1a2b4a">驿站货架（环）：贴单员只贴新单、从不撕旧单；取件员只读不写、取走也不擦格子</text>
+      <text x="40" y="222" font-size="10.5" fill="#707070">七颗旧提单连同轮次章原样躺着——若只看格子内容，货架永远「是满的」。xHC 游标停在第一个不匹配处（▼），它凭什么知道该停？</text>
+      </g>
+    </svg>
+        <p><strong>本帧只看「消费完的环」在内存里的样子</strong>（联动第 7 帧同款）：七颗旧提单连同轮次章原样躺着，没人擦。<strong>若只看格子内容，「空」与「有货」无法分辨</strong>——这正是问二要拆的难题。下一帧把这个疑问逼到最尖锐的形状。</p>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 2 帧</span><span>追平之后：同一颗槽，两种真相</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 268" role="img" aria-label="同一颗槽两种真相：残影 vs 新单" style="width:100%">
+      <g font-size="11">
+        <text x="440" y="22" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1a2b4a">追平之后：同一颗槽，两种真相</text>
+        <text x="440" y="44" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">槽2（同一颗格子，▼ 游标指着它）</text>
+        <rect x="40" y="56" width="372" height="150" rx="8" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.6" stroke-dasharray="4 3"/>
+        <text x="64" y="82" font-size="12.5" font-weight="700" fill="#6b8f7a">真相 A：还是残影（环是空的）</text>
+        <rect x="64" y="96" width="130" height="52" rx="4" fill="#fff" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="129" y="118" text-anchor="middle" font-size="11" font-weight="600" fill="#6b8f7a">✓旧单</text>
+        <text x="129" y="136" text-anchor="middle" font-size="10" fill="#8fae9c">cyc=1（旧圈）</text>
+        <text x="214" y="112" font-size="10.5" fill="#1a2b4a">上圈取走后原样躺着</text>
+        <text x="214" y="130" font-size="10.5" fill="#1a2b4a">软件还没写新单</text>
+        <text x="214" y="148" font-size="10.5" font-weight="600" fill="#1a7f37">→ xHC 此刻应当停</text>
+        <text x="64" y="182" font-size="10" fill="#909084">格子地址相同、游标位置相同</text>
+        <rect x="468" y="56" width="372" height="150" rx="8" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="492" y="82" font-size="12.5" font-weight="700" fill="#1a7f37">真相 B：已是新单（环里有活）</text>
+        <rect x="492" y="96" width="130" height="52" rx="4" fill="#fff" stroke="#1a7f37" stroke-width="1.4"/>
+        <text x="557" y="118" text-anchor="middle" font-size="11" font-weight="600" fill="#1a7f37">新 TD 首颗</text>
+        <text x="557" y="136" text-anchor="middle" font-size="10" fill="#1a7f37">cyc=0（新圈）</text>
+        <text x="642" y="112" font-size="10.5" fill="#1a2b4a">软件刚写入并发布</text>
+        <text x="642" y="130" font-size="10.5" fill="#1a2b4a">xHC 还没走到它</text>
+        <text x="642" y="148" font-size="10.5" font-weight="600" fill="#1a5fb4">→ xHC 此刻应当取</text>
+        <text x="492" y="182" font-size="10" fill="#909084">停错＝旧提单复活重发；取错＝新单饿着</text>
+        <rect x="40" y="220" width="800" height="38" rx="6" fill="#f6f6f1" stroke="#a00000" stroke-width="1.4"/>
+        <text x="440" y="236" text-anchor="middle" font-size="11" font-weight="600" fill="#a00000">该停还是该干？没有第三者可问：门铃/中断只是「有事」的一锤子通知，不是状态库；无锁、两时钟域</text>
+        <text x="440" y="252" text-anchor="middle" font-size="11" font-weight="700" fill="#a00000">⇒ 答案只能写在格子里的东西上（自描述）——这正是 cycle 位存在的理由</text>
+      </g>
+    </svg>
+        <p><strong>本帧只看「答案写在哪」</strong>：游标追平后（dequeue 与 enqueue 同指一颗槽），这颗槽里可能是残影（该停）也可能是刚发布的新单（该取）——<strong>格子地址相同、游标位置相同，真相却有两种</strong>。CPU 与 xHC 之间没有可查询的第三状态库（两时钟域、无锁、唯一通道＝内存），所以「新/旧」必须由格子里的内容自己声明——这就是轮次贴纸的岗位。</p>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 3 帧</span><span>轮次贴纸——残影自动失效＝比对不通过，不是撕单</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 240" role="img" aria-label="贴纸对本周章：绿＝对上，残影＝对不上自动作废" style="width:100%">
+      <g font-size="11">
+      <path d="M 728 42 C 728 14, 84 14, 84 40" fill="none" stroke="#6a4fc4" stroke-width="1.8"/>
+      <polygon points="77,40 91,40 84,47" fill="#6a4fc4"/>
+      <rect x="40" y="44" width="88" height="56" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="84" y="66" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD'·新单</text>
+        <text x="84" y="90" text-anchor="middle" font-size="10.5" fill="#1a7f37">贴纸 0＝有效</text>
+      <rect x="132" y="44" width="88" height="56" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6"/>
+        <text x="176" y="66" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">TD'·新单</text>
+        <text x="176" y="90" text-anchor="middle" font-size="10.5" fill="#1a7f37">贴纸 0＝有效</text>
+      <rect x="224" y="44" width="88" height="56" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="268" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="#6b8f7a">✓残影</text>
+        <text x="268" y="90" text-anchor="middle" font-size="10.5" fill="#8fae9c">贴纸 1＝旧圈</text>
+      <rect x="316" y="44" width="88" height="56" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="360" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="#6b8f7a">✓残影</text>
+        <text x="360" y="90" text-anchor="middle" font-size="10.5" fill="#8fae9c">贴纸 1＝旧圈</text>
+      <rect x="408" y="44" width="88" height="56" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="452" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="#6b8f7a">✓残影</text>
+        <text x="452" y="90" text-anchor="middle" font-size="10.5" fill="#8fae9c">贴纸 1＝旧圈</text>
+      <rect x="500" y="44" width="88" height="56" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="544" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="#6b8f7a">✓残影</text>
+        <text x="544" y="90" text-anchor="middle" font-size="10.5" fill="#8fae9c">贴纸 1＝旧圈</text>
+      <rect x="592" y="44" width="88" height="56" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="636" y="66" text-anchor="middle" font-size="11" font-weight="600" fill="#6b8f7a">✓残影</text>
+        <text x="636" y="90" text-anchor="middle" font-size="10.5" fill="#8fae9c">贴纸 1＝旧圈</text>
+      <rect x="684" y="44" width="88" height="56" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
+        <text x="728" y="66" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6a4fc4">Link</text>
+        <text x="728" y="90" text-anchor="middle" font-size="10.5" fill="#6a4fc4">贴纸 1 · TC=1</text>
+      <text x="440" y="124" text-anchor="middle" font-size="10.5" fill="#707070">轮次贴纸＝每颗 TRB 自带的 cyc 值（DW3 bit0），印在单角；本周章＝xHC 当前轮次</text>
+      <polygon points="352,148 368,148 360,136" fill="#1a5fb4"/>
+        <text x="371" y="145" font-size="9.5" fill="#1a5fb4">▲enqueue(软件)</text>
+      <polygon points="76,151 92,151 84,163" fill="#1a7f37"/>
+        <text x="95" y="161" font-size="9.5" fill="#1a7f37">▼dequeue(xHC) 对章</text>
+      <rect x="40" y="176" width="340" height="30" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/><text x="210" y="195" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">软件 cycle_state = 0（跨缝已翻转）</text>
+        <rect x="420" y="176" width="340" height="30" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.8"/><text x="590" y="195" text-anchor="middle" font-size="11" font-weight="700" fill="#1a2b4a">本周章（xHC 轮次）＝ 0</text>
+      <text x="440" y="228" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">绿＝贴纸 0 对上本周章 0；残影贴纸 1 对不上 → 自动作废——没人撕旧单，它只是再也过不了关①</text>
+      </g>
+    </svg>
+        <p><strong>本帧只看角上的贴纸与本周章</strong>（钻点一第 3 帧的贴纸重排版）：<strong>「有效」不是格子的属性，是「贴纸对上本周章」这一比对的结果</strong>；旧单没人撕，只是再也对不上——失效是被动的、比对出来的（回测考点：残影为什么自动失效）。贴纸只需两种面值（0/1）——为什么两种就够？下一帧。</p>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 4 帧</span><span>两种面值为什么够——圈计数器只露末位，TC 是进位指令</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 244" role="img" aria-label="两侧圈计数器只露末位，接缝 TC 让两侧各自加一" style="width:100%">
+      <g font-size="11">
+        <text x="440" y="24" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1a2b4a">两种面值为什么够：圈计数器只露末位，TC 是进位指令</text>
+        <text x="40" y="62" font-size="12" font-weight="700" fill="#1a5fb4">软件圈计数器（逻辑上的）</text>
+        <rect x="40" y="74" width="34" height="40" fill="#eee" stroke="#bbb"/><text x="57" y="99" text-anchor="middle" fill="#909084">?</text>
+        <rect x="76" y="74" width="34" height="40" fill="#eee" stroke="#bbb"/><text x="93" y="99" text-anchor="middle" fill="#909084">?</text>
+        <rect x="112" y="74" width="34" height="40" fill="#eee" stroke="#bbb"/><text x="129" y="99" text-anchor="middle" fill="#909084">?</text>
+        <rect x="148" y="74" width="34" height="40" fill="#eee" stroke="#bbb"/><text x="165" y="99" text-anchor="middle" fill="#909084">?</text>
+        <rect x="184" y="74" width="40" height="40" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.8"/><text x="204" y="99" text-anchor="middle" font-size="15" font-weight="700" fill="#1a5fb4">0</text>
+        <text x="40" y="134" font-size="10.5" fill="#707070">高位谁也看不见（内存里没有）——能写进 TRB 的只有末位</text>
+        <text x="480" y="62" font-size="12" font-weight="700" fill="#1a7f37">xHC 圈计数器（逻辑上的）</text>
+        <rect x="480" y="74" width="34" height="40" fill="#eee" stroke="#bbb"/><text x="497" y="99" text-anchor="middle" fill="#909084">?</text>
+        <rect x="516" y="74" width="34" height="40" fill="#eee" stroke="#bbb"/><text x="533" y="99" text-anchor="middle" fill="#909084">?</text>
+        <rect x="552" y="74" width="34" height="40" fill="#eee" stroke="#bbb"/><text x="569" y="99" text-anchor="middle" fill="#909084">?</text>
+        <rect x="588" y="74" width="34" height="40" fill="#eee" stroke="#bbb"/><text x="605" y="99" text-anchor="middle" fill="#909084">?</text>
+        <rect x="624" y="74" width="40" height="40" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.8"/><text x="644" y="99" text-anchor="middle" font-size="15" font-weight="700" fill="#1a7f37">0</text>
+        <text x="480" y="134" font-size="10.5" fill="#707070">xHC 也只认末位（DCS，联动第 1 帧）——末位相等 ⇔ 同一圈</text>
+        <line x1="204" y1="114" x2="330" y2="182" stroke="#6a4fc4" stroke-width="1.6" fill="none"/>
+        <polygon points="324,178 340,186 330,194" fill="#6a4fc4"/>
+        <line x1="644" y1="114" x2="520" y2="182" stroke="#6a4fc4" stroke-width="1.6" fill="none"/>
+        <polygon points="530,178 514,186 524,194" fill="#6a4fc4"/>
+        <rect x="310" y="176" width="260" height="36" rx="18" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
+        <text x="440" y="199" text-anchor="middle" font-size="11" font-weight="700" fill="#6a4fc4">接缝 Link TRB · TC=1：两侧各自 +1</text>
+        <text x="440" y="232" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">cycle_state ＝ 圈计数器 mod 2（奇偶两态区分无限圈）；TC ＝ 进位指令（过缝对表）</text>
+      </g>
+    </svg>
+<pre>/* xhci-ring.c:3302-3316（prepare_ring :3268——余量把关与扩容） */
+	if (ep_ring != xhci-&gt;cmd_ring) {
+		new_segs = xhci_ring_expansion_needed(xhci, ep_ring, num_trbs);
+	} else if (xhci_num_trbs_free(ep_ring) &lt;= num_trbs) {
+		xhci_err(xhci, "Do not support expand command ring\n");
+		return -ENOMEM;
+	}
+
+	if (new_segs) {
+		xhci_dbg_trace(xhci, trace_xhci_dbg_ring_expansion,
+				"ERROR no room on ep ring, try ring expansion");
+		if (xhci_ring_expansion(xhci, ep_ring, new_segs, mem_flags)) {
+			xhci_err(xhci, "Ring expansion failed\n");
+			return -ENOMEM;
+		}
+	}</pre>
+        <p><strong>本帧只看「为什么 1 bit 够用」</strong>：贴单员<strong>永远不会领先取件员一整圈</strong>——每贴一批前 <code>prepare_ring</code> 先数余量（<code>xhci_num_trbs_free</code>），不够先扩容（命令环禁扩、直接拒绝；贴码）。于是任一时刻货架上至多两代单（上一圈残影＋本圈新单），<strong>奇偶两态判别足矣</strong>：把两侧各自维护的「圈计数器」压进内存，只剩末位可写——这就是 cycle_state＝计数器 mod 2；过缝时 TC 让两侧各自 +1（联动第 5/6 帧那次翻转），高位谁也不需要看见。<strong>环形缓冲最经典的「游标追平＝空还是有货」难题，xHCI 的答卷：1 bit 数据＋1 bit 进位指令——不用计数器、不用标志位、不用锁。</strong></p>
+      </div>
+    </div>
+  </div>
+  <div class="note">问二收拢：<strong>TD 回答「这件货怎么执行、何时算完成」；cycle/TC 回答上游的货架问题——固定格子的环形货架上「空还是有新货」如何无锁分辨</strong>。三个约束（格子不撕单 / 两时钟域无锁 / 唯一通道是内存）把答案逼成唯一形状：新旧写进每张单（DW3 bit0 轮次贴纸）＋过缝进位（TC）。翻圈不是给 TD 用的，是给货架用的。</div>
+
+  <h2>回到整体（环转起来了，下一课看实战与命运）</h2>
+  <p>本课走完六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答——0001 骨架图里的"三种环"现在是<strong>会动且你知道为什么动</strong>的环。但到这里为止走的都是 happy path：事件全是 Success/Short Packet，端点从不出错。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）收官三件事：用我们亲手实现的 M4.5 引擎把 set_address 全握手的<strong>九条事件逐帧跑给你看</strong>（数字全部实测，含短包双事件与环回绕轮转）；拆开<strong>错误路径全图</strong>（CC 判决表→四种传输各自的命运）；拆开<strong>ep_state 十旗标</strong>——STALL 到恢复的完整软硬协同时序。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的两段式 BSR、事件环上的九颗回执。</p>
+
+  <h2>检索练习 · 9 题</h2>
   <div id="quiz"></div>
 
 
@@ -1046,7 +1477,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
     <li>想再挖：多中断器与事件路由（§4.17）、命令环停止/恢复（CRCR CA/CS 位）——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0007 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4：本课＝环运转动态面——六站旅程＋cycle 合同＋接缝＋四钥匙联动）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0007 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4；同日 v2 增补钻点三「两问两答」：圈界/件界＋cycle/TC 存在动机——来自读者实问。本课＝环运转动态面——六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
 
 </main>
 <script>
@@ -1255,7 +1686,22 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: '已消费槽里的旧 TRB（残影，cycle 位还是旧轮次值）为什么不需要任何人擦除？',
     options: ['消费者负责在取走后清零', '旧 cycle 与 xHC 当前轮次必不匹配，天然失效', '残影槽受 Link TRB 保护', 'xHC 扫描时会跳过所有非绿色槽'],
     answer: 1,
-    explain: 'B 对（钻点一独舞第 3 帧）：一圈恰好翻一次轮次（TC 唯一），旧 cyc 与新轮次必不相等——"有效"是"cyc 是否等于当前轮次"的比对结果，不是槽的属性；失效是被动的，不需要擦除。A 传输环上 xHC 只读不写；C 无此机制；D xHC 是"停在第一个不匹配处"，不是跳过。' }
+    explain: 'B 对（钻点一独舞第 3 帧）：一圈恰好翻一次轮次（TC 唯一），旧 cyc 与新轮次必不相等——"有效"是"cyc 是否等于当前轮次"的比对结果，不是槽的属性；失效是被动的，不需要擦除。A 传输环上 xHC 只读不写；C 无此机制；D xHC 是"停在第一个不匹配处"，不是跳过。' },
+  { tag: '圈界与件界',
+    prompt: '同一圈内相邻的 TDn（尾 TRB）与 TDn+1（首 TRB）——四颗 TRB 的 cyc 全部相同。宣告「TDn 到此为止、下一颗属于新的一件」的是哪个位？',
+    options: ['cycle 位——TDn 尾 TRB 的 cyc 特地写成与 TDn+1 首不同，用轮次差分件', 'xHC 数 TRB 颗数——本课布景里每件恰好 3 颗，数满即切换', 'chain 位——TDn 尾 TRB chain=0（剪刀落下）且 IOC=1 出票；TDn+1 首 chain=1 开新绳', '不需要位——xHC 收到 TDn 的 Transfer Event 后自动切换到下一件'],
+    answer: 2,
+    explain: 'C 对（钻点三第 2 帧；xhci-ring.c:3694-3714 两段立法：非尾 field |= TRB_CHAIN、尾 field &= ~TRB_CHAIN ＋ TRB_IOC）。A 把圈界钥匙当件界用——同圈相邻 TD 的 cyc 全同，它管新货/残影、不管分件；B 每件 3 颗只是 130KB 撞 64K 边界的切分结果，件长 1..N 皆可；D 事件是完成后的回执（Table 6-37），xHC 消费 TRB 时还没收到任何事件。' },
+  { tag: '圈界与件界',
+    prompt: '判读：「同圈内 TD 的各颗 TRB cycle 全都相同，所以 cycle 无法区分 TDn 与 TDn+1——这环的设计有缺陷。」这句话错在哪？',
+    options: ['没错，xHC 内部另有一个隐藏的 TD 编号寄存器补上了这个缺陷', '前提错——TD 尾 TRB 的 cyc 会被特地利翻成与同件其它 TRB 不同的值', '结论对了一半——所以规范禁止在同一圈内排两颗 TD', '前提真、结论假——分件从来是 chain 的职责；跨缝 TD 同件两种轮次标签，反证 cycle 与件边界毫无对齐关系'],
+    answer: 3,
+    explain: 'D 对（钻点三第 3 帧）。「TD 内 cycle 恒相同」连不变量都不是：TD 跨缝时首 TRB 拿缝前的存档轮次、trailing 拿过缝后的新轮次（联动第 5 帧），圈号跟缝走、不跟件走——cycle 根本不参与分件。A 无此寄存器；B 反了，cycle 的唯一例外在首 TRB（发布前反极性压着，:3677-3692），尾 TRB 与同件相同；C 无此禁令，同圈可排任意多颗 TD。' },
+  { tag: '环合同',
+    prompt: 'cycle 位的「反极性写入」（先写成与当前轮次相反的值）发生在哪颗 TRB、动机是什么？',
+    options: ['尾 TRB——用反值向 xHC 宣告这件货到此为止', '首 TRB——整颗 TD 建完之前保持不匹配，防止半成品被 xHC 取走；建完由 giveback_first_trb 一步翻真', '所有 TRB——全部反写，发布时再统一翻正', 'Link TRB——接缝处必须反写才能完成回绕'],
+    answer: 1,
+    explain: 'B 对（xhci-ring.c:3677-3692 first_trb 分支＋:3441-3451 giveback_first_trb）：start_cycle=1 时首 TRB 写 0（空分支保持 0）、建完 |= start_cycle 翻成 1。门只开在链头：xHC 顺序扫描过不了首 TRB，就永远到不了现写现发的 trailing。A 方向反了——若按分件想象例外应在尾，事实在首，恰说明 cycle 与件界无关；C trailing 落地即带真轮次（field |= ring->cycle_state）；D Link 自身 cyc 是接缝通行凭证（inc_enq_past_link 翻转），不是反极性。' }
 ]);
 </script>
 </body>
