@@ -139,7 +139,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="93" y="98" text-anchor="middle">usb_control_msg</text>
         <text x="93" y="113" text-anchor="middle" font-size="11">→ usb_submit_urb</text>
         <rect x="34" y="150" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
-        <text x="93" y="168" text-anchor="middle"> urb→complete 回调</text>
+        <text x="93" y="168" text-anchor="middle">urb→complete 回调</text>
         <text x="93" y="183" text-anchor="middle" font-size="11">（下一轮请求再排）</text>
         <text x="93" y="262" text-anchor="middle" font-size="11" fill="#707070">hub 线五课讲的复位时序、</text>
         <text x="93" y="277" text-anchor="middle" font-size="11" fill="#707070">TT 规则，是设备看到的</text>
@@ -185,16 +185,16 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <line x1="604" y1="103" x2="680" y2="103" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
         <line x1="763" y1="126" x2="763" y2="138" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
         <line x1="763" y1="186" x2="763" y2="198" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
-        <path d="M 682 278 L 384 278 L 384 303 L 374 303" fill="none" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
-        <line x1="232" y1="303" x2="152" y2="303" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
-        <path d="M 604 278 L 604 320 L 528 320 L 528 301" fill="none" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)" stroke-dasharray="4 3"/>
+        <path d="M 763 246 L 763 278 L 610 278" fill="none" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
+        <line x1="452" y1="278" x2="378" y2="278" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)" stroke-dasharray="4 3"/>
+        <path d="M 232 278 L 186 278 L 186 171 L 156 171" fill="none" stroke="#707070" stroke-width="1.6" marker-end="url(#ah)"/>
         <g font-size="12" font-weight="700">
           <circle cx="162" cy="92" r="9" fill="#1a2b4a"/><text x="162" y="96" text-anchor="middle" fill="#fff">1</text>
           <circle cx="392" cy="92" r="9" fill="#1a2b4a"/><text x="392" y="96" text-anchor="middle" fill="#fff">2</text>
           <circle cx="622" cy="92" r="9" fill="#1a7f37"/><text x="622" y="96" text-anchor="middle" fill="#fff">3</text>
           <circle cx="763" cy="163" r="9" fill="#1a7f37"/><text x="763" y="167" text-anchor="middle" fill="#fff">4</text>
-          <circle cx="500" cy="278" r="9" fill="#a00000"/><text x="500" y="282" text-anchor="middle" fill="#fff">5</text>
-          <circle cx="190" cy="296" r="9" fill="#a00000"/><text x="190" y="300" text-anchor="middle" fill="#fff">6</text>
+          <circle cx="690" cy="278" r="9" fill="#a00000"/><text x="690" y="282" text-anchor="middle" fill="#fff">5</text>
+          <circle cx="186" cy="225" r="9" fill="#a00000"/><text x="186" y="229" text-anchor="middle" fill="#fff">6</text>
         </g>
       </g>
     </svg>
@@ -284,11 +284,11 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
         <defs><marker id="ah2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#6a4fc4"/></marker></defs>
         <text x="406" y="152" text-anchor="middle" fill="#6a4fc4" font-size="11.5">Link TRB：下一槽指针弯回首槽（环的接缝）</text>
         <g font-size="12.5" font-weight="700">
-          <text x="312" y="205" fill="#1a5fb4">▲ enqueue（软件，刚排完 Status）</text>
-          <text x="60" y="205" fill="#1a7f37">▼ xHC dequeue（消费中）</text>
+          <text x="324" y="205" fill="#1a5fb4">▲ enqueue（软件，刚排完 Status）</text>
+          <text x="78" y="205" fill="#1a7f37">▼ xHC dequeue（消费中）</text>
         </g>
-        <line x1="84" y1="118" x2="84" y2="185" stroke="#1a7f37" stroke-width="1.4" stroke-dasharray="3 3"/>
-        <line x1="268" y1="118" x2="330" y2="185" stroke="#1a5fb4" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <line x1="84" y1="118" x2="84" y2="193" stroke="#1a7f37" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <line x1="268" y1="118" x2="330" y2="193" stroke="#1a5fb4" stroke-width="1.4" stroke-dasharray="3 3"/>
         <text x="440" y="232" text-anchor="middle" font-size="11.5" fill="#707070">绿=cycle 等于当前轮次（1）→对 xHC 可见；灰=旧轮次（0）→已被消费/未发布；xHC 追 enqueue 一圈后，Link TRB 的 Toggle Cycle 位让轮次翻转为 0</text>
       </g>
     </svg>
@@ -361,6 +361,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
         <defs><marker id="ah4" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#707070"/></marker></defs>
         <line x1="195" y1="138" x2="195" y2="162" stroke="#707070" stroke-width="1.6" marker-end="url(#ah4)"/>
         <line x1="521" y1="138" x2="521" y2="162" stroke="#707070" stroke-width="1.6" marker-end="url(#ah4)"/>
+        <line x1="630" y1="138" x2="630" y2="162" stroke="#707070" stroke-width="1.6" marker-end="url(#ah4)"/>
         <g>
           <rect x="30" y="166" width="252" height="58" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.6" rx="4"/>
           <text x="156" y="188" text-anchor="middle" font-weight="600">TD（控制）：Setup+Data*+Status</text>
