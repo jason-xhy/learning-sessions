@@ -254,7 +254,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
   </div>
 
   <h2>先认零件 · 槽 / TRB / TD / Link / 接缝——一把尺子量到底</h2>
-  <p>后面所有钻点与动画都在这五个词上搭积木，先把零件摆上桌（<strong>从字节到环，四级嵌套</strong>）：<strong>一颗 TRB = 16 字节 = 4 个 32 位字</strong>（§4.11.1）；<strong>槽</strong> = 环上一颗 TRB 的车位——所以<strong>一个槽恰好 16 字节</strong>，槽里永远住着一颗 TRB（数据 TRB 或 Link TRB）；<strong>TD</strong> = 一次传输 = 1..N 颗 TRB 用 chain 位捆成的一列——<strong>TD 与槽的关系就是"占用"</strong>：130KB bulk OUT 切成 64K+64K+2K 占 3 个槽，一次 8 字节控制请求的 Setup+Data+Status 也占 3 个槽，TD 有多大完全由传输长度与切分规则决定；<strong>段</strong> = 256 槽 × 16B = 4096 字节恰一页（前 255 槽住数据、第 256 槽固定住 Link TRB，xhci.h:1260-1267）；<strong>环</strong> = 段链接成的圆（可多段、可扩容，钻点四）。最后是<strong>接缝</strong>：环在内存里是一段段<strong>直线</strong>，逻辑上才弯成圆——<strong>段末槽与首槽相接的那一刀就是接缝</strong>。末槽住不得数据 TRB（xHC 扫到会把它的内容当指令执行），所以固定放一颗 <strong>Link TRB</strong> 当"回到开头"的路标：</p>
+  <p>后面所有钻点与动画都在这五个词上搭积木，先把零件摆上桌（<strong>从字节到环，四级嵌套</strong>）：<strong>一颗 TRB = 16 字节 = 4 个 32 位字</strong>（§4.11.1）；<strong>槽</strong> = 环上一颗 TRB 的车位——所以<strong>一个槽恰好 16 字节</strong>，槽里永远住着一颗 TRB（数据 TRB 或 Link TRB）；<strong>TD</strong> = 一次传输 = 1..N 颗 TRB 用 chain 位捆成的一列——<strong>TD 与槽的关系就是"占用"</strong>：130KB bulk OUT 先把<strong>数据</strong>切成 64K+64K+2K 三段，每段配一颗 16 字节 TRB 当<strong>提单</strong>（DW0-1 填缓冲段地址、DW2 填货量——数据本身永远不进槽），三颗提单共占 3 个槽＝48 字节；一次 8 字节控制请求的 Setup+Data+Status 同样占 3 个槽。<strong>槽恒为 16 字节，"64K"只是提单上写的货量</strong>——TD 占几个槽，完全由传输长度与切分规则决定；<strong>段</strong> = 256 槽 × 16B = 4096 字节恰一页（前 255 槽住数据、第 256 槽固定住 Link TRB，xhci.h:1260-1267）；<strong>环</strong> = 段链接成的圆（可多段、可扩容，钻点四）。最后是<strong>接缝</strong>：环在内存里是一段段<strong>直线</strong>，逻辑上才弯成圆——<strong>段末槽与首槽相接的那一刀就是接缝</strong>。末槽住不得数据 TRB（xHC 扫到会把它的内容当指令执行），所以固定放一颗 <strong>Link TRB</strong> 当"回到开头"的路标：</p>
   <figure>
     <svg viewBox="0 0 880 344" role="img" aria-label="TRB 解剖与槽/TD/段/环四级嵌套" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g font-size="12">
@@ -280,9 +280,9 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
           <rect x="684" y="158" width="88" height="52" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
         </g>
         <g text-anchor="middle" font-size="11">
-          <text x="84"  y="178" font-weight="600">TRB·64K</text><text x="84"  y="194" font-size="10" fill="#1a7f37">chain=1·cyc=1</text>
-          <text x="176" y="178" font-weight="600">TRB·64K</text><text x="176" y="194" font-size="10" fill="#1a7f37">chain=1·cyc=1</text>
-          <text x="268" y="178" font-weight="600">TRB·2K</text><text x="268" y="194" font-size="10" fill="#1a7f37">chain=0·IOC</text>
+          <text x="84"  y="178" font-size="10.5" font-weight="600">TRB·提单 64K</text><text x="84"  y="194" font-size="10" fill="#1a7f37">chain=1·cyc=1</text>
+          <text x="176" y="178" font-size="10.5" font-weight="600">TRB·提单 64K</text><text x="176" y="194" font-size="10" fill="#1a7f37">chain=1·cyc=1</text>
+          <text x="268" y="178" font-size="10.5" font-weight="600">TRB·提单 2K</text><text x="268" y="194" font-size="10" fill="#1a7f37">chain=0·IOC</text>
           <text x="360" y="178" fill="#909084">空</text><text x="360" y="194" font-size="10" fill="#909084">cyc=旧轮次</text>
           <text x="452" y="178" fill="#909084">空</text><text x="452" y="194" font-size="10" fill="#909084">cyc=旧轮次</text>
           <text x="544" y="178" fill="#909084">空</text><text x="544" y="194" font-size="10" fill="#909084">cyc=旧轮次</text>
@@ -295,7 +295,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
         <line x1="46" y1="232" x2="306" y2="232" stroke="#1a7f37" stroke-width="2"/>
         <line x1="46" y1="232" x2="46" y2="238" stroke="#1a7f37" stroke-width="2"/><line x1="306" y1="232" x2="306" y2="238" stroke="#1a7f37" stroke-width="2"/>
         <text x="176" y="250" text-anchor="middle" font-size="10.5" fill="#1a7f37">一个 TD＝3 颗 TRB＝占 3 个槽（chain 捆绑＝一次传输）</text>
-        <text x="496" y="250" text-anchor="middle" font-size="10.5" fill="#707070">每个格子＝一个槽＝16B；TD 大小随传输定，小到 1 槽大到 N 槽</text>
+        <text x="496" y="250" text-anchor="middle" font-size="10.5" fill="#707070">每个格子＝一个槽＝16B；TD 占槽数随传输定，小到 1 槽大到 N 槽</text>
         <g text-anchor="middle">
           <rect x="60"  y="272" width="120" height="34" fill="#fff" stroke="#1a2b4a" rx="4"/><text x="120" y="286" font-size="11" font-weight="600">槽＝16B</text><text x="120" y="300" font-size="9.5" fill="#707070">一颗 TRB 的车位</text>
           <rect x="240" y="272" width="280" height="34" fill="#fff" stroke="#1a2b4a" rx="4"/><text x="380" y="286" font-size="11" font-weight="600">段＝256 槽＝4096B＝一页</text><text x="380" y="300" font-size="9.5" fill="#707070">255 数据＋第 256 槽固定住 Link（xhci.h:1260）</text>
@@ -306,7 +306,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
         <text x="440" y="332" text-anchor="middle" font-size="11" fill="#707070">本课全部动画统一用 <tspan font-weight="600">8 槽小环</tspan>（槽0-6 数据＋槽7 Link）＝刻意缩小的教具——真实一段 256 槽，机制一寸不少</text>
       </g>
     </svg>
-    <figcaption><strong>答案先钉死：一个槽 = 16 字节（恰好一颗 TRB）；TD = 1..N 个槽上的 TRB 链（chain 决定捆几颗，边界=chain 0）；段 = 256 槽 = 4KB；环 = 段链表；接缝 = 段末槽与首槽相接处，住着 Link TRB</strong>。控制字（cycle/chain/type/IOC）全在 DW3，且永远最后落笔——这是后面"发布原子性"的全部伏笔。</figcaption>
+    <figcaption><strong>答案先钉死：一个槽 = 16 字节（恰好一颗 TRB）；TD = 1..N 个槽上的 TRB 链（chain 决定捆几颗，边界=chain 0）；段 = 256 槽 = 4KB；环 = 段链表；接缝 = 段末槽与首槽相接处，住着 Link TRB；图中 TRB 标的 64K/2K 是它描述的货量（提单），不是槽的尺寸</strong>。控制字（cycle/chain/type/IOC）全在 DW3，且永远最后落笔——这是后面"发布原子性"的全部伏笔。</figcaption>
   </figure>
 
   <h2>钻点一 · cycle bit：环的生产/消费合同</h2>
