@@ -122,14 +122,14 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 </head>
 <body>
 <main>
-  <div class="kicker">LESSON 0008 · xHC 线第 3 课（前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）</div>
+  <div class="kicker">LESSON 0008 · xHC 线第 4 课·收官（前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 三视角传输剧</a>）</div>
   <h1>旅程实战与命运<br>M4.5 标本九事件 × 错误路径全图 × ep_state 十旗标</h1>
   <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
 
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.10.2 Errors（p195-203）/ §4.8.3 Endpoint Context State（p162）/ §4.6.8-4.6.10（Reset/Stop Endpoint、Set TR Dequeue，p128/133/141）/ §6.4.5 Table 6-91 CC 码全表（p507）——解剖标本：M4.5 自研引擎 v0.3 仿真日志（九条事件全序实测）</p>
 
   <h2>整体定位（happy path 走完了，本课看真实标本与出错的命运）</h2>
-  <p>xHC 线两课攒齐了两张图：0006 的<strong>零件图</strong>（提单字段、槽/TD/段/环、切分语法、几何）与 0007 的<strong>运转图</strong>（cycle 合同、接缝、四把钥匙、六站旅程）——但都停在 happy path：事件全是 Success/Short Packet，端点从不出错。本课收官三件事：①用我们亲手实现的 <strong>M4.5 引擎标本</strong>把 set_address 全握手的九条事件逐帧跑一遍——数字全部出自实测日志，含短包双事件、事件环回绕与轮转；②把<strong>四种传输各自的错误路径</strong>拆成两张判决表（CC 码→errno→端点后果；分派与重试策略）；③拆开软件侧的第二台状态机 <strong>ep_state 十旗标</strong>，用五帧动画走完 STALL 从判决到恢复的软硬协同。下页的全景图仍是坐标：本课深钻的是④⑤两站的出错面，与⑥站回调延迟的微观来源。</p>
+  <p>xHC 线三课攒齐了三张图：0006 的<strong>零件图</strong>（提单字段、槽/TD/段/环、切分语法、几何）、0007 的<strong>运转图</strong>（cycle 合同、接缝、四把钥匙）与 0009 的<strong>传输剧</strong>（六站旅程、三视角、两本账）——但都停在 happy path：事件全是 Success/Short Packet，端点从不出错。本课收官三件事：①用我们亲手实现的 <strong>M4.5 引擎标本</strong>把 set_address 全握手的九条事件逐帧跑一遍——数字全部出自实测日志，含短包双事件、事件环回绕与轮转；②把<strong>四种传输各自的错误路径</strong>拆成两张判决表（CC 码→errno→端点后果；分派与重试策略）；③拆开软件侧的第二台状态机 <strong>ep_state 十旗标</strong>，用五帧动画走完 STALL 从判决到恢复的软硬协同。下页的全景图仍是坐标：本课深钻的是④⑤两站的出错面，与⑥站回调延迟的微观来源。</p>
 
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -300,7 +300,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
           <tr><td>命令环游标</td><td>= 末命令+0x10（4 命令无回绕）</td></tr>
           <tr><td>设备终态</td><td>dev_addr=1、configured=1（18B 描述符逐字节==ROM）</td></tr>
         </table>
-        TD3=SET_CONFIGURATION(1)（<code>00 09 01 00 00 00 00 00</code>）两段式单 Success 事件。<strong>上一课 0007 的六站闭环在九颗事件里全部走过一遍</strong>：③每敲一次铃（3 次）→ ④xHC 消费一个 TD → ⑤事件回程（1/2/1）→ ⑥ usbcore 继续。收尾注记：<span class="diff">标本≠产品</span> 6 槽事件环是仿真<strong>刻意取小逼回绕</strong>（真实 xHC 事件环每段 256/512 TRB）；引擎也不建模 slot state=Configured(3)（§4.3.5 有此态，"已配置"以设备侧 configured 标志观测——引擎边界，M4.5 合同 §2.3）。
+        TD3=SET_CONFIGURATION(1)（<code>00 09 01 00 00 00 00 00</code>）两段式单 Success 事件。<strong>0009 的六站闭环在九颗事件里全部走过一遍</strong>：③每敲一次铃（3 次）→ ④xHC 消费一个 TD → ⑤事件回程（1/2/1）→ ⑥ usbcore 继续。收尾注记：<span class="diff">标本≠产品</span> 6 槽事件环是仿真<strong>刻意取小逼回绕</strong>（真实 xHC 事件环每段 256/512 TRB）；引擎也不建模 slot state=Configured(3)（§4.3.5 有此态，"已配置"以设备侧 configured 标志观测——引擎边界，M4.5 合同 §2.3）。
       </div>
     </div>
   </div>
@@ -411,7 +411,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   <div class="note">一句话收拢：<strong>错误处理的第一道分岔是"会不会 halt"（xhci_halted_host_endpoint），第二道分岔是"按类型分派"（process_ctrl/isoc/bulk_intr_td）</strong>——控制传输按阶段记账、bulk 软重试原地再战、等时永不 halt 逐帧判决。halt 之后的恢复链（Reset Endpoint → Set TR Dequeue → 给回 → CLEAR_FEATURE）是端点级的，与传输类型无关——那是钻点二的主角。</div>
 
   <h2>钻点二 · ep_state 旗标：软件侧的第二台状态机</h2>
-  <p>上一课 0007 ③站的小字预告过：五种端点态不敲铃。现在把整台机器拆开——xHC 硬件自己有一台端点状态机（Endpoint Context 的 ep_state 字段，§4.8.3 p162，五态），内核在 <code>struct xhci_virt_ep</code> 里又维护一台<strong>软件</strong>状态机（ep_state 位域，十个旗标）——两台机器通过命令环/事件环对话，谁也不同步谁，全靠这些旗标记住"我这边正在进行什么"：</p>
+  <p>0009 开篇六站图 ③站的小字预告过：五种端点态不敲铃。现在把整台机器拆开——xHC 硬件自己有一台端点状态机（Endpoint Context 的 ep_state 字段，§4.8.3 p162，五态），内核在 <code>struct xhci_virt_ep</code> 里又维护一台<strong>软件</strong>状态机（ep_state 位域，十个旗标）——两台机器通过命令环/事件环对话，谁也不同步谁，全靠这些旗标记住"我这边正在进行什么"：</p>
 <pre>/* xhci.h:454-458 硬件侧：EP Context 的五态（§4.8.3） */
 #define EP_STATE_MASK		(0x7)
 #define EP_STATE_DISABLED	0
@@ -446,7 +446,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
     <tr><td><code>EP_CLEARING_TT</code></td><td>LS/FS 非 interrupt 传输经 TT 出错，finish_td 发起异步清 TT（:2186-2193）</td><td>xhci_clear_tt_buffer_complete 回调（xhci.c:5592）</td><td>禁敲铃——TT buffer 清净之前不给 TT 塞新 split（连回 0004/0005 课）</td></tr>
     <tr><td><code>EP_DROP_PENDING</code></td><td>断连/链路失活（:997/:1303）</td><td>xhci_reset_device 收尾批量清（:4094）</td><td>禁敲铃+不重启；取消的 TD 直接判 TD_CLEARED（:1067-1070）</td></tr>
   </table>
-  <p>这张表的公共出口正是 0007 ③站那句小字——门铃守卫（:560-568）：<strong>端点不在可运行态就不催硬件</strong>。敲铃是"有活干"的信号，而 halt/停机/清 TT/设指针期间的敲铃要么白敲、要么踩坏进行中的恢复流程：</p>
+  <p>这张表的公共出口正是 0009 六站图 ③站那句小字——门铃守卫（:560-568）：<strong>端点不在可运行态就不催硬件</strong>。敲铃是"有活干"的信号，而 halt/停机/清 TT/设指针期间的敲铃要么白敲、要么踩坏进行中的恢复流程：</p>
 <pre>/* xhci-ring.c:560-568（xhci_ring_ep_doorbell :551） */
 	/* Don't ring the doorbell for this endpoint if there are pending
 	 * cancellations because we don't want to interrupt processing.
@@ -541,7 +541,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   <div class="note">收拢：xHCI 里"端点的状态"有两份——<strong>硬件 EP ctx 五态（§4.8.3）是 xHC 自己的状态机，软件 ep_state 十旗标（xhci.h:672-685）是驱动的簿记</strong>；两者通过命令环上的 Reset/Stop/Set TR Dequeue 与事件环上的 Transfer/Command Completion 对话。urb_dequeue（:1849-1860）那张"三态让路、两态秒断"的分派表，就是这套簿记的消费端——读懂它，cancel/超时/halt 交织的并发路径就不再神秘。</div>
 
   <h2>回到整体（xHC 线三课收官的地图钉）</h2>
-  <p>xHC 线三课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、接缝、四把钥匙、六站旅程）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与提单上的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 门铃守卫。0001 骨架图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
+  <p>xHC 线四课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、接缝、四把钥匙）→ <strong>0009 传输剧</strong>（六站旅程、事件通知链、两本账）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与提单上的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 门铃守卫。0001 骨架图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
 
   <h2>检索练习 · 6 题</h2>
   <div id="quiz"></div>
@@ -551,11 +551,11 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   <ul>
     <li><strong>主源</strong>：xHCI 1.2（2019）§4.10.2 Errors（p195-203——.1 Stall、.3 USB Transaction Error、.7 Bus Error Counter、.8 等时端点错误处理）／§4.10.3.1 Ring Overrun and Underrun（p204）／§4.8.3 Endpoint Context State（p162）／§4.6.8-4.6.10（Reset Endpoint／Stop Endpoint／Set TR Dequeue Pointer，p128/133/141）／§6.4.5 Table 6-91（CC 码全表，p507）。内核：<code>drivers/usb/host/xhci-ring.c</code>（本课全部行号基线 62f4c998b297）。</li>
     <li>标本深挖：M4.5 合同（作者工作区在案）（九条全序判据）与 QEMU xHCI lab1 实证（作者工作区在案）（真实虚拟主控的 TRB dump 对照）；<a href="../notes/Linux-xHCI实现与规范差异分析.md">实现与规范差异分析</a>。</li>
-    <li>前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>（TD 语法/几何）＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>（六站/cycle 合同）。</li>
+    <li>前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>（TD 语法/几何）＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>（cycle 合同/接缝/四钥匙）＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 三视角传输剧</a>（六站/事件通知链）。</li>
     <li>下一课候选：端口与 rhub（usb2_rhub/usb3_rhub 双根 hub，衔接 0003）/ 命令环深钻（CRCR/命令仲裁）——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0008 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4：本课＝实战与命运面——M4.5 标本九事件＋错误路径全图＋ep_state 十旗标）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 标本：M4.5 引擎 v0.3（m45_xhci.log 全 PASS）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ｜ 下一课：待定（rhub 端口课 / 命令环深钻）｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0008 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4：本课＝实战与命运面——M4.5 标本九事件＋错误路径全图＋ep_state 十旗标）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 标本：M4.5 引擎 v0.3（m45_xhci.log 全 PASS）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a> ｜ 下一课：待定（rhub 端口课 / 命令环深钻）｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
 
 </main>
 <script>

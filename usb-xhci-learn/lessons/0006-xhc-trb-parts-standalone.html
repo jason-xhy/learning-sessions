@@ -129,7 +129,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§6.4（TRB 字段立法，p465 起）/ §4.9.1 / §4.11 / §4.11.7——实测素材：M4.5 自研引擎 v0.3 仿真日志（setup 包逐字节）</p>
 
   <h2>整体定位（先挂图：hub 线看到的"主机"，本线开箱）</h2>
-  <p>hub 线五课里（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">0002</a>–<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005</a>），"主机"始终是一个黑盒：复位时序、描述符请求、TT split——我们一直站在<strong>设备与 hub 侧</strong>看主机的行为。本线把黑盒打开：<strong>usbcore 之下、xHC 之内</strong>，一次传输是怎么走完全程的。你在 0001 诊断里 xHCI 骨架域 3/3 全对（三种环 / Doorbell / Table 6-90）——骨架已成体系，xHC 线钻的正是<strong>骨架之上的动态细节</strong>。本线分三课走：<strong>0006（本课）先认零件</strong>——提单 TRB 的每个字段、槽/TD/段/环的组织、切分语法与环的几何；<strong>0007 环的运转</strong>——cycle 合同、接缝、四把钥匙联动，把六站旅程完整走一遍；<strong>0008 旅程实战与命运</strong>——M4.5 真实标本九事件、错误路径全图、ep_state 十旗标。下面这张全景图三课共用：本课只开②站的箱子（"TRB 化排环"——零件都在那只箱子里）。</p>
+  <p>hub 线五课里（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">0002</a>–<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005</a>），"主机"始终是一个黑盒：复位时序、描述符请求、TT split——我们一直站在<strong>设备与 hub 侧</strong>看主机的行为。本线把黑盒打开：<strong>usbcore 之下、xHC 之内</strong>，一次传输是怎么走完全程的。你在 0001 诊断里 xHCI 骨架域 3/3 全对（三种环 / Doorbell / Table 6-90）——骨架已成体系，xHC 线钻的正是<strong>骨架之上的动态细节</strong>。本线分四课走：<strong>0006（本课）先认零件</strong>——提单 TRB 的每个字段、槽/TD/段/环的组织、切分语法与环的几何；<strong>0007 环的运转</strong>——cycle 合同、接缝、四把钥匙联动；<strong>0009 一场传输的三视角剧</strong>——六站旅程与事件通知链；<strong>0008 旅程实战与命运</strong>——M4.5 真实标本九事件、错误路径全图、ep_state 十旗标。下面这张全景图三课共用：本课只开②站的箱子（"TRB 化排环"——零件都在那只箱子里）。</p>
 
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -218,7 +218,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <tr><td>拼箱标记（几票捆一件）</td><td>几颗 TRB 捆成一个 TD</td><td>DW3 bit4（chain）</td></tr>
     <tr><td>固定航班的舱位表</td><td>环（ring）——槽位固定、循环复用</td><td>——（环是单据的容器，钻点二）</td></tr>
   </table>
-  <p>三个<strong>不像</strong>，防止过度类比：① 方向反了——现实提单由承运人签发、托运人持有；TRB 由<strong>托运人（软件）写、承运人（xHC）读</strong>，"生效签章"（cycle 位）握在生产者手里。② 现实提单是物权凭证、可背书转让、长期存档；TRB 是主存里的一次性消费品——消费后成"残影"，下一圈被直接覆写，谁也不留底（0007 钻点一的看点）。③ 现实提单描述货、不装货；TRB 有一个精心设计的例外——<strong>货小到 8 字节以内时，直接把货抄在单上</strong>（IDT 立即数据，恰是下一节的入口）。比喻用到"单上不装货、只写货的描述与指令"这一层为止。</p>
+  <p>三个<strong>不像</strong>，防止过度类比：① 方向反了——现实提单由承运人签发、托运人持有；TRB 由<strong>托运人（软件）写、承运人（xHC）读</strong>，"生效签章"（cycle 位）握在生产者手里。② 现实提单是物权凭证、可背书转让、长期存档；TRB 是主存里的一次性消费品——消费后成"残影"，下一圈被直接覆写，谁也不留底（0007 第 1 章的看点）。③ 现实提单描述货、不装货；TRB 有一个精心设计的例外——<strong>货小到 8 字节以内时，直接把货抄在单上</strong>（IDT 立即数据，恰是下一节的入口）。比喻用到"单上不装货、只写货的描述与指令"这一层为止。</p>
 
   <h2>把 16 字节看透 · DW0/DW1 的四种身份（DW2/DW3 一并收齐）</h2>
   <p>一颗 TRB ＝ 16 字节 ＝ 4 个 32 位字（§4.11.1）。§6.4（p465 起："The Transfer Request Block is the basic building block"）把它立法成三段：<strong>DW0＋DW1 合成一个 64 位"参数字段"</strong>、<strong>DW2 状态字</strong>、<strong>DW3 控制字</strong>。xHCI 的一个关键设计随即登场：<strong>参数字段的含义随 TRB 类型换装</strong>——同一对格子，四种身份。顺带把 §4.11.1.1（p208-209）的分工立法记下：传输/命令 TRB 由<strong>软件</strong>清零后填写（软件生产）；事件 TRB 由 <strong>xHC</strong> 填写（"the consumer is system software and the producer is the xHC"）。</p>
@@ -346,7 +346,7 @@ struct xhci_transfer_event {
   </table>
   <table>
     <tr><th>DW3 位段</th><th>身份（随 TRB 类型换装）</th></tr>
-    <tr><td>bit0</td><td><strong>cycle</strong>——全类型通用：所有权签章（轮次匹配＝消费者可取；0007 钻点一的主角）</td></tr>
+    <tr><td>bit0</td><td><strong>cycle</strong>——全类型通用：所有权签章（轮次匹配＝消费者可取；0007 第 1 章的主角）</td></tr>
     <tr><td>bit1</td><td>数据 TRB＝<strong>ENT</strong>（Evaluate Next TRB，:1047）；Link TRB＝<strong>TC</strong>（Toggle Cycle，xhci.h:958）——同一 bit 两个身份</td></tr>
     <tr><td>bit2 / bit3 / bit4 / bit5 / bit6</td><td>ISP（短包即中断）/ NS（PCIe no snoop）/ <strong>chain</strong>（捆 TD）/ IOC（完成即事件）/ <strong>IDT</strong>（指针字段装立即数据）——:1049-1057</td></tr>
     <tr><td>bit9</td><td>等时 TRB＝BEI（Block Event Interrupt，:1062）；Address Device 命令＝<strong>BSR</strong>（:972，0008 标本两段式的主角）——又一处同位双身份</td></tr>
@@ -594,7 +594,7 @@ struct xhci_transfer_event {
         <text x="40" y="200" font-size="10.5" fill="#707070">回程：事件里的 TRB 指针落尾 TRB，驱动用 trb_in_td 反查整条 TD（:877-919）→ urb 销账</text>
       </g>
     </svg>
-        <p><strong>本帧只看"一口气"</strong>：xHC 校验过链头后，沿 chain 一直走到 chain=0 为止——整条链是<strong>一个调度与完成单位</strong>，事件只发一颗。补充一个预告：TD 中途跨接缝时，缝上的 Link TRB 会被改写 chain 位把绳续上（0007 联动动画第 5 帧细看那个场景）。</p>
+        <p><strong>本帧只看"一口气"</strong>：xHC 校验过链头后，沿 chain 一直走到 chain=0 为止——整条链是<strong>一个调度与完成单位</strong>，事件只发一颗。补充一个预告：TD 中途跨接缝时，缝上的 Link TRB 会被改写 chain 位把绳续上（0007 第 3 章联动动画第 5 帧细看那个场景）。</p>
       </div>
     </div>
   </div>
@@ -698,11 +698,11 @@ struct xhci_transfer_event {
         <text x="440" y="414" text-anchor="middle" font-size="11.5" fill="#707070">段号在拼接后重编（:179-180）；流端点每个 stream_id 一条独立环，事件回程用 radix tree 反查（xhci-mem.c:184-213 注释，§4.12）</text>
       </g>
     </svg>
-    <figcaption>三种环对"写满"的三种答案在此凑齐：<strong>传输环=动态扩容（本图）、命令环=禁止扩容（:3304-3306）、事件环=ERST 预声明几何</strong>（0007 钻点二）。扩容期间 cycle_state 不变——新段空槽的 cycle 都还是旧轮次，生产者跨过新末段 Link 时才翻转。</figcaption>
+    <figcaption>三种环对"写满"的三种答案在此凑齐：<strong>传输环=动态扩容（本图）、命令环=禁止扩容（:3304-3306）、事件环=ERST 预声明几何</strong>（0007 第 2 章）。扩容期间 cycle_state 不变——新段空槽的 cycle 都还是旧轮次，生产者跨过新末段 Link 时才翻转。</figcaption>
   </figure>
-  <div class="note">一句话收拢：<strong>ring = 段链表；段 = 255 数据槽 + 1 Link 槽；Link 携带下段地址，TC 只在 last_seg 段尾出现（唯一轮次翻转点）；传输环可按需 splice 扩段，命令环禁扩，事件环几何外置 ERST</strong>。cycle 合同（0007 钻点一）与 ERST 对照（0007 钻点二）补上后，三种环的静态几何与动态行为就全部闭环。</div>
+  <div class="note">一句话收拢：<strong>ring = 段链表；段 = 255 数据槽 + 1 Link 槽；Link 携带下段地址，TC 只在 last_seg 段尾出现（唯一轮次翻转点）；传输环可按需 splice 扩段，命令环禁扩，事件环几何外置 ERST</strong>。cycle 合同（0007 第 1 章）与 ERST 对照（0007 第 2 章）补上后，三种环的静态几何与动态行为就全部闭环。</div>
 
-  <p>toggle cycle（TC）这把钥匙<strong>单独舞一遍</strong>——三帧只看"轮次什么时候翻"。前置一句就够：每颗 TRB 的 DW3 bit0 是 cycle（所有权签章），软件与 xHC 各记一个"当前轮次"，绕环整整一圈后轮次取反——完整合同在 0007 钻点一，这里只看翻圈的记账（示意把每段缩成 4+1 槽，真实 255+1）：</p>
+  <p>toggle cycle（TC）这把钥匙<strong>单独舞一遍</strong>——三帧只看"轮次什么时候翻"。前置一句就够：每颗 TRB 的 DW3 bit0 是 cycle（所有权签章），软件与 xHC 各记一个"当前轮次"，绕环整整一圈后轮次取反——完整合同在 0007 第 1 章，这里只看翻圈的记账（示意把每段缩成 4+1 槽，真实 255+1）：</p>
   <div class="player">
     <div class="frame">
       <div class="ftitle"><span class="no">第 1 帧</span><span>两段环＝两道缝，只有最后一段的缝带 TC</span></div>
@@ -780,7 +780,7 @@ struct xhci_transfer_event {
   </div>
 
   <h2>回到整体（零件图已钉，下一课让环转起来）</h2>
-  <p>本课把 xHC 侧的<strong>静态面</strong>钉死：提单的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章与旗帜——同一 bit 随类型换装）、单据的组织（槽→TD→段→环、接缝）、切分语法（num_tds 三规则＋64K 边界＋chain 捆绑）、环的几何（255+1 槽、Link 指针、TC 唯一、动态扩容）。回到全景图：②站"TRB 化排环"这只箱子已经开透——<strong>零件都在桌上了，但环还没转</strong>。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）让它们动起来：cycle 合同（谁拥有哪颗槽）、接缝上的对表、四把钥匙联动，再把六站旅程①~⑥完整走一遍。hub 线视角的一个呼应也留着：0002 课"先取 8 字节定 ep0 包长"的请求，本课已看到它的 DW0/DW1 逐字节——那 8 个字节就是提单上抄的货。</p>
+  <p>本课把 xHC 侧的<strong>静态面</strong>钉死：提单的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章与旗帜——同一 bit 随类型换装）、单据的组织（槽→TD→段→环、接缝）、切分语法（num_tds 三规则＋64K 边界＋chain 捆绑）、环的几何（255+1 槽、Link 指针、TC 唯一、动态扩容）。回到全景图：②站"TRB 化排环"这只箱子已经开透——<strong>零件都在桌上了，但环还没转</strong>。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）让它们动起来：cycle 合同（谁拥有哪颗槽）、接缝上的对表、四把钥匙联动；六站旅程①~⑥的完整三视角走法在 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>。hub 线视角的一个呼应也留着：0002 课"先取 8 字节定 ep0 包长"的请求，本课已看到它的 DW0/DW1 逐字节——那 8 个字节就是提单上抄的货。</p>
 
   <h2>检索练习 · 6 题</h2>
   <div id="quiz"></div>
@@ -790,7 +790,7 @@ struct xhci_transfer_event {
   <ul>
     <li><strong>主源</strong>：xHCI 1.2（2019）§6.4 Transfer Request Block（p465 起——TRB 字段立法总纲）；Table 6-20/6-21/6-22（p466-467，Normal TRB 四字字段定义）；§6.4.1.2.1＋Table 6-23/6-24（p468，Setup Stage TRB——DW0/DW1＝setup 包）；§6.4.2.1＋Table 6-37/6-38（p477-478，Transfer Event——DW0/DW1＝TRB 指针）；§4.11.1/.1.1（p208-209，16B 四字与生产/消费分工）；§4.9.1 Transfer Descriptors（p168）；§4.11.2（p211-221）；§4.11.7 TD Usage Rules（p233）。<code>specs/xhci_1.2_2019.pdf</code></li>
     <li>内核：<code>drivers/usb/host/xhci.h</code>（位域宏 ：816-832/958/972/1029-1068、TRB 定长常数 ：1260-1270）＋ <code>xhci-ring.c</code> queue_setup_phase/handle_tx_event/queue_bulk_tx ＋ <code>xhci-mem.c</code>（建环与 Link TRB）——本课全部行号基线 62f4c998b297。</li>
-    <li>下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>——cycle 合同、接缝、四把钥匙联动、六站旅程；错误路径与 M4.5 标本在 0008。</li>
+    <li>下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>——cycle 合同、接缝、四把钥匙联动；<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>（六站旅程/事件通知链）；错误路径与 M4.5 标本在 0008。</li>
     <li>想再挖：ED（Event Data）标志与立即数据回传（§4.11.1.1）、流协议下的 TRB 形态（§4.12）——<strong>直接问老师</strong>。</li>
   </ul>
 
@@ -1003,7 +1003,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: '一个由三段 segment 组成的传输环，Toggle Cycle 位（TC）挂在哪里？',
     options: ['每段末尾的 Link TRB 都带 TC', '只有整个环最后一段的 Link TRB 带 TC', 'TC 挂在 ERST 段表条目里', 'TC 由 doorbell 写入时翻转'],
     answer: 1,
-    explain: 'B 对。xhci-mem.c:129-130 只对 ring->last_seg 段尾 Link 置 LINK_TOGGLE——中间段 Link 只跳转不翻轮次，多段环转一整圈 cycle_state 只翻一次（对 0007 cycle 合同的关键补全）。扩容时这条不变量被精心维护：新段按独立小环初始化（新末段带 TC），splice 后把多余 TC 撤掉（xhci-mem.c:169-177），全环永远恰一个 TC。C 是事件环的几何方案（0007 钻点二）；D 无此语义。' }
+    explain: 'B 对。xhci-mem.c:129-130 只对 ring->last_seg 段尾 Link 置 LINK_TOGGLE——中间段 Link 只跳转不翻轮次，多段环转一整圈 cycle_state 只翻一次（对 0007 cycle 合同的关键补全）。扩容时这条不变量被精心维护：新段按独立小环初始化（新末段带 TC），splice 后把多余 TC 撤掉（xhci-mem.c:169-177），全环永远恰一个 TC。C 是事件环的几何方案（0007 第 2 章）；D 无此语义。' }
 ]);
 </script>
 </body>
