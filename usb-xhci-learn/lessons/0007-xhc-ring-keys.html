@@ -2,134 +2,17 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>课 0007 · 环的运转：六站旅程与四把钥匙</title>
-<style>
-/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
-:root {
-  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
-  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
-}
-* { box-sizing: border-box; }
-/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
-   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
-   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
-@font-face {
-  font-family: LiningDigits;
-  src: local("Times New Roman");
-  unicode-range: U+0030-0039;
-}
-body {
-  margin: 0; padding: 2rem 1rem 4rem;
-  background: var(--paper); color: var(--ink);
-  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
-  font-size: 1.05rem; line-height: 1.65;
-}
-main { max-width: 46rem; margin: 0 auto; }
-h1, h2, h3 { font-weight: 600; line-height: 1.3; }
-h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
-h2 { font-size: 1.25rem; margin-top: 2.2rem; }
-.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
-a { color: var(--accent); }
-code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
-.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
-table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
-th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
-th { background: #f0efe6; }
-
-/* 分层地图 */
-.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
-.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
-.layer:last-child { border-bottom: 1px solid var(--line); }
-.layer b { font-weight: 600; }
-.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
-
-/* 测验组件（assets/quiz.js） */
-.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
-.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
-.quiz-q .tag { color: var(--muted); font-size: .8rem; }
-.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
-.opt:hover:enabled { border-color: var(--accent); }
-.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
-.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
-.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
-.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
-.explain.show { display: block; }
-.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
-.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
-
-/* 纵向链路步骤（hub 事件链路等流程） */
-.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
-.step:last-child { border-bottom: none; }
-.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
-.step .where { color: var(--muted); font-size: .85rem; }
-
-/* 流程图组件（纵向节点流，节点带代码行为注记） */
-.flow { margin: 1rem 0; }
-.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
-.fnode .code { color: var(--muted); font-size: .82rem; }
-.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
-.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
-.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
-.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
-figure { margin: 1.2rem 0; }
-figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
-.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
-.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
-
-/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
-.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
-.player .frame { display: block; margin: 14px 0; }
-.player.js:not(.static) .frame { display: none; }
-.player.js:not(.static) .frame.cur { display: block; margin: 0; }
-.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
-.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
-.player .fbody { font-size: .95rem; line-height: 1.6; }
-.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
-.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
-.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
-.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
-.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
-.player .pdots i.on { background: var(--accent); }
-
-/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
-.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
-.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
-.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
-.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
-.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
-.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
-.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
-.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
-.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
-.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
-.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
-.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
-td.bad { background: #fdeaea; }
-td.good { background: #e9f7ee; }
-
-footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
-
-@media print {
-  body { background: #fff; padding: 0; font-size: 10.5pt; }
-  .opt:disabled { opacity: 1; }
-  .explain { display: block; }
-  .player .frame { display: block !important; }
-  .player .pctl { display: none; }
-}
-
-</style>
+<link rel="stylesheet" href="../assets/course.css">
 </head>
 <body>
 <main>
-  <div class="kicker">LESSON 0007 · xHC 线第 2 课（前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>；hub 线 0002–0005）</div>
+  <div class="kicker">LESSON 0007 · xHC 线第 2 课（前置：<a href="0006-xhc-trb-parts.html">0006 先认零件</a>；hub 线 0002–0005）</div>
   <h1>环的运转<br>六站旅程 × cycle 合同 × 接缝 × 四把钥匙联动</h1>
-  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
-
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.7 Doorbells（p158）/ §4.9.2 Transfer Ring Management（p169-178，cycle 规则立法处）/ §4.9.4 事件环（p179）/ §6.5 ERST</p>
 
   <h2>整体定位（零件已认完，本课让环转起来）</h2>
-  <p>上一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>）把静态面钉死：提单 16 字节的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章）、槽→TD→段→环的组织、切分语法与扩容几何——<strong>零件都在桌上，但环还没转</strong>。本课让它们动起来，主角是三个：<strong>cycle 合同</strong>（谁拥有哪颗槽——环形缓冲不用"空/满"标志位的立法答案）、<strong>接缝</strong>（内存里的直线怎么闭合成圆）、<strong>四把钥匙联动</strong>（cycle × toggle cycle × chain × Link 在同一颗环上咬合）。最后把<strong>六站旅程</strong>完整走一遍——下面这张全景图本课全程适用：主角是②③④⑤，即排环、发布、取指与事件回程的反向合同。收官的钻点三是「两问两答」——2026-10-09 三课上线当天读者的两个真实追问（分件的是哪把钥匙？为什么非要翻圈？），把四把钥匙的分工逼到墙角再钉一遍；钻点四接住第三问（2026-10-10：控制传输 2 颗 TRB 的 chain 在哪设？）——先补控制路径的立法真相（答案反直觉：全程零 chain），再用一部键盘枚举动画让生产者与消费者同框合演；钻点五接住第四、五问（2026-10-10：一个控制传输到底几件 TD？Status 段为什么砍不得？）——把「TD」的两本账并排挑明，再给三幕戏的职能×生产者消费者一张全图。</p>
+  <p>上一课（<a href="0006-xhc-trb-parts.html">0006 先认零件</a>）把静态面钉死：提单 16 字节的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章）、槽→TD→段→环的组织、切分语法与扩容几何——<strong>零件都在桌上，但环还没转</strong>。本课让它们动起来，主角是三个：<strong>cycle 合同</strong>（谁拥有哪颗槽——环形缓冲不用"空/满"标志位的立法答案）、<strong>接缝</strong>（内存里的直线怎么闭合成圆）、<strong>四把钥匙联动</strong>（cycle × toggle cycle × chain × Link 在同一颗环上咬合）。最后把<strong>六站旅程</strong>完整走一遍——下面这张全景图本课全程适用：主角是②③④⑤，即排环、发布、取指与事件回程的反向合同。收官的钻点三是「两问两答」——2026-10-09 三课上线当天读者的两个真实追问（分件的是哪把钥匙？为什么非要翻圈？），把四把钥匙的分工逼到墙角再钉一遍；钻点四接住第三问（2026-10-10：控制传输 2 颗 TRB 的 chain 在哪设？）——先补控制路径的立法真相（答案反直觉：全程零 chain），再用一部键盘枚举动画让生产者与消费者同框合演；钻点五接住第四、五问（2026-10-10：一个控制传输到底几件 TD？Status 段为什么砍不得？）——把「TD」的两本账并排挑明，再给三幕戏的职能×生产者消费者一张全图。</p>
 
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -2010,7 +1893,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
   <div class="note">问四问五收拢：<strong>TD 是两本账——规范按阶段记 2-3 件（Setup 恒单颗是法条、Data 在 Linux 恒单颗是选择），内核按 URB 记 1 件、票根指 Status；三幕是「问 → 答 → 签收」——令牌恒主机发、载荷生产者每幕换手两次，签收不是第三种数据，是「办结」动作本身，软件侧一切「完成」信号（IOC、事件、中断、回调）都记在签收那颗 TRB 名下</strong>。方向口诀：Status 恒与 Data 反向（:3904-3909 的 if/else 在翻的就是它）；零数据段控制写则 Status＝IN。</div>
 
   <h2>回到整体（环转起来了，下一课看实战与命运）</h2>
-  <p>本课走完六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答＋键盘枚举合演＋两本账挑明——0001 骨架图里的"三种环"现在是<strong>会动且你知道为什么动</strong>的环。但到这里为止走的都是 happy path：事件全是 Success/Short Packet，端点从不出错。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）收官三件事：用我们亲手实现的 M4.5 引擎把 set_address 全握手的<strong>九条事件逐帧跑给你看</strong>（数字全部实测，含短包双事件与环回绕轮转）；拆开<strong>错误路径全图</strong>（CC 判决表→四种传输各自的命运）；拆开<strong>ep_state 十旗标</strong>——STALL 到恢复的完整软硬协同时序。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的两段式 BSR、事件环上的九颗回执。</p>
+  <p>本课走完六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答＋键盘枚举合演＋两本账挑明——0001 骨架图里的"三种环"现在是<strong>会动且你知道为什么动</strong>的环。但到这里为止走的都是 happy path：事件全是 Success/Short Packet，端点从不出错。下一课（<a href="0008-xhc-journey-fate.html">0008 旅程实战与命运</a>）收官三件事：用我们亲手实现的 M4.5 引擎把 set_address 全握手的<strong>九条事件逐帧跑给你看</strong>（数字全部实测，含短包双事件与环回绕轮转）；拆开<strong>错误路径全图</strong>（CC 判决表→四种传输各自的命运）；拆开<strong>ep_state 十旗标</strong>——STALL 到恢复的完整软硬协同时序。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的两段式 BSR、事件环上的九颗回执。</p>
 
   <h2>检索练习 · 16 题</h2>
   <div id="quiz"></div>
@@ -2019,188 +1902,15 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
   <h2>主源与下一步</h2>
   <ul>
     <li><strong>主源</strong>：xHCI 1.2（2019）§4.9.2 Transfer Ring Management（p169-178——cycle 规则与 Link TRB 回绕立法处）＋ §4.7 Doorbells（p158），<code>specs/xhci_1.2_2019.pdf</code>；§6.5 ERST（事件环段表）。内核：<code>drivers/usb/host/xhci-ring.c</code>（本课全部行号基线 62f4c998b297）。</li>
-    <li>前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>（TRB 字段/DW0-1 四种身份/切分语法/环几何——本课 chain 与 TC 两把钥匙的独舞在那边）；下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>（M4.5 标本九事件＋错误路径＋ep_state）。</li>
+    <li>前置：<a href="0006-xhc-trb-parts.html">0006 先认零件</a>（TRB 字段/DW0-1 四种身份/切分语法/环几何——本课 chain 与 TC 两把钥匙的独舞在那边）；下一课：<a href="0008-xhc-journey-fate.html">0008 旅程实战与命运</a>（M4.5 标本九事件＋错误路径＋ep_state）。</li>
     <li>想再挖：多中断器与事件路由（§4.17）、命令环停止/恢复（CRCR CA/CS 位）——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0007 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4；同日 v2 增补钻点三「两问两答」：圈界/件界＋cycle/TC 存在动机——来自读者实问；2026-10-10 v3 增补钻点四：控制传输零 chain 立法（Setup 段 bit4:1=RsvdZ／TRT 预告／Status 收口）＋键盘枚举生产者×消费者同框动画——来自读者第三问；同日 v4 测评修订三处：钻点二 ERST 补三级登记链（寄存器→段表→段行走）＋末槽机制句改写为指针越段解析＋四钥匙表 chain 住址订正（控制传输无此钥匙）；同日 v5 增补钻点五：TD 两本账挑明（规范按阶段记 2-3 件 vs 内核 xhci_td 按 URB 记 1 件）＋三幕职能×生产者消费者×Status 砍不得（签收＝办结）——来自读者第四、五问；连带修订三处旧表述（五层包裹图注 TD 口径挑明、钻点三帧 4「一件一票」补 bulk 限定、摘要库 §3.2.9 行补 Data 段口径）。本课＝环运转动态面——六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答＋钻点四＋钻点五）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0007 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4；同日 v2 增补钻点三「两问两答」：圈界/件界＋cycle/TC 存在动机——来自读者实问；2026-10-10 v3 增补钻点四：控制传输零 chain 立法（Setup 段 bit4:1=RsvdZ／TRT 预告／Status 收口）＋键盘枚举生产者×消费者同框动画——来自读者第三问；同日 v4 测评修订三处：钻点二 ERST 补三级登记链（寄存器→段表→段行走）＋末槽机制句改写为指针越段解析＋四钥匙表 chain 住址订正（控制传输无此钥匙）；同日 v5 增补钻点五：TD 两本账挑明（规范按阶段记 2-3 件 vs 内核 xhci_td 按 URB 记 1 件）＋三幕职能×生产者消费者×Status 砍不得（签收＝办结）——来自读者第四、五问；连带修订三处旧表述（五层包裹图注 TD 口径挑明、钻点三帧 4「一件一票」补 bulk 限定、摘要库 §3.2.9 行补 Data 段口径）。本课＝环运转动态面——六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答＋钻点四＋钻点五）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="0006-xhc-trb-parts.html">0006 先认零件</a> ｜ 下一课：<a href="0008-xhc-journey-fate.html">0008 旅程实战与命运</a> ｜ 相关：<a href="0001-knowledge-map-diagnostic.html">0001 骨架诊断</a></footer>
 
 </main>
-<script>
-/* quiz.js — teach workspace 可复用测验引擎。
-   用法：Quiz.render(mountEl, questions)
-   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
-   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
-(function () {
-  function render(mount, questions) {
-    var scores = {};
-    var wrong = [];
-    var answered = 0;
-
-    var head = document.createElement('p');
-    head.className = 'tag';
-    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
-    mount.appendChild(head);
-
-    questions.forEach(function (q, qi) {
-      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
-      scores[q.tag].total++;
-      var card = document.createElement('div');
-      card.className = 'quiz-q';
-      var h = document.createElement('h3');
-      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
-      card.appendChild(h);
-      var t = document.createElement('div');
-      t.className = 'tag';
-      t.textContent = '领域：' + q.tag;
-      card.appendChild(t);
-      var ex = document.createElement('div');
-      ex.className = 'explain';
-      ex.textContent = q.explain;
-      var done = false;
-      q.options.forEach(function (opt, oi) {
-        var b = document.createElement('button');
-        b.className = 'opt';
-        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
-        b.addEventListener('click', function () {
-          if (done) return;
-          done = true;
-          answered++;
-          var ok = oi === q.answer;
-          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
-          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
-            el.disabled = true;
-            if (i === q.answer) el.classList.add('correct');
-            else if (i === oi) el.classList.add('wrong');
-          });
-          ex.classList.add('show');
-          if (answered === questions.length) finish();
-        });
-        card.appendChild(b);
-      });
-      card.appendChild(ex);
-      mount.appendChild(card);
-    });
-
-    function finish() {
-      var areas = Object.keys(scores).map(function (k) {
-        return k + ' ' + scores[k].right + '/' + scores[k].total;
-      });
-      var right = 0;
-      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
-      var total = questions.length;
-      var pct = Math.round(100 * right / total);
-      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
-      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
-        + areas.join(' | ') + '\n'
-        + '答错：' + (wrong.length ? wrong.join('、') : '无');
-      var panel = document.createElement('div');
-      panel.className = 'summary';
-      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
-        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
-      panel.innerHTML = html;
-      panel.appendChild(document.createElement('br'));
-      var copy = document.createElement('button');
-      copy.className = 'btn';
-      copy.textContent = '复制总结发给老师';
-      copy.addEventListener('click', function () {
-        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(ok);
-        } else {
-          var ta = document.createElement('textarea');
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          ta.remove();
-          ok();
-        }
-      });
-      panel.appendChild(copy);
-      mount.appendChild(panel);
-      panel.scrollIntoView({ behavior: 'smooth' });
-    }
-  }
-  window.Quiz = { render: render };
-})();
-
-</script>
-<script>
-/* player.js — 分帧放映机（课程族共享，配 course.css 的 .player 段）
- * 静态优先：无 JS 时所有帧默认 CSS 全部可见（一帧一张定格）；
- * 本脚本 init 首行给 .player 加 'js' 类后才进入播放模式（只显当前帧）。
- * 托管页面上全部放映机：上一帧/播放(2.6s 自动)/下一帧/重置/展开全部帧
- * + 圆点导航 + "第 N/M 帧"计数；到尾帧自动停播；手翻即停播。 */
-(function () {
-  'use strict';
-  document.querySelectorAll('.player').forEach(function (pl) {
-    pl.classList.add('js');
-    var frames = Array.prototype.slice.call(pl.querySelectorAll('.frame'));
-    if (!frames.length) return;
-    var idx = 0, timer = null;
-
-    var ctl = document.createElement('div');
-    ctl.className = 'pctl';
-    ctl.innerHTML =
-      '<button type="button" data-a="prev">上一帧</button>' +
-      '<button type="button" data-a="play">播放</button>' +
-      '<button type="button" data-a="next">下一帧</button>' +
-      '<button type="button" data-a="reset">重置</button>' +
-      '<button type="button" data-a="all">展开全部帧</button>' +
-      '<span class="pcount"></span><span class="pdots"></span>';
-    pl.appendChild(ctl);
-    var count = ctl.querySelector('.pcount');
-    var playBtn = ctl.querySelector('[data-a="play"]');
-    var dotsBox = ctl.querySelector('.pdots');
-    frames.forEach(function (f, i) {
-      var d = document.createElement('i');
-      d.title = '第 ' + (i + 1) + ' 帧';
-      d.addEventListener('click', function () { manual(i); });
-      dotsBox.appendChild(d);
-    });
-    var dots = Array.prototype.slice.call(dotsBox.children);
-
-    function stop() {
-      if (timer) { clearInterval(timer); timer = null; }
-      playBtn.textContent = '播放';
-    }
-    function go(i) {
-      idx = (i + frames.length) % frames.length;
-      frames.forEach(function (f, k) { f.classList.toggle('cur', k === idx); });
-      dots.forEach(function (d, k) { d.classList.toggle('on', k === idx); });
-      count.textContent = '第 ' + (idx + 1) + '/' + frames.length + ' 帧';
-      if (idx === frames.length - 1) stop();
-    }
-    /* 手动导航才退出"展开全部帧"；预置的 static（打印/静态验收态）不被 init 翻掉 */
-    function manual(i) {
-      stop();
-      pl.classList.remove('static');
-      go(i);
-    }
-    ctl.addEventListener('click', function (e) {
-      var a = e.target.getAttribute && e.target.getAttribute('data-a');
-      if (!a) return;
-      if (a === 'prev') { manual(idx - 1); }
-      else if (a === 'next') { manual(idx + 1); }
-      else if (a === 'reset') { manual(0); }
-      else if (a === 'all') { stop(); pl.classList.toggle('static'); }
-      else if (a === 'play') {
-        if (timer) { stop(); return; }
-        playBtn.textContent = '暂停';
-        pl.classList.remove('static');
-        if (idx === frames.length - 1) go(0);
-        timer = setInterval(function () {
-          if (idx === frames.length - 1) { stop(); return; }
-          go(idx + 1);
-        }, 2600);
-      }
-    });
-    go(0);
-  });
-})();
-
-</script>
+<script src="../assets/quiz.js"></script>
+<script src="../assets/player.js"></script>
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '环合同',
