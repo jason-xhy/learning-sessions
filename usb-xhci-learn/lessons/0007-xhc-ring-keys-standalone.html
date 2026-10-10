@@ -177,7 +177,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <rect x="40" y="336" width="800" height="64" rx="6" fill="#fdf0e7" stroke="#c2410c" stroke-width="1.2"/>
         <text x="56" y="356" font-size="11" font-weight="700" fill="#c2410c">设备固件</text>
         <text x="56" y="374" font-size="10">只看得见线上：应答令牌（token）、收发数据包、回握手（ACK/STALL）。</text>
-        <text x="56" y="392" font-size="10">看不见：环 · TRB · cycle · Link · 门铃 · 事件环——共享内存私聊与它无关。</text>
+        <text x="56" y="392" font-size="10">看不见：环 · TRB · cycle · Link · 门铃 · 事件环——全住在共享内存与 MMIO 里，与它无关。</text>
 
         <text x="40" y="414" font-size="9.5" fill="#6a4fc4">共享内存 · 事件环（xHC 写 · 软件读）——设备不可见</text>
         <rect x="40" y="420" width="800" height="60" rx="6" fill="#f7f5fc" stroke="#6a4fc4" stroke-width="1.2"/>
@@ -200,7 +200,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <figcaption>环机制地图：<strong>两颗共享内存环（紫）只连软件与 xHC；设备（橙）只接 USB 线</strong>——门铃走 MMIO、数据走 DMA（Buffer Pointer 合同）、完成走事件环＋中断。这张图就是后文每部动画的泳道骨架，「环对设备不可见」立法框紧随其后。</figcaption>
   </figure>
 
-  <div class="note"><b>立法（全课通用）</b>：<strong>环对设备不可见——环是软件与 xHC 的共享内存私聊，设备只看得见线上</strong>。传输环、命令环、事件环、ERST 段表全住在主存里，门铃寄存器住在 MMIO 里；设备固件的世界观里只有令牌（token）、数据包与握手。本课每部动画的设备泳道都按这条立法画：环上独角戏的帧，设备泳道是「盲区声明」固定框（灰底）；有线上戏份的帧（第 3 章 bulk IN 联动），设备泳道画同期线上活动与 DMA 直写。</div>
+  <div class="note"><b>立法（全课通用）</b>：<strong>环对设备不可见——环住在只有软件与 xHC 能读写的共享内存里，设备只看得见线上</strong>。传输环、命令环、事件环、ERST 段表全住在主存里，门铃寄存器住在 MMIO 里；设备固件的世界观里只有令牌（token）、数据包与握手。本课每部动画的设备泳道都按这条立法画：环上独角戏的帧，设备泳道是「盲区声明」固定框（灰底）；有线上戏份的帧（第 3 章 bulk IN 联动），设备泳道画同期线上活动与 DMA 直写。</div>
 
   <h2>第 1 章 · cycle 位：环的生产/消费合同</h2>
   <p>环形缓冲没有"空/满"标志位——软件与 xHC 是两个独立时钟域的写者/读者，xHCI 的立法答案是 <strong>cycle bit</strong>（TRB 控制字段 bit0，§4.11.1 TRB Template）：<strong>每个环有当前轮次（0 或 1），生产者填好 TRB 数据后把 cycle 置成当前轮次=发布；消费者只取 cycle 匹配的 TRB；写者追上读者一圈后轮次翻转，旧 TRB 的 cycle 自然失效</strong>。三种环的角色分工内核注释一句话说尽：</p>
@@ -297,7 +297,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <text x="440" y="274" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（此幕静默——环上的事不上线）</text>
       <rect x="16" y="294" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
       <text x="28" y="314" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-      <text x="440" y="328" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+      <text x="440" y="328" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
       <text x="440" y="344" text-anchor="middle" font-size="10" fill="#8a8a7e">「空」是 cycle 比对读出来的——这整场戏设备零参与</text>
       </g>
     </svg>
@@ -333,7 +333,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <text x="440" y="274" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（此幕静默——发布与消费全在共享内存里）</text>
       <rect x="16" y="294" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
       <text x="28" y="314" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-      <text x="440" y="328" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+      <text x="440" y="328" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
       <text x="440" y="344" text-anchor="middle" font-size="10" fill="#8a8a7e">发布与消费全发生在共享内存里——不上线，设备无感知</text>
       </g>
     </svg>
@@ -368,7 +368,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <text x="440" y="274" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（此幕静默——换圈是比对语义，不上线）</text>
       <rect x="16" y="294" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
       <text x="28" y="314" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-      <text x="440" y="328" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+      <text x="440" y="328" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
       <text x="440" y="344" text-anchor="middle" font-size="10" fill="#8a8a7e">第二轮、残影自动作废——全是比对语义，设备无从知晓</text>
       </g>
     </svg>
@@ -419,7 +419,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="440" y="278" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（此幕静默——xHC 还在读内存，没上线）</text>
         <rect x="16" y="298" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="318" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-        <text x="440" y="332" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+        <text x="440" y="332" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
         <text x="440" y="348" text-anchor="middle" font-size="10" fill="#8a8a7e">xHC 读内存取指——这段内存在主存里，与设备无关</text>
       </g>
     </svg>
@@ -427,7 +427,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       </div>
     </div>
     <div class="frame">
-      <div class="ftitle"><span class="no">第 2 帧</span><span>接缝＝末槽→首槽的那一刀；Link TRB 就是接缝上的路标</span></div>
+      <div class="ftitle"><span class="no">第 2 帧</span><span>走完末槽跳回首槽——这一跳就是接缝；Link TRB 是接缝上的路标</span></div>
       <div class="fbody">
       <svg viewBox="0 0 880 462" role="img" aria-label="回绕箭头与 Link TRB 四件行李（三泳道：软件｜xHC｜设备盲区）" style="width:100%">
       <g font-size="11">
@@ -458,7 +458,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="440" y="368" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（此幕静默——接缝住在内存里，不上线）</text>
         <rect x="16" y="388" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="408" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-        <text x="440" y="422" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+        <text x="440" y="422" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
         <text x="440" y="438" text-anchor="middle" font-size="10" fill="#8a8a7e">接缝与四件行李全在共享内存里——设备只等线上令牌</text>
       </g>
     </svg>
@@ -493,7 +493,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="730" y="250" text-anchor="middle" font-size="10.5" fill="#707070">段2 基址 0x3000·大小 8 …（Table 6-95）</text>
         <rect x="16" y="272" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="292" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-        <text x="440" y="306" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+        <text x="440" y="306" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
         <text x="440" y="322" text-anchor="middle" font-size="10" fill="#8a8a7e">两种缝法（Link 自描述／ERST 段表）都在共享内存与寄存器里——设备一种也看不见</text>
       </g>
     </svg>
@@ -1246,7 +1246,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <text x="440" y="354" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（此幕静默——分件难题发生在共享内存环上）</text>
       <rect x="16" y="374" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
       <text x="28" y="394" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-      <text x="440" y="408" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+      <text x="440" y="408" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
       <text x="440" y="424" text-anchor="middle" font-size="10" fill="#8a8a7e">六颗 TRB 同圈全绿——这场「分件难题」设备零参与</text>
       </g>
     </svg>
@@ -1293,7 +1293,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="440" y="314" text-anchor="middle" font-size="10.5" fill="#707070">检查员互不通气：轮次员对不上就停环，根本轮不到打包员；打包员只管绳，从不管轮次——两道关都是 xHC 泳道的关卡</text>
         <rect x="16" y="326" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="346" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-        <text x="440" y="360" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+        <text x="440" y="360" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
         <text x="440" y="376" text-anchor="middle" font-size="10" fill="#8a8a7e">两枚章、票面、票根——全是软件与 xHC 的私账，设备一枚章也看不见；bulk IN 下它只按令牌回货、收 ACK</text>
       </g>
     </svg>
@@ -1375,7 +1375,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <text x="440" y="338" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（静默——缝与圈号都住在共享内存里）</text>
       <rect x="16" y="368" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
       <text x="28" y="388" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-      <text x="440" y="402" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+      <text x="440" y="402" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
       <text x="440" y="418" text-anchor="middle" font-size="10" fill="#8a8a7e">同一件货两种圈号——圈号跟缝走不跟件走，设备看不见缝</text>
       </g>
     </svg>
@@ -1423,7 +1423,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="440" y="240" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">3 件货＝恰 3 张票：chain 决定在哪剪断 → IOC 决定剪断即出票 → 票面地址决定记在哪件名下</text>
         <rect x="16" y="252" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="272" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-        <text x="440" y="286" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+        <text x="440" y="286" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
         <text x="440" y="302" text-anchor="middle" font-size="10" fill="#8a8a7e">票数与票面＝软件与 xHC 的私账；bulk IN 下设备只按令牌回货、收 ACK——三件三票全程无感知</text>
       </g>
     </svg>
@@ -1502,7 +1502,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <text x="440" y="334" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（此幕静默——「货架满还是空」的难题不在线上）</text>
       <rect x="16" y="354" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
       <text x="28" y="374" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-      <text x="440" y="388" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+      <text x="440" y="388" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
       <text x="440" y="404" text-anchor="middle" font-size="10" fill="#8a8a7e">货架不撕单、游标凭什么停——设备不在当事人之列</text>
       </g>
     </svg>
@@ -1539,7 +1539,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="440" y="252" text-anchor="middle" font-size="11" font-weight="700" fill="#a00000">⇒ 答案只能写在格子里的东西上（自描述）——这正是 cycle 位存在的理由</text>
         <rect x="16" y="270" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="290" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-        <text x="440" y="304" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+        <text x="440" y="304" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
         <text x="440" y="320" text-anchor="middle" font-size="10" fill="#8a8a7e">「该停还是该干」这道难题设备完全不参与：它在等下一个令牌，环上的新旧它一无所知</text>
       </g>
     </svg>
@@ -1595,7 +1595,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <text x="440" y="334" text-anchor="middle" font-size="9.5" fill="#707070">USB 线（此幕静默——贴纸与本周章都是共享内存里的私章）</text>
       <rect x="16" y="354" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
       <text x="28" y="374" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-      <text x="440" y="388" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+      <text x="440" y="388" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
       <text x="440" y="404" text-anchor="middle" font-size="10" fill="#8a8a7e">贴纸与本周章的比对——软件与 xHC 的私章私账，设备两样都看不见</text>
       </g>
     </svg>
@@ -1631,7 +1631,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="440" y="232" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">cycle_state ＝ 圈计数器 mod 2（奇偶两态区分无限圈）；TC ＝ 进位指令（过缝对表）</text>
         <rect x="16" y="244" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="264" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
-        <text x="440" y="278" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环是软件与 xHC 的共享内存私聊，设备只看得见线上。</text>
+        <text x="440" y="278" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
         <text x="440" y="294" text-anchor="middle" font-size="10" fill="#8a8a7e">圈计数器、TC 进位——软件与 xHC 的对表机制；设备连「圈」的存在都不知道</text>
       </g>
     </svg>
@@ -1658,7 +1658,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <div class="note">问二收拢：<strong>TD 回答「这件货怎么执行、何时算完成」；cycle/TC 回答上游的货架问题——固定格子的环形货架上「空还是有新货」如何无锁分辨</strong>。三个约束（格子不撕单 / 两时钟域无锁 / 唯一通道是内存）把答案逼成唯一形状：新旧写进每张单（DW3 bit0 轮次贴纸）＋过缝进位（TC）。翻圈不是给 TD 用的，是给货架用的。</div>
 
   <h2>回到整体（环机制收官，传输剧开演）</h2>
-  <p>本课把<strong>环自己的事</strong>讲完了：cycle 合同（数据先落、cycle 后翻；谁生产谁翻转发布、谁消费谁校验匹配；跨缝由 TC 对表）＋接缝（传输环缝在流里＝Link TRB，事件环缝在表里＝ERST 三级登记链）＋四把钥匙联动（cycle 管所有权、TC 管换圈、chain 管打包、Link 管几何）＋圈界与件界（两道独立的关卡：轮次员与打包员各看各的章）＋残影与圈计数（1 bit 数据＋1 bit 进位指令的无锁答卷）。三视角立法贯穿全课——<strong>环对设备不可见，环是软件与 xHC 的共享内存私聊，设备只看得见线上</strong>：cycle 翻转、Link 跳转、轮次对表、事件回执，设备一样也看不见；它能参与的只有令牌、数据包与握手。</p>
+  <p>本课把<strong>环自己的事</strong>讲完了：cycle 合同（数据先落、cycle 后翻；谁生产谁翻转发布、谁消费谁校验匹配；跨缝由 TC 对表）＋接缝（传输环缝在流里＝Link TRB，事件环缝在表里＝ERST 三级登记链）＋四把钥匙联动（cycle 管所有权、TC 管换圈、chain 管打包、Link 管几何）＋圈界与件界（两道独立的关卡：轮次员与打包员各看各的章）＋残影与圈计数（1 bit 数据＋1 bit 进位指令的无锁答卷）。三视角立法贯穿全课——<strong>环对设备不可见：环住在只有软件与 xHC 能读写的共享内存里，设备只看得见线上</strong>：cycle 翻转、Link 跳转、轮次对表、事件回执，设备一样也看不见；它能参与的只有令牌、数据包与握手。</p>
   <p>但环只是舞台——<strong>一场完整传输的戏</strong>还没开演：urb 怎么被打包成五层上环、键盘枚举怎么一部动画演完、Data 段的货谁生产、xHC 怎么用事件通知驱动（事件是完税回执，不是取货单）、TD 的两本账怎么对——这些在姊妹课 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>接棒；错误路径与端点命运（CC 判决表、ep_state 十旗标、M4.5 set_address 九事件标本）由 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>收官。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的 Address Device 命令、事件环上的回执。</p>
 
   <h2>检索练习 · 11 题</h2>

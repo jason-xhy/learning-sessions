@@ -204,7 +204,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <figcaption>六站旅程：<strong>①驱动入队 → ②TRB 化排环 → ③原子发布+敲 doorbell → ④xHC 取指执行（cycle 消费+线上事务）→ ⑤事件回程（event ring+完成码）→ ⑥回调 usbcore</strong>。四色分层读成三视角：蓝＝软件写、紫＝共享内存环、绿＝xHC 硬件、红＝回程；橙＝设备固件——线上对端，环外之人（环机制细节见 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a>）。</figcaption>
   </figure>
 
-  <div class="note"><b>三演员立法（本课全程有效）</b>：<strong>软件</strong>（xhci-hcd 驱动）——贴单生产者（传输环上写 TRB）、事件消费者；<strong>xHC 控制器</strong>——取件消费者（沿环读 TRB）、线上事务的翻译官与搬运工（收包即 DMA 直写）、事件生产者（事件环上写回执）；<strong>设备固件</strong>——线上对端，只看得见令牌与包（token/数据包/握手），<strong>环对它完全不可见</strong>——环是软件与 xHC 的共享内存私聊（0007 开篇立法，本课动画每帧遵守）。线上通道画在 xHC 与设备之间：令牌永远主机发，载荷生产者每幕换手。</div>
+  <div class="note"><b>三演员立法（本课全程有效）</b>：<strong>软件</strong>（xhci-hcd 驱动）——贴单生产者（传输环上写 TRB）、事件消费者；<strong>xHC 控制器</strong>——取件消费者（沿环读 TRB）、线上事务的翻译官与搬运工（收包即 DMA 直写）、事件生产者（事件环上写回执）；<strong>设备固件</strong>——线上对端，只看得见令牌与包（token/数据包/握手），<strong>环对它完全不可见</strong>——环住在只有软件与 xHC 能读写的共享内存里（0007 开篇立法，本课动画每帧遵守）。线上通道画在 xHC 与设备之间：令牌永远主机发，载荷生产者每幕换手。</div>
 
   <p>「谁在哪个阶段当生产者」预告——本课各章逐一兑现，第 4 章把最反直觉的一行立法：</p>
   <table>
@@ -470,7 +470,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="397" y="92" text-anchor="middle" font-size="8.5" fill="#707070">就算 xHC 盯着环也取不走半成品</text>
       <rect x="622" y="56" width="208" height="72" fill="#f4f4ef" stroke="#b9b9ac" stroke-dasharray="3 3" rx="4"/>
         <text x="726" y="78" text-anchor="middle" font-size="9.5" fill="#707070">此幕设备无戏份——</text>
-        <text x="726" y="94" text-anchor="middle" font-size="9.5" fill="#707070">环是软件与 xHC 的共享内存私聊，</text>
+        <text x="726" y="94" text-anchor="middle" font-size="9.5" fill="#707070">环上的事只发生在软件与 xHC 之间，</text>
         <text x="726" y="110" text-anchor="middle" font-size="9.5" fill="#707070">设备只看得见线上。</text>
       <text x="275" y="216" text-anchor="middle" font-size="9.5" fill="#707070">共享内存：EP0 传输环（软件写 · xHC 读）——环对设备不可见</text>
       <rect x="46" y="222" width="52" height="56" fill="#ffffff" stroke="#a5a596" stroke-width="1.4"/>
