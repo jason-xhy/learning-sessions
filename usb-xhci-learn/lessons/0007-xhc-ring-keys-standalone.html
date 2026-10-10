@@ -405,7 +405,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
     <tr><td>多段衔接</td><td>Link TRB 链成环</td><td>ERST 条目数组顺序衔接（Event Ring Segment Table，Table 6-95）</td></tr>
     <tr><td>游标寄存器</td><td>命令环 CRCR（§5.x，RsvdP 位防软件偷写）</td><td>ERDP（软件消费到哪，§4.9.4：软件写 ERDP 必须"前进"，xhci-ring.c:3026 注释原引）</td></tr>
   </table>
-  <p>为什么事件环不需要 Link TRB？<strong>传输环的接缝必须在数据流里自描述</strong>（xHC 扫描时只认 TRB）；<strong>事件环的几何在 ERST 表里外置声明</strong>（段表本身就是"环的说明书"）——两套方案解决同一个问题：环没有尽头，接缝处不能被当成普通 TRB 误解。<span class="diff">实现≠规范</span> 内核对特定厂商硬件还有一个规范没有的防御：ETRON 主控上若 Setup/Data 段恰好跨 Link TRB 会被打断，驱动主动垫一个 No-Op TRB 避开接缝（<code>queue_ctrl_tx</code> 头部 quirk 分支，xhci-ring.c:3775 起）——评审 quirk 补丁时先问"它防的是哪家硬件的什么行为"。</p>
+  <p>为什么事件环不需要 Link TRB？两颗环对"接缝几何"的登记地点不同：<strong>传输环在数据流里自描述</strong>——xHC 扫描时只认 TRB，"下一颗去哪"只能写进流内，Link 亲自占末槽报路；<strong>事件环登记在环外，登记链三级</strong>：① <strong>寄存器</strong>（每颗事件环一组，§5.5.2.3，p425-428）——<code>ERSTSZ</code> 登记共几段、<code>ERSTBA</code> 登记段表本身放在内存哪个地址、<code>ERDP</code> 登记软件消费到哪（xHC 据此回收槽位；软件写它必须"前进"，见上表末行）；② <strong>ERST 段表</strong>（Event Ring Segment Table，§6.5/Table 6-95，p514-515）——放在系统内存里的条目数组，<strong>每条 16 字节＝8 字节段基址（64B 对齐）＋2 字节段大小</strong>（段内 TRB 颗数，合法域 16–4096；第 3 帧图里的"大小 8"是画图取小）；③ <strong>段行走</strong>（§4.9.4，p179）——xHC 从第 1 段首槽起逐颗写事件，<strong>段尾＝基址＋（大小−1）×16——纯算术算出，不读任何 TRB 内容就知道该跳</strong>；到段尾翻表的下一条跳下一段基址，最后一条读完绕回第 1 段（初始化序＝写 ERSTSZ→ERDP→ERSTBA，<strong>ERSTBA 写下即启动事件环</strong>，§4.2）。所以事件环里<strong>每一颗槽都是有效载荷</strong>，没有一颗要为"报路"牺牲——接缝住在寄存器与表里，不住在环里。两套方案解决同一个问题：环没有尽头，回绕点必须在可靠的地方被声明。<span class="diff">实现≠规范</span> 内核对特定厂商硬件还有一个规范没有的防御：ETRON 主控上若 Setup/Data 段恰好跨 Link TRB 会被打断，驱动主动垫一个 No-Op TRB 避开接缝（<code>queue_ctrl_tx</code> 头部 quirk 分支，xhci-ring.c:3775 起）——评审 quirk 补丁时先问"它防的是哪家硬件的什么行为"。</p>
 
   <p>接缝也<strong>单独量一遍</strong>——三帧只看"直线怎么变成圆"与"缝的两种缝法"（cycle/chain 全部静音）：</p>
   <div class="player">
@@ -457,7 +457,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
         <text x="150" y="222" font-size="11">③ 自己的 <b>cyc</b> 位：这条缝本轮的通行凭证　　④ <b>chain</b> 位：TD 跨缝时的续链胶水</text>
       </g>
     </svg>
-        <p><strong>本帧只看段末槽</strong>：这颗槽住不得数据 TRB——xHC 扫到会把 DW3 的 type 字段当指令执行；所以它固定住 Link TRB，<strong>Link 就是接缝的实体</strong>。四件行李正好是另外三把钥匙的家：指针管"跳去哪"，TC 管过缝翻不翻轮次，自身 cyc 管这条缝本轮通不通，chain 管 TD 跨缝时绳断没断。</p>
+        <p><strong>本帧只看段末槽</strong>：这颗槽住不得数据 TRB。回看第 1 帧底注——xHC 取指就是"读内存、地址每次 +16"：读完一颗，指针落在下一颗，再按那颗 DW3 的 type 字段判断"这是什么、该怎么处理"（type＝每颗 TRB 自带的操作码，正常情况下轮子本来就是靠它分发的）。数据 TRB 的操作码只说"搬这坨数据"，<strong>不携带"下一颗去哪"</strong>——若末槽放数据 TRB，xHC 读完它，指针 +16 就踏出段外，把环外不相干的内存当作下一颗 TRB 解析、按其中的 type 照常分发执行；那里没人保证是合法 TRB，行为彻底失控。所以末槽固定住 Link TRB：<strong>type＝Link 本身就是一条"跳转"操作码</strong>——把指针改写成 DW0-1 里的地址，安全送回首槽，<strong>Link 就是接缝的实体</strong>。四件行李正好是另外三把钥匙的家：指针管"跳去哪"，TC 管过缝翻不翻轮次，自身 cyc 管这条缝本轮通不通，chain 管 TD 跨缝时绳断没断。</p>
       </div>
     </div>
     <div class="frame">
@@ -488,7 +488,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
         <text x="730" y="250" text-anchor="middle" font-size="10.5" fill="#707070">段2 基址 0x3000·大小 8 …（Table 6-95）</text>
       </g>
     </svg>
-        <p><strong>本帧只看两个"末槽"的差别</strong>：同样要"缝"，传输环把缝写进数据流（Link 自描述）；事件环把缝写在流外面的表里（ERST：基址＋大小）。两套方案解决同一个问题——<strong>环没有尽头，接缝处不能被当成普通 TRB 误解</strong>。这也回答了钻点二开头的问题：事件环为什么没有 Link TRB。</p>
+        <p><strong>本帧只看两个"末槽"的差别</strong>：同样要"缝"，传输环把缝写进数据流（Link 自描述）；事件环把缝写在流外面的表里（ERST：基址＋大小）。两套方案解决同一个问题——<strong>环没有尽头，接缝处不能被当成普通 TRB 误解</strong>。这也回答了钻点二开头的问题：事件环为什么没有 Link TRB——它的回绕不住在环里，登记在寄存器与 ERST 段表中（三级登记链见钻点二开头）。</p>
       </div>
     </div>
   </div>
@@ -499,9 +499,10 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
     <tr><th>钥匙</th><th>住在哪</th><th>谁写</th><th>谁读/执行</th><th>节奏</th></tr>
     <tr><td><b>cycle bit</b><br>（DW3 bit0）</td><td><strong>每一颗</strong> TRB</td><td>生产者发布时写</td><td>消费者取指时校验</td><td>每颗 TRB 一次</td></tr>
     <tr><td><b>toggle cycle</b><br>（Link 的 DW3 bit1）</td><td><strong>只在</strong>整环最后一段的 Link TRB</td><td>建环/扩容时定死</td><td>跨缝的双方各自执行翻转</td><td>每圈一次（只在接缝）</td></tr>
-    <tr><td><b>chain bit</b><br>（DW3 bit4）</td><td>每颗 TRB（含 Link）</td><td>排 TD 的软件写</td><td>xHC 沿链续读</td><td>每个 TD 边界一次</td></tr>
+    <tr><td><b>chain bit</b><br>（DW3 bit4）</td><td><strong>能串件的数据 TRB</strong>（bulk/int/isoc）；TD 跨缝时 Link 也被改写挂上。<strong>控制传输没有这把钥匙</strong>（见表下注）</td><td>排 TD 的软件写</td><td>xHC 沿链续读</td><td>每个 TD 边界一次</td></tr>
     <tr><td><b>Link TRB</b><br>（整颗 16B）</td><td>每段末槽（＝接缝）</td><td>建环写死＋跨缝改写</td><td>xHC 跳转依据</td><td>每段一颗</td></tr>
   </table>
+  <p><strong>第四把钥匙不是人人都有</strong>：chain 只装在"能被串进同一件"的 TRB 类型上——bulk/interrupt/isoc 的数据 TRB（本动画全是 bulk），加上 TD 跨缝时被软件改写挂绳的 Link TRB；<strong>控制传输没有这把钥匙</strong>——Setup 段 DW3 bit4:1＝RsvdZ，无位可设（Table 6-26）；Data/Status 段虽有 CH 位，内核控制路径全程写 0，分件由三段类型语法自己扛（TRT 预告＋Status 收口）——完整立法与键盘枚举实弹见本课<strong>钻点四</strong>。</p>
   <p>一句话关系：<strong>Link 管几何（在哪接缝）· cycle 管所有权（哪一圈的货）· TC 管换圈（过缝翻轮次）· chain 管打包（几颗 TRB 算一件）</strong>。布景：8 槽小环（槽0-6 数据、槽7 固定 Link，TC=1；刻意取小，逼第三颗 TD 撞上接缝），连续排三颗 130KB bulk OUT TD（每颗 64K+64K+2K 三个 TRB，切分法见 0006 钻点一）。两枚游标：▲=软件 enqueue、▼=xHC dequeue。读图色板（每帧同一套）：</p>
   <figure>
     <svg viewBox="0 0 880 108" role="img" aria-label="读图色板" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -1030,7 +1031,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
       </div>
     </div>
   </div>
-  <div class="note">一句话收拢：<strong>cycle bit 是"每颗 TRB 的所有权"——生产者发布时置成当前轮次，消费者取指时对自己的轮次校验；toggle cycle 让两侧在接缝处（且只在接缝处）同时翻圈，chain bit 把 TRB 捆成 TD 并声明边界，Link TRB 身兼指针/TC/自身 cyc/chain 四重身份——四把钥匙咬合，这颗无锁的环才从来不必说出"空"或"满"</strong>。生产/消费两侧的动作对照：软件 giveback_first_trb（发布翻 cycle）↔ xHC 取指校验；软件 inc_enq_past_link（跨缝翻轮次）↔ xHC 按 TC 翻轮次；事件环上两套动作整个对调。</div>
+  <div class="note">一句话收拢：<strong>cycle bit 是"每颗 TRB 的所有权"——生产者发布时置成当前轮次，消费者取指时对自己的轮次校验；toggle cycle 让两侧在接缝处（且只在接缝处）同时翻圈，chain bit 把可串件的数据 TRB 捆成 TD 并声明边界（控制传输无此钥匙——件界写在类型语法里，见钻点四），Link TRB 身兼指针/TC/自身 cyc/chain 四重身份——四把钥匙咬合，这颗无锁的环才从来不必说出"空"或"满"</strong>。生产/消费两侧的动作对照：软件 giveback_first_trb（发布翻 cycle）↔ xHC 取指校验；软件 inc_enq_past_link（跨缝翻轮次）↔ xHC 按 TC 翻轮次；事件环上两套动作整个对调。</div>
 
   <h2>钻点三 · 两问两答：分件的是谁？为什么翻圈？（读者实问）</h2>
   <p>本节两问都不是编的——三课上线当天（2026-10-09），一位读者读完 0006 当场问出第一问，消化后又追出第二问。两问一前一后，恰好把四把钥匙的分工逼到墙角。先钉两个本节的词（首次出现即定义）：</p>
@@ -1819,7 +1820,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
   <h2>回到整体（环转起来了，下一课看实战与命运）</h2>
   <p>本课走完六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答＋键盘枚举合演——0001 骨架图里的"三种环"现在是<strong>会动且你知道为什么动</strong>的环。但到这里为止走的都是 happy path：事件全是 Success/Short Packet，端点从不出错。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）收官三件事：用我们亲手实现的 M4.5 引擎把 set_address 全握手的<strong>九条事件逐帧跑给你看</strong>（数字全部实测，含短包双事件与环回绕轮转）；拆开<strong>错误路径全图</strong>（CC 判决表→四种传输各自的命运）；拆开<strong>ep_state 十旗标</strong>——STALL 到恢复的完整软硬协同时序。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的两段式 BSR、事件环上的九颗回执。</p>
 
-  <h2>检索练习 · 9 题</h2>
+  <h2>检索练习 · 12 题</h2>
   <div id="quiz"></div>
 
 
@@ -1830,7 +1831,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
     <li>想再挖：多中断器与事件路由（§4.17）、命令环停止/恢复（CRCR CA/CS 位）——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0007 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4；同日 v2 增补钻点三「两问两答」：圈界/件界＋cycle/TC 存在动机——来自读者实问；2026-10-10 v3 增补钻点四：控制传输零 chain 立法（Setup 段 bit4:1=RsvdZ／TRT 预告／Status 收口）＋键盘枚举生产者×消费者同框动画——来自读者第三问。本课＝环运转动态面——六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答＋钻点四）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0007 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4；同日 v2 增补钻点三「两问两答」：圈界/件界＋cycle/TC 存在动机——来自读者实问；2026-10-10 v3 增补钻点四：控制传输零 chain 立法（Setup 段 bit4:1=RsvdZ／TRT 预告／Status 收口）＋键盘枚举生产者×消费者同框动画——来自读者第三问；同日 v4 测评修订三处：钻点二 ERST 补三级登记链（寄存器→段表→段行走）＋末槽机制句改写为指针越段解析＋四钥匙表 chain 住址订正（控制传输无此钥匙）。本课＝环运转动态面——六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答＋钻点四）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
 
 </main>
 <script>
