@@ -142,9 +142,9 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <rect x="34" y="150" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
         <text x="93" y="168" text-anchor="middle">urb→complete 回调</text>
         <text x="93" y="183" text-anchor="middle" font-size="11">（下一轮请求再排）</text>
-        <text x="93" y="262" text-anchor="middle" font-size="11" fill="#707070">hub 线五课讲的复位时序、</text>
-        <text x="93" y="277" text-anchor="middle" font-size="11" fill="#707070">TT 规则，是设备看到的</text>
-        <text x="93" y="292" text-anchor="middle" font-size="11" fill="#707070">这套机制的行为面</text>
+        <text x="93" y="256" text-anchor="middle" font-size="11" fill="#707070">hub 线五课讲的复位时序、</text>
+        <text x="93" y="271" text-anchor="middle" font-size="11" fill="#707070">TT 规则，是设备看到的</text>
+        <text x="93" y="286" text-anchor="middle" font-size="11" fill="#707070">这套机制的行为面</text>
 
         <rect x="218" y="60" width="170" height="230" rx="6" fill="#eef3fa" stroke="#1a5fb4"/>
         <text x="303" y="48" text-anchor="middle" font-weight="600">xhci-hcd 驱动（软件）</text>
@@ -174,7 +174,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="763" y="113" text-anchor="middle" font-size="11">writel(DB_VALUE) 敲 ③</text>
         <rect x="682" y="140" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
         <text x="763" y="158" text-anchor="middle">④ 取指执行：沿环消费 TRB</text>
-        <text x="763" y="173" text-anchor="middle" font-size="11">cycle 匹配才取（§4.9.2）</text>
+        <text x="763" y="179" text-anchor="middle" font-size="11">cycle 匹配才取（§4.9.2）</text>
         <rect x="682" y="200" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
         <text x="763" y="218" text-anchor="middle">USB 线上事务 + 完成码</text>
         <text x="763" y="233" text-anchor="middle" font-size="11">SET_ADDRESS/IN 握手…</text>
@@ -203,7 +203,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   </figure>
 
   <h2>提单是什么 · 先讲货运，再讲 TRB</h2>
-  <p>本课把 TRB 叫"提单"——这个词的来路要先讲清。<strong>提单</strong>（bill of lading）是海运沿用几百年的单据：托运人（货主）把货交给承运人（船公司）时，由承运方签发，单上写明——托运人是谁、<strong>收货人</strong>是谁、货物名称与<strong>件数重量</strong>、装哪条船哪个航次、货存在<strong>哪个仓位</strong>，以及最关键的一条法律属性：<strong>凭单提货</strong>——收货人不进堆场翻找，只认单交货。对工程视角来说，提单的要点只有一个：<strong>单上不装货</strong>。货在舱里，单是"关于货的描述与指令"；承运人照单运输、照单交付、照单通知。xHCI 的世界几乎逐条对得上：</p>
+  <p>TRB 全称 Transfer Request Block，中文通行译名<strong>传输请求块</strong>（本课行文沿用缩写 TRB）——16 字节一颗，环上的基本构件。本课另把它叫"提单"——这个词的来路要先讲清。<strong>提单</strong>（bill of lading）是海运沿用几百年的单据：托运人（货主）把货交给承运人（船公司）时，由承运方签发，单上写明——托运人是谁、<strong>收货人</strong>是谁、货物名称与<strong>件数重量</strong>、装哪条船哪个航次、货存在<strong>哪个仓位</strong>，以及最关键的一条法律属性：<strong>凭单提货</strong>——收货人不进堆场翻找，只认单交货。对工程视角来说，提单的要点只有一个：<strong>单上不装货</strong>。货在舱里，单是"关于货的描述与指令"；承运人照单运输、照单交付、照单通知。xHCI 的世界几乎逐条对得上：</p>
   <table>
     <tr><th>货运世界</th><th>xHCI 世界</th><th>落在 TRB 哪个字段</th></tr>
     <tr><td>托运人（写单的人）</td><td>usbcore / xhci-hcd 驱动（软件生产者）</td><td>——（整个 DW0-3 都是软件写的）</td></tr>
@@ -221,7 +221,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p>三个<strong>不像</strong>，防止过度类比：① 方向反了——现实提单由承运人签发、托运人持有；TRB 由<strong>托运人（软件）写、承运人（xHC）读</strong>，"生效签章"（cycle 位）握在生产者手里。② 现实提单是物权凭证、可背书转让、长期存档；TRB 是主存里的一次性消费品——消费后成"残影"，下一圈被直接覆写，谁也不留底（0007 第 1 章的看点）。③ 现实提单描述货、不装货；TRB 有一个精心设计的例外——<strong>货小到 8 字节以内时，直接把货抄在单上</strong>（IDT 立即数据，恰是下一节的入口）。比喻用到"单上不装货、只写货的描述与指令"这一层为止。</p>
 
   <h2>把 16 字节看透 · DW0/DW1 的四种身份（DW2/DW3 一并收齐）</h2>
-  <p>一颗 TRB ＝ 16 字节 ＝ 4 个 32 位字（§4.11.1）。§6.4（p465 起："The Transfer Request Block is the basic building block"）把它立法成三段：<strong>DW0＋DW1 合成一个 64 位"参数字段"</strong>、<strong>DW2 状态字</strong>、<strong>DW3 控制字</strong>。xHCI 的一个关键设计随即登场：<strong>参数字段的含义随 TRB 类型换装</strong>——同一对格子，四种身份。顺带把 §4.11.1.1（p208-209）的分工立法记下：传输/命令 TRB 由<strong>软件</strong>清零后填写（软件生产）；事件 TRB 由 <strong>xHC</strong> 填写（"the consumer is system software and the producer is the xHC"）。</p>
+  <p>一颗 TRB ＝ 16 字节 ＝ 4 个 32 位字（§4.11.1）。§6.4（p465 起："The Transfer Request Block is the basic building block"）把它立法成三段：<strong>DW0＋DW1 合成一个 64 位"参数字段"</strong>、<strong>DW2 状态字</strong>、<strong>DW3 控制字</strong>。xHCI 的一个关键设计随即登场：<strong>参数字段的含义随 TRB 类型改变</strong>——同一对 DW0/DW1，四种身份。顺带把 §4.11.1.1（p208-209）的分工立法记下：传输/命令 TRB 由<strong>软件</strong>清零后填写（软件生产）；事件 TRB 由 <strong>xHC</strong> 填写（"the consumer is system software and the producer is the xHC"）。</p>
   <p><strong>身份一 · Normal/Data TRB——64 位数据缓冲指针</strong>（Table 6-20，p466："Offset 00h and 04h – Normal TRB Field Definitions"）。"货在哪"：主存里那段数据的起始 DMA 地址，DW0 低 32 位、DW1 高 32 位。两条硬约束（钻点一的 64K 切分法即源于此）：单颗 ≤64K（TRB_MAX_BUFF_SIZE，xhci.h:1266-1267）、缓冲段<strong>不得跨 64K 边界</strong>（TRB_BUFF_LEN_UP_TO_BOUNDARY，:1269-1270）。</p>
   <p><strong>身份二 · Setup Stage TRB——8 字节 setup 包本体</strong>（§6.4.1.2.1，Table 6-23/6-24，p468）。控制传输的"货"恰好只有 8 字节——与其写个指针让 xHC 再跑一趟主存，不如<strong>把货直接抄在单上</strong>：IDT 位（Immediate Data，DW3 bit6）声明"指针字段装的是立即数据"，上限恰 8 字节（TRB_IDT_MAX_SIZE，xhci.h:1059）。这就是提单比喻的例外条款。驱动怎么拼这两个字？内核的拼装现场（IDT 先打在控制字上，再逐字段压进 field1/field2）：</p>
 <pre>/* xhci-ring.c:3839-3845 （queue_setup_phase）IDT 位先打上：指针字段实为立即数据 */
@@ -342,10 +342,10 @@ struct xhci_transfer_event {
     <tr><td>[16:0]</td><td>Transfer Length（TRB_LEN :1031）</td><td>本单货量——17 位，单颗 ≤64K</td></tr>
     <tr><td>[21:17]</td><td>TD Size（TRB_TD_SIZE :1033）</td><td>整件行李还剩几包（SS 突发编排用，最大 31；USB2 主控写 0）</td></tr>
     <tr><td>[31:22]</td><td>Interrupter Target（TRB_INTR_TARGET :1038）</td><td>完成事件路由给哪个中断器（MSI-X 向量，10 位）</td></tr>
-    <tr><td>事件侧换装</td><td>[23:0] 残余长度（EVENT_TRB_LEN :828）＋ [31:24] CC 判决码（GET_COMP_CODE :832）</td><td>回执不写货量，写"还剩多少没搬＋判了什么"</td></tr>
+    <tr><td>事件侧改义</td><td>[23:0] 残余长度（EVENT_TRB_LEN :828）＋ [31:24] CC 判决码（GET_COMP_CODE :832）</td><td>回执不写货量，写"还剩多少没搬＋判了什么"</td></tr>
   </table>
   <table>
-    <tr><th>DW3 位段</th><th>身份（随 TRB 类型换装）</th></tr>
+    <tr><th>DW3 位段</th><th>身份（随 TRB 类型改变）</th></tr>
     <tr><td>bit0</td><td><strong>cycle</strong>——全类型通用：所有权签章（轮次匹配＝消费者可取；0007 第 1 章的主角）</td></tr>
     <tr><td>bit1</td><td>数据 TRB＝<strong>ENT</strong>（Evaluate Next TRB，:1047）；Link TRB＝<strong>TC</strong>（Toggle Cycle，xhci.h:958）——同一 bit 两个身份</td></tr>
     <tr><td>bit2 / bit3 / bit4 / bit5 / bit6</td><td>ISP（短包即中断）/ NS（PCIe no snoop）/ <strong>chain</strong>（捆 TD）/ IOC（完成即事件）/ <strong>IDT</strong>（指针字段装立即数据）——:1049-1057</td></tr>
@@ -357,7 +357,7 @@ struct xhci_transfer_event {
   <div class="note">量纲桥接再钉一遍：<strong>槽恒为 16 字节（结构尺寸）；"64K"是 DW2 里写的货量（承载量）</strong>——提单比喻下这两个量纲天然分开：单子多大与货物多少无关。本课后面所有"TRB·64K"字样，说的都是它 DW2 里的货量。</div>
 
   <h2>先认零件 · 槽 / TRB / TD / Link / 接缝——一把尺子量到底</h2>
-  <p>本课两个钻点与 0007 的全部动画都在这五个词上搭积木，先把零件摆上桌（<strong>从字节到环，四级嵌套</strong>）：<strong>一颗 TRB = 16 字节 = 4 个 32 位字</strong>（§4.11.1）；<strong>槽</strong> = 环上一颗 TRB 的车位——所以<strong>一个槽恰好 16 字节</strong>，槽里永远住着一颗 TRB（数据 TRB 或 Link TRB）；<strong>TD</strong> = 一次传输 = 1..N 颗 TRB 用 chain 位捆成的一列——<strong>TD 与槽的关系就是"占用"</strong>：130KB bulk OUT 先把<strong>数据</strong>切成 64K+64K+2K 三段，每段配一颗 16 字节 TRB 当<strong>提单</strong>（货运比喻：单上只写"货在哪、有多少"，货本身不在单上——对应 DW0-1 填缓冲段地址、DW2 填货量，数据永远不进槽），三颗提单共占 3 个槽＝48 字节；一次 8 字节控制请求的 Setup+Data+Status 同样占 3 个槽。<strong>槽恒为 16 字节，"64K"只是提单上写的货量</strong>——TD 占几个槽，完全由传输长度与切分规则决定；<strong>段</strong> = 256 槽 × 16B = 4096 字节恰一页（前 255 槽住数据、第 256 槽固定住 Link TRB，xhci.h:1260-1267）；<strong>环</strong> = 段链接成的圆（可多段、可扩容，钻点二）。最后是<strong>接缝</strong>：环在内存里是一段段<strong>直线</strong>，逻辑上才弯成圆——<strong>段末槽与首槽相接的那一刀就是接缝</strong>。末槽住不得数据 TRB（xHC 扫到会把它的内容当指令执行），所以固定放一颗 <strong>Link TRB</strong> 当"回到开头"的路标：</p>
+  <p>本课两个钻点与 0007 的全部动画都在这五个词上搭积木，先把零件摆上桌（<strong>从字节到环，四级嵌套</strong>）：<strong>一颗 TRB = 16 字节 = 4 个 32 位字</strong>（§4.11.1）；<strong>槽</strong> = 环上一颗 TRB 的车位——所以<strong>一个槽恰好 16 字节</strong>，槽里永远住着一颗 TRB（数据 TRB 或 Link TRB）；<strong>TD</strong> = 一次传输 = 1..N 颗 TRB 用 chain 位捆成的一列——<strong>TD 与槽的关系就是"占用"</strong>：130KB bulk OUT 先把<strong>数据</strong>切成 64K+64K+2K 三段，每段配一颗 16 字节 TRB 当<strong>提单</strong>（货运比喻：单上只写"货在哪、有多少"，货本身不在单上——对应 DW0-1 填缓冲段地址、DW2 填货量，数据永远不进槽），三颗提单共占 3 个槽＝48 字节；一次 8 字节控制请求的 Setup+Data+Status 同样占 3 个槽。<strong>槽恒为 16 字节，"64K"只是提单上写的货量</strong>——TD 占几个槽，完全由传输长度与切分规则决定；<strong>段</strong> = 256 槽 × 16B = 4096 字节恰一页（前 255 槽住数据、第 256 槽固定住 Link TRB，xhci.h:1260-1267）；<strong>环</strong> = 段链接成的圆（可多段、可扩容，钻点二）。最后是<strong>接缝</strong>：环在内存里是一段段<strong>直线</strong>，逻辑上才弯成圆——<strong>段走完时从末槽跳回首槽，这个跳转点就是接缝</strong>。末槽住不得数据 TRB（xHC 扫到会把它的内容当指令执行），所以固定放一颗 <strong>Link TRB</strong> 当"回到开头"的路标：</p>
   <figure>
     <svg viewBox="0 0 880 344" role="img" aria-label="TRB 解剖与槽/TD/段/环四级嵌套" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g font-size="12">
@@ -371,7 +371,7 @@ struct xhci_transfer_event {
         </g>
         <path d="M 728 156 C 728 126, 84 126, 84 154" fill="none" stroke="#a00000" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ahA)"/>
         <defs><marker id="ahA" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#a00000"/></marker></defs>
-        <text x="406" y="134" text-anchor="middle" font-size="10.5" fill="#a00000">接缝：末槽→首槽的那一刀——直线在这里闭合成圆</text>
+        <text x="406" y="134" text-anchor="middle" font-size="10.5" fill="#a00000">接缝：末槽→首槽的跳转——直线在这里闭合成圆</text>
         <g>
           <rect x="40"  y="158" width="88" height="52" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
           <rect x="132" y="158" width="88" height="52" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
@@ -780,7 +780,7 @@ struct xhci_transfer_event {
   </div>
 
   <h2>回到整体（零件图已钉，下一课让环转起来）</h2>
-  <p>本课把 xHC 侧的<strong>静态面</strong>钉死：提单的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章与旗帜——同一 bit 随类型换装）、单据的组织（槽→TD→段→环、接缝）、切分语法（num_tds 三规则＋64K 边界＋chain 捆绑）、环的几何（255+1 槽、Link 指针、TC 唯一、动态扩容）。回到全景图：②站"TRB 化排环"这只箱子已经开透——<strong>零件都在桌上了，但环还没转</strong>。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）让它们动起来：cycle 合同（谁拥有哪颗槽）、接缝上的对表、四把钥匙联动；六站旅程①~⑥的完整三视角走法在 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>。hub 线视角的一个呼应也留着：0002 课"先取 8 字节定 ep0 包长"的请求，本课已看到它的 DW0/DW1 逐字节——那 8 个字节就是提单上抄的货。</p>
+  <p>本课把 xHC 侧的<strong>静态面</strong>钉死：提单的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章与旗帜——同一 bit 随类型改变含义）、单据的组织（槽→TD→段→环、接缝）、切分语法（num_tds 三规则＋64K 边界＋chain 捆绑）、环的几何（255+1 槽、Link 指针、TC 唯一、动态扩容）。回到全景图：②站"TRB 化排环"这只箱子已经开透——<strong>零件都在桌上了，但环还没转</strong>。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）让它们动起来：cycle 合同（谁拥有哪颗槽）、接缝上的对表、四把钥匙联动；六站旅程①~⑥的完整三视角走法在 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>。hub 线视角的一个呼应也留着：0002 课"先取 8 字节定 ep0 包长"的请求，本课已看到它的 DW0/DW1 逐字节——那 8 个字节就是提单上抄的货。</p>
 
   <h2>检索练习 · 6 题</h2>
   <div id="quiz"></div>

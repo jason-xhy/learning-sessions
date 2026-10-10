@@ -129,7 +129,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.7 Doorbells（p158）/ §4.9.2 Transfer Ring Management（p169-178，cycle 规则立法处）/ §4.9.4 事件环（p179）/ §6.5 ERST</p>
 
   <h2>整体定位（零件已认完，本课让环转起来）</h2>
-  <p>上一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>）把静态面钉死：提单 16 字节的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章）、槽→TD→段→环的组织、切分语法与扩容几何——<strong>零件都在桌上，但环还没转</strong>。本课收窄为<strong>环机制课</strong>：只讲环自己怎么转。主角三个：<strong>cycle 合同</strong>（谁拥有哪颗槽——环形缓冲不用"空/满"标志位的立法答案）、<strong>接缝</strong>（内存里的直线怎么闭合成圆）、<strong>四把钥匙联动</strong>（cycle × toggle cycle × chain × Link 在同一颗环上咬合）；收官两章接住 2026-10-09 三课上线当天读者的两个真实追问（分件的是哪把钥匙？为什么非要翻圈？），把四把钥匙的分工逼到墙角再钉一遍。全部动画统一<strong>三视角泳道</strong>——软件（驱动）｜xHC 控制器｜设备固件，线上通道画在 xHC 与设备之间；一场完整传输的三视角剧（urb→ring 五层包裹、键盘枚举、Data 段生产者与事件通知链、TD 两本账）在姊妹课 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>开演。术语约定：本课 TD 默认指<strong>规范 TD</strong>（§4.9.1：一串 TRB 构成的一件传输）；内核 <code>struct xhci_td</code> 的记账粒度不同——两本账的对照 0009 挑明。</p>
+  <p>上一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>）把静态面钉死：TRB 16 字节的每个字段（DW0-1 四种身份、DW2 长度与剩余包数、DW3 控制位）、槽→TD→段→环的组织、切分语法与扩容几何——<strong>零件都在桌上，但环还没转</strong>。本课收窄为<strong>环机制课</strong>：只讲环自己怎么转。主角三个：<strong>cycle 合同</strong>（谁拥有哪颗槽——环形缓冲不用"空/满"标志位的立法答案）、<strong>接缝</strong>（内存里的直线怎么闭合成圆）、<strong>四把钥匙联动</strong>（cycle × toggle cycle × chain × Link 在同一颗环上咬合）；收官两章接住 2026-10-09 三课上线当天读者的两个真实追问（分件的是哪把钥匙？为什么非要翻圈？），把四把钥匙的分工逼到墙角再钉一遍。全部动画统一<strong>三视角泳道</strong>——软件（驱动）｜xHC 控制器｜设备固件，线上通道画在 xHC 与设备之间；一场完整传输的三视角剧（urb→ring 五层包裹、键盘枚举、Data 段生产者与事件通知链、TD 两本账）在姊妹课 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>开演。术语约定：本课 TD 默认指<strong>规范 TD</strong>（§4.9.1：一串 TRB 构成的一件传输）；内核 <code>struct xhci_td</code> 的记账粒度不同——两本账的对照 0009 挑明。</p>
 
   <figure>
     <svg viewBox="0 0 880 584" role="img" aria-label="环机制地图：三视角泳道与两条共享通道" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -150,12 +150,12 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <rect x="320" y="58" width="80" height="40" fill="#fff" stroke="#a5a596"/><text x="360" y="82" text-anchor="middle">TRB …</text>
         <rect x="416" y="58" width="80" height="40" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/><text x="456" y="82" text-anchor="middle" font-weight="600" fill="#6a4fc4">Link</text>
         <path d="M 456 98 C 456 112, 96 112, 96 99.6" fill="none" stroke="#6a4fc4" stroke-width="1.6" marker-end="url(#mP)"/>
-        <text x="530" y="76" font-size="10" font-weight="600" fill="#1a5fb4">写者：软件（贴单 · 发布时翻 cycle）</text>
+        <text x="530" y="76" font-size="10" font-weight="600" fill="#1a5fb4">写者：软件（写 TRB · 发布时翻 cycle）</text>
         <text x="530" y="96" font-size="10" font-weight="600" fill="#1a7f37">读者：xHC（cycle 校验通过才取指）</text>
 
         <rect x="40" y="128" width="800" height="52" rx="6" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.2"/>
         <text x="56" y="148" font-size="11" font-weight="700" fill="#1a5fb4">软件（驱动 xhci-hcd）</text>
-        <text x="56" y="166" font-size="10">贴单排 TD · 原子发布（wmb 后才翻 cycle）· 敲门铃 · 收事件对账还 urb · 缓冲区只登记地址</text>
+        <text x="56" y="166" font-size="10">写 TRB 排 TD · 原子发布（wmb 后才翻 cycle）· 敲门铃 · 收事件对账还 urb · 缓冲区只登记地址</text>
 
         <line x1="120" y1="180" x2="120" y2="202.4" stroke="#1a5fb4" stroke-width="1.6" marker-end="url(#mB)"/>
         <text x="128" y="196" font-size="9" font-weight="600" fill="#1a5fb4">门铃（MMIO 写，软件→xHC）</text>
@@ -522,7 +522,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <rect x="460" y="46" width="30" height="20" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4" stroke-dasharray="4 3"/><text x="500" y="60">淡蓝虚线＝已排好、属下一轮次（xHC 还没过缝对表）</text>
         <rect x="30"  y="76" width="30" height="20" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.3" stroke-dasharray="4 3"/><text x="70" y="90">淡绿虚线✓＝已消费残影（cyc 原样留存，无人擦除）</text>
         <rect x="460" y="76" width="30" height="20" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/><text x="500" y="90">紫＝Link TRB（接缝）　▲软件 enqueue　▼xHC dequeue</text>
-        <rect x="30"  y="106" width="30" height="20" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/><text x="70" y="120">蓝＝软件（驱动）泳道：贴单/发布/敲铃/收事件</text>
+        <rect x="30"  y="106" width="30" height="20" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/><text x="70" y="120">蓝＝软件（驱动）泳道：写 TRB/发布/敲铃/收事件</text>
         <rect x="460" y="106" width="30" height="20" fill="#eef8f0" stroke="#1a7f37" stroke-width="1.4"/><text x="500" y="120">绿＝xHC 控制器泳道：取指/对表/上线/DMA</text>
         <rect x="30"  y="126" width="30" height="20" fill="#fdf0e7" stroke="#c2410c" stroke-width="1.4"/><text x="70" y="140">橙＝设备固件泳道：只看得见线上；本动画 bulk IN，它是载荷生产者</text>
         <rect x="460" y="126" width="30" height="20" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.4"/><text x="500" y="140">灰底盒＝设备盲区声明（环上独角戏幕）</text>
@@ -713,7 +713,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
           <tr><td>1</td><td class="bad">0（反极性，压着）</td><td class="good">1（<code>|= start_cycle</code> 置位）</td></tr>
           <tr><td>0</td><td class="bad">1（反极性，压着）</td><td class="good">0（<code>&amp;= ~TRB_CYCLE</code> 清位）</td></tr>
         </table>
-        <p>130KB 被 64K 边界切成 64K+64K+2K 三颗（0006 三层语法）。<strong>本帧只看槽0 与槽1/2 的 cyc 差别</strong>：trailing TRB 落地时就带当前轮次<strong>现写现发</strong>（<code>field |= ring->cycle_state</code>），首 TRB 却故意写成<strong>反极性</strong>——看上面 ★注记：两条分支殊途同归，写的都是 start_cycle 取反（start_cycle=1 就保持 0、start_cycle=0 反而置 1），整颗 TD 建完才由 giveback_first_trb 一步翻成真值（真值表第三列；翻转代码 :3441-3451——wmb 之后才动首 TRB 的 cycle，随后敲铃）。<strong>为什么要反着写？</strong>若首 TRB 直接写 0，而本圈轮次恰好是 0（start_cycle=0），半成品首 TRB 会立即匹配、被 xHC 当成品取走；写反值保证整颗 TD 建完之前首 TRB 必不匹配。槽1/2 提前变绿为什么无害？<strong>门只开在链头</strong>：xHC 严格顺序扫描，过不了槽0（不匹配），永远到不了槽1。chain=1→1→0 加尾 TRB 的 IOC，就是这条 TD 的捆绑绳与完成哨兵。</p>
+        <p>130KB 被 64K 边界切成 64K+64K+2K 三颗（0006 三层语法）。<strong>本帧只看槽0 与槽1/2 的 cyc 差别</strong>：trailing TRB 落地时就带当前轮次<strong>现写现发</strong>（<code>field |= ring->cycle_state</code>），首 TRB 却故意写成<strong>反极性</strong>——看上面 ★注记：两条分支殊途同归，写的都是 start_cycle 取反（start_cycle=1 就保持 0、start_cycle=0 反而置 1），整颗 TD 建完才由 giveback_first_trb 一步翻成真值（真值表第三列；翻转代码 :3441-3451——wmb 之后才动首 TRB 的 cycle，随后敲铃）。<strong>为什么要反着写？</strong>若首 TRB 直接写 0，而本圈轮次恰好是 0（start_cycle=0），半成品首 TRB 会立即匹配、被 xHC 当成品取走；写反值保证整颗 TD 建完之前首 TRB 必不匹配。槽1/2 提前变绿为什么无害？<strong>门只开在链头</strong>：xHC 严格顺序扫描，过不了槽0（不匹配），永远到不了槽1。chain=1→1→0 加尾 TRB 的 IOC，就是这条 TD 的件界标记与完成触发。</p>
       </div>
     </div>
     <div class="frame">
@@ -853,16 +853,16 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="16" y="272" width="848" height="52" rx="4" fill="#eef8f0" stroke="#1a7f37" stroke-width="1.2"/>
       <text x="28" y="302" font-size="10.5" font-weight="700" fill="#1a7f37">xHC 控制器</text>
       <rect x="150" y="282" width="200" height="30" rx="5" fill="#fff" stroke="#1a7f37" stroke-width="1.4"/><text x="250" y="301" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">xHC 轮次 = 1</text>
-      <text x="370" y="301" font-size="10" fill="#1a2b4a">取走 TD1/TD2：逐包收货→DMA 直写软件内存→尾 TRB IOC 出票 EV1/EV2</text>
+      <text x="370" y="301" font-size="10" fill="#1a2b4a">顺序消费 TD1 再 TD2：逐包 IN 收货→DMA 直写；TD1 完成→写 EV1、TD2 完成→写 EV2</text>
       <line x1="720" y1="272" x2="720" y2="235.6" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#mG)"/>
       <text x="712" y="258" text-anchor="end" font-size="9" font-weight="600" fill="#1a7f37">DMA 直写 · Buffer Pointer 合同</text>
       <line x1="270" y1="324" x2="270" y2="366.4" stroke="#1a7f37" stroke-width="1.4" marker-end="url(#mG)"/>
-      <text x="278" y="350" font-size="9" font-weight="600" fill="#1a7f37">IN 令牌 ×N</text>
-      <line x1="720" y1="368" x2="720" y2="325.6" stroke="#c2410c" stroke-width="1.4" marker-end="url(#mO)"/>
-      <text x="728" y="350" font-size="9" font-weight="600" fill="#c2410c">DATA 包 ×N（TD1/TD2）</text>
-      <line x1="500" y1="324" x2="500" y2="366.4" stroke="#1a7f37" stroke-width="1.4" marker-end="url(#mG)"/>
-      <text x="508" y="350" font-size="9" font-weight="600" fill="#1a7f37">ACK</text>
-      <text x="56" y="350" font-size="9.5" fill="#707070">USB 线（bulk IN 事务串）</text>
+      <text x="278" y="350" font-size="9" font-weight="600" fill="#1a7f37">① IN 令牌 ×N</text>
+      <line x1="500" y1="368" x2="500" y2="325.6" stroke="#c2410c" stroke-width="1.4" marker-end="url(#mO)"/>
+      <text x="508" y="350" font-size="9" font-weight="600" fill="#c2410c">② DATA 包 ×N（TD1/TD2）</text>
+      <line x1="720" y1="324" x2="720" y2="366.4" stroke="#1a7f37" stroke-width="1.4" marker-end="url(#mG)"/>
+      <text x="728" y="350" font-size="9" font-weight="600" fill="#1a7f37">③ ACK</text>
+      <text x="56" y="350" font-size="9.5" fill="#707070">USB 线（bulk IN 事务串：每包 ①→②→③，从左到右＝先后）</text>
       <rect x="16" y="368" width="848" height="56" rx="4" fill="#fdf0e7" stroke="#c2410c" stroke-width="1.2"/>
       <text x="28" y="388" font-size="10.5" font-weight="700" fill="#c2410c">设备固件</text>
       <text x="440" y="402" text-anchor="middle" font-size="10" fill="#1a2b4a">应 IN 令牌回货：TD1/TD2 各 130KB——设备不知道环、不知道 TRB，只应答线上。</text>
@@ -870,18 +870,21 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="16" y="430" width="848" height="74" rx="4" fill="#f8f6fc" stroke="#6a4fc4" stroke-width="1"/>
       <text x="28" y="448" font-size="10" font-weight="700" fill="#6a4fc4">共享内存 · 事件环放大镜（xHC 写 → 软件读，同一份 cycle 合同）</text>
         <rect x="40" y="456" width="116" height="42" fill="#fbf4f4" stroke="#9aa79b" stroke-width="1.3" stroke-dasharray="4 3"/>
-        <text x="98" y="473" text-anchor="middle" font-size="10.5" fill="#9aa79b">✓ EV1</text>
+        <text x="98" y="473" text-anchor="middle" font-size="10.5" fill="#9aa79b">① ✓ EV1</text>
         <text x="98" y="488" text-anchor="middle" font-size="9.5" fill="#9aa79b">TD1 Success cyc=1</text>
         <rect x="166" y="456" width="116" height="42" fill="#fbf4f4" stroke="#9aa79b" stroke-width="1.3" stroke-dasharray="4 3"/>
-        <text x="224" y="473" text-anchor="middle" font-size="10.5" fill="#9aa79b">✓ EV2</text>
+        <text x="224" y="473" text-anchor="middle" font-size="10.5" fill="#9aa79b">② ✓ EV2</text>
         <text x="224" y="488" text-anchor="middle" font-size="9.5" fill="#9aa79b">TD2 Success cyc=1</text>
         <rect x="292" y="456" width="116" height="42" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/>
         <text x="350" y="481" text-anchor="middle" font-size="10" fill="#b0b0a4">空</text>
         <rect x="418" y="456" width="116" height="42" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/>
         <text x="476" y="481" text-anchor="middle" font-size="10" fill="#b0b0a4">空</text>
+        <text x="556" y="468" font-size="9" font-weight="600" fill="#6a4fc4">写入时机（xHC＝生产者，逐颗对齐）</text>
+        <text x="556" y="482" font-size="8.5" fill="#707070">TD1 尾 TRB（IOC=1）执行完 → 当场写 EV1</text>
+        <text x="556" y="495" font-size="8.5" fill="#707070">TD2 完成 → 再写 EV2；每写一颗翻事件 cycle＋拉中断</text>
       </g>
     </svg>
-        <p><strong>本帧只看消费后的槽色</strong>：残影＝不擦除的旧 cyc。TD2 与 TD1 同节奏（完整落在本圈内：压着→发布→敲铃→消费）。看点在槽子：TD1 的三颗 TRB<strong>消费后内存里仍写着 cyc=1</strong>——消费者不擦除，复用=生产者直接覆写。安全覆写灰槽的前提是 <strong>xHC 游标早已越过</strong>；而"还有多少槽可写"由 prepare_ring 事前数余量把关（不足→动态扩容，0006 钻点二），cycle 管的是"旧内容不被误读"——两道闸各管一头。回程上两颗 Success 事件也按 cyc=1 进事件环：那里 xHC 是生产者、软件按 unhandled_event_trb(:137) 校验消费——同一份合同站到了对面。三视角同框看一眼：设备泳道本帧有戏——两件货各 130KB 已按 IN 令牌逐包回完，货走的路＝<strong>设备→线上→xHC→DMA 直写软件内存</strong>（Buffer Pointer 合同登记的三段地址），软件从头到尾没碰过一个包；两颗 Success 是<strong>完税回执</strong>——回执落环时，货早已在软件内存里。</p>
+        <p><strong>本帧只看消费后的槽色</strong>：残影＝不擦除的旧 cyc。TD2 与 TD1 同节奏（完整落在本圈内：压着→发布→敲铃→消费）。看点在槽子：TD1 的三颗 TRB<strong>消费后内存里仍写着 cyc=1</strong>——消费者不擦除，复用=生产者直接覆写。安全覆写灰槽的前提是 <strong>xHC 游标早已越过</strong>；而"还有多少槽可写"由 prepare_ring 事前数余量把关（不足→动态扩容，0006 钻点二），cycle 管的是"旧内容不被误读"——两道闸各管一头。回程上两颗 Success 事件也按 cyc=1 进事件环：那里 xHC 是生产者、软件按 unhandled_event_trb(:137) 校验消费——同一份合同站到了对面。两个"时机"读图时容易读丢，钉一遍：<strong>① 事件环的写入逐颗对齐</strong>——xHC 不攒账，TD1 的尾 TRB（IOC=1）执行完当场写 EV1、翻事件 cycle、拉中断，TD2 完成再写 EV2（放大镜右下角时机注）；<strong>② 线上按件推进</strong>——xHC 先消费 TD1（逐包 ①IN 令牌→②DATA→③ACK，64K+64K+2K），TD1 收口后才轮到 TD2 的三颗，不存在"收齐两件才开始发 IN 令牌"（线上通道从左到右＝一包事务内的先后）。三视角同框看一眼：设备泳道本帧有戏——两件货各 130KB 已按 IN 令牌逐包回完，货走的路＝<strong>设备→线上→xHC→DMA 直写软件内存</strong>（Buffer Pointer 合同登记的三段地址），软件从头到尾没碰过一个包；两颗 Success 是<strong>完税回执</strong>——回执落环时，货早已在软件内存里。</p>
       </div>
     </div>
     <div class="frame">
@@ -983,7 +986,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 	 */
 	if (trb_is_link(ring-&gt;enqueue) &amp;&amp; (chain || more_trbs_coming))
 		inc_enq_past_link(xhci, ring, chain);</pre>
-        <p><strong>本帧只看槽7 Link 行与软件轮次盒</strong>：Link 三变（chain 被改写／自身 cyc 0→1／TC 触发轮次 1→0）。TD3 三颗要坐在槽6+槽0/1——跨缝。<code>The ring's cycle state may change as we enqueue the other TRBs</code>（:3666-3668 原话）预言的场景就在这：inc_enq 在 TD 中途（chain=1 或 more_trbs_coming）遇 Link <strong>立即跨过</strong>（:299-306），inc_enq_past_link 连做四件事：① Link 的 chain 位改写成本 TD 的 chain——接缝"在 TD 里面"，xHC 跨缝后必须续链（:277-280）；② wmb 后 Link 自己的 cyc 0→1（"交给硬件"）；③ TC=1 → <strong>软件轮次 1→0</strong>；④ 游标跳到槽0。此后 trailing TRB 拿<strong>新轮次 0</strong>（淡蓝虚线——已排好，只差 xHC 对表）；首 TRB（槽6）仍等缝前存下的<strong>旧轮次 start_cycle=1</strong>。同一颗 TD 两种轮次标签，各贴各的岸。</p>
+        <p><strong>本帧只看槽7 Link 行与软件轮次盒</strong>：Link 三变（chain 被改写／自身 cyc 0→1／TC 触发轮次 1→0）。TD3 三颗要坐在槽6+槽0/1——跨缝。<code>The ring's cycle state may change as we enqueue the other TRBs</code>（:3666-3668 原话）预言的场景就在这：inc_enq 在 TD 中途（chain=1 或 more_trbs_coming）遇 Link <strong>立即跨过</strong>（:299-306），inc_enq_past_link 连做四件事：① Link 的 chain 位改写成本 TD 的 chain——接缝"在 TD 里面"，xHC 跨缝后必须续链（:277-280）；② wmb 后 Link 自己的 cyc 0→1（"交给硬件"）；③ TC=1 → <strong>软件轮次 1→0</strong>；④ 游标跳到槽0。此后 trailing TRB 拿<strong>新轮次 0</strong>（淡蓝虚线——已排好，只差 xHC 对表）；首 TRB（槽6）仍等缝前存下的<strong>旧轮次 start_cycle=1</strong>。同一颗 TD 两种轮次标签——缝前的存档与缝后的新值，各管各的 TRB。</p>
       </div>
     </div>
     <div class="frame">
@@ -1053,12 +1056,12 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <line x1="720" y1="272" x2="720" y2="235.6" stroke="#1a7f37" stroke-width="1.6" marker-end="url(#mG)"/>
       <text x="712" y="258" text-anchor="end" font-size="9" font-weight="600" fill="#1a7f37">DMA 直写 · Buffer Pointer 合同</text>
       <line x1="270" y1="324" x2="270" y2="366.4" stroke="#1a7f37" stroke-width="1.4" marker-end="url(#mG)"/>
-      <text x="278" y="350" font-size="9" font-weight="600" fill="#1a7f37">IN 令牌 ×N</text>
-      <line x1="720" y1="368" x2="720" y2="325.6" stroke="#c2410c" stroke-width="1.4" marker-end="url(#mO)"/>
-      <text x="728" y="350" font-size="9" font-weight="600" fill="#c2410c">DATA 包 ×N（TD3 130KB）</text>
-      <line x1="500" y1="324" x2="500" y2="366.4" stroke="#1a7f37" stroke-width="1.4" marker-end="url(#mG)"/>
-      <text x="508" y="350" font-size="9" font-weight="600" fill="#1a7f37">ACK</text>
-      <text x="56" y="350" font-size="9.5" fill="#707070">USB 线（bulk IN 事务串）</text>
+      <text x="278" y="350" font-size="9" font-weight="600" fill="#1a7f37">① IN 令牌 ×N</text>
+      <line x1="500" y1="368" x2="500" y2="325.6" stroke="#c2410c" stroke-width="1.4" marker-end="url(#mO)"/>
+      <text x="508" y="350" font-size="9" font-weight="600" fill="#c2410c">② DATA 包 ×N（TD3 130KB）</text>
+      <line x1="720" y1="324" x2="720" y2="366.4" stroke="#1a7f37" stroke-width="1.4" marker-end="url(#mG)"/>
+      <text x="728" y="350" font-size="9" font-weight="600" fill="#1a7f37">③ ACK</text>
+      <text x="56" y="350" font-size="9.5" fill="#707070">USB 线（bulk IN 事务串：每包 ①→②→③，从左到右＝先后）</text>
       <rect x="16" y="368" width="848" height="56" rx="4" fill="#fdf0e7" stroke="#c2410c" stroke-width="1.2"/>
       <text x="28" y="388" font-size="10.5" font-weight="700" fill="#c2410c">设备固件</text>
       <text x="440" y="402" text-anchor="middle" font-size="10" fill="#1a2b4a">TD3 三段 130KB 已全部应答回货——接缝跳转与轮次对表，设备毫无知觉。</text>
@@ -1066,13 +1069,13 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="16" y="430" width="848" height="74" rx="4" fill="#f8f6fc" stroke="#6a4fc4" stroke-width="1"/>
       <text x="28" y="448" font-size="10" font-weight="700" fill="#6a4fc4">共享内存 · 事件环放大镜（xHC 写 → 软件读，同一份 cycle 合同）</text>
         <rect x="40" y="456" width="116" height="42" fill="#fbf4f4" stroke="#9aa79b" stroke-width="1.3" stroke-dasharray="4 3"/>
-        <text x="98" y="473" text-anchor="middle" font-size="10.5" fill="#9aa79b">✓ EV1</text>
+        <text x="98" y="473" text-anchor="middle" font-size="10.5" fill="#9aa79b">① ✓ EV1</text>
         <text x="98" y="488" text-anchor="middle" font-size="9.5" fill="#9aa79b">TD1 Success cyc=1</text>
         <rect x="166" y="456" width="116" height="42" fill="#fbf4f4" stroke="#9aa79b" stroke-width="1.3" stroke-dasharray="4 3"/>
-        <text x="224" y="473" text-anchor="middle" font-size="10.5" fill="#9aa79b">✓ EV2</text>
+        <text x="224" y="473" text-anchor="middle" font-size="10.5" fill="#9aa79b">② ✓ EV2</text>
         <text x="224" y="488" text-anchor="middle" font-size="9.5" fill="#9aa79b">TD2 Success cyc=1</text>
-        <rect x="292" y="456" width="116" height="42" fill="#fdeaea" stroke="#a00000" stroke-width="1.3"/>
-        <text x="350" y="473" text-anchor="middle" font-size="10.5" fill="#a00000">EV3</text>
+        <rect x="292" y="456" width="116" height="42" fill="#fbf4f4" stroke="#a00000" stroke-width="1.3"/>
+        <text x="350" y="473" text-anchor="middle" font-size="10.5" fill="#a00000">③ EV3</text>
         <text x="350" y="488" text-anchor="middle" font-size="9.5" fill="#a00000">TD3 Success cyc=1</text>
         <rect x="418" y="456" width="116" height="42" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/>
         <text x="476" y="481" text-anchor="middle" font-size="10" fill="#b0b0a4">空</text>
@@ -1176,12 +1179,12 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p>这一问不是编的——三课上线当天（2026-10-09），一位读者读完 0006 当场问出；消化后又追出「为什么非要翻圈」（第 5 章）。两问一前一后，恰好把四把钥匙的分工逼到墙角。先钉两个本章的词（首次出现即定义）：</p>
   <table>
     <tr><th>术语</th><th>管什么</th><th>哪几把钥匙</th><th>判的是</th></tr>
-    <tr><td><b>圈界</b></td><td>这颗槽里的提单是第几圈的货</td><td>cycle bit ＋ toggle cycle</td><td>新货（有效）vs 旧货（残影）——所有权</td></tr>
+    <tr><td><b>圈界</b></td><td>这颗槽里的 TRB 属于第几圈</td><td>cycle bit ＋ toggle cycle</td><td>本轮新 TRB（有效）vs 旧圈残影——所有权</td></tr>
     <tr><td><b>件界</b></td><td>这颗槽是不是一件货（TD）的尽头</td><td>chain bit ＋ IOC</td><td>TDn vs TDn+1——打包边界＋收口对账</td></tr>
   </table>
 
   <div class="note"><b>读者问一（原话复述）</b>：「多段环转一整圈，cycle_state 只翻一次——一个 TD 里的 cycle state 不是都相同吗（除了最后一颗）？那 xHC 怎么区分 TDn 和 TDn+1？」</div>
-  <p>这句提问里藏着一次<strong>钥匙串门</strong>：括号里那条「除最后一颗外都相同」其实是 <strong>chain 的规则</strong>（TD 内除尾 TRB 外 chain=1、尾 chain=0——0006 的钉死句是「边界＝chain 0」），被记到了 cycle 头上。于是前提看起来全对：同圈内 TD 的 cycle 确实全都相同——但「分件」从来不是 cycle 的工作，就像责怪体重秤量不出身高：它不是干这个的。下面四帧让 cycle 与 chain 第一次<strong>同框对照</strong>（此前只有独舞与四钥匙齐转，缺的正是并排的这一帧）。布景、货、色板与第 3 章完全同一套（读图色板见第 3 章开头，此处不重复）——还是那三颗 130KB 的 bulk IN 货；本章新增的镜头语言只有一种：每颗槽角上的「轮次贴纸」＝槽里印的 cyc 值（第 5 章第 3 帧起用）：</p>
+  <p>这句提问把两把钥匙的规则<strong>记混了</strong>：括号里那条「除最后一颗外都相同」其实是 <strong>chain 的规则</strong>（TD 内除尾 TRB 外 chain=1、尾 chain=0——0006 的钉死句是「边界＝chain 0」），被记到了 cycle 头上。于是前提看起来全对：同圈内 TD 的 cycle 确实全都相同——但「分件」从来不是 cycle 的工作，就像责怪体重秤量不出身高：它不是干这个的。下面四帧让 cycle 与 chain 第一次<strong>同框对照</strong>（此前只有独舞与四钥匙齐转，缺的正是并排的这一帧）。布景与色板与第 3 章完全同一套（读图色板见第 3 章开头，此处不重复）——还是那三颗 130KB 的 bulk IN TD；本章新增的镜头语言只有一种：每颗槽角上的「轮次贴纸」＝槽里印的 cyc 值（第 5 章第 3 帧起用）：</p>
   <div class="player">
     <div class="frame">
       <div class="ftitle"><span class="no">第 1 帧</span><span>同圈的邻居——假悖论定格：六颗 TRB 的 cyc 全部相同</span></div>
@@ -1228,9 +1231,9 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <polygon points="76,123 92,123 84,135" fill="#1a7f37"/>
         <text x="95" y="133" font-size="9.5" fill="#1a7f37">▼dequeue(xHC)</text>
       <line x1="46" y1="150" x2="306" y2="150" stroke="#1a5fb4" stroke-width="2"/>
-        <text x="176" y="164" text-anchor="middle" font-size="10" fill="#1a5fb4">TD1（一件·3 提单）</text>
+        <text x="176" y="164" text-anchor="middle" font-size="10" fill="#1a5fb4">TD1（一件·3 颗 TRB）</text>
       <line x1="322" y1="150" x2="582" y2="150" stroke="#1a5fb4" stroke-width="2"/>
-        <text x="452" y="164" text-anchor="middle" font-size="10" fill="#1a5fb4">TD2（一件·3 提单）</text>
+        <text x="452" y="164" text-anchor="middle" font-size="10" fill="#1a5fb4">TD2（一件·3 颗 TRB）</text>
       <circle cx="314" cy="172" r="11" fill="#a00000"/>
         <text x="314" y="176" text-anchor="middle" fill="#fff" font-weight="700">?</text>
       <text x="440" y="176" text-anchor="middle" font-size="10.5" font-weight="600" fill="#a00000">两件之间连一颗空槽都没有——TD 的边界藏在哪？</text>
@@ -1310,7 +1313,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 			more_trbs_coming = false;
 			td-&gt;end_trb = ring-&gt;enqueue;
 			td-&gt;end_seg = ring-&gt;enq_seg;</pre>
-        <p><strong>本帧只看两枚章的分家</strong>：圈章答「新货还是旧货」（bit0），绳章答「同件还是下一件」（bit4）。立法的就是上面两段贴码——排 TD 的软件在 <code>queue_bulk_tx</code> 里逐颗落章：非尾 TRB <code>field |= TRB_CHAIN</code>＝绑绳，尾 TRB <code>field &amp;= ~TRB_CHAIN</code>＋<code>TRB_IOC</code>＝剪绳、点亮回执，并记下票根 <code>td-&gt;end_trb</code>。同圈邻居 cyc 全同根本不妨碍分件——<strong>区分 TDn 与 TDn+1 的从来不是 cycle，是 chain=0 的剪刀＋IOC 的回执</strong>。</p>
+        <p><strong>本帧只看两枚章的分家</strong>：圈章答「新货还是旧货」（bit0），绳章答「同件还是下一件」（bit4）。立法的就是上面两段贴码——排 TD 的软件在 <code>queue_bulk_tx</code> 里逐颗落章：非尾 TRB <code>field |= TRB_CHAIN</code>＝续链，尾 TRB <code>field &amp;= ~TRB_CHAIN</code>＋<code>TRB_IOC</code>＝收口、触发回执，并记下票根 <code>td-&gt;end_trb</code>。同圈邻居 cyc 全同根本不妨碍分件——<strong>区分 TDn 与 TDn+1 的从来不是 cycle，是 chain=0 声明件界、IOC 在件界处触发回执</strong>。</p>
       </div>
     </div>
     <div class="frame">
@@ -1388,7 +1391,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <svg viewBox="0 0 880 340" role="img" aria-label="三件货恰三颗事件，票面回指尾 TRB（含设备盲区）" style="width:100%">
       <g font-size="11">
         <text x="440" y="24" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1a2b4a">件界的对账面：一件一票，票面回指尾 TRB</text>
-        <text x="40" y="42" font-size="9.5" fill="#6a4fc4">共享内存 · 传输环（残影侧——软件贴单、xHC 消费）</text>
+        <text x="40" y="42" font-size="9.5" fill="#6a4fc4">共享内存 · 传输环（残影侧——软件写、xHC 消费）</text>
         <rect x="40" y="48" width="240" height="64" rx="6" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.4" stroke-dasharray="4 3"/>
         <text x="160" y="70" text-anchor="middle" font-size="12" font-weight="700" fill="#6b8f7a">TD1 ✓ 已收口</text>
         <text x="160" y="88" text-anchor="middle" font-size="10.5" fill="#707070">尾 TRB＝TD1c · chain=0 · IOC=1</text>
@@ -1420,26 +1423,26 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="720" y="174" text-anchor="middle" font-size="12" font-weight="700" fill="#a00000">EV3 · Transfer Event</text>
         <text x="720" y="192" text-anchor="middle" font-size="10.5" fill="#a00000">Success · DW0-1＝尾 TRB（TD3c）地址</text>
         <text x="720" y="208" text-anchor="middle" font-size="10" fill="#909084">错误路径票面会指中途——0008 钻点二</text>
-        <text x="440" y="240" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">3 件货＝恰 3 张票：chain 决定在哪剪断 → IOC 决定剪断即出票 → 票面地址决定记在哪件名下</text>
+        <text x="440" y="240" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">3 件 TD＝恰 3 张票：chain 决定在哪收口 → IOC 决定收口即出票 → 票面地址决定记在哪件名下</text>
         <rect x="16" y="252" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="272" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
         <text x="440" y="286" text-anchor="middle" font-size="10.5" fill="#555">此幕设备无戏份——环上的事只发生在软件与 xHC 之间，设备只看得见线上。</text>
         <text x="440" y="302" text-anchor="middle" font-size="10" fill="#8a8a7e">票数与票面＝软件与 xHC 的私账；bulk IN 下设备只按令牌回货、收 ACK——三件三票全程无感知</text>
       </g>
     </svg>
-        <p><strong>本帧只看事件环的票数与票面</strong>：每颗 TD 恰一颗收口 Transfer Event（尾 TRB 的 IOC 点亮的回执；bulk 件界口径——控制读一件收两票：Data 短包的中途报账票＋Status 收口票，对照见 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 传输剧</a>），事件 DW0-1 回指那颗尾 TRB 的地址——软件拿它反查票根 <code>td-&gt;end_trb</code>（第 2 帧立法码最后两行记下的就是它），完成收货对账。软件侧从来不需要「数 TRB」来对账：件界三件套＝<strong>chain 剪刀（在哪收口）· IOC 回执（收口即出票）· 尾 TRB 指针（票记在哪件名下）</strong>。底部设备泳道照例是盲区：这三件三票的对账发生在两颗共享内存环上，bulk IN 的设备只见过令牌与握手。</p>
+        <p><strong>本帧只看事件环的票数与票面</strong>：每颗 TD 恰一颗收口 Transfer Event（尾 TRB 的 IOC 点亮的回执；bulk 件界口径——控制读一件收两票：Data 短包的中途报账票＋Status 收口票，对照见 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 传输剧</a>），事件 DW0-1 回指那颗尾 TRB 的地址——软件拿它反查票根 <code>td-&gt;end_trb</code>（第 2 帧立法码最后两行记下的就是它），完成收货对账。软件侧从来不需要「数 TRB」来对账：件界三件套＝<strong>chain=0（在哪收口）· IOC（收口即出事件）· 尾 TRB 地址（事件回指、对账到件）</strong>。底部设备泳道照例是盲区：这三件三票的对账发生在两颗共享内存环上，bulk IN 的设备只见过令牌与握手。</p>
       </div>
     </div>
   </div>
-  <div class="note">问一收拢：<strong>圈界（cycle/TC：新货还是旧货）与件界（chain：同件还是下一件）是两道独立的关卡——xHC 对每颗 TRB 各问一遍，两个检查员互不通气</strong>。把 chain 的规则背到 cycle 头上（「除尾 TRB 外都相同」），就会从「cycle 全同」推出「分不出 TD」的假悖论——分件的从来是 chain=0 的剪刀，配 IOC 的一件一票对账；跨缝一件两章（第 3 帧）是「cycle 不可能管分件」的实锤反证。</div>
+  <div class="note">问一收拢：<strong>圈界（cycle/TC：本轮新 TRB 还是旧圈残影）与件界（chain：同一件还是下一件）是两个相互独立的检查——xHC 对每颗 TRB 各做一遍，互不影响</strong>。把 chain 的规则背到 cycle 头上（「除尾 TRB 外都相同」），就会从「cycle 全同」推出「分不出 TD」的假悖论——分件从来由 chain=0 声明，配 IOC 的一件一事件对账；跨缝一件两章（第 3 帧）是「cycle 不可能管分件」的实锤反证。</div>
 
   <h2>第 5 章 · 残影与圈计数：为什么非要翻圈？（读者原问）</h2>
   <div class="note"><b>读者问二（同日隔一轮的追问）</b>：「TD 已经是最小调度单位了——为什么一圈下来还要按 TC 翻转？这套机制不翻不行吗？」</div>
-  <p>这一问已经越过「记串钥匙」，直指机制的<strong>存在动机</strong>。一句话答案：<strong>TD 回答「这件货怎么执行、何时算完成」；cycle/TC 回答它上游的货架问题——一圈固定格子的货架上，「空」与「有新货」怎么分辨</strong>。把环想成<strong>驿站货架</strong>（比喻：环＝快递驿站里一圈固定的格子架，软件＝贴单员，xHC＝取件员；提单贴在格子上、货不在格子上——0006 的货运比喻原样沿用）。三个约束把「怎么分辨新旧」的答案逼成唯一形状：</p>
+  <p>这一问已经越过「记串钥匙」，直指机制的<strong>存在动机</strong>。一句话答案：<strong>TD 回答「这件传输怎么执行、何时算完成」；cycle/TC 回答它上游的问题——环形缓冲的固定槽位上，「空」与「有新 TRB」怎么分辨</strong>。把环想成<strong>驿站货架</strong>（比喻：环＝快递驿站里一圈固定的格子架，软件＝贴单员，xHC＝取件员；提单贴在格子上、货不在格子上——0006 的货运比喻原样沿用）。三个约束把「怎么分辨新旧」的答案逼成唯一形状：</p>
   <div class="flow">
     <div class="fnode"><b>约束① 格子永不撤、旧单永不撕</b>：xHC 对传输环<strong>只读不写</strong>——取走提单后，单子连同轮次章原样留在格子里（残影，联动第 4 帧）。只看格子内容，货架永远是「满」的。</div>
     <div class="farrow">↓</div>
-    <div class="fnode"><b>约束② 两班人马不通电话</b>：CPU 与 xHC 是两个独立时钟域——无锁、无互询；门铃/中断只是「有事情发生」的一锤子通知，不是可查询的状态库。<strong>唯一的常设沟通渠道就是货架本身（共享内存）</strong>——放在任何一方口袋里的「空/满」标志，另一方都看不见。</div>
+    <div class="fnode"><b>约束② 两个时钟域互不查询</b>：CPU 与 xHC 是两个独立时钟域——无锁、无互询；门铃/中断只是「有事情发生」的一锤子通知，不是可查询的状态库。<strong>唯一的常设沟通渠道就是共享内存里的环本身</strong>——放在任何一方口袋里的「空/满」标志，另一方都看不见。</div>
     <div class="farrow">↓</div>
     <div class="fnode"><b>约束③ ⇒ 新旧只能写在每张单子上</b>（自描述）：DW3 bit0 那一枚「轮次贴纸」——单子新不新，看贴纸对不对得上「本周章」（xHC 当前轮次）。下面四帧只谈 cycle 一把钥匙（chain/Link 静音）——第 1 章独舞的镜像，但这次问的是「为什么要有它」：</div>
   </div>
@@ -1533,7 +1536,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="642" y="112" font-size="10.5" fill="#1a2b4a">软件刚写入并发布</text>
         <text x="642" y="130" font-size="10.5" fill="#1a2b4a">xHC 还没走到它</text>
         <text x="642" y="148" font-size="10.5" font-weight="600" fill="#1a5fb4">→ xHC 此刻应当取</text>
-        <text x="492" y="182" font-size="10" fill="#909084">停错＝旧提单复活重发；取错＝新单饿着</text>
+        <text x="492" y="182" font-size="10" fill="#909084">停错＝旧 TRB 复活重发；取错＝新 TRB 迟迟不被取走</text>
         <rect x="40" y="220" width="800" height="38" rx="6" fill="#f6f6f1" stroke="#a00000" stroke-width="1.4"/>
         <text x="440" y="236" text-anchor="middle" font-size="11" font-weight="600" fill="#a00000">该停还是该干？没有第三者可问：门铃/中断只是「有事」的一锤子通知，不是状态库；无锁、两时钟域</text>
         <text x="440" y="252" text-anchor="middle" font-size="11" font-weight="700" fill="#a00000">⇒ 答案只能写在格子里的东西上（自描述）——这正是 cycle 位存在的理由</text>
@@ -1651,14 +1654,14 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 			return -ENOMEM;
 		}
 	}</pre>
-        <p><strong>本帧只看「为什么 1 bit 够用」</strong>：贴单员<strong>永远不会领先取件员一整圈</strong>——每贴一批前 <code>prepare_ring</code> 先数余量（<code>xhci_num_trbs_free</code>），不够先扩容（命令环禁扩、直接拒绝；贴码）。于是任一时刻货架上至多两代单（上一圈残影＋本圈新单），<strong>奇偶两态判别足矣</strong>：把两侧各自维护的「圈计数器」压进内存，只剩末位可写——这就是 cycle_state＝计数器 mod 2；过缝时 TC 让两侧各自 +1（联动第 5/6 帧那次翻转），高位谁也不需要看见。<strong>环形缓冲最经典的「游标追平＝空还是有货」难题，xHCI 的答卷：1 bit 数据＋1 bit 进位指令——不用计数器、不用标志位、不用锁。</strong></p>
+        <p><strong>本帧只看「为什么 1 bit 够用」</strong>：软件 enqueue <strong>永远不会领先 xHC dequeue 一整圈</strong>——每排一批前 <code>prepare_ring</code> 先数余量（<code>xhci_num_trbs_free</code>），不够先扩容（命令环禁扩、直接拒绝；贴码）。于是任一时刻环上至多两代 TRB（上一圈残影＋本圈新 TRB），<strong>奇偶两态判别足矣</strong>：把两侧各自维护的「圈计数器」压进内存，只剩末位可写——这就是 cycle_state＝计数器 mod 2；过缝时 TC 让两侧各自 +1（联动第 5/6 帧那次翻转），高位谁也不需要看见。<strong>环形缓冲最经典的「游标追平＝空还是有货」难题，xHCI 的答卷：1 bit 数据＋1 bit 进位指令——不用计数器、不用标志位、不用锁。</strong></p>
       </div>
     </div>
   </div>
-  <div class="note">问二收拢：<strong>TD 回答「这件货怎么执行、何时算完成」；cycle/TC 回答上游的货架问题——固定格子的环形货架上「空还是有新货」如何无锁分辨</strong>。三个约束（格子不撕单 / 两时钟域无锁 / 唯一通道是内存）把答案逼成唯一形状：新旧写进每张单（DW3 bit0 轮次贴纸）＋过缝进位（TC）。翻圈不是给 TD 用的，是给货架用的。</div>
+  <div class="note">问二收拢：<strong>TD 回答「这件传输怎么执行、何时算完成」；cycle/TC 回答它上游的问题——固定槽位的环形缓冲上「空还是有新 TRB」如何无锁分辨</strong>。三个约束（消费不擦除 / 两时钟域无锁 / 唯一通道是内存）把答案逼成唯一形状：新旧写进每颗 TRB（DW3 bit0 的 cyc 值）＋过缝进位（TC）。翻圈不是给 TD 用的，是给环的空满判别用的。</div>
 
   <h2>回到整体（环机制收官，传输剧开演）</h2>
-  <p>本课把<strong>环自己的事</strong>讲完了：cycle 合同（数据先落、cycle 后翻；谁生产谁翻转发布、谁消费谁校验匹配；跨缝由 TC 对表）＋接缝（传输环缝在流里＝Link TRB，事件环缝在表里＝ERST 三级登记链）＋四把钥匙联动（cycle 管所有权、TC 管换圈、chain 管打包、Link 管几何）＋圈界与件界（两道独立的关卡：轮次员与打包员各看各的章）＋残影与圈计数（1 bit 数据＋1 bit 进位指令的无锁答卷）。三视角立法贯穿全课——<strong>环对设备不可见：环住在只有软件与 xHC 能读写的共享内存里，设备只看得见线上</strong>：cycle 翻转、Link 跳转、轮次对表、事件回执，设备一样也看不见；它能参与的只有令牌、数据包与握手。</p>
+  <p>本课把<strong>环自己的事</strong>讲完了：cycle 合同（数据先落、cycle 后翻；谁生产谁翻转发布、谁消费谁校验匹配；跨缝由 TC 对表）＋接缝（传输环缝在流里＝Link TRB，事件环缝在表里＝ERST 三级登记链）＋四把钥匙联动（cycle 管所有权、TC 管换圈、chain 管打包、Link 管几何）＋圈界与件界（两个独立检查：cycle 判圈、chain 判件）＋残影与圈计数（1 bit 状态位＋1 bit 进位指令，无锁分辨空满）。三视角立法贯穿全课——<strong>环对设备不可见：环住在只有软件与 xHC 能读写的共享内存里，设备只看得见线上</strong>：cycle 翻转、Link 跳转、轮次对表、事件回执，设备一样也看不见；它能参与的只有令牌、数据包与握手。</p>
   <p>但环只是舞台——<strong>一场完整传输的戏</strong>还没开演：urb 怎么被打包成五层上环、键盘枚举怎么一部动画演完、Data 段的货谁生产、xHC 怎么用事件通知驱动（事件是完税回执，不是取货单）、TD 的两本账怎么对——这些在姊妹课 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>接棒；错误路径与端点命运（CC 判决表、ep_state 十旗标、M4.5 set_address 九事件标本）由 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>收官。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的 Address Device 命令、事件环上的回执。</p>
 
   <h2>检索练习 · 11 题</h2>

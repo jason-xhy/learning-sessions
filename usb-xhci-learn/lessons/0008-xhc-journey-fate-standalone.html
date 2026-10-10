@@ -142,9 +142,9 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <rect x="34" y="150" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
         <text x="93" y="168" text-anchor="middle">urb→complete 回调</text>
         <text x="93" y="183" text-anchor="middle" font-size="11">（下一轮请求再排）</text>
-        <text x="93" y="262" text-anchor="middle" font-size="11" fill="#707070">hub 线五课讲的复位时序、</text>
-        <text x="93" y="277" text-anchor="middle" font-size="11" fill="#707070">TT 规则，是设备看到的</text>
-        <text x="93" y="292" text-anchor="middle" font-size="11" fill="#707070">这套机制的行为面</text>
+        <text x="93" y="256" text-anchor="middle" font-size="11" fill="#707070">hub 线五课讲的复位时序、</text>
+        <text x="93" y="271" text-anchor="middle" font-size="11" fill="#707070">TT 规则，是设备看到的</text>
+        <text x="93" y="286" text-anchor="middle" font-size="11" fill="#707070">这套机制的行为面</text>
 
         <rect x="218" y="60" width="170" height="230" rx="6" fill="#eef3fa" stroke="#1a5fb4"/>
         <text x="303" y="48" text-anchor="middle" font-weight="600">xhci-hcd 驱动（软件）</text>
@@ -174,7 +174,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="763" y="113" text-anchor="middle" font-size="11">writel(DB_VALUE) 敲 ③</text>
         <rect x="682" y="140" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
         <text x="763" y="158" text-anchor="middle">④ 取指执行：沿环消费 TRB</text>
-        <text x="763" y="173" text-anchor="middle" font-size="11">cycle 匹配才取（§4.9.2）</text>
+        <text x="763" y="179" text-anchor="middle" font-size="11">cycle 匹配才取（§4.9.2）</text>
         <rect x="682" y="200" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
         <text x="763" y="218" text-anchor="middle">USB 线上事务 + 完成码</text>
         <text x="763" y="233" text-anchor="middle" font-size="11">SET_ADDRESS/IN 握手…</text>
@@ -541,7 +541,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   <div class="note">收拢：xHCI 里"端点的状态"有两份——<strong>硬件 EP ctx 五态（§4.8.3）是 xHC 自己的状态机，软件 ep_state 十旗标（xhci.h:672-685）是驱动的簿记</strong>；两者通过命令环上的 Reset/Stop/Set TR Dequeue 与事件环上的 Transfer/Command Completion 对话。urb_dequeue（:1849-1860）那张"三态让路、两态秒断"的分派表，就是这套簿记的消费端——读懂它，cancel/超时/halt 交织的并发路径就不再神秘。</div>
 
   <h2>回到整体（xHC 线三课收官的地图钉）</h2>
-  <p>xHC 线四课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、接缝、四把钥匙）→ <strong>0009 传输剧</strong>（六站旅程、事件通知链、两本账）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与提单上的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 门铃守卫。0001 骨架图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
+  <p>xHC 线四课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、接缝、四把钥匙）→ <strong>0009 传输剧</strong>（六站旅程、事件通知链、两本账）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与 Setup TRB 内联的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 门铃守卫。0001 骨架图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
 
   <h2>检索练习 · 6 题</h2>
   <div id="quiz"></div>
