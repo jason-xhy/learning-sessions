@@ -1493,7 +1493,13 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
 				field |= TRB_TX_TYPE(TRB_DATA_OUT);
 		}
 	}</pre>
-<pre>/* xhci-ring.c:3900-3915（Status 段：票根＋IOC 出票——无 chain） */
+  <p>两个方向字段（Setup 段的 TRT、Data/Status 段的 DIR）的位与值就钉在 xhci.h 这四行——第 6 帧时序回放的方向对照条以它为家底：</p>
+<pre>/* xhci.h:1065-1068（方向字段四连宏：TRT＝TRB_TX_TYPE 移进 bit17:16；DIR＝TRB_DIR_IN 是 bit16） */
+#define TRB_DIR_IN		BIT(16)
+#define	TRB_TX_TYPE(p)		((p) &lt;&lt; 16)
+#define	TRB_DATA_OUT		2
+#define	TRB_DATA_IN		3</pre>
+  <pre>/* xhci-ring.c:3900-3915（Status 段：票根＋IOC 出票——无 chain） */
 	/* Save the DMA address of the last TRB in the TD */
 	td-&gt;end_trb = ep_ring-&gt;enqueue;
 	td-&gt;end_seg = ep_ring-&gt;enq_seg;
@@ -1512,7 +1518,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
 			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring-&gt;cycle_state);</pre>
   <p>三段全程零 chain。规范层把这件事立法得很彻底，三层递进：</p>
   <div class="flow">
-    <div class="fnode"><b>① Setup 段根本没这个位</b>：Table 6-26（p469）的 DW3 位图——bit 4:1 是 <strong>RsvdZ</strong>。Normal TRB 的 bit4 住着 chain，Setup 段这里是一块「不许施工」的空地：<strong>chain 想设也没位可设</strong>。bit 17:16 住的是 <strong>TRT</strong>（Transfer Type：0=无数据段 / 2=OUT / 3=IN）——预告「下一颗是不是 Data 段」的就是它。</div>
+    <div class="fnode"><b>① Setup 段根本没这个位</b>：Table 6-26（1.2 p469 / 1.2b p430）的 DW3 位图——bit 4:1 是 <strong>RsvdZ</strong>。Normal TRB 的 bit4 住着 chain，Setup 段这里是一块「不许施工」的空地：<strong>chain 想设也没位可设</strong>。bit 17:16 住的是 <strong>TRT</strong>（Transfer Type：0=无数据段 / 2=OUT / 3=IN）——预告「下一颗是不是 Data 段」的就是它。</div>
     <div class="farrow">↓</div>
     <div class="fnode"><b>② 类型即分件</b>：§4.11.2.2（p211）——Setup / Data / Status 三种段 TRB 与 USB 控制传输的三个阶段 <strong>1:1 映射</strong>。TD 结构是一套封闭语法：Setup(TRT) →（可选 Data）→ Status 收口；§6.4.1.2 开头 Note（p468）：IOC 只应设在 Status 段。xHC 被<strong>类型</strong>推着走，不需要绳。</div>
     <div class="farrow">↓</div>
@@ -1589,7 +1595,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
     </svg>
     <figcaption>五层包裹：<strong>urb（usbcore 的请求）→ TD（驱动侧对账单位）→ TRB（16B 提单）→ segment（一排 256 槽＝4KB）→ ring（Link 缝合成圈）</strong>。每层的"粒度合同"不同：urb 说"我要什么"，TD 说"这算一件货"，TRB 说"这一趟运多少"，段与环只提供货架几何。</figcaption>
   </figure>
-  <p>动画布景：USB 键盘（FS 12Mbps）刚插上——hub 线（0002）的端口复位与速度判定已毕，usbcore 开始枚举。舞台＝EP0 控制端点环（示意 8 槽；真实每段 256 槽），开局两侧轮次=1，色板与联动节同一套（绿=有效/灰=空·旧轮/白=压着未发布/淡绿虚线✓=残影/紫=Link）。一部动画五帧，<strong>两个视角轮流登台</strong>——每帧标题标注当帧是谁在动：贴单员（生产者＝软件）、取件员（消费者＝xHC）。本钻点两件货刻意都落在本圈内（不撞缝）——Link/TC 的跨缝戏份已在联动动画第 5/6 帧，不重复。要排的两件：①GET_DESCRIPTOR(设备描述符) 3 颗；②SET_CONFIGURATION 2 颗——读者问的「2 颗」就是第二件。</p>
+  <p>动画布景：USB 键盘（FS 12Mbps）刚插上——hub 线（0002）的端口复位与速度判定已毕，usbcore 开始枚举。舞台＝EP0 控制端点环（示意 8 槽；真实每段 256 槽），开局两侧轮次=1，色板与联动节同一套（绿=有效/灰=空·旧轮/白=压着未发布/淡绿虚线✓=残影/紫=Link）。一部动画六帧，<strong>两个视角轮流登台</strong>——每帧标题标注当帧是谁在动：贴单员（生产者＝软件）、取件员（消费者＝xHC）；第 6 帧收官回放，把 GET_DESCRIPTOR 十二拍按同一口钟排开（生产者/消费者 × 传输环/事件环）。本钻点两件货刻意都落在本圈内（不撞缝）——Link/TC 的跨缝戏份已在联动动画第 5/6 帧，不重复。要排的两件：①GET_DESCRIPTOR(设备描述符) 3 颗；②SET_CONFIGURATION 2 颗——读者问的「2 颗」就是第二件。</p>
   <div class="player">
     <div class="frame">
       <div class="ftitle"><span class="no">第 1 帧</span><span>布景——货还没贴：环空开局，urb 到门口</span></div>
@@ -1766,7 +1772,7 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
       </div>
     </div>
     <div class="frame">
-      <div class="ftitle"><span class="no">第 5 帧</span><span>合演收官 · 「2 颗」的一生——SET_CONFIGURATION 直跳 Status</span></div>
+      <div class="ftitle"><span class="no">第 5 帧</span><span>合演 · 「2 颗」的一生——SET_CONFIGURATION 直跳 Status</span></div>
       <div class="fbody">
       <svg viewBox="0 0 880 292" role="img" aria-label="SET_CONFIGURATION 两颗 TRB 的 TD2" style="width:100%">
       <g font-size="11">
@@ -1814,8 +1820,93 @@ static bool unhandled_event_trb(struct xhci_ring *ring)
         <p><strong>本帧只看槽3/4 这两颗</strong>——「一次控制传输消耗 2 个 TRB」的实弹：SET_CONFIGURATION（setup 包 00 09 01 00 00 00 00 00，wLength=0），num_trbs=2 的注释原话就是「1 TRB for setup, 1 for status」（:3813-3814）。Setup 的 TRT=0（No Data Stage）＝预告「没有 Data 段」，xHC 读完 Setup <strong>直接跳 Status</strong> 收口——2 颗、零绳、件界照样清晰。至此键盘 configured：之后每次按键＝interrupt IN 端点上 1 颗 TRB 的小 TD（单颗即一件，chain 也用不上——它真正的主场是 bulk 大件货，联动动画）。</p>
       </div>
     </div>
+    <div class="frame">
+      <div class="ftitle"><span class="no">第 6 帧</span><span>时钟序回放收官 · GET_DESCRIPTOR 十二拍——生产者×消费者×两颗环，同一口钟</span></div>
+      <div class="fbody">
+      <svg viewBox="0 0 880 664" role="img" aria-label="GET_DESCRIPTOR 十二拍时序：两视角两环按钟序排开" style="width:100%">
+      <defs>
+        <marker id="m6r" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#a00000"/></marker>
+      </defs>
+      <g font-size="10">
+      <text x="269" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">传输环侧舞台（EP0 环 · 门铃 · USB 线）</text>
+      <text x="686" y="18" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">事件环侧舞台（事件环 · 回程中断）</text>
+      <text x="440" y="32" text-anchor="middle" font-size="9" fill="#707070">卡片颜色＝谁在动：<tspan fill="#1a5fb4" font-weight="600">■ 蓝＝软件（xhci-hcd）</tspan>　<tspan fill="#1a7f37" font-weight="600">■ 绿＝xHC（硬件）</tspan>——角色随舞台对调：T1–T4 软件生产 / T8·T10 xHC 生产 / T11 起软件消费</text>
+      <line x1="478" y1="40" x2="478" y2="588" stroke="#d8d8cc" stroke-dasharray="4 4"/>
+      <line x1="54" y1="44" x2="54" y2="588" stroke="#707070" stroke-width="1.5"/>
+      <text x="30" y="316" font-size="9" fill="#707070" transform="rotate(-90 30 316)" text-anchor="middle">时间 T1 → T12（同一口钟）</text>
+      <line x1="63" y1="67" x2="76" y2="67" stroke="#c9c9bd"/><circle cx="54" cy="67" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="70" text-anchor="middle" font-size="8.5" fill="#555">T1</text>
+      <line x1="63" y1="112" x2="76" y2="112" stroke="#c9c9bd"/><circle cx="54" cy="112" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="115" text-anchor="middle" font-size="8.5" fill="#555">T2</text>
+      <line x1="63" y1="157" x2="76" y2="157" stroke="#c9c9bd"/><circle cx="54" cy="157" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="160" text-anchor="middle" font-size="8.5" fill="#555">T3</text>
+      <line x1="63" y1="202" x2="76" y2="202" stroke="#c9c9bd"/><circle cx="54" cy="202" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="205" text-anchor="middle" font-size="8.5" fill="#555">T4</text>
+      <line x1="63" y1="247" x2="76" y2="247" stroke="#c9c9bd"/><circle cx="54" cy="247" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="250" text-anchor="middle" font-size="8.5" fill="#555">T5</text>
+      <line x1="63" y1="292" x2="76" y2="292" stroke="#c9c9bd"/><circle cx="54" cy="292" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="295" text-anchor="middle" font-size="8.5" fill="#555">T6</text>
+      <line x1="63" y1="337" x2="76" y2="337" stroke="#c9c9bd"/><circle cx="54" cy="337" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="340" text-anchor="middle" font-size="8.5" fill="#555">T7</text>
+      <line x1="63" y1="382" x2="494" y2="382" stroke="#d8d8cc" stroke-dasharray="3 3"/><circle cx="54" cy="382" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="385" text-anchor="middle" font-size="8.5" fill="#555">T8</text>
+      <line x1="63" y1="427" x2="76" y2="427" stroke="#c9c9bd"/><circle cx="54" cy="427" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="430" text-anchor="middle" font-size="8.5" fill="#555">T9</text>
+      <line x1="63" y1="472" x2="494" y2="472" stroke="#d8d8cc" stroke-dasharray="3 3"/><circle cx="54" cy="472" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="475" text-anchor="middle" font-size="8.5" fill="#555">T10</text>
+      <line x1="63" y1="517" x2="494" y2="517" stroke="#d8d8cc" stroke-dasharray="3 3"/><circle cx="54" cy="517" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="520" text-anchor="middle" font-size="8.5" fill="#555">T11</text>
+      <line x1="63" y1="562" x2="494" y2="562" stroke="#d8d8cc" stroke-dasharray="3 3"/><circle cx="54" cy="562" r="9" fill="#fff" stroke="#707070" stroke-width="1.3"/><text x="54" y="565" text-anchor="middle" font-size="8.5" fill="#555">T12</text>
+      <rect x="76" y="48" width="386" height="38" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.3"/>
+        <text x="86" y="62" font-weight="600" fill="#1a5fb4">【生产者·软件】</text><text x="452" y="62" text-anchor="end" font-size="9" fill="#707070">传输环槽0 · 写</text>
+        <text x="86" y="74" fill="#1a2b4a">写 Setup TRB：8B IDT 内联＋TRT=IN 预告数据段；cyc 反极性压着</text>
+        <text x="86" y="83" font-size="8" fill="#707070">:3842-3845 · TRT=TRB_TX_TYPE(TRB_DATA_IN)（xhci.h:1065-1068）· Table 6-26：1.2 p469 / 1.2b p430</text>
+      <rect x="76" y="93" width="386" height="38" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.3"/>
+        <text x="86" y="107" font-weight="600" fill="#1a5fb4">【生产者·软件】</text><text x="452" y="107" text-anchor="end" font-size="9" fill="#707070">传输环槽1 · 写</text>
+        <text x="86" y="119" fill="#1a2b4a">写 Data TRB：64B 缓冲地址＋DIR=IN＋ISP（短包即出事件）；cyc=1 现写现发</text>
+        <text x="86" y="128" font-size="8" fill="#707070">:3866-3869（ISP）· :3891-3892（DIR=IN）· :3893-3897（cyc 随单入环）</text>
+      <rect x="76" y="138" width="386" height="38" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.3"/>
+        <text x="86" y="152" font-weight="600" fill="#1a5fb4">【生产者·软件】</text><text x="452" y="152" text-anchor="end" font-size="9" fill="#707070">传输环槽2 · 写</text>
+        <text x="86" y="164" fill="#1a2b4a">写 Status TRB：IOC=1 出票＋记票根 end_trb；DIR=0——数据段 IN ⇒ status 事务走 OUT</text>
+        <text x="86" y="173" font-size="8" fill="#707070">:3900-3902（票根）· :3904-3909（DIR 立法）· :3915（IOC＋cyc 现写现发）</text>
+      <rect x="76" y="183" width="386" height="38" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.3"/>
+        <text x="86" y="197" font-weight="600" fill="#1a5fb4">【生产者·软件】</text><text x="452" y="197" text-anchor="end" font-size="9" fill="#707070">传输环 · 发布</text>
+        <text x="86" y="209" fill="#1a2b4a">wmb 写屏障 → giveback_first_trb 翻首 TRB cyc 0→1 → 敲铃 DB_TARGET=0</text>
+        <text x="86" y="218" font-size="8" fill="#707070">:3917-3918（用的正是排队时存下的 start_cycle=1）</text>
+      <rect x="76" y="228" width="386" height="38" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.3"/>
+        <text x="86" y="242" font-weight="600" fill="#1a7f37">【消费者·xHC】</text><text x="452" y="242" text-anchor="end" font-size="9" fill="#707070">传输环槽0 · 取</text>
+        <text x="86" y="254" fill="#1a2b4a">门铃唤醒扫描：cyc=1 匹配进环，取件 Setup；TRT=IN ⇒ 下一颗是 Data 段</text>
+        <text x="86" y="263" font-size="8" fill="#707070">类型语法带路——件界不需要 chain 绳（本钻点直答）</text>
+      <rect x="76" y="273" width="386" height="38" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.3"/>
+        <text x="86" y="287" font-weight="600" fill="#1a7f37">【消费者·xHC】</text><text x="452" y="287" text-anchor="end" font-size="9" fill="#707070">USB 线</text>
+        <text x="86" y="299" fill="#1a2b4a">SETUP 令牌＋8B 包体上线 → 键盘（包体＝槽0 内联的那 8 字节）</text>
+        <text x="86" y="308" font-size="8" fill="#707070">80 06 00 01 00 00 40 00（wValue=0x0100 设备描述符 · wLength=64）</text>
+      <rect x="76" y="318" width="386" height="38" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.3"/>
+        <text x="86" y="332" font-weight="600" fill="#1a7f37">【消费者·xHC】</text><text x="452" y="332" text-anchor="end" font-size="9" fill="#707070">USB 线</text>
+        <text x="86" y="344" fill="#1a2b4a">IN 令牌 → 键盘回 18B 设备描述符——短包！64−18=46 残量，ISP 即刻生效</text>
+        <text x="86" y="353" font-size="8" fill="#707070">0008 M4.5 标本同款双事件的第一笔（Data 段先行出票）</text>
+      <path d="M 462 337 C 484 337, 472 382, 494 382" fill="none" stroke="#a00000" stroke-width="1.6" marker-end="url(#m6r)"/>
+      <text x="478" y="356" font-size="8.5" fill="#a00000" text-anchor="middle" font-weight="600">转身①</text>
+      <rect x="494" y="363" width="384" height="38" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.3"/>
+        <text x="504" y="377" font-weight="600" fill="#1a7f37">【生产者·xHC·<tspan fill="#a00000">转身①</tspan>】</text><text x="868" y="377" text-anchor="end" font-size="9" fill="#707070">事件环槽0 · 写</text>
+        <text x="504" y="389" fill="#1a2b4a">写 EV1 Transfer Event：CC=13 Short Packet，TRB 指回 Data 槽</text>
+        <text x="504" y="398" font-size="8" fill="#707070">事件 cyc=1 现写现发——xHC 在这颗环上是生产者</text>
+      <rect x="76" y="408" width="386" height="38" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.3"/>
+        <text x="86" y="422" font-weight="600" fill="#1a7f37">【消费者·xHC】</text><text x="452" y="422" text-anchor="end" font-size="9" fill="#707070">传输环槽2 · 取→线</text>
+        <text x="86" y="434" fill="#1a2b4a">取 Status → 线上 Status OUT 零长握手，三阶段收口</text>
+        <text x="86" y="443" font-size="8" fill="#707070">DIR=0 的线上语义：数据段 IN ⇒ status 事务由主机发出（OUT）</text>
+      <rect x="494" y="453" width="384" height="38" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.3"/>
+        <text x="504" y="467" font-weight="600" fill="#1a7f37">【生产者·xHC】</text><text x="868" y="467" text-anchor="end" font-size="9" fill="#707070">事件环槽1 · 写</text>
+        <text x="504" y="479" fill="#1a2b4a">写 EV2 Transfer Event：CC=1 Success，TRB 指回 Status 槽＝票根命中</text>
+        <text x="504" y="488" font-size="8" fill="#707070">IOC → 拉中断请软件来收（回程不敲铃，方向反转）</text>
+      <rect x="494" y="498" width="384" height="38" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.3"/>
+        <text x="504" y="512" font-weight="600" fill="#1a5fb4">【消费者·软件·<tspan fill="#a00000">转身②</tspan>】</text><text x="868" y="512" text-anchor="end" font-size="9" fill="#707070">事件环 · 中断入口</text>
+        <text x="504" y="524" fill="#1a2b4a">中断入口 xhci_handle_events：cycle 合同逐颗校验 → EV1 记账 18B → EV2 TD 收口</text>
+        <text x="504" y="533" font-size="8" fill="#707070">:3092 · 票面对票根 td-&gt;end_trb（:3901 排队时记下）</text>
+      <rect x="494" y="543" width="384" height="38" rx="5" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.3"/>
+        <text x="504" y="557" font-weight="600" fill="#1a5fb4">【消费者·软件】</text><text x="868" y="557" text-anchor="end" font-size="9" fill="#707070">环外 · 还账</text>
+        <text x="504" y="569" fill="#1a2b4a">xhci_giveback_urb_in_irq：urb complete 回 usbcore——枚举第一步完成</text>
+        <text x="504" y="578" font-size="8" fill="#707070">:807 · 主环三颗变残影（消费不擦、覆写即回收）</text>
+      <rect x="40" y="596" width="800" height="64" rx="6" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/>
+        <text x="440" y="613" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1a2b4a">方向对照——GET_DESCRIPTOR 的方向字段全家福（方向字段描述的是数据段/阶段，不是请求本身）</text>
+        <text x="440" y="630" text-anchor="middle" font-size="9" fill="#1a2b4a">请求 0x80（IN）⇒ 数据段 IN ⇒ Setup TRT=TRB_TX_TYPE(TRB_DATA_IN)＝3 ｜ Data DIR=TRB_DIR_IN＝BIT(16) ｜ Status DIR=0＝status 事务走 OUT</text>
+        <text x="440" y="646" text-anchor="middle" font-size="9" fill="#707070">对照帧 5 SET_CONFIGURATION（无数据段）：TRT 不写＝0 ｜ Data 段缺席 ｜ Status DIR=TRB_DIR_IN＝BIT(16)＝status 事务走 IN——同四个宏（xhci.h:1065-1068）把两件货的方向全说完</text>
+      </g>
+    </svg>
+        <p><strong>本帧把第 2–4 帧的定格按同一口钟铺开</strong>：纵轴 T1→T12 是 GET_DESCRIPTOR 从贴单到还账的完整时序；左列＝传输环侧舞台、右列＝事件环侧舞台，卡片颜色＝谁在动（蓝＝软件、绿＝xHC）。三处看点：<strong>①贴单四拍（T1–T4）只有首颗被反极性压着</strong>，Data/Status 的 cyc 现写现发（:3897/:3915），发布只是结尾一翻（:3917-3918）；<strong>②T8 起 xHC 转身①当事件环生产者</strong>——EV1 落环与 T9 的 Status 收口在同一口钟上交错，两颗环并行推进（这正是「定格帧」看不到的钟序真相）；<strong>③T11 起软件转身②当消费者</strong>，用同一份 cycle 合同收事件、销账、还 urb。与定格帧对表：帧 2＝T1–T4，帧 3＝T5–T10，帧 4＝T11–T12；帧 5 的 SET_CONFIGURATION＝同一台钟上「T1→T3→T4→T5→T9→T10」的同构两拍版（TRT=0，Data 段缺席，直跳 Status）。方向字段的立法家底：内核＝xhci.h:1065-1068 四宏（TRT 与 DIR 都住在 DW3 bit17:16 一带），规范＝Table 6-26（1.2 p469 / 1.2b p430）。</p>
+      </div>
+    </div>
   </div>
-  <div class="note">问三收拢：<strong>控制传输的件界写在类型语法里，不写在 chain 位里——Setup 段连这个位都没有（DW3 bit4:1=RsvdZ，Table 6-26）；TRT 预告段结构、Status 类型收口、IOC 出票</strong>；chain 的主场在 bulk/interrupt 的 Normal 流（与 isoc）。跨缝时 bulk 的 Link 被 chain=1 缝上、控制的 Link 反被清 0——续链由类型扛，ETRON 怕硬件扛不住才垫 No-Op。生产者/消费者在同一部动画里各演了一遍同一份合同：<strong>贴单（反极性压着 → wmb → giveback 翻 cycle → 门铃）↔ 取件（cyc 校验 → 类型推进 → 事件回程）；到了事件环上，整套合同原样对调</strong>。</div>
+  <div class="note">问三收拢：<strong>控制传输的件界写在类型语法里，不写在 chain 位里——Setup 段连这个位都没有（DW3 bit4:1=RsvdZ，Table 6-26）；TRT 预告段结构、Status 类型收口、IOC 出票</strong>；chain 的主场在 bulk/interrupt 的 Normal 流（与 isoc）。跨缝时 bulk 的 Link 被 chain=1 缝上、控制的 Link 反被清 0——续链由类型扛，ETRON 怕硬件扛不住才垫 No-Op。生产者/消费者在同一部动画里各演了一遍同一份合同：<strong>贴单（反极性压着 → wmb → giveback 翻 cycle → 门铃）↔ 取件（cyc 校验 → 类型推进 → 事件回程）；到了事件环上，整套合同原样对调</strong>。第 6 帧再按同一口钟把 GET_DESCRIPTOR 十二拍排开——T8 xHC 转身①当事件环生产者、T11 软件转身②当消费者，两次角色对调与两颗环的交错并行，就是「同一份合同、两边各演一遍」的钟序证据。</div>
 
   <h2>回到整体（环转起来了，下一课看实战与命运）</h2>
   <p>本课走完六站＋cycle 合同＋接缝＋四钥匙联动＋两问两答＋键盘枚举合演——0001 骨架图里的"三种环"现在是<strong>会动且你知道为什么动</strong>的环。但到这里为止走的都是 happy path：事件全是 Success/Short Packet，端点从不出错。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）收官三件事：用我们亲手实现的 M4.5 引擎把 set_address 全握手的<strong>九条事件逐帧跑给你看</strong>（数字全部实测，含短包双事件与环回绕轮转）；拆开<strong>错误路径全图</strong>（CC 判决表→四种传输各自的命运）；拆开<strong>ep_state 十旗标</strong>——STALL 到恢复的完整软硬协同时序。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的两段式 BSR、事件环上的九颗回执。</p>
