@@ -512,7 +512,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <tr><td><b>Link TRB</b><br>（整颗 16B）</td><td>每段末槽（＝回绕点）</td><td>建环写死＋回绕时改写</td><td>xHC 跳转依据</td><td>每段一颗</td></tr>
   </table>
   <p><strong>第四把钥匙不是人人都有</strong>：chain 只装在"能被串进同一件"的 TRB 类型上——bulk/interrupt/isoc 的数据 TRB（本动画全是 bulk），加上 TD 跨过回绕点时被软件改写挂绳的 Link TRB；<strong>控制传输没有这把钥匙</strong>——Setup 段 DW3 bit4:1＝RsvdZ，无位可设（Table 6-26）；Data/Status 段虽有 CH 位，内核控制路径全程写 0，分件由三段类型语法自己扛（TRT 预告＋Status 收口）——完整立法与键盘枚举实弹见姊妹课 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>。</p>
-  <p>一句话关系：<strong>Link 管几何（回绕点在哪）· cycle 管所有权（哪一圈的货）· TC 管换圈（过回绕点翻轮次）· chain 管打包（几颗 TRB 算一件）</strong>。布景：8 槽小环（槽0-6 数据、槽7 固定 Link，TC=1；刻意取小，逼第三颗 TD 撞上回绕点），连续排三颗 130KB <strong>bulk IN</strong> TD（每颗 64K+64K+2K 三个 TRB——切分法与 0006 的 bulk OUT 场景同一套，方向互为镜像：那边软件发货，这边设备回货，货由 xHC 按合同 DMA 直写进软件内存）。两枚游标：▲=软件 enqueue、▼=xHC dequeue。读图色板（每帧同一套）：</p>
+  <p>一句话关系：<strong>Link 管几何（回绕点在哪）· cycle 管所有权（哪一圈的货）· TC 管换圈（过回绕点翻轮次）· chain 管打包（几颗 TRB 算一件）</strong>。布景：8 槽小环（槽0-6 数据、槽7 固定 Link，TC=1；特意取小，让第三颗 TD 恰好撞上回绕点），连续排三颗 130KB <strong>bulk IN</strong> TD（每颗 64K+64K+2K 三个 TRB——切分法与 0006 的 bulk OUT 场景同一套，方向互为镜像：那边软件发货，这边设备回货，货由 xHC 按合同 DMA 直写进软件内存）。两枚游标：▲=软件 enqueue、▼=xHC dequeue。读图色板（每帧同一套）：</p>
   <figure>
     <svg viewBox="0 0 880 152" role="img" aria-label="读图色板（环槽状态色＋视角色）" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g font-size="11">
@@ -884,7 +884,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="556" y="495" font-size="8.5" fill="#707070">TD2 完成 → 再写 EV2；每写一颗翻事件 cycle＋拉中断</text>
       </g>
     </svg>
-        <p><strong>本帧只看消费后的槽色</strong>：残影＝不擦除的旧 cyc。TD2 与 TD1 同节奏（完整落在本圈内：压着→发布→敲铃→消费）。看点在槽子：TD1 的三颗 TRB<strong>消费后内存里仍写着 cyc=1</strong>——消费者不擦除，复用=生产者直接覆写。安全覆写灰槽的前提是 <strong>xHC 游标早已越过</strong>；而"还有多少槽可写"由 prepare_ring 事前数余量把关（不足→动态扩容，0006 钻点二），cycle 管的是"旧内容不被误读"——两道闸各管一头。回程上两颗 Success 事件也按 cyc=1 进事件环：那里 xHC 是生产者、软件按 unhandled_event_trb(:137) 校验消费——同一份合同站到了对面。两个"时机"读图时容易读丢，钉一遍：<strong>① 事件环的写入逐颗对齐</strong>——xHC 不攒账，TD1 的尾 TRB（IOC=1）执行完当场写 EV1、翻事件 cycle、拉中断，TD2 完成再写 EV2（放大镜右下角时机注）；<strong>② 线上按件推进</strong>——xHC 先消费 TD1（逐包 ①IN 令牌→②DATA→③ACK，64K+64K+2K），TD1 收口后才轮到 TD2 的三颗，不存在"收齐两件才开始发 IN 令牌"（线上通道从左到右＝一包事务内的先后）。三视角同框看一眼：设备视角本帧有戏——两件货各 130KB 已按 IN 令牌逐包回完，货走的路＝<strong>设备→线上→xHC→DMA 直写软件内存</strong>（Buffer Pointer 合同登记的三段地址），软件从头到尾没碰过一个包；两颗 Success 是<strong>完税回执</strong>——回执落环时，货早已在软件内存里。</p>
+        <p><strong>本帧只看消费后的槽色</strong>：残影＝不擦除的旧 cyc。TD2 与 TD1 同节奏（完整落在本圈内：压着→发布→敲铃→消费）。看点在槽子：TD1 的三颗 TRB<strong>消费后内存里仍写着 cyc=1</strong>——消费者不擦除，复用=生产者直接覆写。安全覆写灰槽的前提是 <strong>xHC 游标早已越过</strong>；而"还有多少槽可写"由 prepare_ring 事前数余量把关（不足→动态扩容，0006 专题二），cycle 管的是"旧内容不被误读"——两道闸各管一头。回程上两颗 Success 事件也按 cyc=1 进事件环：那里 xHC 是生产者、软件按 unhandled_event_trb(:137) 校验消费——同一份合同站到了对面。两个"时机"读图时容易读丢，钉一遍：<strong>① 事件环的写入逐颗对齐</strong>——xHC 不攒账，TD1 的尾 TRB（IOC=1）执行完当场写 EV1、翻事件 cycle、拉中断，TD2 完成再写 EV2（放大镜右下角时机注）；<strong>② 线上按件推进</strong>——xHC 先消费 TD1（逐包 ①IN 令牌→②DATA→③ACK，64K+64K+2K），TD1 收口后才轮到 TD2 的三颗，不存在"收齐两件才开始发 IN 令牌"（线上通道从左到右＝一包事务内的先后）。三视角同框看一眼：设备视角本帧有戏——两件货各 130KB 已按 IN 令牌逐包回完，货走的路＝<strong>设备→线上→xHC→DMA 直写软件内存</strong>（Buffer Pointer 合同登记的三段地址），软件从头到尾没碰过一个包；两颗 Success 是<strong>完税回执</strong>——回执落环时，货早已在软件内存里。</p>
       </div>
     </div>
     <div class="frame">
@@ -1081,7 +1081,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="476" y="481" text-anchor="middle" font-size="10" fill="#b0b0a4">空</text>
       </g>
     </svg>
-        <p><strong>本帧只看 xHC 轮次盒 1→0 的瞬间</strong>：槽0/1 由淡蓝虚线转绿。TD3 已发布（槽6 cyc→1）、门铃已敲。xHC 消费完槽6，行至槽7：Link 的 cyc=1 匹配（上帧生产者翻的极性正是第 N 圈回绕点的通行凭证），执行跳转，并按 TC=1 把<strong>自己的轮次 1→0</strong>——槽0/1 由淡蓝瞬间转绿：<strong>"有效"是轮次的函数</strong>。两个时钟域从不同步全局状态，只在回绕点处对一次表。Link TRB 的职责至此凑齐：指针（下一槽/首槽）、TC（对表指令）、自身 cyc（回绕点凭证）、chain（"回绕点落在 TD 里"的续链胶水）；多段环里它兼任段与段的拼接（0006 钻点二）；事件环则一个都没有——几何外置 ERST（本课第 2 章）。设备视角再记一笔：TD3 三段 130KB 的回货与 DMA 直写和回绕点对表在同一口钟上交错——<strong>跳转与对表只发生在共享内存与 xHC 内部，线上只有令牌、数据包与握手</strong>。</p>
+        <p><strong>本帧只看 xHC 轮次盒 1→0 的瞬间</strong>：槽0/1 由淡蓝虚线转绿。TD3 已发布（槽6 cyc→1）、门铃已敲。xHC 消费完槽6，行至槽7：Link 的 cyc=1 匹配（上帧生产者翻的极性正是第 N 圈回绕点的通行凭证），执行跳转，并按 TC=1 把<strong>自己的轮次 1→0</strong>——槽0/1 由淡蓝瞬间转绿：<strong>"有效"是轮次的函数</strong>。两个时钟域从不同步全局状态，只在回绕点处对一次表。Link TRB 的职责至此凑齐：指针（下一槽/首槽）、TC（对表指令）、自身 cyc（回绕点凭证）、chain（"回绕点落在 TD 里"的续链胶水）；多段环里它兼任段与段的拼接（0006 专题二）；事件环则一个都没有——几何外置 ERST（本课第 2 章）。设备视角再记一笔：TD3 三段 130KB 的回货与 DMA 直写和回绕点对表在同一口钟上交错——<strong>跳转与对表只发生在共享内存与 xHC 内部，线上只有令牌、数据包与握手</strong>。</p>
       </div>
     </div>
     <div class="frame">
@@ -1422,7 +1422,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <rect x="600" y="152" width="240" height="64" rx="6" fill="#fdeaea" stroke="#a00000" stroke-width="1.4"/>
         <text x="720" y="174" text-anchor="middle" font-size="12" font-weight="700" fill="#a00000">EV3 · Transfer Event</text>
         <text x="720" y="192" text-anchor="middle" font-size="10.5" fill="#a00000">Success · DW0-1＝尾 TRB（TD3c）地址</text>
-        <text x="720" y="208" text-anchor="middle" font-size="10" fill="#909084">错误路径票面会指中途——0008 钻点二</text>
+        <text x="720" y="208" text-anchor="middle" font-size="10" fill="#909084">错误路径票面会指中途——0008 专题二</text>
         <text x="440" y="240" text-anchor="middle" font-size="11" font-weight="600" fill="#1a2b4a">3 件 TD＝恰 3 张票：chain 决定在哪收口 → IOC 决定收口即出票 → 票面地址决定记在哪件名下</text>
         <rect x="16" y="252" width="848" height="56" rx="4" fill="#f4f4ef" stroke="#b9b9ac" stroke-width="1.2"/>
         <text x="28" y="272" font-size="10.5" font-weight="700" fill="#707070">设备固件</text>
@@ -1675,7 +1675,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <li>想再挖：多中断器与事件路由（§4.17）、命令环停止/恢复（CRCR CA/CS 位）——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0007 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4；同日 v2 增补钻点三「两问两答」：圈界/件界＋cycle/TC 存在动机——来自读者实问；2026-10-10 v3 增补钻点四：控制传输零 chain 立法＋键盘枚举生产者×消费者同框动画——来自读者第三问；同日 v4 测评修订三处：ERST 补三级登记链＋末槽机制句改写为指针越段解析＋四钥匙表 chain 住址订正；同日 v5 增补钻点五：TD 两本账挑明＋三幕职能×生产者消费者×Status 砍不得——来自读者第四、五问；v3-v5 素材现为 0009 主体）；2026-10-10 v6 三视角改造与拆课：收窄为环机制课，传输剧移入 0009——删六站旅程/钻点四/钻点五，动画①-⑤统一三视角时间轴（软件｜xHC｜设备，线上通道居 xHC 与设备之间，设备=橙 #c2410c/#fdf0e7），立「环对设备不可见」立法框，联动场景改 bulk IN（DMA 直写表示法），quiz 收编为 11 题（+2 设备盲区）。本课＝环机制课——cycle 合同＋回绕点＋四钥匙联动＋圈界件界＋残影圈计数 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a> ｜ 收官：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0007 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4；同日 v2 增补专题三「两问两答」：圈界/件界＋cycle/TC 存在动机——来自读者实问；2026-10-10 v3 增补专题四：控制传输零 chain 立法＋键盘枚举生产者×消费者同框动画——来自读者第三问；同日 v4 测评修订三处：ERST 补三级登记链＋末槽机制句改写为指针越段解析＋四钥匙表 chain 住址订正；同日 v5 增补专题五：TD 两本账挑明＋三幕职能×生产者消费者×Status 砍不得——来自读者第四、五问；v3-v5 素材现为 0009 主体）；2026-10-10 v6 三视角改造与拆课：收窄为环机制课，传输剧移入 0009——删六站旅程/专题四/专题五，动画①-⑤统一三视角时间轴（软件｜xHC｜设备，线上通道居 xHC 与设备之间，设备=橙 #c2410c/#fdf0e7），立「环对设备不可见」立法框，联动场景改 bulk IN（DMA 直写表示法），quiz 收编为 11 题（+2 设备盲区）。本课＝环机制课——cycle 合同＋回绕点＋四钥匙联动＋圈界件界＋残影圈计数 ｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a> ｜ 收官：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 框架课</a></footer>
 
 </main>
 <script>

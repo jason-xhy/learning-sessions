@@ -468,7 +468,7 @@ endpoint.</pre>
 	return finish_td(xhci, td, event_trb, event, ep, status, false);
 }</pre>
   <h3>③ 根因（用 0009 的模型走一遍）</h3>
-  <p>0009 钻点六刚教过这场戏：控制传输撞上短包时，一次中断送来两颗票——<strong>EV1</strong>（Short Packet，报数据段实际短收）与 <strong>EV2</strong>（Success，Status 幕收口）。驱动在 <code>process_ctrl_td</code> 里的分工是：<strong>EV1 记账不放行</strong>（把 <code>urb-&gt;actual_length</code> 记成实际收到的字节数，return 等下一颗），<strong>EV2 对票收口</strong>（补齐终值、转 <code>finish_td</code> 走 giveback）。</p>
+  <p>0009 专题六刚教过这场戏：控制传输撞上短包时，一次中断送来两颗票——<strong>EV1</strong>（Short Packet，报数据段实际短收）与 <strong>EV2</strong>（Success，Status 幕收口）。驱动在 <code>process_ctrl_td</code> 里的分工是：<strong>EV1 记账不放行</strong>（把 <code>urb-&gt;actual_length</code> 记成实际收到的字节数，return 等下一颗），<strong>EV2 对票收口</strong>（补齐终值、转 <code>finish_td</code> 走 giveback）。</p>
   <p>EV2 收口前必须回答一个问题："数据段的账记过了吗？"——记过就不能再动。旧代码的判据是看<strong>账目值本身</strong>：<code>actual_length != 0</code> 当作"记过"。这个判据把两种状态撞在一起了：<strong>没记账</strong>与<strong>记账结果是 0</strong>（短包短到一颗字节都没收到——EVENT_TRB_LEN 恰好等于申请长度）在账面上无法区分。于是 0 字节短收的传输，EV2 会把账覆盖成"满额成功"：<code>actual_length = transfer_buffer_length</code>，还顺手跳过了本应上报的 <code>-EREMOTEIO</code>。依赖 <code>actual_length == 0</code> 停转的 HSO 驱动就此卡死在重提交循环里。</p>
   <h3>④ 修复</h3>
   <p>修法是记一笔账的通用纪律：<strong>把"记过账没有"（事实）与"账目是多少"（数值）分开存</strong>——给 TD 加一比特旗标：</p>
@@ -745,7 +745,7 @@ void usb_kill_urb(struct urb *urb)
 
   <div id="quiz"></div>
 
-  <footer>课 0010 · 2026-10-14（补丁解析实验课首发——功能立项：后续课程每课配一枚同主题社区补丁走五步法）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）＋补丁账本各自 @commit（块头自标，机检分两把尺：check_lesson_excerpts.py / check_lesson_patches.py）｜ 五枚补丁：576667bad341 · 6328bdc988d2 · f1ec7ae6c9f8 · 45ba2154d12f · 26fbe9772b8c ｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0010 · 2026-10-14（补丁解析实验课首发——功能立项：后续课程每课配一枚同主题社区补丁走五步法）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）＋补丁账本各自 @commit（块头自标，机检分两把尺：check_lesson_excerpts.py / check_lesson_patches.py）｜ 五枚补丁：576667bad341 · 6328bdc988d2 · f1ec7ae6c9f8 · 45ba2154d12f · 26fbe9772b8c ｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 框架课</a></footer>
 </main>
 <script>
 /* quiz.js — teach workspace 可复用测验引擎。

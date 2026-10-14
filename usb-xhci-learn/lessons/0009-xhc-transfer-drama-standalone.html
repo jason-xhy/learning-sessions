@@ -283,7 +283,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 
   <h2>第 2 章 键盘枚举·一部动画（三视角合演，读者实问）</h2>
   <div class="note"><b>读者问三（2026-10-10 原话复述）</b>：「一次控制传输消耗 2 个 trb，但没看到代码中 chain bit 是如何设置的。」并附一个请求：以 USB 键盘枚举为例画<strong>一部</strong>动画——生产者、消费者两个角度分别怎么读写 cycle bit / Link TRB / TC / chain bit，以及 urb / trb / td / segment / ring 之间的关系。两件事一个答案：先补码（控制路径的 chain 立法真相），再上动画（软件 / xHC / 设备三视角同台）。</div>
-  <p>先说结论，它可能反直觉：<strong>控制传输路径里没有一行设置 TRB_CHAIN 的代码——一个都没有，而且 Setup 段想设也没位可设</strong>。此前课里所有 chain 立法贴码（0007 联动动画与钻点三的 :3694-3698 / :3709-3714）全部来自 <code>queue_bulk_tx</code>——那是 bulk 的路。读者说的「2 个 TRB」先把行号钉死：</p>
+  <p>先说结论，它可能反直觉：<strong>控制传输路径里没有一行设置 TRB_CHAIN 的代码——一个都没有，而且 Setup 段想设也没位可设</strong>。此前课里所有 chain 立法贴码（0007 联动动画与专题三的 :3694-3698 / :3709-3714）全部来自 <code>queue_bulk_tx</code>——那是 bulk 的路。读者说的「2 个 TRB」先把行号钉死：</p>
 <pre>/* xhci-ring.c:3813-3821（xhci_queue_ctrl_tx :3775）——「2 颗」的出处 */
 	/* 1 TRB for setup, 1 for status */
 	num_trbs = 2;
@@ -357,7 +357,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 	 */
 	if (trb_is_link(ring-&gt;enqueue) &amp;&amp; (chain || more_trbs_coming))
 		inc_enq_past_link(xhci, ring, chain);</pre>
-  <p>有硬件扛不住这种「Setup/Data 被 Link 隔开」——ETRON 主控的 quirk 在 enqueue 前主动垫一颗 No-Op，让控制段避开回绕点（0007 钻点二提过它的存在，这里补上它的为什么）：</p>
+  <p>有硬件扛不住这种「Setup/Data 被 Link 隔开」——ETRON 主控的 quirk 在 enqueue 前主动垫一颗 No-Op，让控制段避开回绕点（0007 专题二提过它的存在，这里补上它的为什么）：</p>
 <pre>/* xhci-ring.c:3801-3805（queue_ctrl_tx 头部 quirk 注释） */
 		/*
 		 * If next available TRB is the Link TRB in the ring segment then
@@ -1043,7 +1043,7 @@ static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir
     <tr><td><b>Data TD</b></td><td>规范允许多颗（S/G 用 chain 串）；<b>Linux 恒 1 颗</b></td><td>选择，不是法条</td><td>允许多颗＝§4.11.2.1；恒一颗＝Data TRB 长度域上限 64K（Table 6-28 p470）而控制 wLength≤64K，一颗必装下（:3813-3821 注释自答 "never get bigger than 16MB"）</td></tr>
     <tr><td><b>Status TD</b></td><td>常规 1 颗；配 Event Data TRB 才 2 颗</td><td>规范法条＋唯一例外</td><td>Table 6-31（p472）：CH 只为「Status＋Event Data」多颗装立法，末颗恒 0；内核不用 Event Data</td></tr>
   </table>
-  <p>离场即破的提醒：bulk 传输一个 TD 串几十颗 TRB 是常态——chain 剪刀的主场（0007 钻点三）。正确说法是：<strong>规范按阶段记件；控制传输的每件通常恰一颗 TRB（Setup 恒如此、Data 在 Linux 恒如此）；内核再把这几件打成自己的一件对账</strong>。这也再次解释第 2 章的立法：这 2-3 件 TD 之间没有 chain 胶水——件界写在类型语法里。</p>
+  <p>离场即破的提醒：bulk 传输一个 TD 串几十颗 TRB 是常态——chain 剪刀的主场（0007 专题三）。正确说法是：<strong>规范按阶段记件；控制传输的每件通常恰一颗 TRB（Setup 恒如此、Data 在 Linux 恒如此）；内核再把这几件打成自己的一件对账</strong>。这也再次解释第 2 章的立法：这 2-3 件 TD 之间没有 chain 胶水——件界写在类型语法里。</p>
 
   <div class="note"><b>读者问五（2026-10-10 原话复述）</b>：「再普及一下setup\data\status段的功能以及对应的生产者和消费者，比如GET_DESCRIPTOR，软件为什么要发起setup\data\status这3段trb？如果只是获取描述符，那么一个setup trb、一个data trb不就够了吗？」</div>
   <p>先看这桩交易在线上怎么演——<strong>令牌永远主机发</strong>（总线调度权在主机，设备永远不能先开口），但<strong>载荷的生产者每幕换一次手</strong>：</p>
@@ -1306,7 +1306,7 @@ static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xh
     <li>想再挖：多中断器与事件路由（§4.17.1）、事件环满与 ERST_EHB（§4.9.4/§6.5）、MSI-X 向量表与中断合流——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0009 · 2026-10-13 v2（钻点六：读者问六/问七入课——ZLP 两种用途立法＋短包/ZLP 边界信号对照、一次中断两颗票的 FIFO 消费循环与 process_ctrl_td 分岔，新贴码 7 块＋消费循环分岔图，quiz 11→13）｜ 2026-10-10 v1 自 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> v5 拆出：六站全景、钻点四（控制零 chain 立法＋键盘枚举动画）、钻点五（两本账＋三幕柜台）整体迁入并三视角化——动画帧 1-5 三视角时间轴全重画、帧 6 十二拍拆为第 3 章三方钟序；新增第 4 章 Data 段生产者与事件通知链（完税回执立法，含新内核贴码与 spec 亲验）；环机制（cycle/Link/四钥匙/圈界件界）留在 0007）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0009 · 2026-10-13 v2（专题六：读者问六/问七入课——ZLP 两种用途立法＋短包/ZLP 边界信号对照、一次中断两颗票的 FIFO 消费循环与 process_ctrl_td 分岔，新贴码 7 块＋消费循环分岔图，quiz 11→13）｜ 2026-10-10 v1 自 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> v5 拆出：六站全景、专题四（控制零 chain 立法＋键盘枚举动画）、专题五（两本账＋三幕柜台）整体迁入并三视角化——动画帧 1-5 三视角时间轴全重画、帧 6 十二拍拆为第 3 章三方钟序；新增第 4 章 Data 段生产者与事件通知链（完税回执立法，含新内核贴码与 spec 亲验）；环机制（cycle/Link/四钥匙/圈界件界）留在 0007）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 框架课</a></footer>
 
 </main>
 <script>

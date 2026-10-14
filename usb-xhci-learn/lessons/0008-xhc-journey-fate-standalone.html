@@ -203,7 +203,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   </figure>
 
   <h2>标本解剖 · M4.5 set_address 全握手（自研引擎实测）</h2>
-  <p>以下数字全部来自我们亲手实现的 xHC 引擎 v0.3 仿真（M4.5，合同（作者工作区在案）与日志在案）：<strong>事件环只有 6 槽——刻意取小逼出回绕</strong>，正好把 0001 骨架里的"三种环"动起来给你看。九条事件全序 = 端口插入 → EnableSlot → Addr BSR=1 → 8B 描述符 → Addr BSR=0 → 64B 描述符（短包）→ ConfigureEP → SET_CONFIG：</p>
+  <p>以下数字全部来自我们亲手实现的 xHC 引擎 v0.3 仿真（M4.5，合同（作者工作区在案）与日志在案）：<strong>事件环只有 6 个槽——特意取这么小，让回绕尽早出现</strong>，正好把 0001 框架课里的"三种环"动起来给你看。九条事件全序 = 端口插入 → EnableSlot → Addr BSR=1 → 8B 描述符 → Addr BSR=0 → 64B 描述符（短包）→ ConfigureEP → SET_CONFIG：</p>
   <figure>
     <svg viewBox="0 0 880 300" role="img" aria-label="事件环 6 槽两轮 9 事件推进图" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g font-size="12">
@@ -256,6 +256,23 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
           <div class="u"><b>槽5</b>空</div>
         </div>
         驱动发 Enable Slot → Address Device <strong>BSR=1</strong>（Block Set Address，命令 TRB 的 BSR 位，内核 <code>xhci_queue_address_device</code> xhci-ring.c:4412：SETUP_CONTEXT_ONLY 时打上 TRB_BSR）。BSR=1=<strong>只建上下文不设址</strong>，设备停在地址 0——于是 TD1 的 GET_DESCRIPTOR(8B)（setup8 逐字节 <code>80 06 00 01 00 00 08 00</code>）<strong>在地址 0 上服务</strong>（实测 dev_addr=0 通过设备过滤）。这正是 hub 线 0002 课"先取 8 字节定 ep0 包长"的 xHC 侧实现。
+        <div class="note" id="topic-event-count">
+          <p><strong>专题 · 一颗 TD 该回几颗事件？</strong>规范对 Transfer Event 的产生只立了三种情况（§4.11.3.1，p222）：<strong>①</strong> 某颗 TRB 完成，且它的 <strong>IOC</strong>（Interrupt On Completion，DW3 bit5）为 1；<strong>②</strong> 传输中发生短包，且该 TRB 的 <strong>ISP</strong>（Interrupt-on-Short Packet，DW3 bit2）为 1；<strong>③</strong> TRB 执行中出错。xHC 不欠"每个 TD 一颗回执"——只有命中条件才写事件。</p>
+          <p>驱动排一桩控制传输（<code>xhci_queue_ctrl_tx</code> xhci-ring.c:3775）时，三段的布线刻意不对称——正是 0007 图里见过的 Data·ISP / Status·IOC 标签：</p>
+          <pre>/* xhci-ring.c:3865-3867（IN 方向的 Data TRB：只打 ISP） */
+	/* Only set interrupt on short packet for IN endpoints */
+	if (usb_urb_dir_in(urb))
+		field = TRB_ISP | TRB_TYPE(TRB_DATA);</pre>
+          <pre>/* xhci-ring.c:3910-3915（Status TRB：打 IOC） */
+	queue_trb(xhci, ep_ring, false,
+			0,
+			0,
+			TRB_INTR_TARGET(0),
+			/* Event on completion */
+			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring->cycle_state);</pre>
+          <p>对到动画上：<strong>TD1</strong> 要 8 字节、设备足额交 8 字节——Data TRB 的 ISP 条件未命中，Setup 本就静默，只有 Status 的 IOC 命中 → 整桩 TD 一颗事件（EV4，落在 Status TRB 上）。<strong>TD2</strong> 要 64 字节、设备只有 18 字节——Data TRB 的 ISP 命中 → EV6（Short Packet，长度账就挂在这颗 TRB 的事件上）；控制传输照常走完 Status 握手，IOC 再交 EV7。<strong>TD3</strong>（SET_CONFIG）没有 Data 段，干净走完也只回一颗 EV9——<strong>事件颗数跟着"命中几条条件"走，不跟着 TD 走</strong>。</p>
+          <p>那夹在中间的 <strong>EV5 呢</strong>？它压根不是 Transfer Event，是<strong>命令完成事件</strong>——这一族的对账对象不是任何 TD，而是<strong>命令环</strong>：事件的 DW0-1 回指它完成的那颗命令 TRB，<code>handle_cmd_completion</code>（xhci-ring.c:1803）拿它与命令环游标核对，命中后唤醒排队时登记的 <code>xhci_command</code> 等待者（如 <code>xhci_setup_device</code> 里睡着的 wait_for_completion），随后命令环游标前移一格。三类事件三本账：Transfer → 端点环上的 TD/URB；命令完成 → 命令环上的命令与等待者；端口事件（EV1）→ 没有账本，直接读 PORTSC 状态位。</p>
+        </div>
       </div>
     </div>
     <div class="frame">
@@ -300,12 +317,12 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
           <tr><td>命令环游标</td><td>= 末命令+0x10（4 命令无回绕）</td></tr>
           <tr><td>设备终态</td><td>dev_addr=1、configured=1（18B 描述符逐字节==ROM）</td></tr>
         </table>
-        TD3=SET_CONFIGURATION(1)（<code>00 09 01 00 00 00 00 00</code>）两段式单 Success 事件。<strong>0009 的六站闭环在九颗事件里全部走过一遍</strong>：③每敲一次铃（3 次）→ ④xHC 消费一个 TD → ⑤事件回程（1/2/1）→ ⑥ usbcore 继续。收尾注记：<span class="diff">标本≠产品</span> 6 槽事件环是仿真<strong>刻意取小逼回绕</strong>（真实 xHC 事件环每段 256/512 TRB）；引擎也不建模 slot state=Configured(3)（§4.3.5 有此态，"已配置"以设备侧 configured 标志观测——引擎边界，M4.5 合同 §2.3）。
+        TD3=SET_CONFIGURATION(1)（<code>00 09 01 00 00 00 00 00</code>）两段式单 Success 事件。<strong>0009 的六站闭环在九颗事件里全部走过一遍</strong>：③每敲一次铃（3 次）→ ④xHC 消费一个 TD → ⑤事件回程（1/2/1）→ ⑥ usbcore 继续。收尾注记：<span class="diff">标本≠产品</span> 6 槽事件环是仿真<strong>特意取小、好让回绕尽早出现</strong>（真实 xHC 事件环每段 256/512 TRB）；引擎也不建模 slot state=Configured(3)（§4.3.5 有此态，"已配置"以设备侧 configured 标志观测——引擎边界，M4.5 合同 §2.3）。
       </div>
     </div>
   </div>
 
-  <h2>钻点一 · 四种传输各自的命运：错误路径全图</h2>
+  <h2>专题一 · 四种传输各自的命运：错误路径全图</h2>
   <p>六站旅程与 M4.5 标本走的都是 happy path（九颗事件全是 Success/Short Packet）。真实总线上会出错——xHCI 把错误立法成两层：<strong>完成码 CC</strong>（Table 6-91 p507：事件回程携带的"判决书"）与<strong>端点状态后果</strong>（这个判决会不会让 xHC 侧端点停机）。第二层的裁决函数只有一个，值得整段读：</p>
 <pre>/* xhci-ring.c:2204-2231（xhci_halted_host_endpoint）——哪些 CC 让 xHC 端点 halt */
 static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx *ep_ctx,
@@ -341,7 +358,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   <table>
     <tr><th>CC（码值）</th><th>urb errno</th><th>端点后果</th><th>备注</th></tr>
     <tr><td class="good">Success(1) / Short Packet(13)</td><td>0</td><td>无</td><td>残量≠0 的 Success 会被改判 Short（:2680-2685）；短包是正常完成</td></tr>
-    <tr><td class="bad">Stall(6)</td><td>-EPIPE</td><td><strong>halt</strong>（含 ep0 协议 stall）</td><td>恢复链见钻点二；设备侧由类驱动 CLEAR_FEATURE 清</td></tr>
+    <tr><td class="bad">Stall(6)</td><td>-EPIPE</td><td><strong>halt</strong>（含 ep0 协议 stall）</td><td>恢复链见专题二；设备侧由类驱动 CLEAR_FEATURE 清</td></tr>
     <tr><td class="bad">Babble(3)</td><td>-EOVERFLOW</td><td>halt</td><td>设备喋喋不休超过包界；0.95 老硬件分支见上</td></tr>
     <tr><td class="bad">USB Transaction Error(4)</td><td>-EPROTO</td><td>halt（非 iso）</td><td>此前硬件已自行重试（EP ctx 错误计数）；内核还可能软重试（下）</td></tr>
     <tr><td class="bad">Split Transaction Error(36)</td><td>-EPROTO</td><td>halt（非 iso）</td><td>TT split 出错——连回 0004/0005 课的 TT 世界</td></tr>
@@ -408,9 +425,9 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
 				 */
 				xhci_dequeue_td(xhci, td, ep_ring, 0);</pre></div>
   </div>
-  <div class="note">一句话收拢：<strong>错误处理的第一道分岔是"会不会 halt"（xhci_halted_host_endpoint），第二道分岔是"按类型分派"（process_ctrl/isoc/bulk_intr_td）</strong>——控制传输按阶段记账、bulk 软重试原地再战、等时永不 halt 逐帧判决。halt 之后的恢复链（Reset Endpoint → Set TR Dequeue → 给回 → CLEAR_FEATURE）是端点级的，与传输类型无关——那是钻点二的主角。</div>
+  <div class="note">一句话收拢：<strong>错误处理的第一道分岔是"会不会 halt"（xhci_halted_host_endpoint），第二道分岔是"按类型分派"（process_ctrl/isoc/bulk_intr_td）</strong>——控制传输按阶段记账、bulk 软重试原地再战、等时永不 halt 逐帧判决。halt 之后的恢复链（Reset Endpoint → Set TR Dequeue → 给回 → CLEAR_FEATURE）是端点级的，与传输类型无关——那是专题二的主角。</div>
 
-  <h2>钻点二 · ep_state 旗标：软件侧的第二台状态机</h2>
+  <h2>专题二 · ep_state 旗标：软件侧的第二台状态机</h2>
   <p>0009 开篇六站图 ③站的小字预告过：五种端点态不敲铃。现在把整台机器拆开——xHC 硬件自己有一台端点状态机（Endpoint Context 的 ep_state 字段，§4.8.3 p162，五态），内核在 <code>struct xhci_virt_ep</code> 里又维护一台<strong>软件</strong>状态机（ep_state 位域，十个旗标）——两台机器通过命令环/事件环对话，谁也不同步谁，全靠这些旗标记住"我这边正在进行什么"：</p>
 <pre>/* xhci.h:454-458 硬件侧：EP Context 的五态（§4.8.3） */
 #define EP_STATE_MASK		(0x7)
@@ -541,7 +558,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   <div class="note">收拢：xHCI 里"端点的状态"有两份——<strong>硬件 EP ctx 五态（§4.8.3）是 xHC 自己的状态机，软件 ep_state 十旗标（xhci.h:672-685）是驱动的簿记</strong>；两者通过命令环上的 Reset/Stop/Set TR Dequeue 与事件环上的 Transfer/Command Completion 对话。urb_dequeue（:1849-1860）那张"三态让路、两态秒断"的分派表，就是这套簿记的消费端——读懂它，cancel/超时/halt 交织的并发路径就不再神秘。</div>
 
   <h2>回到整体（xHC 线三课收官的地图钉）</h2>
-  <p>xHC 线四课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、回绕点、四把钥匙）→ <strong>0009 传输剧</strong>（六站旅程、事件通知链、两本账）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与 Setup TRB 内联的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 禁敲铃。0001 骨架图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
+  <p>xHC 线四课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、回绕点、四把钥匙）→ <strong>0009 传输剧</strong>（六站旅程、事件通知链、两本账）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与 Setup TRB 内联的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 禁敲铃。0001 那张知识地图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
 
   <h2>检索练习 · 6 题</h2>
   <div id="quiz"></div>
@@ -555,7 +572,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
     <li>下一课候选：端口与 rhub（usb2_rhub/usb3_rhub 双根 hub，衔接 0003）/ 命令环深钻（CRCR/命令仲裁）——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0008 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4：本课＝实战与命运面——M4.5 标本九事件＋错误路径全图＋ep_state 十旗标）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 标本：M4.5 引擎 v0.3（m45_xhci.log 全 PASS）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0010-xhc-patch-lab-standalone.html">0010 补丁解析实验课</a>｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0008 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4：本课＝实战与命运面——M4.5 标本九事件＋错误路径全图＋ep_state 十旗标）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 标本：M4.5 引擎 v0.3（m45_xhci.log 全 PASS）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0010-xhc-patch-lab-standalone.html">0010 补丁解析实验课</a>｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 框架课</a></footer>
 
 </main>
 <script>
@@ -754,7 +771,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: 'bulk IN 传输报来 USB Transaction Error（xHC 硬件重试已穷尽、非 TT 设备、这个端点此前无错）——process_bulk_intr_td 的第一反应是什么？',
     options: ['软复位端点（Reset EP 带 TSP 保 toggle）原地重试同一 TD，最多再来 3 次', '立即硬复位端点并清 data toggle', '直接把 urb 以 -EPROTO 给回', '丢弃该 TD 跳到下一个'],
     answer: 0,
-    explain: 'A 对（xhci-ring.c:2542-2551）：err_count 未超 MAX_SOFT_RETRY=3（xhci.h:1271）且非 quirk 禁用、非 TT_SLOT 设备 → td->status 清零＋EP_SOFT_RESET（Reset EP 带 TSP 位保住 data toggle/序列，:4492-4493）原地重试。软重试也穷尽才走 EP_HARD_RESET 硬清；B 是超限后的下一步；urb 给回发生在恢复链走完之后（钻点二第 4 帧），不是第一反应。' },
+    explain: 'A 对（xhci-ring.c:2542-2551）：err_count 未超 MAX_SOFT_RETRY=3（xhci.h:1271）且非 quirk 禁用、非 TT_SLOT 设备 → td->status 清零＋EP_SOFT_RESET（Reset EP 带 TSP 位保住 data toggle/序列，:4492-4493）原地重试。软重试也穷尽才走 EP_HARD_RESET 硬清；B 是超限后的下一步；urb 给回发生在恢复链走完之后（专题二第 4 帧），不是第一反应。' },
   { tag: 'ep_state',
     prompt: 'LS/FS 设备经 TT 的传输出错、EP_CLEARING_TT 置位期间，为什么这个端点不敲门铃？',
     options: ['TT buffer 未清净之前，不能给 TT 塞新的 split 事务', '省电：等 TT 空闲再唤醒 xHC', 'doorbell 寄存器此期间只读', '防止排队中的 URB 丢失'],
@@ -764,7 +781,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: 'bulk 端点 STALL 后到该 urb 以 -EPIPE 给回，命令环上依次发生什么？',
     options: ['Stop Endpoint → Reset Endpoint → 给回', 'Configure Endpoint(D+A) → Reset Endpoint → 给回', 'Disable Slot → Enable Slot → 给回', 'Reset Endpoint → Set TR Dequeue Pointer → 给回'],
     answer: 3,
-    explain: 'D 对（本课钻点二五帧动画）：STALL 事件→finish_td 判 halt→EP_HALTED＋Reset Endpoint（硬）；Reset EP 完成处理器发现 hw_deq 压在取消 TD 上→td_to_noop＋Set TR Dequeue Pointer（SET_DEQ_PENDING）；Set TR Deq 完成才 td_cleanup 给回 -EPIPE。A 的 Stop Endpoint 属于 URB 取消/停机路径（EP_STOP_CMD_PENDING）；B 的 D+A 属于之后的 usb_clear_halt 阶段（且被 EP_HARD_CLEAR_TOGGLE 消费跳过，:3361-3365）；C 是设备级操作，粒度完全不对。' }
+    explain: 'D 对（本课专题二五帧动画）：STALL 事件→finish_td 判 halt→EP_HALTED＋Reset Endpoint（硬）；Reset EP 完成处理器发现 hw_deq 压在取消 TD 上→td_to_noop＋Set TR Dequeue Pointer（SET_DEQ_PENDING）；Set TR Deq 完成才 td_cleanup 给回 -EPIPE。A 的 Stop Endpoint 属于 URB 取消/停机路径（EP_STOP_CMD_PENDING）；B 的 D+A 属于之后的 usb_clear_halt 阶段（且被 EP_HARD_CLEAR_TOGGLE 消费跳过，:3361-3365）；C 是设备级操作，粒度完全不对。' }
 ]);
 </script>
 </body>
