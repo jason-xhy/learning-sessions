@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>课 0010 · 补丁解析实验课：五枚真补丁 × 修复逻辑走查</title>
+<style>
+/* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
+:root {
+  --ink: #1a1a1a; --paper: #fffff8; --accent: #a00000; --muted: #707070;
+  --line: #e3e3da; --good: #1a7f37; --bad: #c62828;
+}
+* { box-sizing: border-box; }
+/* 数字专用衬线：Georgia 自带数字是老式数字（3/4/5/7/9 沉到基线下、高低不平，中文语境观感差），
+   仅把 ASCII 0-9 换成 Times New Roman 的等高 lining 数字，字母与中日韩栈不变；
+   本机无该字体时（如 Linux）自动落回原栈，不劣于修复前 */
+@font-face {
+  font-family: LiningDigits;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
+body {
+  margin: 0; padding: 2rem 1rem 4rem;
+  background: var(--paper); color: var(--ink);
+  font-family: LiningDigits, Georgia, "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: 1.05rem; line-height: 1.65;
+}
+main { max-width: 46rem; margin: 0 auto; }
+h1, h2, h3 { font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.7rem; border-bottom: 2px solid var(--ink); padding-bottom: .4rem; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.kicker { color: var(--accent); font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; }
+a { color: var(--accent); }
+code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .9em; background: #f4f4ee; padding: .05em .3em; border-radius: 3px; }
+.note { border-left: 3px solid var(--accent); padding: .4rem .9rem; margin: 1.2rem 0; background: #faf8f2; font-size: .95rem; }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+th, td { border: 1px solid var(--line); padding: .35rem .6rem; text-align: left; }
+th { background: #f0efe6; }
+
+/* 分层地图 */
+.map { border: 1px solid var(--line); background: #fff; padding: 1rem; margin: 1.2rem 0; }
+.layer { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem .8rem; border: 1px solid var(--line); border-bottom: none; font-size: .93rem; }
+.layer:last-child { border-bottom: 1px solid var(--line); }
+.layer b { font-weight: 600; }
+.layer .src { color: var(--muted); font-size: .85rem; white-space: nowrap; text-align: right; }
+
+/* 测验组件（assets/quiz.js） */
+.quiz-q { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 1rem 1.2rem; margin: 1.1rem 0; }
+.quiz-q h3 { margin: 0 0 .3rem; font-size: 1.02rem; }
+.quiz-q .tag { color: var(--muted); font-size: .8rem; }
+.opt { display: block; width: 100%; text-align: left; margin: .3rem 0; padding: .5rem .8rem; font: inherit; font-size: .95rem; border: 1px solid var(--line); border-radius: 5px; background: #fbfbf6; cursor: pointer; }
+.opt:hover:enabled { border-color: var(--accent); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: .72; }
+.opt.correct { border-color: var(--good); background: #e9f7ee; opacity: 1; }
+.opt.wrong { border-color: var(--bad); background: #fdeaea; opacity: 1; }
+.explain { display: none; margin-top: .6rem; padding: .55rem .8rem; background: #f7f6ee; border-left: 3px solid var(--muted); font-size: .92rem; }
+.explain.show { display: block; }
+.summary { border: 2px solid var(--ink); border-radius: 6px; padding: 1rem 1.2rem; margin: 1.5rem 0; background: #fff; }
+.btn { font: inherit; font-size: .95rem; padding: .45rem 1rem; border: 1px solid var(--ink); border-radius: 5px; background: var(--ink); color: #fff; cursor: pointer; }
+
+/* 纵向链路步骤（hub 事件链路等流程） */
+.step { display: flex; gap: .8rem; padding: .6rem 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: none; }
+.stepnum { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ink); color: #fff; font-size: .85rem; display: flex; align-items: center; justify-content: center; margin-top: .15rem; }
+.step .where { color: var(--muted); font-size: .85rem; }
+
+/* 流程图组件（纵向节点流，节点带代码行为注记） */
+.flow { margin: 1rem 0; }
+.fnode { border: 1px solid var(--line); border-left: 3px solid var(--ink); background: #fff; border-radius: 4px; padding: .45rem .8rem; font-size: .92rem; }
+.fnode .code { color: var(--muted); font-size: .82rem; }
+.farrow { text-align: center; color: var(--muted); font-size: .8rem; padding: .18rem 0; }
+.fbranch { display: flex; gap: .8rem; margin: .2rem 0; }
+.fbranch > .fnode { flex: 1; border-left-color: var(--accent); }
+.ftag { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .35rem; vertical-align: 1px; }
+figure { margin: 1.2rem 0; }
+figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
+.fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
+.diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
+
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+.player .frame { display: block; margin: 14px 0; }
+.player.js:not(.static) .frame { display: none; }
+.player.js:not(.static) .frame.cur { display: block; margin: 0; }
+.player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
+.player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
+.player .fbody { font-size: .95rem; line-height: 1.6; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.player .pctl .pcount { color: var(--muted); font-size: .85rem; }
+.player .pdots { display: flex; gap: .3rem; margin-left: auto; }
+.player .pdots i { width: .55rem; height: .55rem; border-radius: 50%; background: var(--line); cursor: pointer; }
+.player .pdots i.on { background: var(--accent); }
+
+/* 帧内示意件：微帧行(.mfr>.u) + TT 缓冲格(.buftt>.slot) + 身份色块（颜色跨帧恒定） */
+.mfr { display: flex; gap: .3rem; flex-wrap: wrap; margin: .35rem 0; }
+.mfr .u { flex: 1; min-width: 6.2rem; border: 1px dashed var(--line); border-radius: 4px; padding: .22rem .38rem; font-size: .78rem; text-align: center; }
+.mfr .u b { display: block; color: var(--muted); font-size: .7rem; font-weight: 600; letter-spacing: .05em; }
+.chSS, .chCS, .chNAK { display: inline-block; border-radius: 3px; padding: 0 .3rem; font-size: .76rem; white-space: nowrap; }
+.chSS { background: #e9f7ee; color: #1a7f37; border: 1px solid #1a7f37; }
+.chCS { background: #fff3c4; color: #a00000; border: 1px solid #a00000; }
+.chNAK { background: #fdeaea; color: #c62828; border: 1px solid #c62828; }
+.buftt { display: flex; gap: .5rem; margin: .4rem 0; }
+.buftt .slot { flex: 1; border-radius: 4px; padding: .3rem .5rem; font-size: .82rem; }
+.buftt .slot.busy { border: 1px solid #1a5fb4; background: #e8f0fb; color: #1a2b4a; }
+.buftt .slot.free { border: 1px dashed #1a5fb4; background: #fff; color: var(--muted); }
+.buftt .slot.none { border: 1px dashed var(--bad); background: #fdeaea; color: var(--bad); }
+td.bad { background: #fdeaea; }
+td.good { background: #e9f7ee; }
+
+footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
+
+@media print {
+  body { background: #fff; padding: 0; font-size: 10.5pt; }
+  .opt:disabled { opacity: 1; }
+  .explain { display: block; }
+  .player .frame { display: block !important; }
+  .player .pctl { display: none; }
+}
+
+</style>
+<style>
+/* 本课代码块账本配色：左条颜色 = 代码块出自哪本账 */
+main pre { margin: .6rem 0; padding: .55rem .7rem; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; background: #f4f4ee; }
+pre.pstate { border-left: 3px solid #6a4fc4; background: #f6f4fb; }
+pre.pdiff { border-left: 3px solid #a00000; background: #fbf3f0; }
+pre.pmsg { border-left: 3px solid #707070; background: #faf8f2; }
+</style>
+</head>
+<body>
+<main>
+  <div class="kicker">LESSON 0010 · xHC 线第 5 课·实验课（前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 三视角传输剧</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）</div>
+  <h1>补丁解析实验课<br>五枚真补丁 × 修复逻辑走查 × 双账本代码块</h1>
+  <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
+
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）；补丁账本：每块代码头自带 <code>@commit</code> 标记，逐字对各自 commit 机检——五枚补丁：576667bad341（2021）· 6328bdc988d2（2025）· f1ec7ae6c9f8（2020）· 45ba2154d12f（2015）· 26fbe9772b8c（2022），全部来自 <code>drivers/usb/host/xhci*</code> 与 <code>drivers/usb/core/</code> 的社区真实修复</p>
+
+  <h2>整体定位（机制图学完了，放到真补丁的显微镜下）</h2>
+  <p>xHC 线四课攒了四张图：0006 的<strong>零件图</strong>（提单字段、环与段）、0007 的<strong>运转图</strong>（cycle 合同、回绕点、四把钥匙）、0009 的<strong>传输剧</strong>（六站旅程、事件环消费、两本账）、0008 的<strong>命运面</strong>（错误路径、ep_state 旗标）。但四张图画的都是"今天的代码长什么样"——今天的代码是二十多年补丁堆出来的，每一处看起来理所当然的写法，背后往往站着一枚修过真实事故的补丁。</p>
+  <p>读补丁是检验机制理解最锋利的习题：每枚补丁都是一道"哪条合同被谁违反了"的侦探题——出题人是真实的硬件 bug 或并发竞态，答案是主线内核合入的修复。本课是 xHC 线的<strong>实验课</strong>：五枚补丁，每枚对应一课的机制面，走同一套<strong>五步法</strong>：① 症状（谁在什么场景炸了，读 commit message 原文）→ ② 案发现场（修复前的代码）→ ③ 用课程模型走根因 → ④ 修复本体（diff）→ ⑤ 回望（基线今天的代码 + 这枚补丁给课程概念钉的钉子）。</p>
+  <p><strong>"补丁解析"从此是本课程的长驻功能</strong>：后续每门新课的机制学到手后，都配一枚同主题的社区补丁走一遍五步法。配套工具链已入库：<code>scripts/assemble_lesson_blocks.py</code>（代码块装配器——本课全部代码块由 git 原文切片装配，零誊抄）＋ <code>scripts/check_lesson_patches.py</code>（补丁块逐字机检器，--selftest 已过）。</p>
+  <div class="note"><b>双账本代码块（本课立法，后续补丁课沿用）</b>：同一份源码在本课以三种身份出现，靠代码块头与左条颜色区分——<b>裸块</b>（灰底）＝基线 62f4c998b297 逐字摘录（check_lesson_excerpts.py 机检）；<b>@commit 块</b>（紫条）＝补丁前/后某 commit 的文件状态（check_lesson_patches.py 机检）；<b>diff 块</b>（红条）＝补丁本身的逐字切片；灰条 = commit message 原文。usbcore 侧（urb.c/hcd.c）的基线块也走 @62f4c998 账本——摘录机检器的候选文件表目前只覆盖 xhci 与 core/hub.c。所有行号都对各自账本成立，跨账本行号不可互比。</div>
+
+  <h2>第 1 章 · 对应 0006 零件课：TRB 的四个字段是分四次写的</h2>
+  <p><b>补丁</b>：576667bad341「xhci: make sure TRB is fully written before giving it to the controller」（Mathias Nyman，2021-01，+2 行）。</p>
+  <h3>① 症状</h3>
+  <pre class="pmsg">/* commit message 原文——机制、复现路径与修法 */
+A command TRB is 16 bytes (128 bits) long.
+Driver writes the command TRB in four 32 bit chunks, with the chunk
+containing the cycle bit last. This does however not guarantee that
+chunks actually get written in that order.
+
+This was detected in stress testing when canceling URBs with several
+connected USB devices.
+Two consecutive "Set TR Dequeue pointer" commands got queued right
+after each other, and the second one was only partially written when
+the controller parsed it, causing the dequeue pointer to be set
+to bogus values. This was seen as error messages:
+
+"Mismatch between completed Set TR Deq Ptr command &amp; xHCI internal state"
+
+Solution is to add a write memory barrier before writing the cycle bit.</pre>
+  <p>压力测试里连挂多台设备反复取消 URB，两颗 <code>Set TR Dequeue Pointer</code> 命令背靠背入队，第二颗只写了一半就被 xHC 取走解析，命令环指针被设成垃圾值。</p>
+  <h3>② 案发现场（补丁前）</h3>
+  <pre class="pstate" data-commit="576667bad341~1" data-file="drivers/usb/host/xhci-ring.c">/* drivers/usb/host/xhci-ring.c:2924-2939 @576667bad341（修复前的 queue_trb——四次普通 store，无任何顺序保证）*/
+static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
+		bool more_trbs_coming,
+		u32 field1, u32 field2, u32 field3, u32 field4)
+{
+	struct xhci_generic_trb *trb;
+
+	trb = &amp;ring-&gt;enqueue-&gt;generic;
+	trb-&gt;field[0] = cpu_to_le32(field1);
+	trb-&gt;field[1] = cpu_to_le32(field2);
+	trb-&gt;field[2] = cpu_to_le32(field3);
+	trb-&gt;field[3] = cpu_to_le32(field4);
+
+	trace_xhci_queue_trb(ring, trb);
+
+	inc_enq(xhci, ring, more_trbs_coming);
+}</pre>
+  <h3>③ 根因（用 0006/0007 的模型走一遍）</h3>
+  <p>0006 教过：一颗 TRB＝16 字节＝4 个 32 位字段（DW0-DW3），<strong>cycle 位在 DW3</strong>。0007 立过生产者合同：<strong>先落数据、再翻 cycle</strong>——xHC 只取 cycle 位匹配的 TRB，所以只要 cycle 位最后写，半成品 TRB 对硬件就不可见。<code>queue_trb</code> 确实把 <code>field[3]</code>（含 cycle）排在最后——但那是 <strong>C 源码的书写顺序</strong>。CPU 与编译器只保证"单线程自己看"的顺序：四个普通 store 之间可以乱序、合并、延迟可见。一旦门铃敲响（0006 的敲铃＝写 doorbell 寄存器），xHC 作为另一个独立设备立刻从主存取指——它完全可能看见 field[3] 已落、前三字段还在路上的窗口。合同说"先落数据再翻 cycle"，代码却没给这条顺序任何硬件保证。</p>
+  <h3>④ 修复</h3>
+  <pre class="pdiff" data-commit="576667bad341" data-file="drivers/usb/host/xhci-ring.c">/* diff:drivers/usb/host/xhci-ring.c @576667bad341（修复 diff 全文——在 cycle 位之前插入写屏障）*/
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 5677b81c0915..cf0c93a90200 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2931,6 +2931,8 @@ static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
+ 	trb-&gt;field[0] = cpu_to_le32(field1);
+ 	trb-&gt;field[1] = cpu_to_le32(field2);
+ 	trb-&gt;field[2] = cpu_to_le32(field3);
++	/* make sure TRB is fully written before giving it to the controller */
++	wmb();
+ 	trb-&gt;field[3] = cpu_to_le32(field4);
+ 
+ 	trace_xhci_queue_trb(ring, trb);</pre>
+  <p><code>wmb()</code>（write memory barrier）一句话：屏障之前的 store 必须先于屏障之后的 store 对其他观察者可见。插在 <code>field[3]</code> 之前，"先落数据、再翻 cycle"就从口头合同变成了 CPU 级强制。</p>
+  <h3>⑤ 回望（基线在场）</h3>
+  <pre>/* xhci-ring.c:3244-3256（基线今天的 queue_trb——wmb 已常驻，就是这枚补丁留下的）*/
+static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
+		bool more_trbs_coming,
+		u32 field1, u32 field2, u32 field3, u32 field4)
+{
+	struct xhci_generic_trb *trb;
+
+	trb = &amp;ring-&gt;enqueue-&gt;generic;
+	trb-&gt;field[0] = cpu_to_le32(field1);
+	trb-&gt;field[1] = cpu_to_le32(field2);
+	trb-&gt;field[2] = cpu_to_le32(field3);
+	/* make sure TRB is fully written before giving it to the controller */
+	wmb();
+	trb-&gt;field[3] = cpu_to_le32(field4);</pre>
+  <p>这条"发布"合同在驱动里有不止一处落实点：0009 第 4 章贴过的 <code>giveback_first_trb</code>（xhci-ring.c:3441-3451，"先 wmb、再翻 cycle、后敲铃"）是 <strong>Set TR Dequeue 之后重启环</strong>的发布点；本枚补丁修的 <code>queue_trb</code> 是<strong>正常入队</strong>的发布点。两处 wmb、同一份合同——你在 0009 读到那行 wmb 时它已经"理所当然"了十一年。</p>
+
+  <h2>第 2 章 · 对应 0007 运转课：cycle 的权威记录在 TRB 上，不在账本抄本上</h2>
+  <p><b>补丁</b>：6328bdc988d2「usb: xhci: Don't trust the EP Context cycle bit when moving HW dequeue」（Michal Pecio，2025-05）。</p>
+  <h3>① 症状</h3>
+  <pre class="pmsg">/* commit message 原文——VIA VL805 的毛病与修法纲要 */
+VIA VL805 doesn't bother updating the EP Context cycle bit when the
+endpoint halts. This is seen by patching xhci_move_dequeue_past_td()
+to print the cycle bits of the EP Context and the TRB at hw_dequeue
+and then disconnecting a flash drive while reading it. Actual cycle
+state is random as expected, but the EP Context bit is always 1.
+
+This means that the cycle state produced by this function is wrong
+half the time, and then the endpoint stops working.
+
+Work around it by looking at the cycle bit of TD's end_trb instead
+of believing the Endpoint or Stream Context. Specifically:</pre>
+  <p>这枚补丁的取证过程值得单独看一眼——作者给驱动打了临时桩，把<strong>环上 TRB 的 cycle 位</strong>与<strong>Endpoint Context 里抄录的 DCS</strong> 并排打印，然后一边读 U 盘一边拔掉它：</p>
+  <pre class="pmsg">/* commit message 原文——打桩取证的实测日志 */
+Now a workload which regularly stalls the device works normally for
+a few hours and clearly demonstrates the HW bug - the EP Context bit
+is not updated in a new cycle until Set TR Dequeue overwrites it:
+
+[  +0,000298] sd 10:0:0:0: [sdc] Attached SCSI disk
+[  +0,011758] cycle bits: TRB 1 EP Ctx 1
+[  +5,947138] cycle bits: TRB 1 EP Ctx 1
+[  +0,065731] cycle bits: TRB 0 EP Ctx 1
+[  +0,064022] cycle bits: TRB 0 EP Ctx 0
+[  +0,063297] cycle bits: TRB 0 EP Ctx 0
+[  +0,069823] cycle bits: TRB 0 EP Ctx 0
+[  +0,063390] cycle bits: TRB 1 EP Ctx 0
+[  +0,063064] cycle bits: TRB 1 EP Ctx 1
+[  +0,062293] cycle bits: TRB 1 EP Ctx 1
+[  +0,066087] cycle bits: TRB 0 EP Ctx 1
+[  +0,063636] cycle bits: TRB 0 EP Ctx 0
+[  +0,066360] cycle bits: TRB 0 EP Ctx 0</pre>
+  <p>TRB 的 cycle 位正常翻转（1→0→1，跟着环轮转），而 EP Context 抄的那份永远慢半拍、甚至长期不动。这份日志就是"账本抄本会陈旧"的实锤。</p>
+  <h3>② 案发现场（补丁前）</h3>
+  <pre class="pstate" data-commit="6328bdc988d2~1" data-file="drivers/usb/host/xhci-ring.c">/* drivers/usb/host/xhci-ring.c:715-748 @6328bdc988d2（修复前的 xhci_move_dequeue_past_td——new_cycle 取自 hw_dequeue（EP Context 的 DCS））*/
+	hw_dequeue = xhci_get_hw_deq(xhci, dev, ep_index, stream_id);
+	new_seg = ep_ring-&gt;deq_seg;
+	new_deq = ep_ring-&gt;dequeue;
+	new_cycle = hw_dequeue &amp; 0x1;
+
+	/*
+	 * We want to find the pointer, segment and cycle state of the new trb
+	 * (the one after current TD's end_trb). We know the cycle state at
+	 * hw_dequeue, so walk the ring until both hw_dequeue and end_trb are
+	 * found.
+	 */
+	do {
+		if (!cycle_found &amp;&amp; xhci_trb_virt_to_dma(new_seg, new_deq)
+		    == (dma_addr_t)(hw_dequeue &amp; ~0xf)) {
+			cycle_found = true;
+			if (td_last_trb_found)
+				break;
+		}
+		if (new_deq == td-&gt;end_trb)
+			td_last_trb_found = true;
+
+		if (cycle_found &amp;&amp; trb_is_link(new_deq) &amp;&amp;
+		    link_trb_toggles_cycle(new_deq))
+			new_cycle ^= 0x1;
+
+		next_trb(&amp;new_seg, &amp;new_deq);
+
+		/* Search wrapped around, bail out */
+		if (new_deq == ep-&gt;ring-&gt;dequeue) {
+			xhci_err(xhci, "Error: Failed finding new dequeue state\n");
+			return -EINVAL;
+		}
+
+	} while (!cycle_found || !td_last_trb_found);</pre>
+  <h3>③ 根因（用 0007 的模型走一遍）</h3>
+  <p>0007 立过铁律：硬件取指只认 <strong>TRB 自己带的 cycle 位</strong>（§4.9.2：cycle 匹配才取）。Endpoint Context 里的 DCS（Dequeue Cycle State）是给软件看的<strong>抄本</strong>——xHC 本应在端点停下的时刻更新它。VL805 偷懒：halt 时抄本不动。这段代码出场的时机恰是 0008 讲的 STALL 之后：驱动要取消滞留 TD，用 <code>Set TR Dequeue</code> 命令把硬件 dequeue 挪到安全位置，命令里必须报出挪到之处的新 cycle 值。旧代码拿 <code>hw_dequeue & 0x1</code>——正是 EP Context 抄本的最低位——当新 cycle 的起点。抄本陈旧时，算出的新 cycle 一半概率是反的：写进环里的 TRB 全部"cycle 不匹配"，xHC 一颗都不取，端点当场哑掉。走查循环里的 <code>new_cycle ^= 1</code> 是 0007 的回绕点规则：沿途每跨过一颗会翻转 cycle 的 Link TRB 就翻一次——起点错了，沿途翻得再准也全错。</p>
+  <h3>④ 修复</h3>
+  <pre class="pdiff" data-commit="6328bdc988d2" data-file="drivers/usb/host/xhci-ring.c">/* diff:drivers/usb/host/xhci-ring.c @6328bdc988d2（修复 diff——新 cycle 改从 td->end_trb（环上已知好 TRB）取，回绕改在找到 end_trb 之后计）*/
+@@ -715,25 +715,24 @@ static int xhci_move_dequeue_past_td(struct xhci_hcd *xhci,
+ 	hw_dequeue = xhci_get_hw_deq(xhci, dev, ep_index, stream_id);
+ 	new_seg = ep_ring-&gt;deq_seg;
+ 	new_deq = ep_ring-&gt;dequeue;
+-	new_cycle = hw_dequeue &amp; 0x1;
++	new_cycle = le32_to_cpu(td-&gt;end_trb-&gt;generic.field[3]) &amp; TRB_CYCLE;
+ 
+ 	/*
+-	 * We want to find the pointer, segment and cycle state of the new trb
+-	 * (the one after current TD's end_trb). We know the cycle state at
+-	 * hw_dequeue, so walk the ring until both hw_dequeue and end_trb are
+-	 * found.
++	 * Walk the ring until both the next TRB and hw_dequeue are found (don't
++	 * move hw_dequeue back if it went forward due to a HW bug). Cycle state
++	 * is loaded from a known good TRB, track later toggles to maintain it.
+ 	 */
+ 	do {
+-		if (!cycle_found &amp;&amp; xhci_trb_virt_to_dma(new_seg, new_deq)
++		if (!hw_dequeue_found &amp;&amp; xhci_trb_virt_to_dma(new_seg, new_deq)
+ 		    == (dma_addr_t)(hw_dequeue &amp; ~0xf)) {
+-			cycle_found = true;
++			hw_dequeue_found = true;
+ 			if (td_last_trb_found)
+ 				break;
+ 		}
+ 		if (new_deq == td-&gt;end_trb)
+ 			td_last_trb_found = true;
+ 
+-		if (cycle_found &amp;&amp; trb_is_link(new_deq) &amp;&amp;
++		if (td_last_trb_found &amp;&amp; trb_is_link(new_deq) &amp;&amp;
+ 		    link_trb_toggles_cycle(new_deq))
+ 			new_cycle ^= 0x1;</pre>
+  <p>修法一句话：<strong>别信抄本，信环上真实存在的 TRB</strong>。<code>td->end_trb</code> 是软件自己排的 TD 的末颗 TRB，它身上的 cycle 位是软件亲手写的、当下必然正确——从它出发，再沿途处理回绕翻转。</p>
+  <h3>⑤ 回望（基线在场，修复也还会被再修）</h3>
+  <pre>/* xhci-ring.c:727-738（基线今天的同一段——函数已被 7c0c31c66a7f（2026-08）再度重写为"挪到下一颗有效 TD"，cycle 取 start_trb 或 ring->cycle_state）*/
+	if (list_empty(&amp;ring-&gt;td_list)) {
+		if (trb_is_link(ring-&gt;enqueue))
+			inc_enq_past_link(xhci, ring, 0);
+		ep-&gt;queued_deq_seg = ring-&gt;enq_seg;
+		ep-&gt;queued_deq_ptr = ring-&gt;enqueue;
+		new_cycle = ring-&gt;cycle_state;
+	} else {
+		td = list_first_entry(&amp;ring-&gt;td_list, struct xhci_td, td_list);
+		ep-&gt;queued_deq_seg = td-&gt;start_seg;
+		ep-&gt;queued_deq_ptr = td-&gt;start_trb;
+		new_cycle = le32_to_cpu(td-&gt;start_trb-&gt;generic.field[3]) &amp; TRB_CYCLE;
+	}</pre>
+  <p>基线上这段代码已经又进化了一轮（函数改名 <code>xhci_move_deq_to_next_td</code>，逻辑重写），但判决标准一毫米没动：<strong>cycle 的权威记录永远在环上的 TRB 里</strong>，上下文抄本只能当参考。修复本身也会被修复——不变的是判据。这正是读补丁史的价值：判据在一次次修复里越钉越牢。</p>
+
+  <h2>第 3 章 · 对应 0008 命运课：ep_state 旗标的出口纪律</h2>
+  <p><b>补丁</b>：f1ec7ae6c9f8「xhci: Always restore EP_SOFT_CLEAR_TOGGLE even if ep reset failed」（Ding Hui，2020-08）。</p>
+  <h3>① 症状</h3>
+  <pre class="pmsg">/* commit message 原文——clear_halt 撞上非空队列，旗标卡死的完整传导链 */
+Some device drivers call libusb_clear_halt when target ep queue
+is not empty. (eg. spice client connected to qemu for usb redir)
+
+Before commit f5249461b504 ("xhci: Clear the host side toggle
+manually when endpoint is soft reset"), that works well.
+But now, we got the error log:
+
+    EP not empty, refuse reset
+
+xhci_endpoint_reset failed and left ep_state's EP_SOFT_CLEAR_TOGGLE
+bit still set
+
+So all the subsequent urb sumbits to the ep will fail with the
+warn log:
+
+    Can't enqueue URB while manually clearing toggle
+
+We need to clear ep_state EP_SOFT_CLEAR_TOGGLE bit after
+xhci_endpoint_reset, even if it failed.</pre>
+  <h3>② 案发现场（补丁前）</h3>
+  <pre class="pstate" data-commit="f1ec7ae6c9f8~1" data-file="drivers/usb/host/xhci.c">/* drivers/usb/host/xhci.c:3234-3243 @f1ec7ae6c9f8（修复前的 xhci_endpoint_reset 收尾——清位只挂在成功路径，cleanup 出口只释放命令）*/
+	xhci_ring_cmd_db(xhci);
+	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);
+
+	wait_for_completion(cfg_cmd-&gt;completion);
+
+	ep-&gt;ep_state &amp;= ~EP_SOFT_CLEAR_TOGGLE;
+	xhci_free_command(xhci, cfg_cmd);
+cleanup:
+	xhci_free_command(xhci, stop_cmd);
+}</pre>
+  <h3>③ 根因（用 0008 的模型走一遍）</h3>
+  <p>0008 拆过 ep_state 十旗标：<code>EP_SOFT_CLEAR_TOGGLE</code> 的职责是<strong>闸门</strong>——clear_halt 的软件等效操作（host 侧手工摆平 toggle/sequence 位）进行中时，挡住一切新 URB 插进同一个端点。它的完整生命周期是一对配对变迁：<strong>入口置位 → 出口清位</strong>。置位点在 <code>xhci_endpoint_reset</code> 开头（基线 xhci.c:3386-3389），拒绝点在入队总口（基线 xhci.c:1689-1692，"Can't enqueue URB while manually clearing toggle"）。问题出在出口：<code>xhci_endpoint_reset</code> 有两个出口——成功出口与 <code>cleanup:</code> 错误出口——而清位语句只写在成功出口。队列非空时函数提前跳到 <code>cleanup:</code>，旗标从此无人清：它不对应任何硬件状态，纯粹是软件忘了收闸，端点从此拒绝一切新 URB。<strong>置位与清位必须覆盖所有出口</strong>——错误路径也是路径，这是 0008"旗标是配对状态变迁"判读的直接推论。</p>
+  <h3>④ 修复</h3>
+  <pre class="pdiff" data-commit="f1ec7ae6c9f8" data-file="drivers/usb/host/xhci.c">/* diff:drivers/usb/host/xhci.c @f1ec7ae6c9f8（修复 diff——清位移到 cleanup 标签，成功与失败两条出口汇合后统一执行）*/
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 3c41b14ecce7..e9884ae9c77d 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -3236,10 +3236,11 @@ static void xhci_endpoint_reset(struct usb_hcd *hcd,
+ 
+ 	wait_for_completion(cfg_cmd-&gt;completion);
+ 
+-	ep-&gt;ep_state &amp;= ~EP_SOFT_CLEAR_TOGGLE;
+ 	xhci_free_command(xhci, cfg_cmd);
+ cleanup:
+ 	xhci_free_command(xhci, stop_cmd);
++	if (ep-&gt;ep_state &amp; EP_SOFT_CLEAR_TOGGLE)
++		ep-&gt;ep_state &amp;= ~EP_SOFT_CLEAR_TOGGLE;
+ }</pre>
+  <h3>⑤ 回望（基线在场：置位/拒绝/清位三点连线）</h3>
+  <pre>/* xhci.c:3387-3388（基线今天的置位点——"block queuing new trbs"注释）*/
+	/* block queuing new trbs and ringing ep doorbell */
+	ep-&gt;ep_state |= EP_SOFT_CLEAR_TOGGLE;</pre>
+  <pre>/* xhci.c:1689-1692（基线今天的拒绝点——入队总口见旗标即拒）*/
+	if (*ep_state &amp; EP_SOFT_CLEAR_TOGGLE) {
+		xhci_warn(xhci, "Can't enqueue URB while manually clearing toggle\n");
+		ret = -EINVAL;
+		goto free_priv;</pre>
+  <pre>/* xhci.c:3447-3456（基线今天的收尾——if 条件判断下的清位在两条出口汇合后运行，就是这枚补丁的形态）*/
+	wait_for_completion(cfg_cmd-&gt;completion);
+
+	xhci_free_command(xhci, cfg_cmd);
+cleanup:
+	xhci_free_command(xhci, stop_cmd);
+	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);
+	if (ep-&gt;ep_state &amp; EP_SOFT_CLEAR_TOGGLE)
+		ep-&gt;ep_state &amp;= ~EP_SOFT_CLEAR_TOGGLE;
+	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);
+}</pre>
+  <p>把三块基线代码连起来读，就是一 State 旗标的完整户口：置位（3388）→ 拒绝（1690）→ 出口清位（3453-3454）。0008 的十旗标表里每一行，背后都是这样一组必须配对的变迁——表上查得到名字，补丁史里查得到它为什么长这样。</p>
+
+  <h2>第 4 章 · 对应 0009 传输剧：EV1/EV2 两颗票之间的记账覆盖</h2>
+  <p><b>补丁</b>：45ba2154d12f「xhci: fix reporting of 0-sized URBs in control endpoint」（Aleksander Morgado，2015-03）。</p>
+  <h3>① 症状</h3>
+  <pre class="pmsg">/* commit message 原文——两颗事件的记账规则与坏判据 */
+When a control transfer has a short data stage, the xHCI controller generates
+two transfer events: a COMP_SHORT_TX event that specifies the untransferred
+amount, and a COMP_SUCCESS event. But when the data stage is not short, only the
+COMP_SUCCESS event occurs. Therefore, xhci-hcd must set urb-&gt;actual_length to
+urb-&gt;transfer_buffer_length while processing the COMP_SUCCESS event, unless
+urb-&gt;actual_length was set already by a previous COMP_SHORT_TX event.
+
+The driver checks this by seeing whether urb-&gt;actual_length == 0, but this alone
+is the wrong test, as it is entirely possible for a short transfer to have an
+urb-&gt;actual_length = 0.
+
+This patch changes the xhci driver to rely on a new td-&gt;urb_length_set flag,
+which is set to true when a COMP_SHORT_TX event is received and the URB length
+updated at that stage.</pre>
+  <pre class="pmsg">/* commit message 原文——用户面：HSO 插件靠 actual_length==0 停转 */
+This fixes a bug which affected the HSO plugin, which relies on URBs with
+urb-&gt;actual_length == 0 to halt re-submitting the RX URB in the control
+endpoint.</pre>
+  <h3>② 案发现场（补丁前）</h3>
+  <pre class="pstate" data-commit="45ba2154d12f~1" data-file="drivers/usb/host/xhci-ring.c">/* drivers/usb/host/xhci-ring.c:1946-1974 @45ba2154d12f（修复前的 process_ctrl_td 记账区——EV2 靠 actual_length!=0 猜"账记过没有"）*/
+	if (event_trb != ep_ring-&gt;dequeue) {
+		/* The event was for the status stage */
+		if (event_trb == td-&gt;last_trb) {
+			if (td-&gt;urb-&gt;actual_length != 0) {
+				/* Don't overwrite a previously set error code
+				 */
+				if ((*status == -EINPROGRESS || *status == 0) &amp;&amp;
+						(td-&gt;urb-&gt;transfer_flags
+						 &amp; URB_SHORT_NOT_OK))
+					/* Did we already see a short data
+					 * stage? */
+					*status = -EREMOTEIO;
+			} else {
+				td-&gt;urb-&gt;actual_length =
+					td-&gt;urb-&gt;transfer_buffer_length;
+			}
+		} else {
+		/* Maybe the event was for the data stage? */
+			td-&gt;urb-&gt;actual_length =
+				td-&gt;urb-&gt;transfer_buffer_length -
+				EVENT_TRB_LEN(le32_to_cpu(event-&gt;transfer_len));
+			xhci_dbg(xhci, "Waiting for status "
+					"stage event\n");
+			return 0;
+		}
+	}
+
+	return finish_td(xhci, td, event_trb, event, ep, status, false);
+}</pre>
+  <h3>③ 根因（用 0009 的模型走一遍）</h3>
+  <p>0009 钻点六刚教过这场戏：控制传输撞上短包时，一次中断送来两颗票——<strong>EV1</strong>（Short Packet，报数据段实际短收）与 <strong>EV2</strong>（Success，Status 幕收口）。驱动在 <code>process_ctrl_td</code> 里的分工是：<strong>EV1 记账不放行</strong>（把 <code>urb-&gt;actual_length</code> 记成实际收到的字节数，return 等下一颗），<strong>EV2 对票收口</strong>（补齐终值、转 <code>finish_td</code> 走 giveback）。</p>
+  <p>EV2 收口前必须回答一个问题："数据段的账记过了吗？"——记过就不能再动。旧代码的判据是看<strong>账目值本身</strong>：<code>actual_length != 0</code> 当作"记过"。这个判据把两种状态撞在一起了：<strong>没记账</strong>与<strong>记账结果是 0</strong>（短包短到一颗字节都没收到——EVENT_TRB_LEN 恰好等于申请长度）在账面上无法区分。于是 0 字节短收的传输，EV2 会把账覆盖成"满额成功"：<code>actual_length = transfer_buffer_length</code>，还顺手跳过了本应上报的 <code>-EREMOTEIO</code>。依赖 <code>actual_length == 0</code> 停转的 HSO 驱动就此卡死在重提交循环里。</p>
+  <h3>④ 修复</h3>
+  <p>修法是记一笔账的通用纪律：<strong>把"记过账没有"（事实）与"账目是多少"（数值）分开存</strong>——给 TD 加一比特旗标：</p>
+  <pre class="pdiff" data-commit="45ba2154d12f" data-file="drivers/usb/host/xhci-ring.c">/* diff:drivers/usb/host/xhci-ring.c @45ba2154d12f（修复 diff 上半——EV2 判据从账目值换成旗标）*/
+@@ -1946,7 +1946,7 @@ static int process_ctrl_td(struct xhci_hcd *xhci, struct xhci_td *td,
+ 	if (event_trb != ep_ring-&gt;dequeue) {
+ 		/* The event was for the status stage */
+ 		if (event_trb == td-&gt;last_trb) {
+-			if (td-&gt;urb-&gt;actual_length != 0) {
++			if (td-&gt;urb_length_set) {
+ 				/* Don't overwrite a previously set error code
+ 				 */
+ 				if ((*status == -EINPROGRESS || *status == 0) &amp;&amp;</pre>
+  <pre class="pdiff" data-commit="45ba2154d12f" data-file="drivers/usb/host/xhci-ring.c">/* diff:drivers/usb/host/xhci-ring.c @45ba2154d12f（修复 diff 下半——EV1 记账处落旗标）*/
+@@ -1960,7 +1960,13 @@ static int process_ctrl_td(struct xhci_hcd *xhci, struct xhci_td *td,
+ 					td-&gt;urb-&gt;transfer_buffer_length;
+ 			}
+ 		} else {
+-		/* Maybe the event was for the data stage? */
++			/*
++			 * Maybe the event was for the data stage? If so, update
++			 * already the actual_length of the URB and flag it as
++			 * set, so that it is not overwritten in the event for
++			 * the last TRB.
++			 */
++			td-&gt;urb_length_set = true;
+ 			td-&gt;urb-&gt;actual_length =
+ 				td-&gt;urb-&gt;transfer_buffer_length -
+ 				EVENT_TRB_LEN(le32_to_cpu(event-&gt;transfer_len));</pre>
+  <pre class="pdiff" data-commit="45ba2154d12f" data-file="drivers/usb/host/xhci.h">/* diff:drivers/usb/host/xhci.h @45ba2154d12f（struct xhci_td 加一比特 urb_length_set——账本位与账目值分离）*/
+@@ -1291,6 +1292,8 @@ struct xhci_td {
+ 	struct xhci_segment	*start_seg;
+ 	union xhci_trb		*first_trb;
+ 	union xhci_trb		*last_trb;
++	/* actual_length of the URB has already been set */
++	bool			urb_length_set;
+ };</pre>
+  <h3>⑤ 回望（基线在场：一比特跑了十一年）</h3>
+  <pre>/* xhci.h:1306-1316（基线今天的 struct xhci_td——旗标长住在 end_trb 旁边，注释原话就是"actual_length 已被设置"）*/
+	int			status;
+	enum xhci_cancelled_td_status	cancel_status;
+	struct urb		*urb;
+	struct xhci_segment	*start_seg;
+	union xhci_trb		*start_trb;
+	struct xhci_segment	*end_seg;
+	union xhci_trb		*end_trb;
+	struct xhci_segment	*bounce_seg;
+	/* actual_length of the URB has already been set */
+	bool			urb_length_set;
+	bool			error_mid_td;</pre>
+  <pre>/* xhci-ring.c:2364-2371（基线今天的 STALL 分岔——连错误路径收口前也要先问旗标（:2369），十一年间消费者越变越多）*/
+		fallthrough;
+	case COMP_STALL_ERROR:
+		/* Did we transfer part of the data (middle) phase? */
+		if (trb_type == TRB_DATA || trb_type == TRB_NORMAL)
+			td-&gt;urb-&gt;actual_length = requested - remaining;
+		else if (!td-&gt;urb_length_set)
+			td-&gt;urb-&gt;actual_length = 0;
+		goto finish_td;</pre>
+  <p>0009 第 6 章你们在 :2382-2395 读过的 <code>urb_length_set</code>，出生证明就是这枚 2015 年的补丁。今天它守的不止 EV2 收口：连 STALL 分岔（:2364-2371）都要先问它一句"账记过没有"再决定要不要把 actual_length 清零。顺带挑明一对粒度：<code>urb-&gt;actual_length</code> 是 <strong>URB 级</strong>的总账（usbcore 回调读的是它），<code>td-&gt;urb_length_set</code> 是 <strong>TD 级</strong>的过程旗标（xhci 驱动内部记账用）——同名账目、两级账本，别互比。</p>
+
+  <h2>第 5 章 · 桥向 usbcore：kill 与 giveback 的双 CPU 赛跑</h2>
+  <p><b>补丁</b>：26fbe9772b8c「USB: core: Fix hang in usb_kill_urb by adding memory barriers」（Alan Stern，2022-01，drivers/usb/core/）。这枚不在 xhci 驱动里——它守住的是 0009 ⑥站 giveback 的 usbcore 侧，也是后续 usbcore 深读课的预告片。</p>
+  <h3>① 症状</h3>
+  <pre class="pmsg">/* commit message 原文——syzbot 报告 usb_kill_urb 挂死 */
+The syzbot fuzzer has identified a bug in which processes hang waiting
+for usb_kill_urb() to return.  It turns out the issue is not unlinking
+the URB; that works just fine.  Rather, the problem arises when the
+wakeup notification that the URB has completed is not received.</pre>
+  <h3>② 出题人的推理（commit message 原文，含双 CPU 时间线）</h3>
+  <pre class="pmsg">/* commit message 原文——两个 CPU 并发动作的 outline */
+The reason is memory-access ordering on SMP systems.  In outline form,
+usb_kill_urb() and __usb_hcd_giveback_urb() operating concurrently on
+different CPUs perform the following actions:
+
+CPU 0					CPU 1
+----------------------------		---------------------------------
+usb_kill_urb():				__usb_hcd_giveback_urb():
+  ...					  ...
+  atomic_inc(&amp;urb-&gt;reject);		  atomic_dec(&amp;urb-&gt;use_count);
+  ...					  ...
+  wait_event(usb_kill_urb_queue,
+	atomic_read(&amp;urb-&gt;use_count) == 0);
+					  if (atomic_read(&amp;urb-&gt;reject))
+						wake_up(&amp;usb_kill_urb_queue);</pre>
+  <pre class="pmsg">/* commit message 原文——SB（Store Buffering）模式的判读 */
+Confining your attention to urb-&gt;reject and urb-&gt;use_count, you can
+see that the overall pattern of accesses on CPU 0 is:
+
+	write urb-&gt;reject, then read urb-&gt;use_count;
+
+whereas the overall pattern of accesses on CPU 1 is:
+
+	write urb-&gt;use_count, then read urb-&gt;reject.</pre>
+  <h3>③ 根因（用 0009 的模型走一遍）</h3>
+  <p>0009 ⑥站给过结论：giveback 之后 urb 交还 usbcore，驱动回调 <code>urb-&gt;complete</code>。这枚补丁把镜头拉近到 giveback 收尾与 <code>usb_kill_urb</code> 的<strong>并发交汇点</strong>：kill 侧 <code>atomic_inc(reject)</code> 后等 <code>use_count == 0</code>；giveback 侧 <code>atomic_dec(use_count)</code> 后看见 <code>reject != 0</code> 就叫醒等待者。注意两边的访问次序——<strong>CPU0 先写 reject 再读 use_count，CPU1 先写 use_count 再读 reject</strong>，即内存模型里经典的 SB（Store Buffering）模式：双方各自"写自己的变量、读对方的变量"。第 1 章刚讲过：无屏障时 store 对其他 CPU 的可见顺序不受保证，读可以越过自己的写先执行——于是两边可能同时读到旧值：kill 看见 use_count 还是 1（继续睡），giveback 看见 reject 还是 0（不叫醒）。<strong>没人错的逻辑，挂死的系统</strong>——每个原子操作自身都是原子的，坏的是两个原子操作之间的次序。修法：四个对称位置各插一道 <code>smp_mb__after_atomic()</code> 全屏障（基线在场：urb.c:714、:761；hcd.c:1558、:1667），并把配对关系写进注释。</p>
+  <figure>
+  <svg viewBox="0 0 880 360" role="img" aria-label="SB 模式：无屏障时双方读到旧值互相等待" style="width:100%;background:#fff;border:1px solid #e3e3da">
+    <g font-size="12.5" fill="#1a2b4a">
+      <text x="220" y="34" text-anchor="middle" font-weight="600">CPU0：usb_kill_urb()</text>
+      <text x="660" y="34" text-anchor="middle" font-weight="600">CPU1：__usb_hcd_giveback_urb()</text>
+      <text x="440" y="52" text-anchor="middle" font-size="11" fill="#707070">箭头从上到下＝时间先后</text>
+      <rect x="90" y="66" width="260" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
+      <text x="220" y="84" text-anchor="middle">① atomic_inc(reject)</text>
+      <text x="220" y="100" text-anchor="middle" font-size="11">写"我在等"标记</text>
+      <rect x="530" y="66" width="260" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
+      <text x="660" y="84" text-anchor="middle">② atomic_dec(use_count)</text>
+      <text x="660" y="100" text-anchor="middle" font-size="11">写"我用完了"标记</text>
+      <rect x="90" y="140" width="260" height="56" fill="#fff" stroke="#a5a596" rx="4"/>
+      <text x="220" y="162" text-anchor="middle">③ 读 use_count</text>
+      <text x="220" y="178" text-anchor="middle" font-size="11" fill="#c62828">读到旧值 1 → 继续 wait_event</text>
+      <rect x="530" y="140" width="260" height="56" fill="#fff" stroke="#a5a596" rx="4"/>
+      <text x="660" y="162" text-anchor="middle">④ 读 reject</text>
+      <text x="660" y="178" text-anchor="middle" font-size="11" fill="#c62828">读到旧值 0 → 不叫醒</text>
+      <rect x="150" y="228" width="580" height="40" fill="#fdeaea" stroke="#c62828" rx="4"/>
+      <text x="440" y="253" text-anchor="middle" fill="#c62828" font-weight="600">结果：一方永睡、一方不叫醒 → usb_kill_urb 挂死</text>
+      <rect x="90" y="292" width="700" height="44" fill="#e9f7ee" stroke="#1a7f37" rx="4"/>
+      <text x="440" y="311" text-anchor="middle" fill="#1a7f37">修复：两侧在"写后读前"各插 smp_mb__after_atomic()——写必先于自己的读可见</text>
+      <text x="440" y="328" text-anchor="middle" font-size="11" fill="#1a7f37">③ 必见 use_count=0 退出等待；④ 必见 reject!=0 执行 wake_up（基线 urb.c:714/:761、hcd.c:1558/:1667）</text>
+    </g>
+    <defs><marker id="ah10" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#707070"/></marker></defs>
+    <g stroke="#707070" stroke-width="1.6" fill="none">
+      <line x1="220" y1="108" x2="220" y2="138" marker-end="url(#ah10)"/>
+      <line x1="660" y1="108" x2="660" y2="138" marker-end="url(#ah10)"/>
+      <line x1="220" y1="196" x2="220" y2="226" stroke="#c62828" marker-end="url(#ah10)"/>
+      <line x1="660" y1="196" x2="660" y2="226" stroke="#c62828" marker-end="url(#ah10)"/>
+    </g>
+    <text x="220" y="285" text-anchor="middle" font-size="10.5" fill="#1a7f37">kill 侧屏障（urb.c:714/:761）</text>
+    <text x="660" y="285" text-anchor="middle" font-size="10.5" fill="#1a7f37">giveback 侧屏障（hcd.c:1558/:1667）</text>
+  </svg>
+  <figcaption style="font-size:.85rem;color:var(--muted)">图 1 · SB 模式双 CPU 时间线：逻辑各对、次序全无，互相读旧值。修复＝两侧对称插全屏障（虚线所指）。</figcaption>
+  </figure>
+  <h3>④ 修复</h3>
+  <pre class="pdiff" data-commit="26fbe9772b8c" data-file="drivers/usb/core/urb.c">/* diff:drivers/usb/core/urb.c @26fbe9772b8c（修复 diff——kill 侧屏障）*/
+@@ -715,6 +715,12 @@ void usb_kill_urb(struct urb *urb)
+ 	if (!(urb &amp;&amp; urb-&gt;dev &amp;&amp; urb-&gt;ep))
+ 		return;
+ 	atomic_inc(&amp;urb-&gt;reject);
++	/*
++	 * Order the write of urb-&gt;reject above before the read
++	 * of urb-&gt;use_count below.  Pairs with the barriers in
++	 * __usb_hcd_giveback_urb() and usb_hcd_submit_urb().
++	 */
++	smp_mb__after_atomic();
+ 
+ 	usb_hcd_unlink_urb(urb, -ENOENT);
+ 	wait_event(usb_kill_urb_queue, atomic_read(&amp;urb-&gt;use_count) == 0);</pre>
+  <pre class="pdiff" data-commit="26fbe9772b8c" data-file="drivers/usb/core/hcd.c">/* diff:drivers/usb/core/hcd.c @26fbe9772b8c（修复 diff——giveback 侧屏障）*/
+@@ -1665,6 +1672,13 @@ static void __usb_hcd_giveback_urb(struct urb *urb)
+ 
+ 	usb_anchor_resume_wakeups(anchor);
+ 	atomic_dec(&amp;urb-&gt;use_count);
++	/*
++	 * Order the write of urb-&gt;use_count above before the read
++	 * of urb-&gt;reject below.  Pairs with the memory barriers in
++	 * usb_kill_urb() and usb_poison_urb().
++	 */
++	smp_mb__after_atomic();
++
+ 	if (unlikely(atomic_read(&amp;urb-&gt;reject)))
+ 		wake_up(&amp;usb_kill_urb_queue);
+ 	usb_put_urb(urb);</pre>
+  <h3>⑤ 回望（基线在场）</h3>
+  <pre class="pstate" data-commit="62f4c998b297" data-file="drivers/usb/core/urb.c">/* drivers/usb/core/urb.c:703-720 @62f4c998b297（基线今天的 usb_kill_urb——屏障与配对注释常驻）*/
+void usb_kill_urb(struct urb *urb)
+{
+	might_sleep();
+	if (!(urb &amp;&amp; urb-&gt;dev &amp;&amp; urb-&gt;ep))
+		return;
+	atomic_inc(&amp;urb-&gt;reject);
+	/*
+	 * Order the write of urb-&gt;reject above before the read
+	 * of urb-&gt;use_count below.  Pairs with the barriers in
+	 * __usb_hcd_giveback_urb() and usb_hcd_submit_urb().
+	 */
+	smp_mb__after_atomic();
+
+	usb_hcd_unlink_urb(urb, -ENOENT);
+	wait_event(usb_kill_urb_queue, atomic_read(&amp;urb-&gt;use_count) == 0);
+
+	atomic_dec(&amp;urb-&gt;reject);
+}</pre>
+  <p>0009 教 giveback 时停在了"交还 usbcore"；usbcore 接下来怎么管理 urb 的余生（kill/poison/unlink、anchor、引用计数）是后续 usbcore 深读课的主场。这枚补丁是那门课的预告片：届时的主角（<code>urb-&gt;reject</code>、<code>use_count</code>、<code>usb_kill_urb_queue</code>）今天已经全部出场。</p>
+
+  <h2>五枚补丁落在课程地图的哪里</h2>
+  <figure>
+  <svg viewBox="0 0 880 350" role="img" aria-label="五枚补丁在六站全景图上的落点" style="width:100%;background:#fff;border:1px solid #e3e3da">
+    <g font-size="12.5" fill="#1a2b4a">
+      <rect x="18" y="60" width="150" height="230" rx="6" fill="#f6f6f1" stroke="#c9c9bd"/>
+      <text x="93" y="48" text-anchor="middle" font-weight="600">usbcore</text>
+      <rect x="34" y="80" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
+      <text x="93" y="98" text-anchor="middle">usb_submit_urb</text>
+      <text x="93" y="113" text-anchor="middle" font-size="11">/ usb_kill_urb</text>
+      <rect x="34" y="150" width="118" height="42" fill="#fff" stroke="#a5a596" rx="4"/>
+      <text x="93" y="168" text-anchor="middle">urb→complete 回调</text>
+      <text x="93" y="183" text-anchor="middle" font-size="11">giveback 侧屏障</text>
+      <text x="93" y="256" text-anchor="middle" font-size="11" fill="#707070">⑤ 26fbe9772b8c：</text>
+      <text x="93" y="271" text-anchor="middle" font-size="11" fill="#707070">kill 与 giveback 的</text>
+      <text x="93" y="286" text-anchor="middle" font-size="11" fill="#707070">双 CPU 赛跑（hcd.c/urb.c）</text>
+
+      <rect x="218" y="60" width="170" height="230" rx="6" fill="#eef3fa" stroke="#1a5fb4"/>
+      <text x="303" y="48" text-anchor="middle" font-weight="600">xhci-hcd 驱动</text>
+      <rect x="232" y="80" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+      <text x="303" y="98" text-anchor="middle">① xhci_urb_enqueue</text>
+      <text x="303" y="113" text-anchor="middle" font-size="11">ep_state 旗标检查</text>
+      <rect x="232" y="150" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+      <text x="303" y="168" text-anchor="middle">queue_trb 写环</text>
+      <text x="303" y="183" text-anchor="middle" font-size="11">+ wmb 后敲门铃</text>
+      <rect x="232" y="255" width="142" height="46" fill="#fff" stroke="#1a5fb4" rx="4"/>
+      <text x="303" y="273" text-anchor="middle">⑤⑥ 事件消费</text>
+      <text x="303" y="288" text-anchor="middle" font-size="11">process_ctrl_td 记账/收口</text>
+
+      <rect x="438" y="60" width="180" height="230" rx="6" fill="#f2f0fa" stroke="#6a4fc4"/>
+      <text x="528" y="48" text-anchor="middle" font-weight="600">共享主存：环</text>
+      <rect x="452" y="80" width="152" height="46" fill="#fff" stroke="#6a4fc4" rx="4"/>
+      <text x="528" y="98" text-anchor="middle">TRB 四字段写入</text>
+      <text x="528" y="113" text-anchor="middle" font-size="11">cycle 位（DW3）最后落</text>
+      <rect x="452" y="150" width="152" height="46" fill="#fff" stroke="#6a4fc4" rx="4"/>
+      <text x="528" y="168" text-anchor="middle">Set TR Dequeue</text>
+      <text x="528" y="183" text-anchor="middle" font-size="11">挪 dequeue＋报新 cycle</text>
+      <rect x="452" y="255" width="152" height="46" fill="#fff" stroke="#6a4fc4" rx="4"/>
+      <text x="528" y="273" text-anchor="middle">event ring</text>
+      <text x="528" y="288" text-anchor="middle" font-size="11">EV1 记账 / EV2 收口</text>
+
+      <rect x="668" y="60" width="190" height="230" rx="6" fill="#e9f7ee" stroke="#1a7f37"/>
+      <text x="763" y="48" text-anchor="middle" font-weight="600">xHC 硬件</text>
+      <rect x="682" y="80" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
+      <text x="763" y="98" text-anchor="middle">doorbell → 取指执行</text>
+      <text x="763" y="113" text-anchor="middle" font-size="11">cycle 匹配才取（§4.9.2）</text>
+      <rect x="682" y="150" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
+      <text x="763" y="168" text-anchor="middle">halt：EP Context DCS</text>
+      <text x="763" y="183" text-anchor="middle" font-size="11">抄本可能不更新（VL805）</text>
+      <text x="440" y="318" text-anchor="middle" font-size="11" fill="#707070">五枚补丁全是同一主题：一份记录同时被两方读写时，写入方与读取方对不上账的时刻</text>
+
+      <g stroke="#707070" stroke-width="1.6" fill="#707070">
+        <line x1="152" y1="100" x2="230" y2="100" marker-end="url(#ah10b)"/>
+        <line x1="374" y1="103" x2="450" y2="103" marker-end="url(#ah10b)"/>
+        <line x1="604" y1="103" x2="680" y2="103" marker-end="url(#ah10b)"/>
+        <line x1="763" y1="126" x2="763" y2="148" marker-end="url(#ah10b)"/>
+        <path d="M 763 196 L 763 278 L 605 278" fill="none" marker-end="url(#ah10b)"/>
+        <line x1="452" y1="278" x2="375" y2="278" stroke-dasharray="4 3" marker-end="url(#ah10b)"/>
+        <path d="M 232 278 L 186 278 L 186 171 L 156 171" fill="none" marker-end="url(#ah10b)"/>
+      </g>
+      <g font-weight="700">
+        <circle cx="241" cy="121" r="9" fill="#c62828"/><text x="241" y="125" text-anchor="middle" fill="#fff">3</text>
+        <circle cx="363" cy="162" r="9" fill="#c62828"/><text x="363" y="166" text-anchor="middle" fill="#fff">1</text>
+        <circle cx="463" cy="92" r="9" fill="#c62828"/><text x="463" y="96" text-anchor="middle" fill="#fff">1</text>
+        <circle cx="463" cy="162" r="9" fill="#c62828"/><text x="463" y="166" text-anchor="middle" fill="#fff">2</text>
+        <circle cx="463" cy="267" r="9" fill="#c62828"/><text x="463" y="271" text-anchor="middle" fill="#fff">4</text>
+        <circle cx="243" cy="267" r="9" fill="#c62828"/><text x="243" y="271" text-anchor="middle" fill="#fff">4</text>
+        <circle cx="243" cy="162" r="9" fill="#c62828"/><text x="243" y="166" text-anchor="middle" fill="#fff">5</text>
+      </g>
+    </g>
+    <defs><marker id="ah10b" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#707070"/></marker></defs>
+  </svg>
+  <figcaption style="font-size:.85rem;color:var(--muted)">图 2 · 补丁落点：①＝576667bad341（写环＋wmb，对应 0006/0007 发布合同）；②＝6328bdc988d2（Set TR Dequeue 的新 cycle 取环上 TRB，对应 0007 cycle 合同＋0008 停表后清理）；③＝f1ec7ae6c9f8（ep_state 置位/清位配对，对应 0008 十旗标）；④＝45ba2154d12f（EV1/EV2 记账旗标，对应 0009 两本账）；⑤＝26fbe9772b8c（usbcore 侧 kill/giveback 屏障，giveback 的下一站）。</figcaption>
+  </figure>
+  <p>五枚补丁横跨十一年、分属两个子系统，修的却是同一类事故：<strong>一份记录同时被两方读写时，写入方与读取方对"记录处于什么状态"对不上账</strong>——TRB 四字段与 cycle 位之间（①）、EP Context 抄本与环上真实 TRB 之间（②）、旗标置位与清位两条出口之间（③）、两颗事件的两笔记账之间（④）、两个 CPU 的写读次序之间（⑤）。这也是本课把五步法立为长驻功能的原因：机制图回答"它现在怎么工作"，补丁史回答"它为什么必须这样工作"。</p>
+
+  <h2>怎么自己找一枚对应课题的补丁（方法沉淀）</h2>
+  <p>后续每课的补丁解析章都从这套检索起手（全部本地可做，无需联网）：</p>
+  <table>
+    <tr><th>想要什么</th><th>命令（在 /Volumes/KernelSrc/linux）</th></tr>
+    <tr><td>按课题关键词捞修复</td><td><code>git log --oneline -i --grep='cycle' --grep='stall' -- drivers/usb/host/</code>（多个 --grep 是"或"）</td></tr>
+    <tr><td>看某函数的演化史</td><td><code>git log --format='%h %cs %s' -L 697,770:drivers/usb/host/xhci-ring.c</code></td></tr>
+    <tr><td>反查这行代码为什么存在</td><td><code>git log -S 'urb_length_set' --oneline -- drivers/usb/host/</code>（找出引入它的 commit）</td></tr>
+    <tr><td>读补丁全文与讨论</td><td>commit 尾部的 <code>Link: https://lore.kernel.org/r/...</code> 是邮件线程原文</td></tr>
+    <tr><td>判断修复的分量</td><td><code>Cc: stable</code> 标记＝值得回移植到长期维护分支的事故修复；<code>Fixes:</code> 标记指认被修的原始 commit</td></tr>
+  </table>
+
+  <h2>回到整体（实验课收官的地图钉）</h2>
+  <p>四课机制图＋本课五枚补丁，合成一张更完整的地图：0006 的零件有写入顺序合同（①）、0007 的 cycle 有权威记录位（②）、0008 的旗标有出口纪律（③）、0009 的记账有事实与数值之分（④）、六站旅程的尽头还有 usbcore 的余生（⑤）。每个"理所当然"都值得追问一次是哪枚补丁把它钉成理所当然的——这个追问动作本身，就是本课程从今天起的长驻功能。</p>
+  <p>有读不懂的补丁、想深挖的函数，随时把 commit hash 丢给 agent 一起走五步法。</p>
+
+  <div id="quiz"></div>
+
+  <footer>课 0010 · 2026-10-14（补丁解析实验课首发——功能立项：后续课程每课配一枚同主题社区补丁走五步法）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）＋补丁账本各自 @commit（块头自标，机检分两把尺：check_lesson_excerpts.py / check_lesson_patches.py）｜ 五枚补丁：576667bad341 · 6328bdc988d2 · f1ec7ae6c9f8 · 45ba2154d12f · 26fbe9772b8c ｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+</main>
+<script>
+/* quiz.js — teach workspace 可复用测验引擎。
+   用法：Quiz.render(mountEl, questions)
+   questions: [{ tag, prompt, options: [..4 个..], answer: 正确下标, explain: 解析 }]
+   即时反馈（对/错高亮+解析）→ 全部答完按 tag 出分 → 一键复制总结给 agent。 */
+(function () {
+  function render(mount, questions) {
+    var scores = {};
+    var wrong = [];
+    var answered = 0;
+
+    var head = document.createElement('p');
+    head.className = 'tag';
+    head.textContent = questions.length + ' 题 · 每题即时反馈 · 答完全部题目后生成可复制的测评总结';
+    mount.appendChild(head);
+
+    questions.forEach(function (q, qi) {
+      scores[q.tag] = scores[q.tag] || { right: 0, total: 0 };
+      scores[q.tag].total++;
+      var card = document.createElement('div');
+      card.className = 'quiz-q';
+      var h = document.createElement('h3');
+      h.textContent = 'Q' + (qi + 1) + ' · ' + q.prompt;
+      card.appendChild(h);
+      var t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = '领域：' + q.tag;
+      card.appendChild(t);
+      var ex = document.createElement('div');
+      ex.className = 'explain';
+      ex.textContent = q.explain;
+      var done = false;
+      q.options.forEach(function (opt, oi) {
+        var b = document.createElement('button');
+        b.className = 'opt';
+        b.textContent = String.fromCharCode(65 + oi) + '. ' + opt;
+        b.addEventListener('click', function () {
+          if (done) return;
+          done = true;
+          answered++;
+          var ok = oi === q.answer;
+          if (ok) scores[q.tag].right++; else wrong.push('Q' + (qi + 1));
+          Array.prototype.forEach.call(card.querySelectorAll('.opt'), function (el, i) {
+            el.disabled = true;
+            if (i === q.answer) el.classList.add('correct');
+            else if (i === oi) el.classList.add('wrong');
+          });
+          ex.classList.add('show');
+          if (answered === questions.length) finish();
+        });
+        card.appendChild(b);
+      });
+      card.appendChild(ex);
+      mount.appendChild(card);
+    });
+
+    function finish() {
+      var areas = Object.keys(scores).map(function (k) {
+        return k + ' ' + scores[k].right + '/' + scores[k].total;
+      });
+      var right = 0;
+      Object.keys(scores).forEach(function (k) { right += scores[k].right; });
+      var total = questions.length;
+      var pct = Math.round(100 * right / total);
+      var label = (document.title.match(/课\s*\d+/) || ['课程测评'])[0];
+      var text = label + '测评：总 ' + right + '/' + total + '（' + pct + '%）\n'
+        + areas.join(' | ') + '\n'
+        + '答错：' + (wrong.length ? wrong.join('、') : '无');
+      var panel = document.createElement('div');
+      panel.className = 'summary';
+      var html = '<b>测评完成</b><br>' + text.split('\n').slice(1)
+        .map(function (l) { return l.replace(/</g, '&lt;'); }).join('<br>');
+      panel.innerHTML = html;
+      panel.appendChild(document.createElement('br'));
+      var copy = document.createElement('button');
+      copy.className = 'btn';
+      copy.textContent = '复制总结发给老师';
+      copy.addEventListener('click', function () {
+        function ok() { copy.textContent = '已复制 ✓ 粘贴回会话即可'; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(ok);
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+          ok();
+        }
+      });
+      panel.appendChild(copy);
+      mount.appendChild(panel);
+      panel.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+  window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+Quiz.render(document.getElementById('quiz'), [
+  { tag: '零件·wmb', prompt: '第 1 章：修复前 queue_trb 的问题出在哪一段关系上？',
+    options: ['门铃寄存器写入与 TRB 首字段写入之间没有顺序保证', '同一颗 TRB 的前三字段写入与 cycle 位写入之间没有可见性顺序保证', '命令环与事件环的写入之间没有顺序保证', 'TRB 四个字段与 Link TRB 写入之间没有顺序保证'],
+    answer: 1, explain: 'wmb() 插在 field[3]（含 cycle 位）之前，管的是同一颗 TRB 内部：前三字段必须先于 cycle 位对 xHC 可见。门铃另有屏障，命令环/事件环与本题无关。' },
+  { tag: '零件·wmb', prompt: '第 1 章：wmb() 为什么恰好插在 field[3] 之前而不是函数末尾？',
+    options: ['cycle 位是发布位——xHC 见到匹配 cycle 就取指，它必须最后可见', 'DW3 地址最大，硬件要求按地址序到达', 'field 第三块是 trace 调试点，之前插桩便于定位', '编译器只会重排函数末尾的语句'],
+    answer: 0, explain: 'cycle 位是"发布位"：一旦可见，xHC 就可能取走整颗 TRB。所以前三字段必须先行可见，发布位压轴。' },
+  { tag: 'cycle·权威', prompt: '第 2 章：VL805 的硬件毛病是不更新哪份记录？',
+    options: ['TRB 自带的 cycle 位', '事件环表项的完成码', 'Endpoint Context 里的 DCS（Dequeue Cycle State）抄本', 'Doorbell 寄存器的悬挂位'],
+    answer: 2, explain: '实测日志显示环上 TRB 的 cycle 位正常翻转、EP Context 的 DCS 抄本长期不动。DCS 只是抄本，VL805 在 halt 时不更新它。' },
+  { tag: 'cycle·权威', prompt: '第 2 章：修复后 new_cycle 的取值来源是？',
+    options: ['td->end_trb 身上的 cycle 位——环上软件亲手写的已知好记录', 'hw_dequeue 的最低位——EP Context 的 DCS', 'ring->cycle_state 全局变量', '事件环里最近一颗事件的补齐值'],
+    answer: 0, explain: '修法＝别信抄本，信环上真实 TRB：td->end_trb 的 cycle 是软件入队时亲手写的，当下必然正确；回绕翻转从那里起算。（基线上函数后来又重写过，但"信环上 TRB"的判据不变。）' },
+  { tag: 'cycle·回绕', prompt: '第 2 章：走查循环里 new_cycle ^= 1 什么时候执行？',
+    options: ['每走过一颗普通 TRB 就翻一次', '找到 hw_dequeue 的那一刻翻一次', '每次跨段都翻一次，无论 Link TRB 是否翻转 cycle', '每跨过一颗会翻转 cycle 的 Link TRB（回绕点）就翻一次'],
+    answer: 3, explain: '0007 回绕点规则：只有带 cycle 翻转语义的 Link TRB 才翻新 cycle（link_trb_toggles_cycle 判断）；起点错则沿途翻得再准也全错——这正是抄本陈旧时整条计算作废的原因。' },
+  { tag: 'ep_state·配对', prompt: '第 3 章：EP_SOFT_CLEAR_TOGGLE 卡死的病灶是？',
+    options: ['置位之后系统里根本没有人负责清位', '清位语句只写在成功出口，cleanup 错误出口漏了', '清位执行得太早，clear_halt 还没完成就被清掉', '置位被并发执行了两次，一次清位抵消不掉'],
+    answer: 1, explain: '函数有成功与 cleanup 两个出口，修复前清位只挂在成功路径。队列非空时提前跳 cleanup，旗标从此常驻，入队总口见旗标即拒——错误路径也是路径。' },
+  { tag: 'ep_state·配对', prompt: '第 3 章：旗标卡死后，新 URB 在哪一行代码被拒绝？',
+    options: ['xhci_endpoint_reset 开头的置位处（:3388）', '事件环消费的 finish_td 里', '入队总口 xhci_urb_enqueue 的旗标检查（:1689-1692，即 while manually clearing toggle 拒绝日志）', 'giveback 回调里 urb->complete 之前'],
+    answer: 2, explain: '旗标是入队闸门：usb_hcd_urb_enqueue 路径上见 EP_SOFT_CLEAR_TOGGLE 即拒（基线 :1689-1692）。置位点/拒绝点/清位点三点连线才是完整生命周期。' },
+  { tag: '记账·判据', prompt: '第 4 章：EV2 收口时旧判据 actual_length != 0 错在哪？',
+    options: ['忘了跟 transfer_buffer_length 比较', '短包时事件到达顺序与它假设的相反', '把"记账结果是 0"与"还没记账"两种状态混为一谈', 'COMP_SUCCESS 事件根本不该更新 actual_length'],
+    answer: 2, explain: '短包短到 0 字节时，EV1 记下的账目值就是 0——与"没记账"在数值上不可区分，EV2 便把账覆盖成满额还吞掉 -EREMOTEIO。判据必须换成独立的事实记录。' },
+  { tag: '记账·分离', prompt: '第 4 章：修复的本质动作是？',
+    options: ['把 actual_length 扩成 64 位防溢出', '用事件环表项里的 transfer_len 替代软件记账', '0 字节传输直接跳过 Status 幕事件', '给 TD 加一比特 urb_length_set——记账事实（旗标）与账目值（数值）分离'],
+    answer: 3, explain: 'struct xhci_td 新增 bool urb_length_set：EV1 记账时置位，EV2 只问旗标不猜数值。一比特跑了十一年，连 STALL 分岔（:2369）都要先问它。' },
+  { tag: 'usbcore·屏障', prompt: '第 5 章：SB 模式为什么会让 usb_kill_urb 永久挂起？',
+    options: ['自旋锁没释放，等待者永远拿不到锁', '两 CPU 各自"先写自己的变量再读对方的变量"，无屏障时读可越过写——双方同时读到旧值：一方永睡、一方不叫醒', 'use_count 是 64 位，atomic 操作在 32 位机上撕裂', '中断在 tasklet 上下文被吞，wake_up 永远不执行'],
+    answer: 1, explain: '每个原子操作自身都正常，坏的是两个原子操作之间的次序：写自身变量的结果可能晚于读对方变量可见。修法＝两侧对称插 smp_mb__after_atomic() 全屏障，并把配对关系写进注释。' },
+  { tag: '方法·双账本', prompt: '本课立法的双账本代码块约定，哪条正确？',
+    options: ['带 @commit 的块对各自 commit 机检、裸块对基线机检——行号只对本账本成立，跨账本不可互比', '所有代码块都逐字对基线 62f4c998b297 机检，跨版本行号可以直接互比', 'diff 块是人工转写，允许与原文有出入', 'commit message 引文无需逐字，大意正确即可'],
+    answer: 0, explain: '本课全部代码块由 git 原文切片装配（assemble_lesson_blocks.py），机检分两把尺：check_lesson_excerpts.py 管裸块（基线），check_lesson_patches.py 管 @commit 块与 diff 块（各自账本）。' },
+]);
+</script>
+</body>
+</html>
