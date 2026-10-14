@@ -129,7 +129,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.10.2 Errors（p195-203）/ §4.8.3 Endpoint Context State（p162）/ §4.6.8-4.6.10（Reset/Stop Endpoint、Set TR Dequeue，p128/133/141）/ §6.4.5 Table 6-91 CC 码全表（p507）——解剖标本：M4.5 自研引擎 v0.3 仿真日志（九条事件全序实测）</p>
 
   <h2>整体定位（happy path 走完了，本课看真实标本与出错的命运）</h2>
-  <p>xHC 线三课攒齐了三张图：0006 的<strong>零件图</strong>（提单字段、槽/TD/段/环、切分语法、几何）、0007 的<strong>运转图</strong>（cycle 合同、接缝、四把钥匙）与 0009 的<strong>传输剧</strong>（六站旅程、三视角、两本账）——但都停在 happy path：事件全是 Success/Short Packet，端点从不出错。本课收官三件事：①用我们亲手实现的 <strong>M4.5 引擎标本</strong>把 set_address 全握手的九条事件逐帧跑一遍——数字全部出自实测日志，含短包双事件、事件环回绕与轮转；②把<strong>四种传输各自的错误路径</strong>拆成两张判决表（CC 码→errno→端点后果；分派与重试策略）；③拆开软件侧的第二台状态机 <strong>ep_state 十旗标</strong>，用五帧动画走完 STALL 从判决到恢复的软硬协同。下页的全景图仍是坐标：本课深钻的是④⑤两站的出错面，与⑥站回调延迟的微观来源。</p>
+  <p>xHC 线三课攒齐了三张图：0006 的<strong>零件图</strong>（提单字段、槽/TD/段/环、切分语法、几何）、0007 的<strong>运转图</strong>（cycle 合同、回绕点、四把钥匙）与 0009 的<strong>传输剧</strong>（六站旅程、三视角、两本账）——但都停在 happy path：事件全是 Success/Short Packet，端点从不出错。本课收官三件事：①用我们亲手实现的 <strong>M4.5 引擎标本</strong>把 set_address 全握手的九条事件逐帧跑一遍——数字全部出自实测日志，含短包双事件、事件环回绕与轮转；②把<strong>四种传输各自的错误路径</strong>拆成两张判决表（CC 码→errno→端点后果；分派与重试策略）；③拆开软件侧的第二台状态机 <strong>ep_state 十旗标</strong>，用五帧动画走完 STALL 从判决到恢复的软硬协同。下页的全景图仍是坐标：本课深钻的是④⑤两站的出错面，与⑥站回调延迟的微观来源。</p>
 
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -446,7 +446,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
     <tr><td><code>EP_CLEARING_TT</code></td><td>LS/FS 非 interrupt 传输经 TT 出错，finish_td 发起异步清 TT（:2186-2193）</td><td>xhci_clear_tt_buffer_complete 回调（xhci.c:5592）</td><td>禁敲铃——TT buffer 清净之前不给 TT 塞新 split（连回 0004/0005 课）</td></tr>
     <tr><td><code>EP_DROP_PENDING</code></td><td>断连/链路失活（:997/:1303）</td><td>xhci_reset_device 收尾批量清（:4094）</td><td>禁敲铃+不重启；取消的 TD 直接判 TD_CLEARED（:1067-1070）</td></tr>
   </table>
-  <p>这张表的公共出口正是 0009 六站图 ③站那句小字——门铃守卫（:560-568）：<strong>端点不在可运行态就不催硬件</strong>。敲铃是"有活干"的信号，而 halt/停机/清 TT/设指针期间的敲铃要么白敲、要么踩坏进行中的恢复流程：</p>
+  <p>这张表的公共出口正是 0009 六站图 ③站那句小字（:560-568）：<strong>端点不在可运行态就不催硬件</strong>。敲铃是"有活干"的信号，而 halt/停机/清 TT/设指针期间的敲铃要么白敲、要么踩坏进行中的恢复流程：</p>
 <pre>/* xhci-ring.c:560-568（xhci_ring_ep_doorbell :551） */
 	/* Don't ring the doorbell for this endpoint if there are pending
 	 * cancellations because we don't want to interrupt processing.
@@ -495,7 +495,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
           <div class="u"><b>TD 去向</b>挂入 cancelled_td_list（TD_HALTED，:1004-1007）</div>
           <div class="u"><b>urb</b>仍未给回</div>
         </div>
-        finish_td 判 xhci_halted_host_endpoint=true（:2267）；本例非 TT 设备跳过清 TT；xhci_handle_halted_endpoint：<strong>TD 转入取消链表</strong>、置两枚旗标、Reset EP 命令入命令环、敲命令铃（:982-1025）。此后该端点门铃被守卫挡住——排队的新 URB 静静等着。
+        finish_td 判 xhci_halted_host_endpoint=true（:2267）；本例非 TT 设备跳过清 TT；xhci_handle_halted_endpoint：<strong>TD 转入取消链表</strong>、置两枚旗标、Reset EP 命令入命令环、敲命令铃（:982-1025）。此后这个端点处于 halted 清理流程中，新敲的门铃都会被忽略——排队的新 URB 静静等着。
       </div>
     </div>
     <div class="frame">
@@ -541,7 +541,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   <div class="note">收拢：xHCI 里"端点的状态"有两份——<strong>硬件 EP ctx 五态（§4.8.3）是 xHC 自己的状态机，软件 ep_state 十旗标（xhci.h:672-685）是驱动的簿记</strong>；两者通过命令环上的 Reset/Stop/Set TR Dequeue 与事件环上的 Transfer/Command Completion 对话。urb_dequeue（:1849-1860）那张"三态让路、两态秒断"的分派表，就是这套簿记的消费端——读懂它，cancel/超时/halt 交织的并发路径就不再神秘。</div>
 
   <h2>回到整体（xHC 线三课收官的地图钉）</h2>
-  <p>xHC 线四课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、接缝、四把钥匙）→ <strong>0009 传输剧</strong>（六站旅程、事件通知链、两本账）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与 Setup TRB 内联的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 门铃守卫。0001 骨架图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
+  <p>xHC 线四课至此闭环：<strong>0006 零件</strong>（提单字段全解、槽/TD/段/环、语法、几何）→ <strong>0007 运转</strong>（cycle 合同、回绕点、四把钥匙）→ <strong>0009 传输剧</strong>（六站旅程、事件通知链、两本账）→ <strong>0008 实战与命运</strong>（本课：M4.5 标本九事件、错误路径全图、ep_state 十旗标）。把它钉回 hub 线的两张图：<strong>hub 线视角</strong>（0002 枚举时序、0003 双总线、0004/0005 TT）看到的主机行为，每一件都能在 xHC 侧找到机制——复位流程←端口命令+PORTSC（下一课的门口）、描述符请求←三段 TD 与 Setup TRB 内联的 8 字节、地址分配←BSR 两段式、设备插拔←PORT 事件、TT 出错后的沉默期←EP_CLEARING_TT 禁敲铃。0001 骨架图里的三种环，现在是"会动的环"；错误路径与 ep_state 补上后，它是"出错也知道会怎么走"的环。xHC 线下一课候选：<strong>端口与 rhub</strong>（usb2_rhub/usb3_rhub 双根 hub，衔接 0003 双总线课）或<strong>命令环深钻</strong>（CRCR/命令仲裁/停止恢复）。</p>
 
   <h2>检索练习 · 6 题</h2>
   <div id="quiz"></div>
@@ -551,7 +551,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   <ul>
     <li><strong>主源</strong>：xHCI 1.2（2019）§4.10.2 Errors（p195-203——.1 Stall、.3 USB Transaction Error、.7 Bus Error Counter、.8 等时端点错误处理）／§4.10.3.1 Ring Overrun and Underrun（p204）／§4.8.3 Endpoint Context State（p162）／§4.6.8-4.6.10（Reset Endpoint／Stop Endpoint／Set TR Dequeue Pointer，p128/133/141）／§6.4.5 Table 6-91（CC 码全表，p507）。内核：<code>drivers/usb/host/xhci-ring.c</code>（本课全部行号基线 62f4c998b297）。</li>
     <li>标本深挖：M4.5 合同（作者工作区在案）（九条全序判据）与 QEMU xHCI lab1 实证（作者工作区在案）（真实虚拟主控的 TRB dump 对照）；<a href="../notes/Linux-xHCI实现与规范差异分析.md">实现与规范差异分析</a>。</li>
-    <li>前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>（TD 语法/几何）＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>（cycle 合同/接缝/四钥匙）＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 三视角传输剧</a>（六站/事件通知链）。</li>
+    <li>前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a>（TD 语法/几何）＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>（cycle 合同/回绕点/四钥匙）＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 三视角传输剧</a>（六站/事件通知链）。</li>
     <li>下一课候选：端口与 rhub（usb2_rhub/usb3_rhub 双根 hub，衔接 0003）/ 命令环深钻（CRCR/命令仲裁）——<strong>直接问老师</strong>。</li>
   </ul>
 
@@ -751,15 +751,15 @@ Quiz.render(document.getElementById('quiz'), [
     answer: 1,
     explain: 'B 对（:2762-2773 置 skip；:2854-2863 跳帧循环）：xHC 承认"这个服务区间没轮到你"，驱动从 td_list 头开始整 TD 跳过（usbcore 已预置每帧 status=-EXDEV），流照常向前——错过的帧不补。等时端点永不 halt（§4.10.2.8），A/C 都违背等时语义；D 错误逐帧写进 iso_frame_desc 上报，urb 不丢。' },
   { tag: '错误路径',
-    prompt: 'bulk IN 传输报来 USB Transaction Error（xHC 硬件重试已穷尽、非 TT 设备、该端点此前无错）——process_bulk_intr_td 的第一反应是什么？',
+    prompt: 'bulk IN 传输报来 USB Transaction Error（xHC 硬件重试已穷尽、非 TT 设备、这个端点此前无错）——process_bulk_intr_td 的第一反应是什么？',
     options: ['软复位端点（Reset EP 带 TSP 保 toggle）原地重试同一 TD，最多再来 3 次', '立即硬复位端点并清 data toggle', '直接把 urb 以 -EPROTO 给回', '丢弃该 TD 跳到下一个'],
     answer: 0,
     explain: 'A 对（xhci-ring.c:2542-2551）：err_count 未超 MAX_SOFT_RETRY=3（xhci.h:1271）且非 quirk 禁用、非 TT_SLOT 设备 → td->status 清零＋EP_SOFT_RESET（Reset EP 带 TSP 位保住 data toggle/序列，:4492-4493）原地重试。软重试也穷尽才走 EP_HARD_RESET 硬清；B 是超限后的下一步；urb 给回发生在恢复链走完之后（钻点二第 4 帧），不是第一反应。' },
   { tag: 'ep_state',
-    prompt: 'LS/FS 设备经 TT 的传输出错、EP_CLEARING_TT 置位期间，为什么该端点不敲门铃？',
+    prompt: 'LS/FS 设备经 TT 的传输出错、EP_CLEARING_TT 置位期间，为什么这个端点不敲门铃？',
     options: ['TT buffer 未清净之前，不能给 TT 塞新的 split 事务', '省电：等 TT 空闲再唤醒 xHC', 'doorbell 寄存器此期间只读', '防止排队中的 URB 丢失'],
     answer: 0,
-    explain: 'A 对（门铃守卫 :560-568 五旗标之一；置位在 xhci_clear_hub_tt_buffer :2186-2193）：CLEAR_TT_BUFFER 控制传输在路上时催硬件，等于往还没清干净的 TT 缓冲里塞新 split——这正是 0005 课 TT buffer 残留故事的 xHC 侧防线。清完的回调只做两件事：清旗标、敲门铃（xhci.c:5592-5593），排队的 URB 这才被 xHC 看见。B/D 无此语义；C 门铃始终可写。' },
+    explain: 'A 对（禁敲铃 :560-568 五旗标之一；置位在 xhci_clear_hub_tt_buffer :2186-2193）：CLEAR_TT_BUFFER 控制传输在路上时催硬件，等于往还没清干净的 TT 缓冲里塞新 split——这正是 0005 课 TT buffer 残留故事的 xHC 侧防线。清完的回调只做两件事：清旗标、敲门铃（xhci.c:5592-5593），排队的 URB 这才被 xHC 看见。B/D 无此语义；C 门铃始终可写。' },
   { tag: 'ep_state',
     prompt: 'bulk 端点 STALL 后到该 urb 以 -EPIPE 给回，命令环上依次发生什么？',
     options: ['Stop Endpoint → Reset Endpoint → 给回', 'Configure Endpoint(D+A) → Reset Endpoint → 给回', 'Disable Slot → Enable Slot → 给回', 'Reset Endpoint → Set TR Dequeue Pointer → 给回'],

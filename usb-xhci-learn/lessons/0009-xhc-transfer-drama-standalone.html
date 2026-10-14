@@ -129,7 +129,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§6.4.2.1 Transfer Event TRB（Table 6-37，p477）/ §4.10.4 IOC Flag（p207）/ §4.17 Interrupters（p286，含 MSI-X）/ §6.5 ERST（p514）/ §4.11.2.2 控制三段 1:1（p211）/ §6.4.1.2（p467-468）——拆自 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> v5（2026-10-10），环机制（cycle 合同/Link 回绕/四钥匙）在 0007 讲，本课只讲「一件货怎么走完全程」</p>
 
   <h2>整体定位（环会转了，本课把一件货交给三个演员演完）</h2>
-  <p>上一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）把环的机械面钉死：cycle 合同、接缝、四把钥匙联动——那是<strong>环怎么转</strong>。本课换镜头看<strong>一件传输怎么走</strong>：一个 USB 键盘刚插上，usbcore 发出第一枚 urb（GET_DESCRIPTOR 读设备描述符），这桩传输从打包（TRB 化）、写环、上线、DMA 搬运到事件回执的全过程，由<strong>三方合演</strong>——软件（xhci-hcd 驱动）、xHC 控制器、设备固件。主角是读者 2026-10-10 的三个追问：控制传输 2 颗 TRB 的 chain 在哪设（答案反直觉：全程零 chain）、一个控制传输到底几件 TD（两本账）、Status 段为什么砍不得（三幕柜台）；外加一个本课新立的法：<strong>xHC 怎么通知驱动</strong>——事件是完税回执，不是取货单。2026-10-13 再收两问入第 6 章：ZLP 是什么（零长包的两职务）、一次中断两颗票谁先谁后（FIFO 消费与 process_ctrl_td 分岔）。六站全景图全程适用，但现在每站都要问一句：这一站谁在动？</p>
+  <p>上一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）把环的机械面钉死：cycle 合同、回绕点、四把钥匙联动——那是<strong>环怎么转</strong>。本课换镜头看<strong>一件传输怎么走</strong>：一个 USB 键盘刚插上，usbcore 发出第一枚 urb（GET_DESCRIPTOR 读设备描述符），这桩传输从打包（TRB 化）、写环、上线、DMA 搬运到事件回执的全过程，由<strong>三方合演</strong>——软件（xhci-hcd 驱动）、xHC 控制器、设备固件。主角是读者 2026-10-10 的三个追问：控制传输 2 颗 TRB 的 chain 在哪设（答案反直觉：全程零 chain）、一个控制传输到底几件 TD（两本账）、Status 段为什么砍不得（三幕柜台）；外加一个本课新立的法：<strong>xHC 怎么通知驱动</strong>——事件是完税回执，不是取货单。2026-10-13 再收两问入第 6 章：ZLP 是什么（零长包的两种用途）、一次中断两颗票谁先谁后（FIFO 消费与 process_ctrl_td 分岔）。六站全景图全程适用，但现在每站都要问一句：这一站谁在动？</p>
 
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景（三视角图例）" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -198,7 +198,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
           <circle cx="186" cy="225" r="9" fill="#a00000"/><text x="186" y="229" text-anchor="middle" fill="#fff">6</text>
         </g>
         <text x="440" y="322" text-anchor="middle" font-size="10.5">三视角图例：<tspan fill="#1a5fb4" font-weight="600">■蓝＝软件（xhci-hcd）</tspan>　<tspan fill="#6a4fc4" font-weight="600">■紫＝共享内存环</tspan>　<tspan fill="#1a7f37" font-weight="600">■绿＝xHC 控制器</tspan>　<tspan fill="#a00000" font-weight="600">■红＝事件回程</tspan>　<tspan fill="#c2410c" font-weight="600">■橙＝设备固件</tspan></text>
-        <text x="440" y="340" text-anchor="middle" font-size="10" fill="#707070">橙在这张图上没有格子——设备不进主机内存地图，只活在 ④「USB 线上事务」那一格的对端；本课动画把设备画成第三条泳道</text>
+        <text x="440" y="340" text-anchor="middle" font-size="10" fill="#707070">橙在这张图上没有格子——设备不进主机内存地图，只活在 ④「USB 线上事务」那一格的对端；本课动画把设备画成第三条时间轴</text>
       </g>
     </svg>
     <figcaption>六站旅程：<strong>①驱动入队 → ②TRB 化排环 → ③原子发布+敲 doorbell → ④xHC 取指执行（cycle 消费+线上事务）→ ⑤事件回程（event ring+完成码）→ ⑥回调 usbcore</strong>。四色分层读成三视角：蓝＝软件写、紫＝共享内存环、绿＝xHC 硬件、红＝回程；橙＝设备固件——线上对端，环外之人（环机制细节见 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a>）。</figcaption>
@@ -253,7 +253,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <rect x="538" y="36" width="302" height="112" rx="6" fill="#f2f0fa" stroke="#6a4fc4"/>
         <text x="689" y="58" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1a2b4a">共享内存：endpoint ring</text>
         <rect x="552" y="72" width="274" height="32" fill="#fff" stroke="#6a4fc4" rx="4"/>
-        <text x="689" y="92" text-anchor="middle" font-weight="600">段×N 由 Link TRB 缝合成圈</text>
+        <text x="689" y="92" text-anchor="middle" font-weight="600">段×N 由 Link TRB 拼接成环</text>
         <text x="689" y="118" text-anchor="middle" font-size="10.5" fill="#707070">每段 256 槽 ×16B ＝ 4KB（xhci.h:1260）</text>
         <text x="689" y="134" text-anchor="middle" font-size="10.5" fill="#707070">槽＝一颗 TRB，数据不进槽</text>
         <path d="M 700 148 L 700 164 L 620 164 L 620 186" fill="none" stroke="#6a4fc4" stroke-width="1.6" marker-end="url(#m41)"/>
@@ -270,19 +270,19 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <rect x="500" y="188" width="88" height="56" fill="#f4f4ef" stroke="#b9b9ac"/><text x="544" y="212" text-anchor="middle" fill="#909084">空</text>
         <rect x="592" y="188" width="88" height="56" fill="#f4f4ef" stroke="#b9b9ac"/><text x="636" y="212" text-anchor="middle" fill="#909084">空</text>
         <rect x="684" y="188" width="88" height="56" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
-        <text x="728" y="212" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6a4fc4">Link</text><text x="728" y="230" text-anchor="middle" font-size="10" fill="#707070">缝合到下段</text>
+        <text x="728" y="212" text-anchor="middle" font-size="11.5" font-weight="600" fill="#6a4fc4">Link</text><text x="728" y="230" text-anchor="middle" font-size="10" fill="#707070">拼接到下段</text>
         <line x1="46" y1="252" x2="306" y2="252" stroke="#1a5fb4" stroke-width="2"/>
         <text x="176" y="266" text-anchor="middle" font-size="10" fill="#1a5fb4">TD1［内核 xhci_td：整桩一件＝这几颗 TRB］</text>
         <text x="440" y="288" text-anchor="middle" font-size="10.5" fill="#707070">urb 与 TRB 从不直接见面——TD 居中翻译（0006 三层语法）；数据不进槽，唯一例外 IDT：控制传输的 8B setup 包直接内联在 Setup TRB 里</text>
         <text x="440" y="304" text-anchor="middle" font-size="10.5" fill="#707070">翻译比例：control＝1 urb → 1 TD → 固定 2/3 颗（:3814/:3821）；bulk＝1 urb → N TD → 64K 边界任意颗（130KB → 3 颗＝0007 联动动画布景）</text>
       </g>
     </svg>
-    <figcaption>五层包裹：<strong>urb（usbcore 的请求）→ TD（驱动侧对账单位）→ TRB（16B 传输请求块）→ segment（一排 256 槽＝4KB）→ ring（Link 缝合成圈）</strong>。每层粒度不同：urb 说"我要什么"，TD 说"这算一件"，TRB 说"这一趟搬多少字节"，段与环只提供内存几何。<strong>注意撞名（v5 挑明注保留）</strong>：这里的 TD 是<strong>内核账本</strong>的 <code>struct xhci_td</code>——按 URB 记件，整桩控制传输 2-3 颗 TRB 算一件；<strong>规范账本</strong>按阶段记 2-3 件 TD（§6.4.1.2）——同名不同粒度，第 5 章两本账挑明。本课正文裸写"TD"时默认指规范 TD，内核语境写全名。</figcaption>
+    <figcaption>五层包裹：<strong>urb（usbcore 的请求）→ TD（驱动侧对账单位）→ TRB（16B 传输请求块）→ segment（一排 256 槽＝4KB）→ ring（Link 拼接成环）</strong>。每层粒度不同：urb 说"我要什么"，TD 说"这算一件"，TRB 说"这一趟搬多少字节"，段与环只提供内存几何。<strong>注意撞名（v5 挑明注保留）</strong>：这里的 TD 是<strong>内核账本</strong>的 <code>struct xhci_td</code>——按 URB 记件，整桩控制传输 2-3 颗 TRB 算一件；<strong>规范账本</strong>按阶段记 2-3 件 TD（§6.4.1.2）——同名不同粒度，第 5 章两本账挑明。本课正文裸写"TD"时默认指规范 TD，内核语境写全名。</figcaption>
   </figure>
   <p>三层看一眼就够（细节在 0006）：urb 是 usbcore 发出的请求，TRB 是环上的 16 字节指令，段与环是内存几何。Data TRB 里<strong>不装数据，只写地址</strong>——64B 读缓冲的 DMA 地址写进 Buffer Pointer，这个"只写地址"的设计正是第 4 章 DMA 直写的伏笔：xHC 收到设备的数据包后，直接按这个地址把数据写进驱动内存。</p>
 
-  <h2>第 2 章 键盘枚举·一部动画（三泳道合演，读者实问）</h2>
-  <div class="note"><b>读者问三（2026-10-10 原话复述）</b>：「一次控制传输消耗 2 个 trb，但没看到代码中 chain bit 是如何设置的。」并附一个请求：以 USB 键盘枚举为例画<strong>一部</strong>动画——生产者、消费者两个角度分别怎么读写 cycle bit / Link TRB / TC / chain bit，以及 urb / trb / td / segment / ring 之间的关系。两件事一个答案：先补码（控制路径的 chain 立法真相），再上动画（软件 / xHC / 设备三条泳道同台）。</div>
+  <h2>第 2 章 键盘枚举·一部动画（三视角合演，读者实问）</h2>
+  <div class="note"><b>读者问三（2026-10-10 原话复述）</b>：「一次控制传输消耗 2 个 trb，但没看到代码中 chain bit 是如何设置的。」并附一个请求：以 USB 键盘枚举为例画<strong>一部</strong>动画——生产者、消费者两个角度分别怎么读写 cycle bit / Link TRB / TC / chain bit，以及 urb / trb / td / segment / ring 之间的关系。两件事一个答案：先补码（控制路径的 chain 立法真相），再上动画（软件 / xHC / 设备三视角同台）。</div>
   <p>先说结论，它可能反直觉：<strong>控制传输路径里没有一行设置 TRB_CHAIN 的代码——一个都没有，而且 Setup 段想设也没位可设</strong>。此前课里所有 chain 立法贴码（0007 联动动画与钻点三的 :3694-3698 / :3709-3714）全部来自 <code>queue_bulk_tx</code>——那是 bulk 的路。读者说的「2 个 TRB」先把行号钉死：</p>
 <pre>/* xhci-ring.c:3813-3821（xhci_queue_ctrl_tx :3775）——「2 颗」的出处 */
 	/* 1 TRB for setup, 1 for status */
@@ -347,8 +347,8 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <tr><td><b>control</b>（三段 TRB）</td><td>固定 2 颗（无数据段）/ 3 颗（带数据段）<br>（:3814 / :3821）</td><td><b>三段类型语法</b>：TRT 预告有无 Data 段；Status 类型即收口＋IOC 出票——Setup 段 bit4:1=RsvdZ，<b>无位可设</b></td><td>xhci_queue_ctrl_tx<br>（本节贴码）</td></tr>
     <tr><td><b>isoc</b>（Isoch TRB）</td><td>每服务间隔 1..N 颗</td><td>chain 位</td><td>xhci_queue_isoc_tx :4207</td></tr>
   </table>
-  <p><span class="diff">跨缝的两种命运</span> bulk TD 中途跨缝时，Link 的 chain 被改写成 1 当胶水（:277-280，0007 联动第 5 帧）；控制 TD 跨缝时走另一条路——inc_enq 读的是<strong>刚入环那颗 TRB 自己的 chain</strong>（:290），控制段的 chain=0 传进去，Link 的 chain 反而被<strong>清 0</strong>：续链由类型语法自己扛。</p>
-<pre>/* xhci-ring.c:299-306（inc_enq :285——控制的 more_trbs_coming=true 也触发立即跨缝） */
+  <p><span class="diff">跨过回绕点的两种命运</span> bulk TD 中途跨过回绕点时，Link 的 chain 被改写成 1 当胶水（:277-280，0007 联动第 5 帧）；控制 TD 跨过回绕点时走另一条路——inc_enq 读的是<strong>刚入环那颗 TRB 自己的 chain</strong>（:290），控制段的 chain=0 传进去，Link 的 chain 反而被<strong>清 0</strong>：续链由类型语法自己扛。</p>
+<pre>/* xhci-ring.c:299-306（inc_enq :285——控制的 more_trbs_coming=true 也触发立即跨过回绕点） */
 	/*
 	 * If we are in the middle of a TD or the caller plans to enqueue more
 	 * TDs as one transfer (eg. control), traverse any link TRBs right now.
@@ -357,7 +357,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 	 */
 	if (trb_is_link(ring-&gt;enqueue) &amp;&amp; (chain || more_trbs_coming))
 		inc_enq_past_link(xhci, ring, chain);</pre>
-  <p>有硬件扛不住这种「Setup/Data 被 Link 隔开」——ETRON 主控的 quirk 在 enqueue 前主动垫一颗 No-Op 把缝撑开（0007 钻点二提过它的存在，这里补上它的为什么）：</p>
+  <p>有硬件扛不住这种「Setup/Data 被 Link 隔开」——ETRON 主控的 quirk 在 enqueue 前主动垫一颗 No-Op，让控制段避开回绕点（0007 钻点二提过它的存在，这里补上它的为什么）：</p>
 <pre>/* xhci-ring.c:3801-3805（queue_ctrl_tx 头部 quirk 注释） */
 		/*
 		 * If next available TRB is the Link TRB in the ring segment then
@@ -373,7 +373,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 	 */
 	start_trb = &amp;ep_ring-&gt;enqueue-&gt;generic;
 	start_cycle = ep_ring-&gt;cycle_state;</pre>
-<pre>/* xhci-ring.c:3441-3451（giveback_first_trb :3437——发布：wmb 后翻 cycle 再敲铃） */
+<pre>/* xhci-ring.c:3441-3451（giveback_first_trb :3437——发布：先 wmb、再翻 cycle、后敲铃） */
 	/*
 	 * Pass all the TRBs to the hardware at once and make sure this write
 	 * isn't reordered.
@@ -384,17 +384,17 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 	else
 		start_trb-&gt;field[3] &amp;= cpu_to_le32(~TRB_CYCLE);
 	xhci_ring_ep_doorbell(xhci, slot_id, ep_index, stream_id);</pre>
-  <p>动画布景：USB 键盘（FS 12Mbps）刚插上——hub 线（0002）的端口复位与速度判定已毕，usbcore 开始枚举。舞台＝EP0 控制端点环（示意 8 槽；真实每段 256 槽），开局两侧轮次=1，色板＝三视角图例同一套（蓝=软件 / 绿=xHC / 橙=设备 / 紫=环 / 红=回程；环上槽色：绿=有效 / 灰=空·旧轮 / 白=压着未发布 / 淡绿虚线✓=残影）。一部动画五帧，<strong>三条泳道同台</strong>——每帧标题标注当帧谁在动；钟序收官回放拆成独立第 3 章。本课两件 TD 刻意都落在本圈内（不跨缝）——Link/TC 的跨缝戏份在 0007 联动动画第 5/6 帧，不重复。要排的两件：①GET_DESCRIPTOR(设备描述符) 3 颗；②SET_CONFIGURATION 2 颗——读者问的「2 颗」就是第二件。设备泳道只画到规范级线上行为（收到什么令牌→回什么包），不下固件内部。</p>
+  <p>动画布景：USB 键盘（FS 12Mbps）刚插上——hub 线（0002）的端口复位与速度判定已毕，usbcore 开始枚举。舞台＝EP0 控制端点环（示意 8 槽；真实每段 256 槽），开局两侧轮次=1，色板＝三视角图例同一套（蓝=软件 / 绿=xHC / 橙=设备 / 紫=环 / 红=回程；环上槽色：绿=有效 / 灰=空·旧轮 / 白=压着未发布 / 淡绿虚线✓=残影）。一部动画五帧，<strong>三视角同台</strong>——每帧标题标注当帧谁在动；钟序收官回放拆成独立第 3 章。本课两件 TD 刻意都落在本圈内（不跨回绕点）——Link/TC 的回绕戏份在 0007 联动动画第 5/6 帧，不重复。要排的两件：①GET_DESCRIPTOR(设备描述符) 3 颗；②SET_CONFIGURATION 2 颗——读者问的「2 颗」就是第二件。设备侧只画到规范级线上行为（收到什么令牌→回什么包），不下固件内部。</p>
   <div class="player">
     <div class="frame">
-      <div class="ftitle"><span class="no">第 1 帧</span><span>布景——货还没贴：三泳道开场，urb 到门口</span></div>
+      <div class="ftitle"><span class="no">第 1 帧</span><span>布景——货还没贴：三视角开场，urb 到门口</span></div>
       <div class="fbody">
-      <svg viewBox="0 0 880 412" role="img" aria-label="三泳道开局：空环、urb 到门口、设备待命" style="width:100%">
+      <svg viewBox="0 0 880 412" role="img" aria-label="三视角开局：空环、urb 到门口、设备待命" style="width:100%">
       <g font-size="11">
-      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件泳道 · xhci-hcd</text>
-      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 泳道 · 主控硬件</text>
+      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件视角 · xhci-hcd</text>
+      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 视角 · 主控硬件</text>
       <text x="561" y="26" text-anchor="middle" font-size="9" fill="#707070">线上通道</text>
-      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备泳道 · 键盘固件</text>
+      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备视角 · 键盘固件</text>
       <rect x="40" y="34" width="225" height="168" rx="6" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/>
       <rect x="285" y="34" width="225" height="168" rx="6" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
       <rect x="518" y="34" width="86" height="168" fill="#f6f6f1" stroke="#c9c9bd" stroke-dasharray="3 3"/>
@@ -441,18 +441,18 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="382" y="370" width="106" height="36" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/><text x="435" y="392" text-anchor="middle" font-size="9.5" fill="#b0b0a4">空</text>
       </g>
     </svg>
-        <p><strong>本帧只看「货还没贴」</strong>：环空开局（"空"＝cyc 不匹配，两侧轮次=1，没有任何标志槽）。usbcore 的第一枚 urb 已到软件泳道门口：键盘刚插上，枚举第一步＝读设备描述符。xHC 泳道扫描停驻等门铃；设备泳道复位毕、EP0 待命。注意 xHC 泳道侧注——<strong>SET_ADDRESS 不走这颗环</strong>，xHCI 把它挪到了命令环（Address Device 命令，BSR=0，xHC 自己上线，§4.6.5），端点环上只看得到 GET_DESCRIPTOR / SET_CONFIGURATION 这类（0008 的 M4.5 标本会逐帧重演这一段）。</p>
+        <p><strong>本帧只看「货还没贴」</strong>：环空开局（"空"＝cyc 不匹配，两侧轮次=1，没有任何标志槽）。usbcore 的第一枚 urb 已到软件侧门口：键盘刚插上，枚举第一步＝读设备描述符。xHC 侧扫描停驻等门铃；设备侧复位毕、EP0 待命。注意 xHC 视角的侧注——<strong>SET_ADDRESS 不走这颗环</strong>，xHCI 把它挪到了命令环（Address Device 命令，BSR=0，xHC 自己上线，§4.6.5），端点环上只看得到 GET_DESCRIPTOR / SET_CONFIGURATION 这类（0008 的 M4.5 标本会逐帧重演这一段）。</p>
       </div>
     </div>
     <div class="frame">
-      <div class="ftitle"><span class="no">第 2 帧</span><span>软件泳道 · 写环——零 chain 的 TD1 落槽（xHC 看不见半成品）</span></div>
+      <div class="ftitle"><span class="no">第 2 帧</span><span>软件视角 · 写环——零 chain 的 TD1 落槽（xHC 看不见半成品）</span></div>
       <div class="fbody">
       <svg viewBox="0 0 880 412" role="img" aria-label="TD1 三颗落槽无 chain，xHC 与设备两侧静止" style="width:100%">
       <g font-size="11">
-      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件泳道 · xhci-hcd</text>
-      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 泳道 · 主控硬件</text>
+      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件视角 · xhci-hcd</text>
+      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 视角 · 主控硬件</text>
       <text x="561" y="26" text-anchor="middle" font-size="9" fill="#707070">线上通道</text>
-      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备泳道 · 键盘固件</text>
+      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备视角 · 键盘固件</text>
       <rect x="40" y="34" width="225" height="168" rx="6" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/>
       <rect x="285" y="34" width="225" height="168" rx="6" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
       <rect x="518" y="34" width="86" height="168" fill="#f6f6f1" stroke="#c9c9bd" stroke-dasharray="3 3"/>
@@ -507,19 +507,19 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="382" y="370" width="106" height="36" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/><text x="435" y="392" text-anchor="middle" font-size="9.5" fill="#b0b0a4">空</text>
       </g>
     </svg>
-        <p><strong>本帧只看环上三颗槽：整颗 TD 没有一个 chain=1</strong>。Setup 槽连 chain 位都不存在——DW3 bit4:1 是 RsvdZ（Table 6-26），规范没给它留位置；Data/Status 的 chain=0 原样。这不是漏设：bulk 的 Normal 流颗数任意，chain 是唯一分件立法；控制的件界写在<strong>类型语法</strong>里——Setup 的 TRT=IN（贴码 :3847-3855）就是「下一段是 Data IN」的预告。发布纪律与 bulk 完全同一套：首 TRB 反极性压着（:3844-3845——start_cycle=1 时什么都不写＝保持 0），trailing 现写现发（Status 直接 <code>| ep_ring->cycle_state</code>，:3915）；queue_trb 的 more_trbs_coming 参数 Setup/Data 传 true、Status 传 false（:3857/:3893/:3910）。xHC 泳道看得见环却取不走——cyc 不匹配是物理止步；设备泳道无戏份：这一幕发生在它完全看不见的共享内存里。</p>
+        <p><strong>本帧只看环上三颗槽：整颗 TD 没有一个 chain=1</strong>。Setup 槽连 chain 位都不存在——DW3 bit4:1 是 RsvdZ（Table 6-26），规范没给它留位置；Data/Status 的 chain=0 原样。这不是漏设：bulk 的 Normal 流颗数任意，chain 是唯一分件立法；控制的件界写在<strong>类型语法</strong>里——Setup 的 TRT=IN（贴码 :3847-3855）就是「下一段是 Data IN」的预告。发布纪律与 bulk 完全同一套：首 TRB 反极性压着（:3844-3845——start_cycle=1 时什么都不写＝保持 0），trailing 现写现发（Status 直接 <code>| ep_ring->cycle_state</code>，:3915）；queue_trb 的 more_trbs_coming 参数 Setup/Data 传 true、Status 传 false（:3857/:3893/:3910）。xHC 侧看得见环却取不走——cyc 不匹配是物理止步；设备侧无戏份：这一幕发生在它完全看不见的共享内存里。</p>
       </div>
     </div>
     <div class="frame">
-      <div class="ftitle"><span class="no">第 3 帧</span><span>xHC 泳道 · 发布与 Setup 幕——敲铃取件，类型带路，设备备货</span></div>
+      <div class="ftitle"><span class="no">第 3 帧</span><span>xHC 视角 · 发布与 Setup 幕——敲铃取件，类型带路，设备备货</span></div>
       <div class="fbody">
       <svg viewBox="0 0 880 412" role="img" aria-label="发布敲铃，xHC 取 Setup，SETUP 令牌上线，设备备货" style="width:100%">
       <defs><marker id="f3a" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#1a7f37"/></marker></defs>
       <g font-size="11">
-      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件泳道 · xhci-hcd</text>
-      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 泳道 · 主控硬件</text>
+      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件视角 · xhci-hcd</text>
+      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 视角 · 主控硬件</text>
       <text x="561" y="26" text-anchor="middle" font-size="9" fill="#707070">线上通道</text>
-      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备泳道 · 键盘固件</text>
+      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备视角 · 键盘固件</text>
       <rect x="40" y="34" width="225" height="168" rx="6" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/>
       <rect x="285" y="34" width="225" height="168" rx="6" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
       <rect x="518" y="34" width="86" height="168" fill="#f6f6f1" stroke="#c9c9bd" stroke-dasharray="3 3"/>
@@ -576,11 +576,11 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="382" y="370" width="106" height="36" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/><text x="435" y="392" text-anchor="middle" font-size="9.5" fill="#b0b0a4">空</text>
       </g>
     </svg>
-        <p><strong>本帧只看 xHC 被什么推着走</strong>：发布＝软件泳道 wmb 后翻首 TRB 的 cyc 0→1，门铃敲响。xHC 从 ▼ 顺序扫描——cyc 匹配进环，之后<strong>每一步都是类型在带路</strong>：Setup 类型→读 TRT=IN→知道下一颗是 Data 段。线上第一笔事务开演：<strong>SETUP 令牌＋8B 包体上线</strong>（包体就是 Setup 槽上 IDT 内联的那 8 字节：80 06 00 01 00 00 40 00）。设备泳道第一次出场——规范级行为只有两步：收令牌、按请求备货（18B 设备描述符待发）。软件泳道已交出议程，闲等回调。<strong>注意线上方向</strong>：令牌永远主机发——总线调度权在主机，设备永远不能先开口（第 5 章柜台图立法）。</p>
+        <p><strong>本帧只看 xHC 被什么推着走</strong>：发布＝软件侧先 wmb、再翻首 TRB 的 cyc 0→1，门铃敲响。xHC 从 ▼ 顺序扫描——cyc 匹配进环，之后<strong>每一步都是类型在带路</strong>：Setup 类型→读 TRT=IN→知道下一颗是 Data 段。线上第一笔事务开演：<strong>SETUP 令牌＋8B 包体上线</strong>（包体就是 Setup 槽上 IDT 内联的那 8 字节：80 06 00 01 00 00 40 00）。设备侧第一次出场——规范级行为只有两步：收令牌、按请求备货（18B 设备描述符待发）。软件侧已交出议程，闲等回调。<strong>注意线上方向</strong>：令牌永远主机发——总线调度权在主机，设备永远不能先开口（第 5 章柜台图立法）。</p>
       </div>
     </div>
     <div class="frame">
-      <div class="ftitle"><span class="no">第 4 帧</span><span>设备泳道 · Data 幕——设备是载荷生产者，xHC 收包即 DMA 直写</span></div>
+      <div class="ftitle"><span class="no">第 4 帧</span><span>设备视角 · Data 幕——设备是载荷生产者，xHC 收包即 DMA 直写</span></div>
       <div class="fbody">
       <svg viewBox="0 0 880 412" role="img" aria-label="Data 幕：IN 令牌、设备发 18B 短包、DMA 直写软件内存" style="width:100%">
       <defs>
@@ -589,10 +589,10 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <marker id="f4b" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#1a5fb4"/></marker>
       </defs>
       <g font-size="11">
-      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件泳道 · xhci-hcd</text>
-      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 泳道 · 主控硬件</text>
+      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件视角 · xhci-hcd</text>
+      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 视角 · 主控硬件</text>
       <text x="561" y="26" text-anchor="middle" font-size="9" fill="#707070">线上通道</text>
-      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备泳道 · 键盘固件</text>
+      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备视角 · 键盘固件</text>
       <rect x="40" y="34" width="225" height="168" rx="6" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/>
       <rect x="285" y="34" width="225" height="168" rx="6" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
       <rect x="518" y="34" width="86" height="168" fill="#f6f6f1" stroke="#c9c9bd" stroke-dasharray="3 3"/>
@@ -659,7 +659,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="382" y="370" width="106" height="36" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/><text x="435" y="392" text-anchor="middle" font-size="9.5" fill="#b0b0a4">空</text>
       </g>
     </svg>
-        <p><strong>本帧是全剧换手的一幕：Data 幕载荷生产者＝设备</strong>。线上三步：xHC 发 IN 令牌 → 设备回 18B 数据包（描述符只有 18B，64−18=46 残量——<strong>短包</strong>，ISP 即刻生效）→ xHC 校验 CRC、回 ACK。然后是最容易被忽略的一笔：<strong>xHC 把 18B 用 DMA 直写进 Data TRB 的 Buffer Pointer 所指内存</strong>——那个地址是软件泳道贴单时就写好的合同（帧 2 的「只写缓冲地址」）。看软件泳道的缓冲区盒：<strong>数据此刻已经在驱动内存里了，但通知还没发</strong>——ISP 短包事件 EV1 刚落事件环，中断还没拉，软件对这一切一无所知。这一拍的完整立法（事件=完税回执）是第 4 章的主角。设备发完悬在「等主机签收」——Status 幕之前，交易还不算成。</p>
+        <p><strong>本帧是全剧换手的一幕：Data 幕载荷生产者＝设备</strong>。线上三步：xHC 发 IN 令牌 → 设备回 18B 数据包（描述符只有 18B，64−18=46 残量——<strong>短包</strong>，ISP 即刻生效）→ xHC 校验 CRC、回 ACK。然后是最容易被忽略的一笔：<strong>xHC 把 18B 用 DMA 直写进 Data TRB 的 Buffer Pointer 所指内存</strong>——那个地址是软件侧贴单时就写好的合同（帧 2 的「只写缓冲地址」）。看软件侧的缓冲区盒：<strong>数据此刻已经在驱动内存里了，但通知还没发</strong>——ISP 短包事件 EV1 刚落事件环，中断还没拉，软件对这一切一无所知。这一拍的完整立法（事件=完税回执）是第 4 章的主角。设备发完悬在「等主机签收」——Status 幕之前，交易还不算成。</p>
       </div>
     </div>
     <div class="frame">
@@ -671,10 +671,10 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <marker id="f5o" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#c2410c"/></marker>
       </defs>
       <g font-size="11">
-      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件泳道 · xhci-hcd</text>
-      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 泳道 · 主控硬件</text>
+      <text x="152" y="26" text-anchor="middle" font-weight="600" fill="#1a5fb4">软件视角 · xhci-hcd</text>
+      <text x="397" y="26" text-anchor="middle" font-weight="600" fill="#1a7f37">xHC 视角 · 主控硬件</text>
       <text x="561" y="26" text-anchor="middle" font-size="9" fill="#707070">线上通道</text>
-      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备泳道 · 键盘固件</text>
+      <text x="726" y="26" text-anchor="middle" font-weight="600" fill="#c2410c">设备视角 · 键盘固件</text>
       <rect x="40" y="34" width="225" height="168" rx="6" fill="#eef3fa" stroke="#1a5fb4" stroke-width="1.4"/>
       <rect x="285" y="34" width="225" height="168" rx="6" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
       <rect x="518" y="34" width="86" height="168" fill="#f6f6f1" stroke="#c9c9bd" stroke-dasharray="3 3"/>
@@ -745,14 +745,14 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="382" y="370" width="106" height="36" fill="#fbfbf6" stroke="#d8d8cc" stroke-dasharray="3 3"/><text x="435" y="392" text-anchor="middle" font-size="9.5" fill="#b0b0a4">空</text>
       </g>
     </svg>
-        <p><strong>本帧把 Status 幕与回执链一次演完</strong>：xHC 取 Status TRB，线上 OUT 零长包＝主机的签收回执（数据段 IN ⇒ status 事务走 OUT，:3904-3909 的 DIR 翻转）；设备回 ACK——「这桩成了」只有这幕能说。收口后 xHC <strong>转身当事件生产者</strong>：写 EV2 Success（票面 TRB 回指 Status 槽＝对上 <code>td->end_trb</code> 票根，:3901 排队时记下的）→ 翻事件 cycle → 拉 MSI-X 中断（回程不敲铃：方向反转，中断拉软件）。软件泳道被打断：<code>xhci_irq</code> → 沿 ERST 消费 → EV1 记账 actual_length=18、EV2 对票根收口 → <code>xhci_giveback_urb_in_irq</code>（:807）把 urb 还给 usbcore。主环三颗变残影——消费不擦、覆写即回收。hub 线 0002 讲的「描述符长度以实际短包为准」，在事件环上是两颗事件两笔记账（短包双事件，0008 M4.5 标本同款）。<strong>「2 颗」的一生</strong>：下一桩 SET_CONFIGURATION（setup 包 00 09 01 00 00 00 00 00，wLength=0）＝Setup 的 TRT=0 预告「没有 Data 段」，xHC 读完 Setup <strong>直接跳 Status</strong> 收口——2 颗、零绳、件界照样清晰（num_trbs 注释原话「1 TRB for setup, 1 for status」，:3813-3814；同一台钟上的同构两拍版）。至此键盘 configured：之后每次按键＝interrupt IN 端点上 1 颗 TRB 的小 TD（单颗即一件，chain 也用不上——它真正的主场是 bulk 大件货，0007 联动动画）。</p>
+        <p><strong>本帧把 Status 幕与回执链一次演完</strong>：xHC 取 Status TRB，线上 OUT 零长包＝主机的签收回执（数据段 IN ⇒ status 事务走 OUT，:3904-3909 的 DIR 翻转）；设备回 ACK——「这桩成了」只有这幕能说。收口后 xHC <strong>转身当事件生产者</strong>：写 EV2 Success（票面 TRB 回指 Status 槽＝对上 <code>td->end_trb</code> 票根，:3901 排队时记下的）→ 翻事件 cycle → 拉 MSI-X 中断（回程不敲铃：方向反转，中断拉软件）。软件侧被打断：<code>xhci_irq</code> → 沿 ERST 消费 → EV1 记账 actual_length=18、EV2 对票根收口 → <code>xhci_giveback_urb_in_irq</code>（:807）把 urb 还给 usbcore。主环三颗变残影——消费不擦、覆写即回收。hub 线 0002 讲的「描述符长度以实际短包为准」，在事件环上是两颗事件两笔记账（短包双事件，0008 M4.5 标本同款）。<strong>「2 颗」的一生</strong>：下一桩 SET_CONFIGURATION（setup 包 00 09 01 00 00 00 00 00，wLength=0）＝Setup 的 TRT=0 预告「没有 Data 段」，xHC 读完 Setup <strong>直接跳 Status</strong> 收口——2 颗、零绳、件界照样清晰（num_trbs 注释原话「1 TRB for setup, 1 for status」，:3813-3814；同一台钟上的同构两拍版）。至此键盘 configured：之后每次按键＝interrupt IN 端点上 1 颗 TRB 的小 TD（单颗即一件，chain 也用不上——它真正的主场是 bulk 大件货，0007 联动动画）。</p>
       </div>
     </div>
   </div>
-  <div class="note">问三收拢：<strong>控制传输的件界写在类型语法里，不写在 chain 位里——Setup 段连这个位都没有（DW3 bit4:1=RsvdZ，Table 6-26）；TRT 预告段结构、Status 类型收口、IOC 出票</strong>；chain 的主场在 bulk/interrupt 的 Normal 流（与 isoc）。跨缝时 bulk 的 Link 被 chain=1 缝上、控制的 Link 反被清 0——续链由类型扛，ETRON 怕硬件扛不住才垫 No-Op。三泳道各演一遍同一份合同：<strong>软件写环（反极性压着 → wmb → giveback 翻 cycle → 门铃）↔ xHC 消费（cyc 校验 → 类型推进 → 上线演戏）↔ 设备听令（收令牌 → 备货/发货/签收）</strong>；到了事件环上，软件与 xHC 整套合同原样对调（xHC 写、软件读）。钟序证据在第 3 章。</div>
+  <div class="note">问三收拢：<strong>控制传输的件界写在类型语法里，不写在 chain 位里——Setup 段连这个位都没有（DW3 bit4:1=RsvdZ，Table 6-26）；TRT 预告段结构、Status 类型收口、IOC 出票</strong>；chain 的主场在 bulk/interrupt 的 Normal 流（与 isoc）。跨过回绕点时 bulk 的 Link 被 chain=1 续上、控制的 Link 反被清 0——续链由类型扛，ETRON 怕硬件扛不住才垫 No-Op。三视角各演一遍同一份合同：<strong>软件写环（反极性压着 → wmb → giveback 翻 cycle → 门铃）↔ xHC 消费（cyc 校验 → 类型推进 → 上线演戏）↔ 设备听令（收令牌 → 备货/发货/签收）</strong>；到了事件环上，软件与 xHC 整套合同原样对调（xHC 写、软件读）。钟序证据在第 3 章。</div>
 
   <h2>第 3 章 十二拍时钟序——三方各在哪一拍</h2>
-  <p>定格帧看不出的是<strong>先后</strong>。把 GET_DESCRIPTOR 从写环到还账的十二拍按同一口钟排开，三方泳道各占一列——每一拍都能回答「这一拍软件 / xHC / 设备各在干什么」：</p>
+  <p>定格帧看不出的是<strong>先后</strong>。把 GET_DESCRIPTOR 从写环到还账的十二拍按同一口钟排开，三方各占一列——每一拍都能回答「这一拍软件 / xHC / 设备各在干什么」：</p>
   <figure>
     <svg viewBox="0 0 880 620" role="img" aria-label="GET_DESCRIPTOR 十二拍三方钟序" style="width:100%">
       <defs>
@@ -881,7 +881,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p>三处看点：<strong>①写环三拍（T1–T3）只有首颗被反极性压着</strong>，Data/Status 的 cyc 现写现发（:3897/:3915），发布只是 T4 结尾一翻（:3917-3918）；<strong>②T7 是全剧最重要的一拍</strong>——设备发包→xHC 收包→DMA 直写软件内存缓冲区盒，三步走完<strong>数据就已到驱动内存</strong>，而此刻事件（T8）与中断（T10）都还没发生；<strong>③T8 起 xHC 转身①当事件环生产者</strong>、T11 起软件转身②当消费者，两次角色对调与两颗环的交错并行（EV1 落环与 Status 收口在同一口钟上交错），就是「同一份合同、两边各演一遍」的钟序证据。</p>
 
   <h2>第 4 章 Data 段谁生产·事件怎么通知（本课新立法）</h2>
-  <p>帧 4 与 T7 留下的问题：软件泳道拿到 18B 描述符，靠的不是自己去取——那<strong>通知链</strong>到底怎么走？先把事实链钉死（GET_DESCRIPTOR 控制读，三方分工）：</p>
+  <p>帧 4 与 T7 留下的问题：软件侧拿到 18B 描述符，靠的不是自己去取——那<strong>通知链</strong>到底怎么走？先把事实链钉死（GET_DESCRIPTOR 控制读，三方分工）：</p>
   <div class="flow">
     <div class="fnode"><b>① Data 段线上：设备＝载荷生产者，xHC＝搬运工</b>。xHC 发 IN 令牌 → 设备回数据包 → xHC 校验 CRC、回 ACK → <strong>xHC 把数据 DMA 直写进 Data Stage TRB 的 Buffer Pointer 所指内存</strong>（驱动建 TRB 时填好的 urb 缓冲区 DMA 地址）。驱动从头到尾不接触"包"——它只在合同里写了一个空内存地址。</div>
     <div class="farrow">↓</div>
@@ -1117,16 +1117,16 @@ static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir
   <p>反证：真只排两颗——xHC 控制序列停在半空（类型语法没等到 Status 收口），完成事件出不来，设备悬在 Data 幕尾；下一个 setup 能强行重开，但协议管那叫<strong>中止</strong>上一笔，不叫完成。旁证你已经见过（帧 1 侧注）：SET_ADDRESS 连 EP0 环都不上——走命令环的 Address Device 命令，xHC 自己在线上把三幕演完。<strong>同一个道理换个舞台：线上三幕逃不掉，议程写在哪个环上可以换</strong>。</p>
   <div class="note">问四问五收拢：<strong>TD 是两本账——规范按阶段记 2-3 件（Setup 恒单颗是法条、Data 在 Linux 恒单颗是选择），内核按 URB 记 1 件、票根指 Status；三幕是「问 → 答 → 签收」——令牌恒主机发、载荷生产者每幕换手两次，签收不是第三种数据，是「办结」动作本身，软件侧一切「完成」信号（IOC、事件、中断、回调）都记在签收那颗 TRB 名下</strong>。方向口诀：Status 恒与 Data 反向（:3904-3909 的 if/else 在翻的就是它）；零数据段控制写则 Status＝IN。</div>
 
-  <h2>第 6 章 ZLP 两职务·一次中断两颗票（读者实问）</h2>
+  <h2>第 6 章 ZLP 的两种用途·一次中断两颗票（读者实问）</h2>
   <div class="note"><b>读者问六（2026-10-13 原话复述）</b>：「ZLP是什么？」——帧 5 挂出「签收 ZLP」标签以来，第一次被追问这个词本身。</div>
   <p>先给字面：<strong>ZLP＝Zero-Length Packet，零长度包</strong>——一个真实存在的 USB 数据包：有令牌、有 DATA0/DATA1 的 PID、走完整的 CRC 与握手，只是数据载荷<strong>恰好 0 字节</strong>。它不是「没有发包」，而是「发了一个空包」——<strong>空本身就是信息</strong>。为什么「不发数据」也要发一个包？USB 事务的校验与确认（CRC、握手、数据翻转）全部挂在包上；零长包让「办结」也走完整的确认流程，两侧的数据翻转序列保持一致。</p>
-  <p>ZLP 在协议里有两个职务，一个本课天天在用，一个留给 bulk 主场：</p>
+  <p>ZLP 在协议里有两个用途，一个本课天天在用，一个留给 bulk 主场：</p>
   <table>
-    <tr><th>职务</th><th>场景</th><th>谁发 ZLP</th><th>买到什么</th></tr>
+    <tr><th>用途</th><th>场景</th><th>谁发 ZLP</th><th>买到什么</th></tr>
     <tr><td><b>① Status 幕的载荷</b><br>（帧 5「签收 ZLP」）</td><td>控制传输 Status 幕——长度规定为 0 的一次数据事务</td><td>数据段 IN（GET_DESCRIPTOR）→ Status 走 OUT，<b>主机</b>发 ZLP、设备 ACK；无数据段（SET_CONFIGURATION）→ Status 走 IN，<b>设备</b>发 ZLP＝「配置已生效」的唯一确认</td><td>「办结/签收」本身——xHC 侧 Status TRB 天然 TRB_LEN=0，按 DIR 演成线上零长包（:3904-3915）</td></tr>
     <tr><td><b>② 货完分隔符</b></td><td>bulk/interrupt 传输，总长恰为 wMaxPacketSize 的整数倍</td><td>发送方补发</td><td>USB 包内没有长度字段，收方按包长判「还有没有」：满包＝可能没完、短包＝肯定完了——恰好整除时收方仍在等，ZLP 补一句「恰好发完」（bulk OUT 的 URB_ZERO_PACKET 即此用途）</td></tr>
   </table>
-  <p>控制传输<strong>不需要</strong>职务②——Status 幕本身就是显式收尾，所以帧 4 的 18B 短包之后设备不必补 ZLP。也因此，两个边界信号别混：</p>
+  <p>控制传输<strong>不需要</strong>用途②——Status 幕本身就是显式收尾，所以帧 4 的 18B 短包之后设备不必补 ZLP。也因此，两个边界信号别混：</p>
   <table>
     <tr><th>边界信号</th><th>字面</th><th>语义</th><th>本课出场</th></tr>
     <tr><td><b>短包</b></td><td>数据字节数＜预告的 wLength（18＜64）</td><td>「提前给完了」——Data 段的中途边界</td><td>帧 4：触发 ISP 出票 EV1（CC=13）</td></tr>
@@ -1270,7 +1270,7 @@ static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xh
         <text x="734" y="304" text-anchor="middle" font-size="8.5" fill="#707070">length 覆盖成 64＝错账；</text>
         <text x="734" y="318" text-anchor="middle" font-size="8.5" fill="#707070">两道闸＝xHC 按完成序</text>
         <text x="734" y="332" text-anchor="middle" font-size="8.5" fill="#707070">写环＋驱动 FIFO 消费</text>
-        <text x="734" y="364" text-anchor="middle" font-size="8.5" fill="#707070">两笔记账是短包专属：满</text>
+        <text x="734" y="364" text-anchor="middle" font-size="8.5" fill="#707070">短包才有的两笔记账：满</text>
         <text x="734" y="378" text-anchor="middle" font-size="8.5" fill="#707070">64B 只有一颗 EV2，</text>
         <text x="734" y="392" text-anchor="middle" font-size="8.5" fill="#707070">:2391-2392 直接记 64</text>
         <text x="734" y="424" text-anchor="middle" font-size="8.5" fill="#707070">对表：帧 4/5 放大镜、</text>
@@ -1287,13 +1287,13 @@ static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xh
 	/* Only set interrupt on short packet for IN endpoints */
 	if (usb_urb_dir_in(urb))
 		field = TRB_ISP | TRB_TYPE(TRB_DATA);</pre>
-  <p><b>② 若没有短包</b>（设备恰好回满 64B）：EV1 不存在，一次中断只有 EV2 一颗；<code>process_ctrl_td</code> 走到 :2390-2392 时 urb_length_set 未置 → actual_length＝requested＝64。「两笔记账」是短包专属形态——0002「描述符长度以实际短包为准」在事件环上的体现（0008 的 M4.5 标本九事件里同款双票）。</p>
-  <p><b>③ 若顺序颠倒会怎样</b>：EV2 先处理时 urb_length_set 还没置，:2391-2392 会把 actual_length 记成 64——错账。结构上被两道闸杜绝：xHC 按完成顺序写环（Status 幕在线上本来就晚于 Data 幕）＋驱动单循环 FIFO 消费。:2378-2381 那段注释立的正是这条规矩（"so it won't be overwritten in the event for the last TRB"）。</p>
-  <p>两句如实的边界：两颗也可能<strong>分两次中断</strong>到达（EV1 独自先到）——流程完全同型，只是 while 循环分两趟跑；帧 5 的「一次中断两颗」是两幕间隔小于中断调制窗的常态演出。整条链在<strong>同一个 hardirq 上下文、持同一把 <code>xhci-&gt;lock</code></strong> 里跑完——<code>xhci_giveback_urb_in_irq</code> 名字里的 in_irq 由此而来；枚举路径上 usbcore 的完成回调只是同步唤醒等待它的 hub 内核线程。</p>
-  <div class="note">问六问七收拢：<strong>ZLP＝恰好 0 字节的正式数据包——控制传输里它是 Status 幕的载荷（数据段 IN ⇒ 主机 OUT 签收、无数据段 ⇒ 设备 IN 确认生效），bulk 里它是总长恰为 wMaxPacketSize 整数倍时的货完分隔符；短包是「比预告少」，两者是不同的边界信号</strong>。一次中断两颗票：<strong>先 EV1 后 EV2＝事件环 FIFO＋单循环顺序消费，分岔在 process_ctrl_td——EV1 记账不放行（urb_length_set＋actual_length=18），EV2 对票根收口（finish_td → 主环 dequeue 落票根＋1 → giveback）</strong>；两笔记账是短包专属（ISP 出票），满包只有一颗 IOC 收口票。</div>
+  <p><b>② 若没有短包</b>（设备恰好回满 64B）：EV1 不存在，一次中断只有 EV2 一颗；<code>process_ctrl_td</code> 走到 :2390-2392 时 urb_length_set 未置 → actual_length＝requested＝64。「两笔记账」只在短包出现——0002「描述符长度以实际短包为准」在事件环上的体现（0008 的 M4.5 标本九事件里同款双票）。</p>
+  <p><b>③ 若顺序颠倒会怎样</b>：EV2 先处理时 urb_length_set 还没置，:2391-2392 会把 actual_length 记成 64——错账。两道闸保证这个颠倒不会发生：xHC 按完成顺序写环（Status 幕在线上本来就晚于 Data 幕）＋驱动单循环 FIFO 消费。:2378-2381 那段注释立的正是这条规矩（"so it won't be overwritten in the event for the last TRB"）。</p>
+  <p>两点如实说明：两颗也可能<strong>分两次中断</strong>到达（EV1 独自先到）——流程完全同型，只是 while 循环分两趟跑；帧 5 的「一次中断两颗」是两幕间隔小于中断调节窗口（IMOD）的常见情形。整条链在<strong>同一个 hardirq 上下文、持同一把 <code>xhci-&gt;lock</code></strong> 里跑完——<code>xhci_giveback_urb_in_irq</code> 名字里的 in_irq 由此而来；枚举路径上 usbcore 的完成回调只是同步唤醒等待它的 hub 内核线程。</p>
+  <div class="note">问六问七收拢：<strong>ZLP＝恰好 0 字节的正式数据包——控制传输里它是 Status 幕的载荷（数据段 IN ⇒ 主机 OUT 签收、无数据段 ⇒ 设备 IN 确认生效），bulk 里它是总长恰为 wMaxPacketSize 整数倍时的货完分隔符；短包是「比预告少」，两者是不同的边界信号</strong>。一次中断两颗票：<strong>先 EV1 后 EV2＝事件环 FIFO＋单循环顺序消费，分岔在 process_ctrl_td——EV1 记账不放行（urb_length_set＋actual_length=18），EV2 对票根收口（finish_td → 主环 dequeue 落票根＋1 → giveback）</strong>；两笔记账只在短包出现（ISP 出票），满包只有一颗 IOC 收口票。</div>
 
   <h2>回到整体（happy path 的三方机理收官）</h2>
-  <p>本课把 0007 的环装上了货：六站全景＋五层包裹＋零 chain 立法＋键盘枚举三泳道动画＋十二拍钟序＋事件通知链＋两本账＋三幕柜台＋ZLP 两职务与两颗票消费循环——<strong>一件控制传输的 happy path 从此每一拍都有三方各自的解释</strong>：软件写环与对账、xHC 消费与搬运与出事件、设备应答与发货与签收。但到这里为止事件全是 Success/Short Packet，端点从不出错。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）看真实标本与出错的命运：用我们亲手实现的 M4.5 引擎把 set_address 全握手的<strong>九条事件逐帧跑给你看</strong>（数字全部实测，含短包双事件与环回绕轮转——正是本课帧 4/帧 5 两颗事件的标本级重演）；拆开<strong>错误路径全图</strong>（CC 判决表→四种传输各自的命运）；拆开<strong>ep_state 十旗标</strong>——STALL 到恢复的完整软硬协同时序。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的两段式 BSR、事件环上的九颗回执。xHC 线地图钉：0006 认零件 → 0007 环机制 → <strong>0009（本课）一场传输的三视角剧</strong> → 0008 实战与命运。</p>
+  <p>本课把 0007 的环装上了货：六站全景＋五层包裹＋零 chain 立法＋键盘枚举三视角动画＋十二拍钟序＋事件通知链＋两本账＋三幕柜台＋ZLP 两种用途与两颗票消费循环——<strong>一件控制传输的 happy path 从此每一拍都有三方各自的解释</strong>：软件写环与对账、xHC 消费与搬运与出事件、设备应答与发货与签收。但到这里为止事件全是 Success/Short Packet，端点从不出错。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）看真实标本与出错的命运：用我们亲手实现的 M4.5 引擎把 set_address 全握手的<strong>九条事件逐帧跑给你看</strong>（数字全部实测，含短包双事件与环回绕轮转——正是本课帧 4/帧 5 两颗事件的标本级重演）；拆开<strong>错误路径全图</strong>（CC 判决表→四种传输各自的命运）；拆开<strong>ep_state 十旗标</strong>——STALL 到恢复的完整软硬协同时序。hub 线视角的呼应：0002 课你看到的是"主机复位端口、设备拿到地址"；本课之后你知道那背后是 PORT 事件、命令环上的两段式 BSR、事件环上的九颗回执。xHC 线地图钉：0006 认零件 → 0007 环机制 → <strong>0009（本课）一场传输的三视角剧</strong> → 0008 实战与命运。</p>
 
   <h2>检索练习 · 13 题</h2>
   <div id="quiz"></div>
@@ -1306,7 +1306,7 @@ static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xh
     <li>想再挖：多中断器与事件路由（§4.17.1）、事件环满与 ERST_EHB（§4.9.4/§6.5）、MSI-X 向量表与中断合流——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0009 · 2026-10-13 v2（钻点六：读者问六/问七入课——ZLP 两职务立法＋短包/ZLP 边界信号对照、一次中断两颗票的 FIFO 消费循环与 process_ctrl_td 分岔，新贴码 7 块＋消费循环分岔图，quiz 11→13）｜ 2026-10-10 v1 自 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> v5 拆出：六站全景、钻点四（控制零 chain 立法＋键盘枚举动画）、钻点五（两本账＋三幕柜台）整体迁入并三视角化——动画帧 1-5 三泳道全重画、帧 6 十二拍拆为第 3 章三方钟序；新增第 4 章 Data 段生产者与事件通知链（完税回执立法，含新内核贴码与 spec 亲验）；环机制（cycle/Link/四钥匙/圈界件界）留在 0007）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
+  <footer>课 0009 · 2026-10-13 v2（钻点六：读者问六/问七入课——ZLP 两种用途立法＋短包/ZLP 边界信号对照、一次中断两颗票的 FIFO 消费循环与 process_ctrl_td 分岔，新贴码 7 块＋消费循环分岔图，quiz 11→13）｜ 2026-10-10 v1 自 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> v5 拆出：六站全景、钻点四（控制零 chain 立法＋键盘枚举动画）、钻点五（两本账＋三幕柜台）整体迁入并三视角化——动画帧 1-5 三视角时间轴全重画、帧 6 十二拍拆为第 3 章三方钟序；新增第 4 章 Data 段生产者与事件通知链（完税回执立法，含新内核贴码与 spec 亲验）；环机制（cycle/Link/四钥匙/圈界件界）留在 0007）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 骨架诊断</a></footer>
 
 </main>
 <script>
@@ -1493,9 +1493,9 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'C 对（第 2 章；§4.11.2.2：三段 TRB 与 USB 控制传输三阶段 1:1 映射，件界写在类型语法里）。A 错——控制 wLength 可达 64K（Table 6-28 长度合法域 1..64K），只是恰一颗装得下；B 错——queue_trb 只搬四个字段、无补设逻辑（:3251-3256）；D 错——xHC 逐颗判类型推进，同一环上可先后排多件（第 2 章帧 5：TD1 与 TD2 相邻）。' },
   { tag: '控制语法',
     prompt: '一颗控制 TD 的 Setup 与 Data 段恰好跨过 Link TRB——Linux 软件侧会把 Link 的 chain 写成什么、续链靠谁扛？',
-    options: ['写 1——与 bulk 跨缝同款胶水（inc_enq_past_link 头注释说的就是这种）', '写 1——但仅 xHCI 1.0 以上主控才这么写', '保持建环初值不动，xHC 停在缝前等软件先跨', '清 0——控制段 TRB 的 chain=0 传参给 inc_enq_past_link；续链由三段类型语法自己扛（ETRON 主控怕硬件扛不住，垫 No-Op 避缝）'],
+    options: ['写 1——与 bulk 跨过回绕点同款胶水（inc_enq_past_link 头注释说的就是这种）', '写 1——但仅 xHCI 1.0 以上主控才这么写', '保持建环初值不动，xHC 停在回绕点前等软件先跨', '清 0——控制段 TRB 的 chain=0 传参给 inc_enq_past_link；续链由三段类型语法自己扛（ETRON 主控怕硬件扛不住，垫 No-Op 避开回绕点）'],
     answer: 3,
-    explain: 'D 对（第 2 章跨缝注记）：inc_enq :290 读的是刚入环那颗 TRB 自己的 chain——控制段全程 0；:299-306 里 more_trbs_coming=true（Setup/Data 的 queue_trb 传 true）照样触发立即跨缝，但传进 inc_enq_past_link 的 chain=0 ⇒ Link 的 chain 被清 0（:250-251）。A 是 bulk 的行为——bulk 非尾 TRB chain=1，头注释里「meaning the chain bit is set」正指这种；B 无此版本分支；C 控制在 more_trbs_coming 下立即跨缝（注释原话 eg. control），不停等。' },
+    explain: 'D 对（第 2 章跨回绕点注记）：inc_enq :290 读的是刚入环那颗 TRB 自己的 chain——控制段全程 0；:299-306 里 more_trbs_coming=true（Setup/Data 的 queue_trb 传 true）照样触发立即跨过回绕点，但传进 inc_enq_past_link 的 chain=0 ⇒ Link 的 chain 被清 0（:250-251）。A 是 bulk 的行为——bulk 非尾 TRB chain=1，头注释里「meaning the chain bit is set」正指这种；B 无此版本分支；C 控制在 more_trbs_coming 下立即跨过回绕点（注释原话 eg. control），不停等。' },
   { tag: '枚举实弹',
     prompt: '键盘枚举的 SET_ADDRESS（usbcore 视角的第三步）为什么不占用 EP0 端点环上的 2 颗 TRB？',
     options: ['SET_ADDRESS 属于 bulk 传输，不走控制端点', '键盘固件通常不支持 SET_ADDRESS，由父 hub 代发', 'usbcore 直接写 xHC 寄存器完成，不经过任何环', 'xHCI 上 usbcore 调 hcd 的 address_device——xHC 收到命令环上的 Address Device 命令（BSR=0）后自己把 SET_ADDRESS 包上线；端点环上只见 GET_DESCRIPTOR/SET_CONFIGURATION 这类'],
@@ -1508,7 +1508,7 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'C 对（第 5 章；§6.4.1.2/§4.9.1 vs xhci-ring.c:3822-3829：prepare_transfer 整桩打包、恒取 td[0]，票根 end_trb 指 Status）。同名不同粒度：规范账本按阶段、内核账本按 URB。A/D 把场景巧合当定义——bulk 一个 TD 串几十颗是常态；B 方向记反。' },
   { tag: '两本账',
     prompt: '「一个 TRB 就是一个 TD」在哪里不成立？',
-    options: ['处处成立——规范定义就是一比一', '只在 isoc 传输不成立', '只在 TD 跨缝时不成立', 'Setup 恒单颗是法条（bit4:1＝RsvdZ 无位可设），但 Data 段规范允许多颗（S/G）、bulk 一个 TD 串几十颗更是常态——Linux 控制路径恒 2/3 颗只是选择'],
+    options: ['处处成立——规范定义就是一比一', '只在 isoc 传输不成立', '只在 TD 跨过回绕点时不成立', 'Setup 恒单颗是法条（bit4:1＝RsvdZ 无位可设），但 Data 段规范允许多颗（S/G）、bulk 一个 TD 串几十颗更是常态——Linux 控制路径恒 2/3 颗只是选择'],
     answer: 3,
     explain: 'D 对（第 5 章三层拆解）。Setup＝Table 6-26 法条恒单颗；Data＝§4.11.2.1 允许多颗、Linux 恒一颗（wLength≤64K 一颗装下，:3813-3821 注释自答）；Status＝常规 1 颗、配 Event Data 才 2 颗（Table 6-31）。A 与 bulk 主场直接冲突——chain 剪刀就是为「多颗一件」而生；B/C 张冠李戴。' },
   { tag: '三幕戏',
@@ -1545,7 +1545,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: '关于 ZLP（零长度包）的判读，哪句是对的？',
     options: ['ZLP 是没有 PID 也没有握手的"空事务"——双方靠不发任何东西完成收尾', 'ZLP 是一个真实的数据包：有令牌、有 DATA0/DATA1 PID、走完整 CRC 与握手，只是载荷恰好 0 字节——控制传输里它是 Status 幕的载荷（数据段 IN ⇒ 主机 OUT 签收、设备 ACK；无数据段 ⇒ 设备 IN 发 ZLP＝生效确认）；bulk 里它是总长恰为 wMaxPacketSize 整数倍时发送方补的"货完分隔符"', 'GET_DESCRIPTOR 里设备回的 18B 包是 ZLP——不到 64B 就算零长', '控制传输的 Data 段以短包结束后必须再补一个 ZLP，否则 Status 幕无法收口'],
     answer: 1,
-    explain: 'B 对（第 6 章）。ZLP＝恰好 0 字节的正式包，"空本身就是信息"；bulk 分隔符职务的根子是 USB 包内没有长度字段——满包＝可能没完、短包＝肯定完了，恰好整除时只能靠 ZLP 说"恰好发完"（URB_ZERO_PACKET）。A 错——校验/握手/数据翻转都挂在包上，ZLP 全程照走；C 错——18B 是短包（比预告少），ZLP 是恰好 0 字节，两个不同的边界信号；D 错——控制传输的 Status 幕本身就是显式收尾，不需要分隔符。' },
+    explain: 'B 对（第 6 章）。ZLP＝恰好 0 字节的正式包，"空本身就是信息"；bulk 分隔符用途的根子是 USB 包内没有长度字段——满包＝可能没完、短包＝肯定完了，恰好整除时只能靠 ZLP 说"恰好发完"（URB_ZERO_PACKET）。A 错——校验/握手/数据翻转都挂在包上，ZLP 全程照走；C 错——18B 是短包（比预告少），ZLP 是恰好 0 字节，两个不同的边界信号；D 错——控制传输的 Status 幕本身就是显式收尾，不需要分隔符。' },
   { tag: '两颗票',
     prompt: 'GET_DESCRIPTOR 以 Data 段短包收尾，一次中断带来两颗事件——EV1（短包票，回指 Data TRB）与 EV2（Success 票，回指 Status TRB）。驱动处理顺序与流程哪句对？',
     options: ['按环上槽位顺序逐颗处理（FIFO）：先 EV1——记账不放行（urb_length_set=true、actual_length=64−46=18，:2382-2388 return）；后 EV2——收口（finish_td → xhci_dequeue_td 主环 dequeue 落票根＋1 → giveback → usbcore 回调）。顺序由"xHC 按完成序写环＋驱动单循环消费"两道闸结构保证', '先 EV2 后 EV1——收口票要紧，驱动按要紧程度挑着处理', '两颗事件被分派到两个内核线程并行处理，互不阻塞', 'EV1 落环晚于 EV2——Status 幕在线上先于 Data 幕完成'],
