@@ -158,19 +158,19 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <polyline points="60,110 120,45 860,45" fill="none" stroke="#1a1a1a" stroke-width="2"/>
       <line x1="60" y1="58" x2="860" y2="58" stroke="#a00000" stroke-width="1" stroke-dasharray="5 4"/>
       <text x="850" y="72" font-size="12" fill="#a00000" text-anchor="end">4.01 V 阈值</text>
-      <text x="130" y="40" font-size="12" fill="#1a5fb4">标称 +5 V · 主机经 hub 下行口供电（§7.2）</text>
+      <text x="130" y="40" font-size="12" fill="#1a5fb4">标称 +5 V（§7.2）</text>
       <line x1="105" y1="58" x2="105" y2="285" stroke="#707070" stroke-width="1" stroke-dasharray="3 4" opacity="0.7"/>
       <text x="14" y="215" font-size="13" fill="#1a1a1a">D+</text>
       <polyline points="60,245 200,245 200,185 600,185 600,245 720,245 720,185 860,185" fill="none" stroke="#1a1a1a" stroke-width="2"/>
-      <text x="212" y="176" font-size="12" fill="#1a5fb4">3.3 V：设备侧 1.5 kΩ 上拉＝attach 声明（§7.1.5）</text>
+      <text x="306" y="176" font-size="12" fill="#1a5fb4">3.3 V：1.5 kΩ 上拉＝attach 声明</text>
       <circle cx="200" cy="215" r="3" fill="#a00000"/>
       <text x="207" y="238" font-size="11.5" fill="#a00000">上升 ≤2.5 µs，本尺度不可见</text>
-      <text x="70" y="262" font-size="11.5" fill="#1a5fb4">hub 侧 15 kΩ 下拉采样（Rpd，§7.1.5）</text>
+      <text x="70" y="262" font-size="11.5" fill="#1a5fb4">hub 侧 15 kΩ 下拉采样（Rpd）</text>
       <line x1="540" y1="150" x2="540" y2="285" stroke="#1a5fb4" stroke-width="1.2" stroke-dasharray="4 3"/>
       <text x="540" y="142" font-size="12.5" fill="#1a5fb4" text-anchor="middle">hub 上报连接变化 → 进入步骤 ②-④</text>
       <text x="660" y="322" font-size="12" fill="#707070" text-anchor="middle">复位后 TRSTRCY 10 ms 恢复，再走枚举（步骤⑥⑦）</text>
     </svg>
-    <figcaption>步骤① 一页看懂：供电方（主机→hub 下行口）拉 VBUS，受电方（设备）拉 D+ 声明 attach → hub 去抖 ≥100 ms → 上报端口变化 → 复位/枚举。数字对表 USB2 §7.1.5 / §7.1.7.3 Fig 7-29。</figcaption>
+    <figcaption>步骤① 一页看懂：供电方（主机→hub 下行口）拉 VBUS，受电方（设备）拉 D+ 声明 attach → hub 去抖 ≥100 ms → 上报端口变化 → 复位/枚举。数字核对 USB2 §7.1.5 / §7.1.7.3 Fig 7-29。</figcaption>
   </figure>
   <div class="step"><div class="stepnum">2</div><div><b>hub 中断管道上报</b>：hub 通过其中断端点报告端口位图，内核 <code>hub_irq</code> 收下位图存入 <code>event_bits</code>；连续 <strong>10 次</strong>传输错误则置 <code>hub-&gt;error</code> 转恢复路径。<span class="where">hub.c:776（:792 10 次阈值）</span></div></div>
   <div class="step"><div class="stepnum">3</div><div><b>工作队列处理</b>：所有 hub 共用一个 work 循环 <code>hub_event</code>，逐端口调 <code>port_event</code>（过流/_resume/连接变化分类处理）。<span class="where">hub.c:5887 → :5759（work 注册 :1976）</span></div></div>
@@ -227,7 +227,7 @@ hub_port_connect(hub, port1, portstatus, portchange);
 usb_lock_port(port_dev);</pre></div>
     </div>
   </div>
-  <div class="step"><div class="stepnum">5</div><div><b>去抖</b>：<code>hub_port_debounce</code> 每 <strong>25 ms</strong> 步进采样，连续稳定 <strong>≥100 ms</strong> 才认为接稳；总超时 <strong>2 s</strong> 放弃。对表规范 TATTDB ≥100 ms（数值一致）。<span class="where">hub.c:4709（宏 :138-140：STEP 25 / STABLE 100 / TIMEOUT 2000）</span></div></div>
+  <div class="step"><div class="stepnum">5</div><div><b>去抖</b>：<code>hub_port_debounce</code> 每 <strong>25 ms</strong> 步进采样，连续稳定 <strong>≥100 ms</strong> 才认为接稳；总超时 <strong>2 s</strong> 放弃。核对规范 TATTDB ≥100 ms（数值一致）。<span class="where">hub.c:4709（宏 :138-140：STEP 25 / STABLE 100 / TIMEOUT 2000）</span></div></div>
   <h3 style="margin:1.4rem 0 0">步骤 ⑤ 去抖循环 · 源码即状态机</h3>
   <div class="flow">
     <div class="fnode"><b>调用＋判断</b>：读端口状态；<b>判断</b>：无连接变化位 且 连接位与上次采样相同 → 稳定计数累加，否则清零并记住新状态
@@ -320,13 +320,13 @@ case USB_SPEED_FULL:            /* 8, 16, 32, or 64 */
   <div class="note"><strong>USB3 差异一行记</strong>：同一个 <code>hub_event</code> 循环；但连接由 HC 硬件自动建立（hub.c:5677 注释）、<code>port_event</code> 多处理 link state 与 warm reset、无 TT/split。延伸疑问"USB3.x 走到根端口为何又是 USB2 形态"见 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0003-dual-bus-root-port-standalone.html">课 0003</a>。</div>
 
   <h2>补 Q6 缺口：为什么是最多 5 级非根 hub</h2>
-  <p>你唯一答错的题。数字：<strong>含根层共 7 层，主机到设备路径最多 5 个非根 hub，compound device 占 2 层、禁接第 7 层，第 7 层只能接 function</strong>（§4.1.1）；地址空间 127（§3.3）。</p>
-  <p>这不是随意限制，而是<strong>每级都在花钱</strong>，5 级正好是预算花完的位置：</p>
+  <p>最常答错的一题。数字：<strong>含根层共 7 层，主机到设备路径最多 5 个非根 hub，compound device 占 2 层、禁接第 7 层，第 7 层只能接 function</strong>（§4.1.1）；地址空间 127（§3.3）。</p>
+  <p>这个上限来自逐级累积的时序开销，5 级正好把预算用完：</p>
   <ul>
     <li><strong>SYNC 逐级缩短</strong>：每级 hub 重发 SYNC 最多吃掉起始 4 bit，5 级后 SYNC 最短 12 bit——接收方按最坏 12 bit 设计锁定窗口（§7.1.10）。再来一级就没有余量了。</li>
     <li><strong>时延与抖动预算</strong>：FS 上行缆+hub 总时延 ≤70 ns（THDD1，§7.1.14.1）；每 hub 另加 ≤4 HS bit 抖动（§7.1.12）。级数直接吃帧时序余量。</li>
   </ul>
-  <p>记忆钩子：<strong>7 层塔、5 级梯、塔顶只住 function</strong>。compound device（带内置 hub 的设备）一来就占 2 层，所以它接不上塔顶。</p>
+  <p>便于记忆：<strong>含根层共 7 层，非根 hub 最多 5 级，第 7 层只能接功能设备</strong>。compound device（带内置 hub 的设备）一次占 2 层，因此接不到第 7 层。</p>
 
   <h2>检索练习 · 4 题</h2>
   <div id="quiz"></div>
@@ -446,7 +446,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: '内核认为端口"接稳"之前，要求连接状态连续稳定多久（去抖阈值）？',
     options: ['25 ms', '100 ms', '200 ms', '2000 ms'],
     answer: 1,
-    explain: 'B 对。hub_port_debounce（hub.c:4709）每 25 ms 步进采样，连续稳定 ≥100 ms 才算接稳（HUB_DEBOUNCE_STABLE，:140），对表规范 TATTDB ≥100 ms（§7.1.7.3 Fig 7-29）——此阈值实现与规范一致；但总超时 2000 ms 是实现自定，规范未定义。25 ms 是步进、200 ms 是低速复位初值，别混。' },
+    explain: 'B 对。hub_port_debounce（hub.c:4709）每 25 ms 步进采样，连续稳定 ≥100 ms 才算接稳（HUB_DEBOUNCE_STABLE，:140），核对规范 TATTDB ≥100 ms（§7.1.7.3 Fig 7-29）——此阈值实现与规范一致；但总超时 2000 ms 是实现自定，规范未定义。25 ms 是步进、200 ms 是低速复位初值，别混。' },
   { tag: '链路时序',
     prompt: '根 hub 端口复位的内核等待初值是多少？',
     options: ['10 ms', '50 ms', '60 ms', '200 ms'],
