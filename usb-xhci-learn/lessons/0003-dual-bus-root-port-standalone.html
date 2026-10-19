@@ -128,9 +128,9 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 
 
   <h2>整体定位（先挂图）</h2>
-  <p>来自 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">课 0002</a> 的疑问：USB3.x 明明有自己的总线形态（地图 <strong>①②③</strong> 层），怎么过了 xHC、到了根端口路径，软件看到的又是 USB2 那一套？答案分三层——物理、硬件、软件接口——最后回到地图收束。</p>
+  <p>来自 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">课 0002</a> 的疑问：USB3.x 明明有自己的总线形态（地图 <strong>①②③</strong> 层），怎么过了 xHC、到了根端口路径，软件看到的又是 USB2 那一套？答案分三层——物理、硬件、软件接口——最后回到地图汇总。</p>
 
-  <h2>一图收束</h2>
+  <h2>一图小结</h2>
   <div class="flow">
     <div class="fnode"><b>同一连接器，两套总线并存</b>：USB2 数据对（D+/D-）＋ SuperSpeed 收发对（SSTX/SSRX，Gen2x2 再翻倍）＋共享 VBUS。USB3.x 从未"替换掉"USB2 电气形态，而是把它包进了同一根线。</div>
     <div class="farrow">↓ 兼容性的物理基础</div>
@@ -150,7 +150,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <div class="note"><strong>动手验证（1 分钟）</strong>：在装了 xHCI 的机器上 <code>ls /sys/bus/usb/devices/</code>——根 hub 成对出现（如 usb1 与 usb2），分别挂在 USB2 总线与 SS 总线上；<code>lsusb -t</code> 能看到两代总线树。这就是"两套根 hub"的现场。</div>
 
   <h2>为什么规范要这样设计</h2>
-  <p>USB 3.x 在 <strong>③协议层以上（ch8 协议、ch9 设备框架）刻意沿用 USB2</strong>（课 0001 Q2/Q12 的"哪些层共享"接缝）。"描述符、标准请求、hub 模型一次编写、两代通用"是 USB3 对操作系统的兼容承诺；xHC 是这个承诺的主机侧落点——<strong>把新形态挡在硬件里，把旧形态留给软件</strong>。评审视角：凡 xHCI/usbcore 补丁里出现"USB3 特有状态位"，它一定对应某个被硬件吸收的链路层事件（PLS↔LTSSM 状态、WPR↔Warm Reset、PRC↔复位完成），对表时两边都要查。</p>
+  <p>USB 3.x 在 <strong>③协议层以上（ch8 协议、ch9 设备框架）刻意沿用 USB2</strong>（课 0001 Q2/Q12 的"哪些层共享"接缝）。"描述符、标准请求、hub 模型一次编写、两代通用"是 USB3 对操作系统的兼容承诺；xHC 是这个承诺的主机侧落点——<strong>把新形态挡在硬件里，把旧形态留给软件</strong>。评审视角：凡 xHCI/usbcore 补丁里出现"USB3 特有状态位"，它一定对应某个被硬件吸收的链路层事件（PLS↔LTSSM 状态、WPR↔Warm Reset、PRC↔复位完成），核对时两边都要查。</p>
 
   <h2>检索练习 · 3 题</h2>
   <div id="quiz"></div>
