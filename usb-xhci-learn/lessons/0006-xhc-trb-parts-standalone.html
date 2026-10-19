@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>课 0006 · 先认零件：提单 TRB、TD 与环的几何</title>
+<title>课 0006 · 先认零件：TRB、TD 与环的几何</title>
 <style>
 /* course.css — USB/xHCI teach workspace 共享样式表（每课必链） */
 :root {
@@ -123,13 +123,13 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 <body>
 <main>
   <div class="kicker">转线开篇 · LESSON 0006 · xHC 线第 1 课（hub 线 0002–0005 已收官）</div>
-  <h1>先认零件<br>提单 TRB → TD → 环——把 16 字节看透</h1>
+  <h1>先认零件<br>TRB → TD → 环——把 16 字节看透</h1>
   <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
 
-  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§6.4（TRB 字段立法，p465 起）/ §4.9.1 / §4.11 / §4.11.7——实测素材：M4.5 自研引擎 v0.3 仿真日志（setup 包逐字节）</p>
+  <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§6.4（TRB 字段定义，p465 起）/ §4.9.1 / §4.11 / §4.11.7——实测素材：M4.5 自研引擎 v0.3 仿真日志（setup 包逐字节）</p>
 
   <h2>整体定位（先挂图：hub 线看到的"主机"，本线开箱）</h2>
-  <p>hub 线五课里（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">0002</a>–<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005</a>），"主机"始终是一个黑盒：复位时序、描述符请求、TT split——我们一直站在<strong>设备与 hub 侧</strong>看主机的行为。本线把黑盒打开：<strong>usbcore 之下、xHC 之内</strong>，一次传输是怎么走完全程的。你在 0001 诊断里 xHCI 框架域 3/3 全对（三种环 / Doorbell / Table 6-90）——框架已成体系，xHC 线钻的正是<strong>框架之上的动态细节</strong>。本线分四课走：<strong>0006（本课）先认零件</strong>——提单 TRB 的每个字段、槽/TD/段/环的组织、切分语法与环的几何；<strong>0007 环的运转</strong>——cycle 合同、回绕点、四把钥匙联动；<strong>0009 一场传输的三视角剧</strong>——六站旅程与事件通知链；<strong>0008 旅程实战与命运</strong>——M4.5 真实标本九事件、错误路径全图、ep_state 十旗标。下面这张全景图三课共用：本课只开②站的箱子（"TRB 化排环"——零件都在那只箱子里）。</p>
+  <p>hub 线五课里（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0002-hub-attach-chain-standalone.html">0002</a>–<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005</a>），"主机"始终是一个黑盒：复位时序、描述符请求、TT split——我们一直站在<strong>设备与 hub 侧</strong>看主机的行为。本线把黑盒打开：<strong>usbcore 之下、xHC 之内</strong>，一次传输是怎么走完全程的。你在 0001 诊断里 xHCI 框架域 3/3 全对（三种环 / Doorbell / Table 6-90）——框架已成体系，xHC 线钻的正是<strong>框架之上的动态细节</strong>。本线分四课走：<strong>0006（本课）先认零件</strong>——TRB 的每个字段、槽/TD/段/环的组织、切分语法与环的几何；<strong>0007 环的运转</strong>——cycle 合同、回绕点、四个控制位联动；<strong>0009 一场传输的三视角剧</strong>——六站旅程与事件通知链；<strong>0008 旅程实战与命运</strong>——M4.5 真实标本九事件、错误路径全图、ep_state 十个状态位。下面这张全景图三课共用：本课只开②站的箱子（"TRB 化排环"——零件都在那只箱子里）。</p>
 
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -202,28 +202,23 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <figcaption>六站旅程：<strong>①驱动入队 → ②TRB 化排环 → ③原子发布+敲 doorbell → ④xHC 取指执行（cycle 消费+线上事务）→ ⑤事件回程（event ring+完成码）→ ⑥回调 usbcore</strong>。蓝=软件写，紫=共享内存环，绿=xHC 硬件，红=回程。</figcaption>
   </figure>
 
-  <h2>提单是什么 · 先讲货运，再讲 TRB</h2>
-  <p>TRB 全称 Transfer Request Block，中文通行译名<strong>传输请求块</strong>（本课行文沿用缩写 TRB）——16 字节一颗，环上的基本构件。本课另把它叫"提单"——这个词的来路要先讲清。<strong>提单</strong>（bill of lading）是海运沿用几百年的单据：托运人（货主）把货交给承运人（船公司）时，由承运方签发，单上写明——托运人是谁、<strong>收货人</strong>是谁、货物名称与<strong>件数重量</strong>、装哪条船哪个航次、货存在<strong>哪个仓位</strong>，以及最关键的一条法律属性：<strong>凭单提货</strong>——收货人不进堆场翻找，只认单交货。对工程视角来说，提单的要点只有一个：<strong>单上不装货</strong>。货在舱里，单是"关于货的描述与指令"；承运人照单运输、照单交付、照单通知。xHCI 的世界几乎逐条对得上：</p>
+  <h2>TRB 是什么 · 16 字节里装了哪些信息</h2>
+  <p>TRB 全称 Transfer Request Block，中文通行译名<strong>传输请求块</strong>（本课行文沿用缩写 TRB）——16 字节一颗，是环上可被硬件直接读取的最小指令单位。它的设计要点只有一条：<strong>槽里放的是描述，不是数据</strong>。搬什么、搬到哪、搬多少，全部写成字段；真正的字节留在 DMA 缓冲区里，由 xHC 按字段里的地址去取。xHCI 把这套分工摊在 DW0-DW3 四个 32 位字上：</p>
   <table>
-    <tr><th>货运世界</th><th>xHCI 世界</th><th>落在 TRB 哪个字段</th></tr>
-    <tr><td>托运人（写单的人）</td><td>usbcore / xhci-hcd 驱动（软件生产者）</td><td>——（整个 DW0-3 都是软件写的）</td></tr>
-    <tr><td>承运人（照单干活）</td><td>xHC 主机控制器（硬件消费者）</td><td>——（整个 DW0-3 都归 xHC 读）</td></tr>
-    <tr><td>收货人 / 目的港</td><td>目标端点（单排在哪条环上就运给谁）</td><td>DW3 位域（EP/Slot 随类型出现）</td></tr>
-    <tr><td><strong>货</strong></td><td><strong>DMA 缓冲区里的数据</strong>（urb 指着的那段字节）</td><td>——（货永远不进槽，见下节 IDT 例外）</td></tr>
-    <tr><td>提单（16 字节一张）</td><td><strong>TRB</strong>（§4.11.1：16B＝4 个 32 位字）</td><td>整颗</td></tr>
-    <tr><td>仓位栏："货存在哪"</td><td>数据缓冲区的 64 位 DMA 地址</td><td><strong>DW0-1</strong>（下节详解）</td></tr>
-    <tr><td>件数 / 重量："有多少"</td><td>搬运字节数＋整件还剩几包</td><td><strong>DW2</strong>（Length＋TD Size）</td></tr>
-    <tr><td>到货通知方式</td><td>事件＋中断（完成/短包时）</td><td>DW2 高位（中断器）＋DW3 的 IOC/ISP 位</td></tr>
-    <tr><td>单据生效的签章</td><td>所有权——轮次对上才算数</td><td>DW3 bit0（cycle，0007 的主角）</td></tr>
-    <tr><td>拼箱标记（几票捆一件）</td><td>几颗 TRB 捆成一个 TD</td><td>DW3 bit4（chain）</td></tr>
-    <tr><td>固定航班的舱位表</td><td>环（ring）——槽位固定、循环复用</td><td>——（环是单据的容器，专题二）</td></tr>
+    <tr><th>要表达的信息</th><th>TRB 里的位置</th><th>说明</th></tr>
+    <tr><td>数据在哪（缓冲区起始地址）</td><td><strong>DW0-1</strong></td><td>64 位 DMA 地址，由软件填写；Setup TRB 例外，见下节 IDT</td></tr>
+    <tr><td>搬多少</td><td><strong>DW2</strong> bit16-0（Transfer Length）</td><td>单颗 ≤64K；bit21-17 的 TD Size 记录本 TD 剩余包数</td></tr>
+    <tr><td>完成后通知谁</td><td><strong>DW2</strong> bit31-22（Interrupter Target）＋DW3 的 IOC/ISP</td><td>事件路由到哪个中断器、什么条件下产生事件</td></tr>
+    <tr><td>这颗 TRB 此刻归谁</td><td><strong>DW3</strong> bit0（cycle）</td><td>轮次匹配即归 xHC，是 0007 全课的主线</td></tr>
+    <tr><td>与相邻 TRB 是否同属一次传输</td><td><strong>DW3</strong> bit4（chain）</td><td>非尾颗置 1、尾颗清 0，TD 的边界就写在尾颗上</td></tr>
+    <tr><td>这是什么种类的 TRB</td><td><strong>DW3</strong> bit15-10（TRB Type）</td><td>Normal / Setup / Data / Status / Link / Event…</td></tr>
   </table>
-  <p>三个<strong>不像</strong>，防止过度类比：① 方向反了——现实提单由承运人签发、托运人持有；TRB 由<strong>托运人（软件）写、承运人（xHC）读</strong>，"生效签章"（cycle 位）握在生产者手里。② 现实提单是物权凭证、可背书转让、长期存档；TRB 是主存里的一次性消费品——消费后成"残影"，下一圈被直接覆写，谁也不留底（0007 第 1 章的看点）。③ 现实提单描述货、不装货；TRB 有一个精心设计的例外——<strong>货小到 8 字节以内时，直接把货抄在单上</strong>（IDT 立即数据，恰是下一节的入口）。比喻用到"单上不装货、只写货的描述与指令"这一层为止。</p>
+  <p>有两处容易想当然，先点明。第一，<strong>数据永远不进槽</strong>：即便搬 64KB，槽里也只有地址与长度；唯一例外是控制传输的 8 字节 setup 包，用 IDT 位把值直接内联进 DW0-1（下一节展开）。第二，<strong>TRB 是一次性的</strong>：xHC 消费完既不擦除也不回收，槽里的旧字段要等下一圈被覆盖——旧值凭什么不会被误当成本圈的新指令？靠 cycle 位的轮次比对（0007 第 1 章）。表里"归谁"那一行之所以单列，原因也在这里。</p>
 
   <h2>把 16 字节看透 · DW0/DW1 的四种身份（DW2/DW3 一并收齐）</h2>
-  <p>一颗 TRB ＝ 16 字节 ＝ 4 个 32 位字（§4.11.1）。§6.4（p465 起："The Transfer Request Block is the basic building block"）把它立法成三段：<strong>DW0＋DW1 合成一个 64 位"参数字段"</strong>、<strong>DW2 状态字</strong>、<strong>DW3 控制字</strong>。xHCI 的一个关键设计随即登场：<strong>参数字段的含义随 TRB 类型改变</strong>——同一对 DW0/DW1，四种身份。顺带把 §4.11.1.1（p208-209）的分工立法记下：传输/命令 TRB 由<strong>软件</strong>清零后填写（软件生产）；事件 TRB 由 <strong>xHC</strong> 填写（"the consumer is system software and the producer is the xHC"）。</p>
-  <p><strong>身份一 · Normal/Data TRB——64 位数据缓冲指针</strong>（Table 6-20，p466："Offset 00h and 04h – Normal TRB Field Definitions"）。"货在哪"：主存里那段数据的起始 DMA 地址，DW0 低 32 位、DW1 高 32 位。两条硬约束（专题一的 64K 切分法即源于此）：单颗 ≤64K（TRB_MAX_BUFF_SIZE，xhci.h:1266-1267）、缓冲段<strong>不得跨 64K 边界</strong>（TRB_BUFF_LEN_UP_TO_BOUNDARY，:1269-1270）。</p>
-  <p><strong>身份二 · Setup Stage TRB——8 字节 setup 包本体</strong>（§6.4.1.2.1，Table 6-23/6-24，p468）。控制传输的"货"恰好只有 8 字节——与其写个指针让 xHC 再跑一趟主存，不如<strong>把货直接抄在单上</strong>：IDT 位（Immediate Data，DW3 bit6）声明"指针字段装的是立即数据"，上限恰 8 字节（TRB_IDT_MAX_SIZE，xhci.h:1059）。这就是提单比喻的例外条款。驱动怎么拼这两个字？内核的拼装现场（IDT 先打在控制字上，再逐字段压进 field1/field2）：</p>
+  <p>一颗 TRB ＝ 16 字节 ＝ 4 个 32 位字（§4.11.1）。§6.4（p465 起："The Transfer Request Block is the basic building block"）把它约定成三段：<strong>DW0＋DW1 合成一个 64 位"参数字段"</strong>、<strong>DW2 状态字</strong>、<strong>DW3 控制字</strong>。xHCI 的一个关键设计随即登场：<strong>参数字段的含义随 TRB 类型改变</strong>——同一对 DW0/DW1，四种身份。顺带把 §4.11.1.1（p208-209）的分工约定记下：传输/命令 TRB 由<strong>软件</strong>清零后填写（软件生产）；事件 TRB 由 <strong>xHC</strong> 填写（"the consumer is system software and the producer is the xHC"）。</p>
+  <p><strong>身份一 · Normal/Data TRB——64 位数据缓冲指针</strong>（Table 6-20，p466："Offset 00h and 04h – Normal TRB Field Definitions"）。"数据在哪"：主存里那段数据的起始 DMA 地址，DW0 低 32 位、DW1 高 32 位。两条硬约束（专题一的 64K 切分法即源于此）：单颗 ≤64K（TRB_MAX_BUFF_SIZE，xhci.h:1266-1267）、缓冲段<strong>不得跨 64K 边界</strong>（TRB_BUFF_LEN_UP_TO_BOUNDARY，:1269-1270）。</p>
+  <p><strong>身份二 · Setup Stage TRB——8 字节 setup 包本体</strong>（§6.4.1.2.1，Table 6-23/6-24，p468）。控制传输的数据恰好只有 8 字节——与其写个指针让 xHC 再跑一趟主存，不如<strong>把值直接写进参数字段</strong>：IDT 位（Immediate Data，DW3 bit6）声明"指针字段装的是立即数据"，上限恰 8 字节（TRB_IDT_MAX_SIZE，xhci.h:1059）。这就是"数据不进槽"的唯一例外。驱动怎么拼这两个字？内核的拼装现场（IDT 先打在控制字上，再逐字段压进 field1/field2）：</p>
 <pre>/* xhci-ring.c:3839-3845 （queue_setup_phase）IDT 位先打上：指针字段实为立即数据 */
 	/* Queue setup TRB - see section 6.4.1.2.1 */
 	/* FIXME better way to translate setup_packet into two u32 fields? */
@@ -242,7 +237,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <figure>
     <svg viewBox="0 0 880 330" role="img" aria-label="Setup TRB 的 DW0/DW1：8 字节 setup 包逐字段压进两个 32 位字" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g font-size="12">
-        <text x="440" y="24" text-anchor="middle" font-size="13" font-weight="600" fill="#1a2b4a">Setup Stage TRB 的 DW0/DW1：货只有 8 字节，直接抄在单上（IDT）</text>
+        <text x="440" y="24" text-anchor="middle" font-size="13" font-weight="600" fill="#1a2b4a">Setup Stage TRB 的 DW0/DW1：数据只有 8 字节，直接内联（IDT）</text>
         <text x="60" y="50" font-weight="600" fill="#1a2b4a">线上字节（小端：低地址字节在前）——M4.5 实测 TD1：GET_DESCRIPTOR(8B) @地址 0</text>
         <g text-anchor="middle">
           <rect x="60"  y="60" width="56" height="36" fill="#e9f7ee" stroke="#1a7f37"/><text x="88"  y="83" font-weight="600">80</text>
@@ -280,17 +275,17 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <g font-size="11.5" fill="#1a2b4a">
           <text x="60" y="262">▸ 0x80 ＝ bmRequestType：IN · 标准请求 · 收件方＝设备（bit7 方向 / bit6-5 类型 / bit4-0 收件方——hub 线 0002 的三段拆法原样适用）</text>
           <text x="60" y="284">▸ 0x06 ＝ bRequest＝GET_DESCRIPTOR；wValue＝0x0100：高字节 01＝设备描述符、低字节 00＝索引 0</text>
-          <text x="60" y="306">▸ wLength＝8：只取描述符前 8 字节定 ep0 maxp——hub 线 0002 同一动作的 xHC 侧；与 DW2 的 TRB_LEN(8) 一致：单上写多少货，就搬多少</text>
+          <text x="60" y="306">▸ wLength＝8：只取描述符前 8 字节定 ep0 maxp——hub 线 0002 同一动作的 xHC 侧；与 DW2 的 TRB_LEN(8) 一致：TRB 里写多少，就搬多少</text>
         </g>
         <text x="700" y="60" font-size="10.5" fill="#707070">数值按小端拼读：</text>
         <text x="700" y="76" font-size="10.5" fill="#707070">最高位字节 01 落在 bit31-24</text>
       </g>
     </svg>
-    <figcaption>字节 → 字段 → 数值的三级读法。<strong>DW0/DW1 不是"指针"也不是"数据"，是"参数字段"——Setup TRB 这一刻的身份是 8 字节货本体</strong>。下一颗 Setup TRB 换个请求（如 SET_CONFIGURATION 00 09 01 00 00 00 00 00），同样的格子换内容——结构不动、内容随单。</figcaption>
+    <figcaption>字节 → 字段 → 数值的三级读法。<strong>DW0/DW1 不是"指针"也不是"数据"，是"参数字段"——Setup TRB 这一刻的身份是 8 字节数据本体</strong>。下一颗 Setup TRB 换个请求（如 SET_CONFIGURATION 00 09 01 00 00 00 00 00），同样的槽换内容——结构不动、内容随请求。</figcaption>
   </figure>
-  <p><strong>身份三 · Link TRB——下一环段首槽的 64 位指针</strong>（§4.11.5）。环的回绕点路标："下一站在哪"。它为什么只能住段末槽、四件行李各管什么——零件节与专题二细看。</p>
-  <p><strong>身份四 · Transfer Event（回执）——完成的传输 TRB 的指针</strong>（§6.4.2.1，Table 6-37/6-38，p477-478）。对称的漂亮设计：<strong>生产方向的提单 DW0-1 写"货在哪"；回程方向的回执 DW0-1 写"哪张单完成了"</strong>。事件结构体的内核注释一句话点破身份，handle_tx_event 的开头四连读则把整颗回执拆干净——收件人（slot/EP）自带在 DW3、判决码（CC）在 DW2 高 8 位、"单号"（TRB 指针）在 DW0-1：</p>
-<pre>/* xhci.h:809-815 事件 TRB 结构——DW0-1 的身份由注释一句话点破 */
+  <p><strong>身份三 · Link TRB——下一环段首槽的 64 位指针</strong>（§4.11.5）。环的回绕点路标："下一站在哪"。它为什么只能住段末槽、四个字段各管什么——零件节与专题二细看。</p>
+  <p><strong>身份四 · Transfer Event——已完成的那颗传输 TRB 的指针</strong>（§6.4.2.1，Table 6-37/6-38，p477-478）。两个方向互为镜像：<strong>生产方向的 TRB 用 DW0-1 写"数据在哪"；回程的事件用 DW0-1 写"哪颗 TRB 完成了"</strong>。事件结构体的内核注释点明身份，handle_tx_event 的开头四连读则把整颗事件拆干净——收件人（slot/EP）自带在 DW3、判决码（CC）在 DW2 高 8 位、回指地址（TRB 指针）在 DW0-1：</p>
+<pre>/* xhci.h:809-815 事件 TRB 结构——DW0-1 的身份由注释点明 */
 struct xhci_transfer_event {
 	/* 64-bit buffer address, or immediate data */
 	__le64	buffer;
@@ -298,14 +293,14 @@ struct xhci_transfer_event {
 	/* This field is interpreted differently based on the type of TRB */
 	__le32	flags;
 };</pre>
-<pre>/* xhci-ring.c:2648-2651 （handle_tx_event）回执四连读：谁/哪个端点/判决码/单号 */
+<pre>/* xhci-ring.c:2648-2651 （handle_tx_event）事件通知四连读：谁/哪个端点/判决码/单号 */
 	slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event-&gt;flags));
 	ep_index = TRB_TO_EP_ID(le32_to_cpu(event-&gt;flags)) - 1;
 	trb_comp_code = GET_COMP_CODE(le32_to_cpu(event-&gt;transfer_len));
 	ep_trb_dma = le64_to_cpu(event-&gt;buffer);</pre>
-  <p>驱动拿这个"单号"在环上反向命中 TD（<code>trb_in_td</code>，:877-919）——一颗 16 字节回执，把"谁、哪个端点、判了什么、哪张单"全部自带，不需要任何旁表。</p>
-  <p><strong>DW2/DW3：货量与签章位</strong>。两个 32 位字的位图，内核宏即立法、注释即语义（位段照抄）：</p>
-<pre>/* xhci.h:1029-1039 DW2 状态字——货量/整件剩余包数/事件路由（Table 6-21） */
+  <p>驱动拿这个"单号"在环上反向命中 TD（<code>trb_in_td</code>，:877-919）——一颗 16 字节事件通知，把"谁、哪个端点、判了什么、哪张单"全部自带，不需要任何旁表。</p>
+  <p><strong>DW2/DW3：长度、剩余包数与控制位</strong>。两个 32 位字的位图，内核宏即定义、注释即语义（位段照抄）：</p>
+<pre>/* xhci.h:1029-1039 DW2 状态字——长度/剩余包数/事件路由（Table 6-21） */
 /* Normal TRB fields */
 /* transfer_len bitmasks - bits 0:16 */
 #define	TRB_LEN(p)		((p) &amp; 0x1ffff)
@@ -317,7 +312,7 @@ struct xhci_transfer_event {
 /* Interrupter Target - which MSI-X vector to target the completion event at */
 #define TRB_INTR_TARGET(p)	(((p) &amp; 0x3ff) &lt;&lt; 22)
 #define GET_INTR_TARGET(p)	(((p) &gt;&gt; 22) &amp; 0x3ff)</pre>
-<pre>/* xhci.h:1041-1059 DW3 控制字——签章与旗帜（Table 6-22） */
+<pre>/* xhci.h:1041-1059 DW3 控制字——控制位与标志位（Table 6-22） */
 /* Cycle bit - indicates TRB ownership by HC or HCD */
 #define TRB_CYCLE		BIT(0)
 /*
@@ -339,25 +334,25 @@ struct xhci_transfer_event {
 #define TRB_IDT_MAX_SIZE	8</pre>
   <table>
     <tr><th>DW2 位段</th><th>名字（宏）</th><th>读法</th></tr>
-    <tr><td>[16:0]</td><td>Transfer Length（TRB_LEN :1031）</td><td>本单货量——17 位，单颗 ≤64K</td></tr>
-    <tr><td>[21:17]</td><td>TD Size（TRB_TD_SIZE :1033）</td><td>整件行李还剩几包（SS 突发编排用，最大 31；USB2 主控写 0）</td></tr>
+    <tr><td>[16:0]</td><td>Transfer Length（TRB_LEN :1031）</td><td>本次传输长度——17 位，单颗 ≤64K</td></tr>
+    <tr><td>[21:17]</td><td>TD Size（TRB_TD_SIZE :1033）</td><td>整个 TD 还剩几包（SS 突发编排用，最大 31；USB2 主控写 0）</td></tr>
     <tr><td>[31:22]</td><td>Interrupter Target（TRB_INTR_TARGET :1038）</td><td>完成事件路由给哪个中断器（MSI-X 向量，10 位）</td></tr>
-    <tr><td>事件侧改义</td><td>[23:0] 残余长度（EVENT_TRB_LEN :828）＋ [31:24] CC 判决码（GET_COMP_CODE :832）</td><td>回执不写货量，写"还剩多少没搬＋判了什么"</td></tr>
+    <tr><td>事件侧改义</td><td>[23:0] 残余长度（EVENT_TRB_LEN :828）＋ [31:24] CC 判决码（GET_COMP_CODE :832）</td><td>事件里不写长度，写"还剩多少没搬＋判了什么"</td></tr>
   </table>
   <table>
     <tr><th>DW3 位段</th><th>身份（随 TRB 类型改变）</th></tr>
-    <tr><td>bit0</td><td><strong>cycle</strong>——全类型通用：所有权签章（轮次匹配＝消费者可取；0007 第 1 章的主角）</td></tr>
+    <tr><td>bit0</td><td><strong>cycle</strong>——全类型通用：所有权标记（轮次匹配＝消费者可取；0007 第 1 章的主角）</td></tr>
     <tr><td>bit1</td><td>数据 TRB＝<strong>ENT</strong>（Evaluate Next TRB，:1047）；Link TRB＝<strong>TC</strong>（Toggle Cycle，xhci.h:958）——同一 bit 两个身份</td></tr>
     <tr><td>bit2 / bit3 / bit4 / bit5 / bit6</td><td>ISP（短包即中断）/ NS（PCIe no snoop）/ <strong>chain</strong>（捆 TD）/ IOC（完成即事件）/ <strong>IDT</strong>（指针字段装立即数据）——:1049-1057</td></tr>
     <tr><td>bit9</td><td>等时 TRB＝BEI（Block Event Interrupt，:1062）；Address Device 命令＝<strong>BSR</strong>（:972，0008 标本两段式的主角）——又一处同位双身份</td></tr>
     <tr><td>bit10-15</td><td><strong>TRB Type</strong>——全类型通用：单据种类（Normal/Setup/Data/Status/Link/Event…）</td></tr>
     <tr><td>bit16 区</td><td>Data TRB＝DIR（TRB_DIR_IN :1065）；Setup TRB＝TRT（TRB_TX_TYPE&lt;&lt;16，2=OUT / 3=IN，:1066-1068——预告数据阶段方向）；事件 TRB 归入 EP ID 字段</td></tr>
-    <tr><td>bit20-16 ＋ bit24-31</td><td><strong>事件 TRB 的"回执自带收件人"</strong>：EP ID（TRB_TO_EP_ID :821）/ Slot ID（TRB_TO_SLOT_ID :816）；命令 TRB 用 Slot ID 指定目标设备（SLOT_ID_FOR_TRB :819）</td></tr>
+    <tr><td>bit20-16 ＋ bit24-31</td><td><strong>事件 TRB 的"事件通知自带收件人"</strong>：EP ID（TRB_TO_EP_ID :821）/ Slot ID（TRB_TO_SLOT_ID :816）；命令 TRB 用 Slot ID 指定目标设备（SLOT_ID_FOR_TRB :819）</td></tr>
   </table>
-  <div class="note">量纲桥接再钉一遍：<strong>槽恒为 16 字节（结构尺寸）；"64K"是 DW2 里写的货量（承载量）</strong>——提单比喻下这两个量纲天然分开：单子多大与货物多少无关。本课后面所有"TRB·64K"字样，说的都是它 DW2 里的货量。</div>
+  <div class="note">两个量纲不要混：<strong>槽恒为 16 字节（结构尺寸）；"64K"是 DW2 里写的长度（承载量）</strong>——槽多大与这一次搬多少无关。本课后面所有"TRB 64K"字样，说的都是 DW2 里的长度。</div>
 
   <h2>先认零件 · 槽 / TRB / TD / Link / 回绕点——一把尺子量到底</h2>
-  <p>本课两个专题与 0007 的全部动画都在这五个词上搭积木，先把零件摆上桌（<strong>从字节到环，四级嵌套</strong>）：<strong>一颗 TRB = 16 字节 = 4 个 32 位字</strong>（§4.11.1）；<strong>槽</strong> = 环上一颗 TRB 的车位——所以<strong>一个槽恰好 16 字节</strong>，槽里永远住着一颗 TRB（数据 TRB 或 Link TRB）；<strong>TD</strong> = 一次传输 = 1..N 颗 TRB 用 chain 位捆成的一列——<strong>TD 与槽的关系就是"占用"</strong>：130KB bulk OUT 先把<strong>数据</strong>切成 64K+64K+2K 三段，每段配一颗 16 字节 TRB 当<strong>提单</strong>（货运比喻：单上只写"货在哪、有多少"，货本身不在单上——对应 DW0-1 填缓冲段地址、DW2 填货量，数据永远不进槽），三颗提单共占 3 个槽＝48 字节；一次 8 字节控制请求的 Setup+Data+Status 同样占 3 个槽。<strong>槽恒为 16 字节，"64K"只是提单上写的货量</strong>——TD 占几个槽，完全由传输长度与切分规则决定；<strong>段</strong> = 256 槽 × 16B = 4096 字节恰一页（前 255 槽住数据、第 256 槽固定住 Link TRB，xhci.h:1260-1267）；<strong>环</strong> = 段链接成的圆（可多段、可扩容，专题二）。最后是<strong>回绕点</strong>：环在内存里是一段段<strong>直线</strong>，逻辑上才弯成圆——<strong>段走完时从末槽跳回首槽，这个跳转点就是回绕点</strong>。末槽住不得数据 TRB（xHC 扫到会把它的内容当指令执行），所以固定放一颗 <strong>Link TRB</strong> 当"回到开头"的路标：</p>
+  <p>本课两个专题与 0007 的全部动画都在这五个词上搭积木，先把零件列出来（<strong>从字节到环，四级嵌套</strong>）：<strong>一颗 TRB = 16 字节 = 4 个 32 位字</strong>（§4.11.1）；<strong>槽</strong> = 环上一颗 TRB 的车位——所以<strong>一个槽恰好 16 字节</strong>，槽里永远住着一颗 TRB（数据 TRB 或 Link TRB）；<strong>TD</strong> = 一次传输 = 1..N 颗 TRB 用 chain 位捆成的一列——<strong>TD 与槽的关系就是"占用"</strong>：130KB bulk OUT 先把<strong>数据</strong>切成 64K+64K+2K 三段，每段配一颗 16 字节 TRB（DW0-1 填缓冲段地址、DW2 填长度，数据本身不进槽），三颗 TRB 共占 3 个槽＝48 字节；一次 8 字节控制请求的 Setup+Data+Status 同样占 3 个槽。<strong>槽恒为 16 字节，"64K"只是 TRB 里写的长度</strong>——TD 占几个槽，完全由传输长度与切分规则决定；<strong>段</strong> = 256 槽 × 16B = 4096 字节恰一页（前 255 槽住数据、第 256 槽固定住 Link TRB，xhci.h:1260-1267）；<strong>环</strong> = 段链接成的圆（可多段、可扩容，专题二）。最后是<strong>回绕点</strong>：环在内存里是一段段<strong>直线</strong>，逻辑上才弯成圆——<strong>段走完时从末槽跳回首槽，这个跳转点就是回绕点</strong>。末槽住不得数据 TRB（xHC 扫到会把它的内容当指令执行），所以固定放一颗 <strong>Link TRB</strong> 当"回到开头"的路标：</p>
   <figure>
     <svg viewBox="0 0 880 344" role="img" aria-label="TRB 解剖与槽/TD/段/环四级嵌套" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g font-size="12">
@@ -383,9 +378,9 @@ struct xhci_transfer_event {
           <rect x="684" y="158" width="88" height="52" fill="#f2f0fa" stroke="#6a4fc4" stroke-width="1.6"/>
         </g>
         <g text-anchor="middle" font-size="11">
-          <text x="84"  y="178" font-size="10.5" font-weight="600">TRB·提单 64K</text><text x="84"  y="194" font-size="10" fill="#1a7f37">chain=1·cyc=1</text>
-          <text x="176" y="178" font-size="10.5" font-weight="600">TRB·提单 64K</text><text x="176" y="194" font-size="10" fill="#1a7f37">chain=1·cyc=1</text>
-          <text x="268" y="178" font-size="10.5" font-weight="600">TRB·提单 2K</text><text x="268" y="194" font-size="10" fill="#1a7f37">chain=0·IOC</text>
+          <text x="84"  y="178" font-size="10.5" font-weight="600">TRB 64K</text><text x="84"  y="194" font-size="10" fill="#1a7f37">chain=1·cyc=1</text>
+          <text x="176" y="178" font-size="10.5" font-weight="600">TRB 64K</text><text x="176" y="194" font-size="10" fill="#1a7f37">chain=1·cyc=1</text>
+          <text x="268" y="178" font-size="10.5" font-weight="600">TRB 2K</text><text x="268" y="194" font-size="10" fill="#1a7f37">chain=0·IOC</text>
           <text x="360" y="178" fill="#909084">空</text><text x="360" y="194" font-size="10" fill="#909084">cyc=旧轮次</text>
           <text x="452" y="178" fill="#909084">空</text><text x="452" y="194" font-size="10" fill="#909084">cyc=旧轮次</text>
           <text x="544" y="178" fill="#909084">空</text><text x="544" y="194" font-size="10" fill="#909084">cyc=旧轮次</text>
@@ -398,7 +393,7 @@ struct xhci_transfer_event {
         <line x1="46" y1="232" x2="306" y2="232" stroke="#1a7f37" stroke-width="2"/>
         <line x1="46" y1="232" x2="46" y2="238" stroke="#1a7f37" stroke-width="2"/><line x1="306" y1="232" x2="306" y2="238" stroke="#1a7f37" stroke-width="2"/>
         <text x="176" y="250" text-anchor="middle" font-size="10.5" fill="#1a7f37">一个 TD＝3 颗 TRB＝占 3 个槽（chain 捆绑＝一次传输）</text>
-        <text x="496" y="250" text-anchor="middle" font-size="10.5" fill="#707070">每个格子＝一个槽＝16B；TD 占槽数随传输定，小到 1 槽大到 N 槽</text>
+        <text x="496" y="250" text-anchor="middle" font-size="10.5" fill="#707070">每个槽位＝一个槽＝16B；TD 占槽数随传输定，小到 1 槽大到 N 槽</text>
         <g text-anchor="middle">
           <rect x="60"  y="272" width="120" height="34" fill="#fff" stroke="#1a2b4a" rx="4"/><text x="120" y="286" font-size="11" font-weight="600">槽＝16B</text><text x="120" y="300" font-size="9.5" fill="#707070">一颗 TRB 的车位</text>
           <rect x="240" y="272" width="280" height="34" fill="#fff" stroke="#1a2b4a" rx="4"/><text x="380" y="286" font-size="11" font-weight="600">段＝256 槽＝4096B＝一页</text><text x="380" y="300" font-size="9.5" fill="#707070">255 数据＋第 256 槽固定住 Link（xhci.h:1260）</text>
@@ -409,11 +404,11 @@ struct xhci_transfer_event {
         <text x="440" y="332" text-anchor="middle" font-size="11" fill="#707070">本课全部动画统一用 <tspan font-weight="600">8 槽小环</tspan>（槽0-6 数据＋槽7 Link）＝刻意缩小的教具——真实一段 256 槽，机制一寸不少</text>
       </g>
     </svg>
-    <figcaption><strong>答案先钉死：一个槽 = 16 字节（恰好一颗 TRB）；TD = 1..N 个槽上的 TRB 链（chain 决定捆几颗，边界=chain 0）；段 = 256 槽 = 4KB；环 = 段链表；回绕点 = 段末槽与首槽相接处，住着 Link TRB；图中 TRB 标的 64K/2K 是它描述的货量（提单），不是槽的尺寸</strong>。控制字（cycle/chain/type/IOC）全在 DW3，且永远最后落笔——这是后面"发布原子性"的全部伏笔。</figcaption>
+    <figcaption><strong>先把结论说清：一个槽 = 16 字节（恰好一颗 TRB）；TD = 1..N 个槽上的 TRB 链（chain 决定捆几颗，边界=chain 0）；段 = 256 槽 = 4KB；环 = 段链表；回绕点 = 段末槽与首槽相接处，住着 Link TRB；图中 TRB 标的 64K/2K 是它描述的长度，不是槽的尺寸</strong>。控制字（cycle/chain/type/IOC）全在 DW3，且永远最后落笔——这是后面"发布原子性"的全部伏笔。</figcaption>
   </figure>
 
   <h2>专题一 · urb → TD → TRB：一次翻译的三层语法</h2>
-  <p>全景图②站说"urb 被改写成 TRB 链"——现在把这台翻译机开盖（六站完整旅程在 0007）。<strong>urb 是 usbcore 与 hcd 之间的合同</strong>（缓冲地址/长度/回调），<strong>TRB 是驱动与 xHC 之间的合同</strong>（16 字节定长指令，§4.11.1）。两者粒度差两个数量级，中间隔两层换算：<strong>urb 先切成若干 TD</strong>（Transfer Descriptor，§4.9.1：xHC 调度与完成事件的最小单位），<strong>每个 TD 再切成一串 TRB</strong>（CHAIN 位相连，§4.11.7 TD Usage Rules）。urb 切几个 TD，全部规则只有三条（bulk OUT 那条的"补零包"：以零长包收尾一条批量 OUT 是设备侧的普遍期待，内核为此允许"数据 TD＋零包 TD"两段）：</p>
+  <p>全景图②站说"urb 被改写成 TRB 链"——现在把这台翻译机展开（六站完整旅程在 0007）。<strong>urb 是 usbcore 与 hcd 之间的合同</strong>（缓冲地址/长度/回调），<strong>TRB 是驱动与 xHC 之间的合同</strong>（16 字节定长指令，§4.11.1）。两者粒度差两个数量级，中间隔两层换算：<strong>urb 先切成若干 TD</strong>（Transfer Descriptor，§4.9.1：xHC 调度与完成事件的最小单位），<strong>每个 TD 再切成一串 TRB</strong>（CHAIN 位相连，§4.11.7 TD Usage Rules）。urb 切几个 TD，全部规则只有三条（bulk OUT 那条的"补零包"：以零长包收尾一条批量 OUT 是设备侧的普遍期待，内核为此允许"数据 TD＋零包 TD"两段）：</p>
 <pre>/* xhci.c:1632-1640（xhci_urb_enqueue :1620） */
 	if (usb_endpoint_xfer_isoc(&urb->ep->desc))
 		num_tds = urb->number_of_packets;
@@ -471,12 +466,12 @@ struct xhci_transfer_event {
         <text x="755" y="293" text-anchor="middle" font-size="10.5">TRB 指针 + 残量 → trb_in_td 反查 TD</text>
         <path d="M 658 282 C 600 282, 560 195, 524 170" fill="none" stroke="#a00000" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah5)"/>
         <defs><marker id="ah5" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#a00000"/></marker></defs>
-        <text x="560" y="352" text-anchor="middle" font-size="11" fill="#707070">给回节奏：inc_td_cnt/last_td_in_urb（:906-908）——TD 逐个销账，urb 的最后一个 TD 才触发 usb_hcd_giveback_urb（:824）</text>
+        <text x="560" y="352" text-anchor="middle" font-size="11" fill="#707070">给回节奏：inc_td_cnt/last_td_in_urb（:906-908）——TD 逐个结清，urb 的最后一个 TD 才触发 usb_hcd_giveback_urb（:824）</text>
       </g>
     </svg>
-    <figcaption>三层语法一图流：切几个 TD 由传输类型决定（三条规则），TD 内切几个 TRB 由<strong>64K 边界与散列表</strong>决定；完成时事件携带的 TRB DMA 指针反向命中 TD，urb 计数销账后才回调——urb 与 TRB 从未直接见面，全靠 TD 居中翻译。</figcaption>
+    <figcaption>三层语法一图流：切几个 TD 由传输类型决定（三条规则），TD 内切几个 TRB 由<strong>64K 边界与散列表</strong>决定；完成时事件携带的 TRB DMA 指针反向命中 TD，urb 计数结清后才回调——urb 与 TRB 从未直接见面，全靠 TD 居中翻译。</figcaption>
   </figure>
-  <p><strong>控制传输的三阶段映射</strong>（§4.11.2.2 p211：Setup/Data/Status 三种 TRB 在同一节立法）：Setup 段 8 字节 setup 包<strong>内联进 TRB 本体</strong>（IDT 位，Immediate Data；xhci.h:1057，IDT 上限 8 字节 :1059），并用 <strong>TRT 字段</strong>（Transfer Type，DW3[17:16]）预告数据阶段方向——xHC 由此在取走 Setup TRB 时就知道整条 TD 的形状；Data 段带 DMA 指针（IN 方向加 ISP 短包即中断；≤8 字节的小数据同样可 IDT 内联）；Status 段零长度、方向<strong>恒与数据阶段相反</strong>（设备发数据→OUT status 握手），置 IOC 作为整个 TD 的完成哨兵：</p>
+  <p><strong>控制传输的三阶段映射</strong>（§4.11.2.2 p211：Setup/Data/Status 三种 TRB 在同一节约定）：Setup 段 8 字节 setup 包<strong>内联进 TRB 本体</strong>（IDT 位，Immediate Data；xhci.h:1057，IDT 上限 8 字节 :1059），并用 <strong>TRT 字段</strong>（Transfer Type，DW3[17:16]）预告数据阶段方向——xHC 由此在取走 Setup TRB 时就知道整条 TD 的形状；Data 段带 DMA 指针（IN 方向加 ISP 短包即中断；≤8 字节的小数据同样可 IDT 内联）；Status 段零长度、方向<strong>恒与数据阶段相反</strong>（设备发数据→OUT status 握手），置 IOC 作为整个 TD 的完成哨兵：</p>
 <pre>/* xhci-ring.c:3848-3855 TRT：Setup TRB 预告数据阶段方向（§6.4.1.2.1；2=OUT 3=IN，xhci.h:1066-1068） */
 	if ((xhci->hci_version &gt;= 0x100) || (xhci->quirks &amp; XHCI_MTK_HOST)) {
 		if (urb-&gt;transfer_buffer_length &gt; 0) {
@@ -519,7 +514,7 @@ struct xhci_transfer_event {
 			more_trbs_coming = false;
 			td-&gt;end_trb = ring-&gt;enqueue;
 			td-&gt;end_seg = ring-&gt;enq_seg;</pre>
-  <p>interrupt 与 bulk 在<strong>排队和完成路径上完全同构</strong>——<code>xhci_queue_intr_tx</code> 整体转发给 <code>xhci_queue_bulk_tx</code>（xhci-ring.c:3496 一行委托），差异全在调度面（周期端点按 bInterval 进入周期调度表，§4.14.3 vs §4.14.4）。段尾还有一个 <span class="diff">实现≠规范</span> 的暗坑：若链中间正好要跨 Link TRB，末段数据可能不按包界对齐——<code>xhci_align_td</code>（:3546）用 bounce buffer 把最后一截重新对到 maxp 整数倍（:3700-3707）。</p>
+  <p>interrupt 与 bulk 在<strong>排队和完成路径上完全同构</strong>——<code>xhci_queue_intr_tx</code> 整体转发给 <code>xhci_queue_bulk_tx</code>（xhci-ring.c:3496 一行委托），差异全在调度面（周期端点按 bInterval 进入周期调度表，§4.14.3 vs §4.14.4）。段尾还有一个 <span class="diff">实现≠规范</span> 的隐患：若链中间正好要跨 Link TRB，末段数据可能不按包界对齐——<code>xhci_align_td</code>（:3546）用 bounce buffer 把最后一截重新对到 maxp 整数倍（:3700-3707）。</p>
   <p><strong>等时：每包一个 TD</strong>（prepare_transfer 按包循环调用，:4159-4160）。每个 TD 的<strong>首 TRB</strong> 是 Isoch TRB 型（§4.11.2.3：携带 TBC/TLBPC 突发字段），其余仍是 Normal TRB。调度属性二选一写在首 TRB 上：<strong>SIA（Start Isoch ASAP）= 让 xHC 自排下一个服务区间</strong>（§4.11.2.5 p219）；或显式 Frame ID 指定起始帧。内核策略（:3986-4000）：URB_ISO_ASAP 用 SIA；否则仅首 TD 写 Frame ID、后续 TD 仍 SIA——一串包显式定头、其余自动尾随：</p>
 <pre>/* xhci-ring.c:4169-4175（queue_isoc_tx :4096） */
 		/* Choose SIA or frame ID based scheduling for this TD */
@@ -529,12 +524,12 @@ struct xhci_transfer_event {
 		} else {
 			sia_frame_id = TRB_SIA;
 		}</pre>
-  <div class="note">一句话收拢：<strong>urb→TD→TRB 是排队时刻的"合同翻译"——TD 数量由传输类型决定（三条规则），TRB 切分由 64K 边界与散列表决定，阶段/突发/调度属性编码进 TRB 位域</strong>；完成时刻反向走一遍：Transfer Event 带 TRB 指针→<code>trb_in_td</code> 命中 TD→urb 销账（:877-919）→最后一个 TD 才回调 usbcore。0008 课 M4.5 标本实测的"每门铃一个 TD、短包 TD 两颗事件"，就是这套语法的运行时投影。</div>
+  <div class="note">一句话小结：<strong>urb→TD→TRB 是排队时刻的"合同翻译"——TD 数量由传输类型决定（三条规则），TRB 切分由 64K 边界与散列表决定，阶段/突发/调度属性编码进 TRB 位域</strong>；完成时刻反向走一遍：Transfer Event 带 TRB 指针→<code>trb_in_td</code> 命中 TD→urb 结清（:877-919）→最后一个 TD 才回调 usbcore。0008 课 M4.5 标本实测的"每门铃一个 TD、短包 TD 两颗事件"，就是这套语法的运行时投影。</div>
 
-  <p>chain 这把钥匙<strong>单独舞一遍</strong>——三帧只看捆绑绳（cycle 全部假设恰好匹配）：</p>
+  <p>chain 这个控制位<strong>单独演示一遍</strong>——三帧只看捆绑标记（cycle 全部假设恰好匹配）：</p>
   <div class="player">
     <div class="frame">
-      <div class="ftitle"><span class="no">第 1 帧</span><span>130KB 来了：一颗 TRB 装不下，先切三段货</span></div>
+      <div class="ftitle"><span class="no">第 1 帧</span><span>130KB 来了：一颗 TRB 装不下，先切三段数据</span></div>
       <div class="fbody">
       <svg viewBox="0 0 880 160" role="img" aria-label="130KB 切成 64K+64K+2K 三颗 TRB" style="width:100%">
       <g font-size="11">
@@ -548,25 +543,25 @@ struct xhci_transfer_event {
         <text x="440" y="134" text-anchor="middle" font-size="10.5" fill="#707070">两条硬约束（:3679-3684）：单 TRB ≤ 64K，且缓冲段不得跨 64K 边界</text>
       </g>
     </svg>
-        <p><strong>本帧只看"切"这个动作</strong>：一颗 TRB 的 DW0-1 只装得下一个 ≤64K 且不跨边界的缓冲段，130KB 只好切成三颗。但切完只是<strong>三段散货</strong>，还不是<strong>一件行李</strong>——把散货打成一件的，是下一帧的 chain。</p>
+        <p><strong>本帧只看"切"这个动作</strong>：一颗 TRB 的 DW0-1 只装得下一个 ≤64K 且不跨边界的缓冲段，130KB 只好切成三颗。但切完只是<strong>三段数据</strong>，还不是<strong>一个 TD</strong>——把数据打成一件的，是下一帧的 chain。</p>
       </div>
     </div>
     <div class="frame">
-      <div class="ftitle"><span class="no">第 2 帧</span><span>chain＝捆绑绳：尾 TRB 收口（chain=0）＋完成哨兵（IOC）</span></div>
+      <div class="ftitle"><span class="no">第 2 帧</span><span>chain＝捆绑标记：尾 TRB 收尾（chain=0）＋完成哨兵（IOC）</span></div>
       <div class="fbody">
       <svg viewBox="0 0 880 240" role="img" aria-label="chain 捆成一件 TD 与 chain 全 0 的对照" style="width:100%">
       <g font-size="11">
-        <text x="40" y="24" font-weight="600" fill="#1a2b4a">chain=1→1→0：三颗捆成一件行李（一个 TD）</text>
+        <text x="40" y="24" font-weight="600" fill="#1a2b4a">chain=1→1→0：三颗捆成一个 TD</text>
         <rect x="40"  y="36" width="170" height="52" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="125" y="56" text-anchor="middle" font-weight="600">TRB·64K</text><text x="125" y="74" text-anchor="middle" font-size="10.5" fill="#1a7f37">chain=1（还有下一颗）</text>
         <rect x="218" y="36" width="170" height="52" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="303" y="56" text-anchor="middle" font-weight="600">TRB·64K</text><text x="303" y="74" text-anchor="middle" font-size="10.5" fill="#1a7f37">chain=1（还有下一颗）</text>
         <rect x="396" y="36" width="170" height="52" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.8"/><text x="481" y="56" text-anchor="middle" font-weight="600">TRB·2K（尾）</text><text x="481" y="74" text-anchor="middle" font-size="10.5" fill="#1a7f37">chain=0 · IOC</text>
         <line x1="44" y1="96" x2="562" y2="96" stroke="#1a5fb4" stroke-width="7" opacity="0.85"/>
         <line x1="44" y1="96" x2="44" y2="106" stroke="#1a5fb4" stroke-width="7" opacity="0.85"/><line x1="562" y1="96" x2="562" y2="106" stroke="#1a5fb4" stroke-width="7" opacity="0.85"/>
-        <text x="303" y="112" text-anchor="middle" font-size="11" font-weight="600" fill="#1a5fb4">TD＝一件行李：一次传输、一次门铃、一颗完成事件</text>
+        <text x="303" y="112" text-anchor="middle" font-size="11" font-weight="600" fill="#1a5fb4">TD＝一次传输：一次门铃、一颗完成事件</text>
         <text x="620" y="60" font-size="10.5" fill="#707070">TD 的边界不写在</text>
         <text x="620" y="76" font-size="10.5" fill="#707070">任何表里——就写在</text>
         <text x="620" y="92" font-size="10.5" fill="#707070">尾 TRB 的 chain=0 里</text>
-        <text x="40" y="156" font-weight="600" fill="#1a2b4a">对照：三颗 chain 全 0 ＝ 三件独立行李（三个 TD）</text>
+        <text x="40" y="156" font-weight="600" fill="#1a2b4a">对照：三颗 chain 全 0 ＝ 三个独立 TD</text>
         <rect x="40"  y="168" width="170" height="46" fill="#e9f7ee" stroke="#1a7f37"/><text x="125" y="190" text-anchor="middle" font-weight="600">TRB·64K</text><text x="125" y="206" text-anchor="middle" font-size="10.5" fill="#707070">chain=0</text>
         <rect x="218" y="168" width="170" height="46" fill="#e9f7ee" stroke="#1a7f37"/><text x="303" y="190" text-anchor="middle" font-weight="600">TRB·64K</text><text x="303" y="206" text-anchor="middle" font-size="10.5" fill="#707070">chain=0</text>
         <rect x="396" y="168" width="170" height="46" fill="#e9f7ee" stroke="#1a7f37"/><text x="481" y="190" text-anchor="middle" font-weight="600">TRB·2K</text><text x="481" y="206" text-anchor="middle" font-size="10.5" fill="#707070">chain=0</text>
@@ -574,7 +569,7 @@ struct xhci_transfer_event {
         <text x="620" y="202" font-size="10.5" fill="#707070">三颗事件、三份完成语义</text>
       </g>
     </svg>
-        <p><strong>本帧只看绳子的两端</strong>：中间 TRB 的 chain=1 声明"下一槽与我同属一传"；尾 TRB chain=0＝收口，再搭 IOC 位＝整件的完成哨兵（§4.11.7）。<strong>chain 决定"几颗 TRB 算一件"——这就是槽与 TD 的全部关系：槽是车位，chain 把若干车位上的 TRB 打包成一次传输</strong>。</p>
+        <p><strong>本帧只看绳子的两端</strong>：中间 TRB 的 chain=1 声明"下一槽与我同属一传"；尾 TRB chain=0＝收尾，再搭 IOC 位＝整件的完成哨兵（§4.11.7）。<strong>chain 决定"几颗 TRB 算一件"——这就是槽与 TD 的全部关系：槽是车位，chain 把若干车位上的 TRB 打包成一次传输</strong>。</p>
       </div>
     </div>
     <div class="frame">
@@ -591,7 +586,7 @@ struct xhci_transfer_event {
         <rect x="700" y="104" width="150" height="44" rx="5" fill="#fdeaea" stroke="#a00000" stroke-width="1.4"/><text x="775" y="122" text-anchor="middle" font-size="10.5" font-weight="600" fill="#a00000">Transfer Event</text><text x="775" y="138" text-anchor="middle" font-size="10" fill="#a00000">Success·指针＝尾 TRB</text>
         <line x1="44" y1="158" x2="566" y2="158" stroke="#1a5fb4" stroke-width="6" opacity="0.85"/>
         <text x="305" y="176" text-anchor="middle" font-size="10.5" fill="#1a5fb4">整链＝一个 TD：一次门铃，一颗完成事件</text>
-        <text x="40" y="200" font-size="10.5" fill="#707070">回程：事件里的 TRB 指针落尾 TRB，驱动用 trb_in_td 反查整条 TD（:877-919）→ urb 销账</text>
+        <text x="40" y="200" font-size="10.5" fill="#707070">回程：事件里的 TRB 指针落尾 TRB，驱动用 trb_in_td 反查整条 TD（:877-919）→ urb 结清</text>
       </g>
     </svg>
         <p><strong>本帧只看"一口气"</strong>：xHC 校验过链头后，沿 chain 一直走到 chain=0 为止——整条链是<strong>一个调度与完成单位</strong>，事件只发一颗。补充一个预告：TD 中途跨过回绕点时，这个回绕点上的 Link TRB 会被改写 chain 位把绳续上（0007 第 3 章联动动画第 5 帧细看那个场景）。</p>
@@ -700,9 +695,9 @@ struct xhci_transfer_event {
     </svg>
     <figcaption>三种环对"写满"的三种答案在此凑齐：<strong>传输环=动态扩容（本图）、命令环=禁止扩容（:3304-3306）、事件环=ERST 预声明几何</strong>（0007 第 2 章）。扩容期间 cycle_state 不变——新段空槽的 cycle 都还是旧轮次，生产者跨过新末段 Link 时才翻转。</figcaption>
   </figure>
-  <div class="note">一句话收拢：<strong>ring = 段链表；段 = 255 数据槽 + 1 Link 槽；Link 携带下段地址，TC 只在 last_seg 段尾出现（唯一轮次翻转点）；传输环可按需 splice 扩段，命令环禁扩，事件环几何外置 ERST</strong>。cycle 合同（0007 第 1 章）与 ERST 对照（0007 第 2 章）补上后，三种环的静态几何与动态行为就全部闭环。</div>
+  <div class="note">一句话小结：<strong>ring = 段链表；段 = 255 数据槽 + 1 Link 槽；Link 携带下段地址，TC 只在 last_seg 段尾出现（唯一轮次翻转点）；传输环可按需 splice 扩段，命令环禁扩，事件环几何外置 ERST</strong>。cycle 合同（0007 第 1 章）与 ERST 对照（0007 第 2 章）补上后，三种环的静态几何与动态行为就全部闭环。</div>
 
-  <p>toggle cycle（TC）这把钥匙<strong>单独舞一遍</strong>——三帧只看"轮次什么时候翻"。前置一句就够：每颗 TRB 的 DW3 bit0 是 cycle（所有权签章），软件与 xHC 各记一个"当前轮次"，绕环整整一圈后轮次取反——完整合同在 0007 第 1 章，这里只看翻圈的记账（示意把每段缩成 4+1 槽，真实 255+1）：</p>
+  <p>toggle cycle（TC）这个控制位<strong>单独演示一遍</strong>——三帧只看"轮次什么时候翻"。前置一句就够：每颗 TRB 的 DW3 bit0 是 cycle（所有权标记），软件与 xHC 各记一个"当前轮次"，绕环整整一圈后轮次取反——完整合同在 0007 第 1 章，这里只看翻圈的记录（示意把每段缩成 4+1 槽，真实 255+1）：</p>
   <div class="player">
     <div class="frame">
       <div class="ftitle"><span class="no">第 1 帧</span><span>两段环＝两个回绕点，只有最后一段的回绕点带 TC</span></div>
@@ -752,14 +747,14 @@ struct xhci_transfer_event {
         <defs><marker id="ahH" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#a00000"/></marker></defs>
         <rect x="120" y="126" width="640" height="34" rx="5" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/>
         <text x="440" y="147" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">xHC 轮次：1 ──回绕① 纯跳转，仍 1──▶ 1 ──回绕② 跳转＋TC──▶ <tspan fill="#a00000">0</tspan></text>
-        <text x="440" y="182" text-anchor="middle" font-size="10.5" fill="#707070">"圈"的记账单位＝整环，不是段：一圈无论几段几个回绕点，轮次恰好翻一次</text>
+        <text x="440" y="182" text-anchor="middle" font-size="10.5" fill="#707070">"圈"的记录单位＝整环，不是段：一圈无论几段几个回绕点，轮次恰好翻一次</text>
       </g>
     </svg>
-        <p><strong>本帧只看轮次盒</strong>：跨中间回绕点①什么都不发生（纯跳转），跨末段回绕点②轮次才翻。生产/消费两侧各翻各的——软件在 <code>inc_enq_past_link</code>（:254-260），xHC 在跨过回绕点取指时——<strong>两侧从不同步全局状态，只在各自的回绕点上翻各自的账</strong>。</p>
+        <p><strong>本帧只看轮次盒</strong>：跨中间回绕点①什么都不发生（纯跳转），跨末段回绕点②轮次才翻。生产/消费两侧各翻各的——软件在 <code>inc_enq_past_link</code>（:254-260），xHC 在跨过回绕点取指时——<strong>两侧从不同步全局状态，只在各自的回绕点上翻各自的轮次</strong>。</p>
       </div>
     </div>
     <div class="frame">
-      <div class="ftitle"><span class="no">第 3 帧</span><span>反例：若两个回绕点都带 TC——翻两次＝白翻</span></div>
+      <div class="ftitle"><span class="no">第 3 帧</span><span>反例：若两个回绕点都带 TC——翻两次＝空翻</span></div>
       <div class="fbody">
       <svg viewBox="0 0 880 218" role="img" aria-label="假设两段都带 TC 的假有效反例" style="width:100%">
       <g font-size="10.5">
@@ -768,19 +763,19 @@ struct xhci_transfer_event {
         <rect x="760" y="28" width="76" height="44" fill="#fdeaea" stroke="#a00000" stroke-width="1.4"/><text x="798" y="47" text-anchor="middle" font-weight="600" fill="#a00000">Link②</text><text x="798" y="62" text-anchor="middle" font-size="9.5" fill="#a00000">TC=1</text>
         <rect x="120" y="90" width="640" height="32" rx="5" fill="#fdeaea" stroke="#a00000" stroke-width="1.4"/>
         <text x="440" y="110" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1a2b4a">轮次：1 ──回绕①──▶ 0 ──回绕②──▶ <tspan fill="#a00000">又回到 1</tspan>　⇒ 转完一圈，轮次没变</text>
-        <rect x="200" y="140" width="150" height="48" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.3" stroke-dasharray="4 3"/><text x="275" y="160" text-anchor="middle" font-weight="600" fill="#6b8f7a">✓旧圈残影</text><text x="275" y="178" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
+        <rect x="200" y="140" width="150" height="48" fill="#f6faf5" stroke="#9cc4a8" stroke-width="1.3" stroke-dasharray="4 3"/><text x="275" y="160" text-anchor="middle" font-weight="600" fill="#6b8f7a">✓旧值残留</text><text x="275" y="178" text-anchor="middle" font-size="10.5" fill="#8fae9c">cyc=1</text>
         <text x="380" y="160" font-size="12" fill="#a00000" font-weight="600">轮次也=1 → 匹配！</text>
-        <text x="380" y="180" font-size="11" fill="#a00000">xHC 分不清这是本圈新货还是上圈剩的</text>
-        <text x="440" y="210" text-anchor="middle" font-size="11" fill="#707070">TC 唯一不是风格偏好，是"一圈恰好翻一次"的记账需要——扩容插段时旧末段撤 TC、新末段接 TC（xhci-mem.c:169-177），守的正是这条不变量</text>
+        <text x="380" y="180" font-size="11" fill="#a00000">xHC 分不清这是本圈新数据还是上圈剩下的</text>
+        <text x="440" y="210" text-anchor="middle" font-size="11" fill="#707070">TC 唯一不是风格偏好，是"一圈恰好翻一次"的记录需要——扩容插段时旧末段撤 TC、新末段接 TC（xhci-mem.c:169-177），守的正是这条不变量</text>
       </g>
     </svg>
-        <p><strong>本帧只看"为什么不能两颗都带 TC"</strong>：翻两次等于白翻——轮次回到原值后，上一圈残影的 cyc 恰与轮次相同，会被当成新货（假有效）。所以规范把翻轮次的权力<strong>收归整环唯一的回绕点</strong>。</p>
+        <p><strong>本帧只看"为什么不能两颗都带 TC"</strong>：翻两次等于空翻——轮次回到原值后，上一圈旧值残留的 cyc 恰与轮次相同，会被当成新数据（误判为有效）。所以规范把翻轮次的权力<strong>收归整环唯一的回绕点</strong>。</p>
       </div>
     </div>
   </div>
 
-  <h2>回到整体（零件图已钉，下一课让环转起来）</h2>
-  <p>本课把 xHC 侧的<strong>静态面</strong>钉死：提单的每个字段（DW0-1 四种身份、DW2 货量、DW3 签章与旗帜——同一 bit 随类型改变含义）、单据的组织（槽→TD→段→环、回绕点）、切分语法（num_tds 三规则＋64K 边界＋chain 捆绑）、环的几何（255+1 槽、Link 指针、TC 唯一、动态扩容）。回到全景图：②站"TRB 化排环"这只箱子已经开透——<strong>零件都在桌上了，但环还没转</strong>。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）让它们动起来：cycle 合同（谁拥有哪颗槽）、回绕点上的对表、四把钥匙联动；六站旅程①~⑥的完整三视角走法在 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>。hub 线视角的一个呼应也留着：0002 课"先取 8 字节定 ep0 包长"的请求，本课已看到它的 DW0/DW1 逐字节——那 8 个字节就是提单上抄的货。</p>
+  <h2>回到整体（零件图已备齐，下一课让环转起来）</h2>
+  <p>本课把 xHC 侧的<strong>静态面</strong>讲清：TRB 的每个字段（DW0-1 四种身份、DW2 长度、DW3 控制位与标志位——同一 bit 随类型改变含义）、单据的组织（槽→TD→段→环、回绕点）、切分语法（num_tds 三规则＋64K 边界＋chain 捆绑）、环的几何（255+1 槽、Link 指针、TC 唯一、动态扩容）。回到全景图：②站"TRB 化排环"这只箱子已经讲完——<strong>零件都在桌上了，但环还没转</strong>。下一课（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>）让它们动起来：cycle 合同（谁拥有哪颗槽）、回绕点上的核对、四个控制位联动；六站旅程①~⑥的完整三视角走法在 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>。hub 线视角的一个呼应也留着：0002 课"先取 8 字节定 ep0 包长"的请求，本课已看到它的 DW0/DW1 逐字节——那 8 个字节就是内联在 TRB 里的数据。</p>
 
   <h2>检索练习 · 6 题</h2>
   <div id="quiz"></div>
@@ -788,13 +783,13 @@ struct xhci_transfer_event {
 
   <h2>主源与下一步</h2>
   <ul>
-    <li><strong>主源</strong>：xHCI 1.2（2019）§6.4 Transfer Request Block（p465 起——TRB 字段立法总纲）；Table 6-20/6-21/6-22（p466-467，Normal TRB 四字字段定义）；§6.4.1.2.1＋Table 6-23/6-24（p468，Setup Stage TRB——DW0/DW1＝setup 包）；§6.4.2.1＋Table 6-37/6-38（p477-478，Transfer Event——DW0/DW1＝TRB 指针）；§4.11.1/.1.1（p208-209，16B 四字与生产/消费分工）；§4.9.1 Transfer Descriptors（p168）；§4.11.2（p211-221）；§4.11.7 TD Usage Rules（p233）。<code>specs/xhci_1.2_2019.pdf</code></li>
+    <li><strong>主源</strong>：xHCI 1.2（2019）§6.4 Transfer Request Block（p465 起——TRB 字段定义总纲）；Table 6-20/6-21/6-22（p466-467，Normal TRB 四字字段定义）；§6.4.1.2.1＋Table 6-23/6-24（p468，Setup Stage TRB——DW0/DW1＝setup 包）；§6.4.2.1＋Table 6-37/6-38（p477-478，Transfer Event——DW0/DW1＝TRB 指针）；§4.11.1/.1.1（p208-209，16B 四字与生产/消费分工）；§4.9.1 Transfer Descriptors（p168）；§4.11.2（p211-221）；§4.11.7 TD Usage Rules（p233）。<code>specs/xhci_1.2_2019.pdf</code></li>
     <li>内核：<code>drivers/usb/host/xhci.h</code>（位域宏 ：816-832/958/972/1029-1068、TRB 定长常数 ：1260-1270）＋ <code>xhci-ring.c</code> queue_setup_phase/handle_tx_event/queue_bulk_tx ＋ <code>xhci-mem.c</code>（建环与 Link TRB）——本课全部行号基线 62f4c998b297。</li>
-    <li>下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>——cycle 合同、回绕点、四把钥匙联动；<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>（六站旅程/事件通知链）；错误路径与 M4.5 标本在 0008。</li>
+    <li>下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a>——cycle 合同、回绕点、四个控制位联动；<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 一场传输的三视角剧</a>（六站旅程/事件通知链）；错误路径与 M4.5 标本在 0008。</li>
     <li>想再挖：ED（Event Data）标志与立即数据回传（§4.11.1.1）、流协议下的 TRB 形态（§4.12）——<strong>直接问老师</strong>。</li>
   </ul>
 
-  <footer>课 0006 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4：本课＝xHC 零件静态面——提单 TRB 字段全解＋槽/TD/段/环＋切分语法＋环几何）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 实测素材：M4.5 引擎 v0.3（m45_xhci.log setup8 逐字节）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005 TT 缓冲与重试</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 框架课</a></footer>
+  <footer>课 0006 · 2026-10-09（拆分自 0006-xhc-transfer-journey v4：本课＝xHC 零件静态面——TRB 字段全解＋槽/TD/段/环＋切分语法＋环几何）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）｜ 实测素材：M4.5 引擎 v0.3（m45_xhci.log setup8 逐字节）｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0005-tt-buffer-retry-standalone.html">0005 TT 缓冲与重试</a> ｜ 下一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 框架课</a></footer>
 
 </main>
 <script>
@@ -974,26 +969,26 @@ struct xhci_transfer_event {
 </script>
 <script>
 Quiz.render(document.getElementById('quiz'), [
-  { tag: '提单比喻',
-    prompt: '把 TRB 比作提单，"货本身"对应什么？',
-    options: ['DMA 缓冲区里的数据', 'TRB 的 DW0-1 两个 32 位字', '事件环上的 Transfer Event', '端点上下文 EP Context'],
-    answer: 0,
-    explain: 'A 对。提单单上只写"货在哪、有多少"——对应 DW0-1 缓冲指针与 DW2 长度；货本体在主存缓冲区里，永远不进 16 字节的槽（§6.4 p465：TRB 是基本构件）。唯一例外是 ≤8 字节的 IDT 立即数据——"把货抄在单上"。B 是单面不是货；C 是回执；D 是收货人的档案。' },
+  { tag: '结构关系',
+    prompt: '一个段里第 256 槽为什么必须放 Link TRB，而不是数据 TRB？',
+    options: ['因为数据 TRB 的长度上限只有 64K', '因为 xHC 取指按地址 +16 前进，末槽之后会读到段外内存', '因为只有 Link TRB 能携带 64K 数据', '因为 chain 位只能写在 Link TRB 上'],
+    answer: 1,
+    explain: 'B 对。xHC 取指的动作就是"读内存、地址每次 +16"，读完一颗后按下一颗 DW3 的 type 字段分发；数据 TRB 的 type 只表示"搬这段数据"，不含"下一颗去哪"。末槽若放数据 TRB，指针会走出段外，把无关内存当 TRB 解析。Link TRB 的 type 本身就是一条跳转指令，DW0-1 给出下一段首槽地址（§4.11.5）。A 是 DW2 的长度约束，与末槽位置无关；C 方向反了，Link 不承载数据；D 的 chain 位在数据 TRB 上同样存在，用于跨回绕点时续链。' },
   { tag: 'DW 字段',
     prompt: 'Setup Stage TRB 的 DW0/DW1 装的是什么？',
     options: ['64 位数据缓冲区指针', '8 字节 setup 包本体（IDT 内联）', '下一环段的首槽指针', '完成码 CC 与残余长度'],
     answer: 1,
     explain: 'B 对。queue_setup_phase（xhci-ring.c:3857-3862）把 setup 包逐字段压进两个 32 位字：DW0＝bmRequestType｜bRequest&lt;&lt;8｜wValue&lt;&lt;16，DW1＝wIndex｜wLength&lt;&lt;16；IDT 位（DW3 bit6，xhci.h:1057）声明"指针字段装的是立即数据"，上限 8 字节（TRB_IDT_MAX_SIZE :1059）。A 是 Normal/Data TRB 的身份；C 是 Link TRB 的身份；D 在事件 TRB 的 DW2。' },
   { tag: 'DW 字段',
-    prompt: 'Transfer Event（回执）的 DW0/DW1 装的是什么？',
+    prompt: 'Transfer Event（事件通知）的 DW0/DW1 装的是什么？',
     options: ['下一颗待执行 TRB 的指针', '产生本事件的那颗传输 TRB 的指针', '残余数据的 8 字节本体', 'ERST 段表首地址'],
     answer: 1,
-    explain: 'B 对。struct xhci_transfer_event 的 buffer 注释即身份（xhci.h:809 "64-bit buffer address, or immediate data"）；handle_tx_event 四连读的末行 ep_trb_dma＝le64_to_cpu(event->buffer)（:2648-2651）——回执的"单号"栏写的是哪张提单完成了，驱动拿它 trb_in_td 反查整条 TD（:877-919）。生产与回程两个方向的 DW0-1 恰互为镜像：一个写货在哪，一个写单是哪。' },
+    explain: 'B 对。struct xhci_transfer_event 的 buffer 注释即身份（xhci.h:809 "64-bit buffer address, or immediate data"）；handle_tx_event 四连读的末行 ep_trb_dma＝le64_to_cpu(event->buffer)（:2648-2651）——事件通知的"单号"栏写的是哪颗 TRB 完成了，驱动拿它 trb_in_td 反查整条 TD（:877-919）。生产与回程两个方向的 DW0-1 恰互为镜像：一个写数据在哪，一个写回指哪颗 TRB。' },
   { tag: 'DW 字段',
     prompt: '单颗 TRB 的最大搬运量（64K）由哪里限定？',
     options: ['DW2 的 Transfer Length 位域＋64K 边界不跨约束', 'DW3 的 TRB Type 字段', '槽的物理尺寸 16 字节', 'ERST 条目的大小字段'],
     answer: 0,
-    explain: 'A 对。两个量纲别混：DW2 Transfer Length 是 17 位（TRB_LEN 掩码 0x1ffff，xhci.h:1031），且 TRB_MAX_BUFF_SIZE＝1&lt;&lt;16（:1266-1267）立法"指针不得跨 64K 边界"——130KB bulk 因此切 64K+64K+2K 三颗（专题一）。B 是单据类型；C 是槽的结构尺寸——单子多大与货多少无关，恰是提单比喻的要点；D 是事件环几何。' },
+    explain: 'A 对。两个量纲别混：DW2 Transfer Length 是 17 位（TRB_LEN 掩码 0x1ffff，xhci.h:1031），且 TRB_MAX_BUFF_SIZE＝1&lt;&lt;16（:1266-1267）约定"指针不得跨 64K 边界"——130KB bulk 因此切 64K+64K+2K 三颗（专题一）。B 是 TRB 类型；C 是槽的结构尺寸——槽多大与这一次搬多少无关；D 是事件环几何。' },
   { tag: 'TD 语法',
     prompt: '一次 bulk OUT 传输：urb 长 130KB、URB_ZERO_PACKET 已置、长度恰为 maxp 整数倍、单段无 sg。它排成几个 TD、大约几个 TRB？',
     options: ['3 个 TD（每 64K 一个）', '130 个 TD（每包一个）', '2 个 TD（数据 TD＋零包 TD）', '1 个 TD（一条 130KB 长链）'],
