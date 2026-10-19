@@ -132,21 +132,21 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p>本课在整体地图（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">课 0001</a>）的 <strong>⑥ hub 层</strong>——USB2 特有的核心机制；并承接 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0003-dual-bus-root-port-standalone.html">课 0003</a> 的"硬件吸收"叙事：<strong>xHCI 时代 split 的执行被吸进控制器硬件</strong>，usbcore 里只剩错误恢复。</p>
 
   <h2>为什么需要 TT：一个 hub，两个时钟域</h2>
-  <div class="note"><strong>先补两个时间词（§5.3.3、§8.4.3）</strong>：USB 总线的时间由主机用 SOF（Start Of Frame）包"打拍子"——相邻两个 SOF 之间就是一个调度格。全速总线一格 <strong>1 ms</strong>，叫<strong>帧（frame）</strong>：SOF 每 1.00 ms ±0.0005 ms 一个，帧号随帧递增。高速总线把同一毫秒切成 8 格，每格 <strong>125 µs</strong>，叫<strong>微帧（microframe）</strong>：SOF 每 125 µs 一个，但<strong>帧号仍每 1 ms 才变一次</strong>——同一帧内 8 个 SOF 的帧号相同，设备靠比对相邻 SOF 的帧号自己数微帧位置。切细 8 倍的收益：中断/等时的排班粒度从 1 kHz 提到 8 kHz（高带宽端点每微帧还可发 1–3 个事务，§5.9）；周期带宽上限也按各自格子算——FS ≤90% 帧时间、HS ≤80% 微帧时间（§5.6.4/§5.7.4）。</div>
-  <p>高速 hub 的上行口跑 HS 域：<strong>480 Mb/s、微帧 125 µs</strong>；下行口可能挂 FS 设备：<strong>12 Mb/s、帧 1 ms</strong>（§7.1.11/§7.1.12）。两种信令、两个节拍，hub 里的<strong>事务翻译器（Transaction Translator，TT）</strong>负责两边互译。规范的做法非常克制：</p>
+  <div class="note"><strong>先补两个时间词（§5.3.3、§8.4.3）</strong>：USB 总线的时间由主机用 SOF（Start Of Frame）包"打拍子"——相邻两个 SOF 之间就是一个调度格。全速总线一格 <strong>1 ms</strong>，叫<strong>帧（frame）</strong>：SOF 每 1.00 ms ±0.0005 ms 一个，帧号随帧递增。高速总线把同一毫秒切成 8 格，每格 <strong>125 µs</strong>，叫<strong>微帧（microframe）</strong>：SOF 每 125 µs 一个，但<strong>帧号仍每 1 ms 才变一次</strong>——同一帧内 8 个 SOF 的帧号相同，设备靠比对相邻 SOF 的帧号自己数微帧位置。切细 8 倍的收益：中断/等时的排班粒度从 1 kHz 提到 8 kHz（高带宽端点每微帧还可发 1–3 个事务，§5.9）；周期带宽上限也按各自槽位算——FS ≤90% 帧时间、HS ≤80% 微帧时间（§5.6.4/§5.7.4）。</div>
+  <p>高速 hub 的上行口跑 HS 域：<strong>480 Mb/s、微帧 125 µs</strong>；下行口可能挂 FS 设备：<strong>12 Mb/s、帧 1 ms</strong>（§7.1.11/§7.1.12）。两种信令、两个节拍，hub 里的<strong>事务翻译器（Transaction Translator，TT）</strong>负责两边互译。规范的做法相当克制：</p>
   <div class="note"><strong>split 只存在于主机控制器 ↔ hub 之间，设备永远不可见</strong>（§5.10、§11.1.1）。hub↔设备一侧仍是普通 FS/LS 事务。设备无需知道任何事——这就是兼容性的代价全由主机侧承担的设计。</div>
-  <p>数字直觉：一个 HS 微帧（125 µs）只占 FS 帧（1 ms）的 <strong>1/8</strong>——翻译的实时性压力全压在 hub 的 TT 缓冲与调度上。</p>
+  <p>量级上：一个 HS 微帧（125 µs）只占 FS 帧（1 ms）的 <strong>1/8</strong>——翻译的实时性压力全压在 hub 的 TT 缓冲与调度上。</p>
 
   <h2>split 家族 · 按传输类型分治（§11.16-11.20）</h2>
   <table>
     <tr><th>传输类型</th><th>split 形态</th><th>TT 侧约束</th></tr>
     <tr><td>bulk / control</td><td>SSPLIT 起始 + CSPLIT 完成（§11.17）</td><td>每方向至少 <strong>2 个缓冲</strong>——请求与应答异步到达，须同时驻留</td></tr>
     <tr><td>interrupt</td><td>§11.20</td><td>hub 的 FS handler <strong>不得本地重试</strong>，失败即回报主机</td></tr>
-    <tr><td>isochronous</td><td>SSPLIT 分散进微帧管道（§11.18）</td><td>Y0-Y7 记账；每微帧 FS 侧预算 <strong>187.5 raw 字节</strong>（§11.18.1）</td></tr>
+    <tr><td>isochronous</td><td>SSPLIT 分散进微帧管道（§11.18）</td><td>Y0-Y7 记录；每微帧 FS 侧预算 <strong>187.5 raw 字节</strong>（§11.18.1）</td></tr>
     <tr><td>（全局）</td><td>TT 状态机按 PID/端点类型分发（§11.16）</td><td>缓冲空间需求公式 §11.19</td></tr>
   </table>
 
-  <h2>内核落点：软件几乎只剩"擦屁股"</h2>
+  <h2>内核落点：软件只剩错误恢复</h2>
   <p>xHCI 把 split 的执行收进了硬件：驱动只把 hub descriptor 里的 TT 信息填进上下文——<code>tt_info</code> 的注释原话是 "used to construct split transaction tokens"（<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0003-dual-bus-root-port-standalone.html">课 0003</a> 吸收叙事的又一实证）：</p>
   <div class="flow">
     <div class="fnode"><b>构造</b>：xHC 用 TT 信息构造 split 事务令牌（槽上下文字段）
@@ -187,7 +187,7 @@ INIT_WORK(&amp;hub-&gt;tt.clear_work, hub_tt_work);</pre></div>
 
   <h2>评审视角</h2>
   <ul>
-    <li>TT 类补丁分两族：<strong>xHCI 内部的 split 调度</strong>（对表 §11.16-11.23 + 上下文构造字段）与 <strong>usbcore 的 ClearTTBuffer 恢复路径</strong>（对表 §11.24.2.3）。两族锚点不同，别混审。</li>
+    <li>TT 类补丁分两族：<strong>xHCI 内部的 split 调度</strong>（核对 §11.16-11.23 + 上下文构造字段）与 <strong>usbcore 的 ClearTTBuffer 恢复路径</strong>（核对 §11.24.2.3）。两族锚点不同，别混审。</li>
     <li>数字复核清单：微帧 125 µs / FS 帧 1 ms、8 微帧=1 帧（§7.1.12、§8.4.3）、每微帧 187.5 raw 字节（§11.18.1）、每方向 ≥2 缓冲（§11.17）、interrupt 禁止本地重试（§11.20）。</li>
   </ul>
 
