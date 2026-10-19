@@ -126,7 +126,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <h1>USB 2.0 / USB 3.2 / xHCI 知识体系地图测评</h1>
   <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
 
-  <p>你的使命是对 USB 栈补丁做<strong>规范章节级的权威评审</strong>。三本规范你已通读，但通读 ≠ 体系。本课不教新细节——它量的是<strong>整体框架</strong>：哪本规范管哪层、各子系统如何咬合。30 题覆盖 7 个领域，结果用来画<strong>缺口图</strong>，之后的每一节细节课都按缺口定制，且永远先在整体地图上定位再下钻。</p>
+  <p>你的使命是对 USB 栈补丁做<strong>规范章节级的权威评审</strong>。三本规范你已通读，但通读 ≠ 体系。本课不教新细节——它量的是<strong>整体框架</strong>：哪本规范管哪层、各子系统如何配合。30 题覆盖 7 个领域，结果用来画<strong>缺口图</strong>，之后的每一节细节课都按缺口定制，且永远先在整体地图上定位再下钻。</p>
 
   <div class="note"><strong>怎么作答：</strong>凭第一印象，不确定就选最像的——测的是整体框架的牢固度，不是背书。每题答完立即出对错与解析；全部答完后点<strong>复制总结发给老师</strong>，把结果粘回会话，我会据此写学习基线（learning record）并定制下一课。</div>
 
@@ -142,7 +142,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <div class="layer"><b>② 链路层（仅 USB3 有）</b><span class="src">USB3.2 §7（LTSSM/Header/DPP）；USB2 无独立链路层</span></div>
     <div class="layer"><b>① 电气与线缆（速率/复位/挂起）</b><span class="src">USB2 §7｜USB3.2 §6</span></div>
   </div>
-  <p style="font-size:.93rem;color:var(--muted)">一句话分工：<strong>USB 2.0</strong> 管总线本体与设备框架；<strong>USB 3.2</strong> 重造物理+链路层、沿用协议与设备框架；<strong>xHCI</strong> 只管主机控制器怎么编程，不管总线协议本身。评审补丁的第一问永远是：这条改动落在图上哪一层？</p>
+  <p style="font-size:.93rem;color:var(--muted)">三本规范的分工：<strong>USB 2.0</strong> 管总线本体与设备框架；<strong>USB 3.2</strong> 重造物理+链路层、沿用协议与设备框架；<strong>xHCI</strong> 只管主机控制器怎么编程，不管总线协议本身。评审补丁的第一问永远是：这条改动落在图上哪一层？</p>
 
   <h2>测评 · 30 题 × 7 领域</h2>
   <div id="quiz"></div>
@@ -357,7 +357,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: '内核认为端口"接稳"之前，要求连接状态连续稳定多久（去抖阈值）？',
     options: ['25 ms', '100 ms', '200 ms', '2000 ms'],
     answer: 1,
-    explain: 'B 对。hub_port_debounce（hub.c:4709）每 25 ms 步进采样，连续稳定 ≥100 ms 才算接稳（HUB_DEBOUNCE_STABLE，:140），对表规范 TATTDB ≥100 ms（§7.1.7.3 Fig 7-29）；总超时 2000 ms 是实现自定。25 ms 是步进、200 ms 是低速复位初值，别混。' },
+    explain: 'B 对。hub_port_debounce（hub.c:4709）每 25 ms 步进采样，连续稳定 ≥100 ms 才算接稳（HUB_DEBOUNCE_STABLE，:140），核对规范 TATTDB ≥100 ms（§7.1.7.3 Fig 7-29）；总超时 2000 ms 是实现自定。25 ms 是步进、200 ms 是低速复位初值，别混。' },
   { tag: '时序与数字',
     prompt: '根 hub 端口复位的内核等待初值是多少？',
     options: ['10 ms', '50 ms', '60 ms', '200 ms'],
