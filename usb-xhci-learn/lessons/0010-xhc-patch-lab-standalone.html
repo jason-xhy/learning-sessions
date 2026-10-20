@@ -110,12 +110,108 @@ td.good { background: #e9f7ee; }
 
 footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
 
+/* ===== 代码步进放映机（assets/codestepper.js；静态优先：无 JS 时代码全列+world0+refs 全可读） =====
+   v2（2026-10-20 用户四条修正）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
+   普通行无行号）；语句/调用级帧；双栏加大加高。 */
+.stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
+.stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
+.stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
+.stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+.stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
+.stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
+@media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 44rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; }
+.stepper .st-crow code { font: inherit; }
+.stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: var(--muted); font-size: .74rem; }
+.stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
+.stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
+.stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
+.stepper .st-crow.ph { background: var(--ink); color: #fff; font-weight: 700; margin-top: .5rem; border-radius: 3px; }
+.stepper .st-crow.ph .st-tag { color: #cfcfc5; }
+.stepper.js .st-crow { cursor: pointer; }
+.stepper.js .st-crow:hover { background: #f4f4ee; }
+.stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
+.stepper.js .st-crow.done { opacity: .66; }
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 44rem; overflow-y: auto; }
+.stepper .stw-ring { margin: .35rem 0 .6rem; }
+.stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.stepper .stw-rhead b { font-size: .84rem; }
+.stepper .stw-own { color: var(--muted); font-size: .7rem; }
+.stepper .stw-cells { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .stw-cell { position: relative; border: 1px dashed var(--line); border-radius: 4px; padding: .35rem .45rem .38rem; min-width: 6.8rem; text-align: center; background: #fff; }
+.stepper .stw-cell b { display: block; color: var(--muted); font-size: .64rem; letter-spacing: .04em; }
+.stepper .stw-cell .stw-t { display: block; font-weight: 600; font-size: .78rem; }
+.stepper .stw-cell .stw-f { display: block; color: #4a4a3f; font-size: .67rem; }
+.stepper .stw-cell .stw-cyc { display: block; color: var(--muted); font-size: .64rem; }
+.stepper .stw-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .stw-cell.st-published { border: 1px solid #1a5fb4; background: #e8f0fb; }
+.stepper .stw-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .stw-ptr { position: absolute; top: -0.6rem; font-size: .6rem; font-style: normal; padding: 0 .25rem; border-radius: 3px; color: #fff; }
+.stepper .stw-ptr.pe { left: .2rem; background: #1a5fb4; }
+.stepper .stw-ptr.pd { right: .2rem; background: var(--good); }
+.stepper .stw-box { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .stw-box > b { display: block; background: #f0efe6; padding: .2rem .5rem; font-size: .8rem; }
+.stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
+.stepper .stw-box th { width: 6em; background: #fbfbf6; }
+.stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+.stepper .st-note .st-mut { color: var(--muted); }
+.stepper .st-refs { margin-top: .55rem; }
+.stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .st-chip { font: inherit; font-size: .78rem; padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 10px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-chip.on { border-color: var(--accent); background: #fff3c4; }
+.stepper .st-fref { margin-left: .3rem; }
+.stepper .st-refs details { font-size: .85rem; }
+/* 引用弹窗 */
+.st-modal { display: none; position: fixed; inset: 0; background: rgba(20,20,15,.45); z-index: 90; padding: 3rem 1rem; }
+.st-modal.show { display: flex; }
+.st-modal .st-mbox { position: relative; margin: auto; max-width: 40rem; max-height: 80vh; overflow-y: auto; background: #fffdf4; border: 1px solid var(--ink); border-radius: 8px; padding: 1rem 1.2rem; }
+.st-modal .st-mclose { position: absolute; top: .5rem; right: .6rem; font: inherit; font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.st-modal .st-mbody h4 { margin: 0 0 .3rem; }
+.st-modal .st-msrc { color: var(--muted); font-size: .85rem; }
+.st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
+.st-modal .st-mnote { font-size: .88rem; }
+
+/* ===== 右缘批注（assets/marginnotes.js） ===== */
+@media (min-width: 1180px) {
+  body.mn-on { padding-right: 264px; }
+  body.mn-on .mn-rail { display: flex; }
+}
+.mn-rail { display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 252px; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 40; }
+.mn-rail .mn-head { font-weight: 700; font-size: .95rem; }
+.mn-rail .mn-cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
+.mn-rail button { font: inherit; font-size: .8rem; padding: .25rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; text-align: left; }
+.mn-rail .mn-add { background: var(--ink); color: #fff; text-align: center; }
+.mn-rail .mn-list { flex: 1; }
+.mn-rail .mn-empty { color: var(--muted); font-size: .78rem; }
+.mn-rail .mn-item { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .35rem .5rem; margin: .35rem 0; cursor: pointer; }
+.mn-rail .mn-item:hover { border-color: var(--accent); }
+.mn-rail .mn-anchor { color: var(--accent); font-size: .72rem; font-weight: 600; }
+.mn-rail .mn-text { font-size: .82rem; white-space: pre-wrap; }
+.mn-rail .mn-editor { border: 1px solid var(--accent); border-radius: 5px; background: #fff; padding: .4rem .5rem; }
+.mn-rail .mn-editor textarea { width: 100%; font: inherit; font-size: .82rem; border: 1px solid var(--line); border-radius: 4px; padding: .3rem; }
+.mn-rail .mn-eanchor { color: var(--accent); font-size: .72rem; font-weight: 600; margin-bottom: .25rem; }
+.mn-rail .mn-actions { display: flex; flex-direction: column; gap: .3rem; }
+.mn-rail .mn-tip { color: var(--muted); font-size: .72rem; }
+.mn-rail.mn-saved { outline: 2px solid var(--good); }
+.mn-pen { font: inherit; font-size: .7rem; border: 1px solid var(--line); border-radius: 3px; background: #fbfbf6; cursor: pointer; margin-left: .4rem; vertical-align: 1px; padding: 0 .3rem; }
+
 @media print {
   body { background: #fff; padding: 0; font-size: 10.5pt; }
   .opt:disabled { opacity: 1; }
   .explain { display: block; }
   .player .frame { display: block !important; }
   .player .pctl { display: none; }
+  .mn-rail, .mn-pen { display: none !important; }
+  body.mn-on { padding-right: 1rem; }
+  .stepper .st-ctl { display: none; }
+  .stepper .st-code { max-height: none; }
+  .st-modal { display: none !important; }
 }
 
 </style>
@@ -653,6 +749,104 @@ void usb_kill_urb(struct urb *urb)
 }</pre>
   <p>0009 教 giveback 时停在了"交还 usbcore"；usbcore 接下来怎么管理 urb 的余生（kill/poison/unlink、anchor、引用计数）是后续 usbcore 深读课的主场。这枚补丁是那门课的预告片：届时的主角（<code>urb-&gt;reject</code>、<code>use_count</code>、<code>usb_kill_urb_queue</code>）今天已经全部出场。</p>
 
+  <p>五章走完，把五枚补丁留在<strong>今天基线</strong>上的现场用真实代码连起来巡一遍（站⑤会跨出 xhci 走进 usbcore——补丁史自带的桥）：</p>
+  <!--STEPPER:0010:BEGIN-->
+  <div class="stepper">
+    <div class="st-intro"><h4>▶ 五枚补丁的今天：基线五站巡礼（五步法第⑤步「回望」的代码全景）</h4><p>左侧＝基线 62f4c998b297 上五枚补丁留下的现场代码（站⑤走进 usbcore 的 urb.c——补丁史自带跨模块的桥）。右侧＝五枚补丁账本（巡礼进度）与本站判据。用下方按钮或 ←/→ 键逐语句步进：每站=一章的⑤回望段，注释行常常就是判据原文。各章的①-④（症状/案发现场/根因/修复）在下方正文，步进器只走「今天的基线」。</p><p class="st-base">代码基线 master@62f4c998b297（与全课一致）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-grid">
+      <div class="st-code">
+<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>站① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）</code></div>
+<div class="st-crow fn" data-id="r1" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 3244-3246</span><code>static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
+		bool more_trbs_coming,
+		u32 field1, u32 field2, u32 field3, u32 field4)</code></div>
+<div class="st-crow ln" data-id="r2" style="padding-left:1.5em"><code>	struct xhci_generic_trb *trb;
+
+	trb = &amp;ring-&gt;enqueue-&gt;generic;
+	trb-&gt;field[0] = cpu_to_le32(field1);
+	trb-&gt;field[1] = cpu_to_le32(field2);
+	trb-&gt;field[2] = cpu_to_le32(field3);</code></div>
+<div class="st-crow ln" data-id="r3" style="padding-left:1.5em"><code>	/* make sure TRB is fully written before giving it to the controller */
+	wmb();
+	trb-&gt;field[3] = cpu_to_le32(field4);</code></div>
+<div class="st-crow ph" data-id="r4"><span class="st-tag">▶</span><code>站② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）</code></div>
+<div class="st-crow fn" data-id="r5" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 689-692</span><code>static int xhci_move_deq_to_next_td(struct xhci_hcd *xhci,
+				    struct xhci_virt_ep *ep,
+				    unsigned int stream_id)
+{</code></div>
+<div class="st-crow ln" data-id="r6" style="padding-left:1.5em"><code>	if (list_empty(&amp;ring-&gt;td_list)) {
+		if (trb_is_link(ring-&gt;enqueue))
+			inc_enq_past_link(xhci, ring, 0);
+		ep-&gt;queued_deq_seg = ring-&gt;enq_seg;
+		ep-&gt;queued_deq_ptr = ring-&gt;enqueue;
+		new_cycle = ring-&gt;cycle_state;</code></div>
+<div class="st-crow ln" data-id="r7" style="padding-left:1.5em"><code>	} else {
+		td = list_first_entry(&amp;ring-&gt;td_list, struct xhci_td, td_list);
+		ep-&gt;queued_deq_seg = td-&gt;start_seg;
+		ep-&gt;queued_deq_ptr = td-&gt;start_trb;
+		new_cycle = le32_to_cpu(td-&gt;start_trb-&gt;generic.field[3]) &amp; TRB_CYCLE;
+	}</code></div>
+<div class="st-crow ph" data-id="r8"><span class="st-tag">▶</span><code>站③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）</code></div>
+<div class="st-crow ln" data-id="r9" style="padding-left:0.4em"><code>	/* block queuing new trbs and ringing ep doorbell */
+	ep-&gt;ep_state |= EP_SOFT_CLEAR_TOGGLE;</code></div>
+<div class="st-crow ln" data-id="r10" style="padding-left:0.4em"><code>	if (*ep_state &amp; EP_SOFT_CLEAR_TOGGLE) {
+		xhci_warn(xhci, &quot;Can&#x27;t enqueue URB while manually clearing toggle\n&quot;);
+		ret = -EINVAL;
+		goto free_priv;</code></div>
+<div class="st-crow ln" data-id="r11" style="padding-left:0.4em"><code>cleanup:
+	xhci_free_command(xhci, stop_cmd);
+	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);
+	if (ep-&gt;ep_state &amp; EP_SOFT_CLEAR_TOGGLE)
+		ep-&gt;ep_state &amp;= ~EP_SOFT_CLEAR_TOGGLE;
+	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);
+}</code></div>
+<div class="st-crow ph" data-id="r12"><span class="st-tag">▶</span><code>站④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章的老朋友）</code></div>
+<div class="st-crow fn" data-id="r13" style="padding-left:0.4em"><span class="st-file">▸ xhci.h : 1306-1309</span><code>	int			status;
+	enum xhci_cancelled_td_status	cancel_status;
+	struct urb		*urb;
+	struct xhci_segment	*start_seg;</code></div>
+<div class="st-crow ln" data-id="r14" style="padding-left:1.5em"><code>	struct xhci_segment	*bounce_seg;
+	/* actual_length of the URB has already been set */
+	bool			urb_length_set;
+	bool			error_mid_td;</code></div>
+<div class="st-crow ln" data-id="r15" style="padding-left:0.4em"><code>		fallthrough;
+	case COMP_STALL_ERROR:
+		/* Did we transfer part of the data (middle) phase? */
+		if (trb_type == TRB_DATA || trb_type == TRB_NORMAL)
+			td-&gt;urb-&gt;actual_length = requested - remaining;
+		else if (!td-&gt;urb_length_set)
+			td-&gt;urb-&gt;actual_length = 0;
+		goto finish_td;</code></div>
+<div class="st-crow ph" data-id="r16"><span class="st-tag">▶</span><code>站⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的预告片）</code></div>
+<div class="st-crow fn" data-id="r17" style="padding-left:0.4em"><span class="st-file">▸ urb.c : 703-705</span><code>void usb_kill_urb(struct urb *urb)
+{
+	might_sleep();</code></div>
+<div class="st-crow ln" data-id="r18" style="padding-left:1.5em"><code>	if (!(urb &amp;&amp; urb-&gt;dev &amp;&amp; urb-&gt;ep))
+		return;
+	atomic_inc(&amp;urb-&gt;reject);</code></div>
+<div class="st-crow ln" data-id="r19" style="padding-left:1.5em"><code>	/*
+	 * Order the write of urb-&gt;reject above before the read
+	 * of urb-&gt;use_count below.  Pairs with the barriers in
+	 * __usb_hcd_giveback_urb() and usb_hcd_submit_urb().
+	 */
+	smp_mb__after_atomic();
+</code></div>
+<div class="st-crow ln" data-id="r20" style="padding-left:1.5em"><code>	usb_hcd_unlink_urb(urb, -ENOENT);
+	wait_event(usb_kill_urb_queue, atomic_read(&amp;urb-&gt;use_count) == 0);
+
+	atomic_dec(&amp;urb-&gt;reject);
+}</code></div>
+<div class="st-crow ctx" data-id="r21"><span class="st-tag">usbcore</span><code>五站巡礼完：判据在一次次修复里越发牢固</code></div>
+      </div>
+      <div class="st-world">
+<div class="stw-box"><b>五枚补丁账本（第⑤步「回望」巡礼进度）</b><table><tr><th>① 2021 wmb</th><td>576667bad341——待巡</td></tr><tr><th>② 2025 cycle</th><td>6328bdc988d2——待巡</td></tr><tr><th>③ ep_state</th><td>EP_SOFT_CLEAR_TOGGLE 三点——待巡</td></tr><tr><th>④ 2015 一比特</th><td>urb_length_set——待巡</td></tr><tr><th>⑤ usbcore</th><td>usb_kill_urb 屏障——待巡</td></tr></table></div><div class="stw-box"><b>本站判据（判据在一次次修复里越发牢固）</b><table><tr><th>五步法</th><td>症状→案发现场→根因→修复→回望</td></tr><tr><th>当前站</th><td>（未开局）</td></tr><tr><th>一句话判决</th><td>—</td></tr></table></div>
+      </div>
+    </div>
+    <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
+    <div class="st-refs"><details><summary>📎 p67 环约定 完全成型才许拨 cycle（发布闸门）（p67）</summary><p class="st-msrc">xHCI 1.2（2019） · p67</p><blockquote>Software shall never update the Enqueue Pointer (that is, toggle the Cycle bit of a TRB) until all TRBs between the previous and the new Enqueue Pointer location are fully formed.</blockquote><p class="st-mnote">站① wmb 兑现的规范条款——补丁只是给「完全成型」补上了硬件级顺序保证。</p></details><details><summary>📎 §4.9.2.1 cycle 合同本体（权威在环）（p175）</summary><p class="st-msrc">xHCI 1.2（2019） · p175</p><blockquote>The Cycle bit shall be written by the producer with the current value of the PCS bit. The Cycle bit shall be treated as Read-Only by the consumer.</blockquote><p class="st-mnote">站② 的判据底座：合同挂在每颗 TRB 的 cycle 位上——抄本（EP Context）不是合同方。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"五枚补丁的今天：基线五站巡礼（五步法第⑤步「回望」的代码全景）","intro":"左侧＝基线 62f4c998b297 上五枚补丁留下的现场代码（站⑤走进 usbcore 的 urb.c——补丁史自带跨模块的桥）。右侧＝五枚补丁账本（巡礼进度）与本站判据。用下方按钮或 ←/→ 键逐语句步进：每站=一章的⑤回望段，注释行常常就是判据原文。各章的①-④（症状/案发现场/根因/修复）在下方正文，步进器只走「今天的基线」。","baseline":"代码基线 master@62f4c998b297（与全课一致）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"站① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）"},{"id":"r1","kind":"fn","depth":0,"text":"static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,\n\t\tbool more_trbs_coming,\n\t\tu32 field1, u32 field2, u32 field3, u32 field4)","file":"xhci-ring.c","a":3244,"b":3246},{"id":"r2","kind":"ln","depth":1,"text":"\tstruct xhci_generic_trb *trb;\n\n\ttrb = &ring->enqueue->generic;\n\ttrb->field[0] = cpu_to_le32(field1);\n\ttrb->field[1] = cpu_to_le32(field2);\n\ttrb->field[2] = cpu_to_le32(field3);","file":"xhci-ring.c","a":3248,"b":3253},{"id":"r3","kind":"ln","depth":1,"text":"\t/* make sure TRB is fully written before giving it to the controller */\n\twmb();\n\ttrb->field[3] = cpu_to_le32(field4);","file":"xhci-ring.c","a":3254,"b":3256},{"id":"r4","kind":"ph","depth":0,"text":"站② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）"},{"id":"r5","kind":"fn","depth":0,"text":"static int xhci_move_deq_to_next_td(struct xhci_hcd *xhci,\n\t\t\t\t    struct xhci_virt_ep *ep,\n\t\t\t\t    unsigned int stream_id)\n{","file":"xhci-ring.c","a":689,"b":692},{"id":"r6","kind":"ln","depth":1,"text":"\tif (list_empty(&ring->td_list)) {\n\t\tif (trb_is_link(ring->enqueue))\n\t\t\tinc_enq_past_link(xhci, ring, 0);\n\t\tep->queued_deq_seg = ring->enq_seg;\n\t\tep->queued_deq_ptr = ring->enqueue;\n\t\tnew_cycle = ring->cycle_state;","file":"xhci-ring.c","a":727,"b":732},{"id":"r7","kind":"ln","depth":1,"text":"\t} else {\n\t\ttd = list_first_entry(&ring->td_list, struct xhci_td, td_list);\n\t\tep->queued_deq_seg = td->start_seg;\n\t\tep->queued_deq_ptr = td->start_trb;\n\t\tnew_cycle = le32_to_cpu(td->start_trb->generic.field[3]) & TRB_CYCLE;\n\t}","file":"xhci-ring.c","a":733,"b":738},{"id":"r8","kind":"ph","depth":0,"text":"站③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）"},{"id":"r9","kind":"ln","depth":0,"text":"\t/* block queuing new trbs and ringing ep doorbell */\n\tep->ep_state |= EP_SOFT_CLEAR_TOGGLE;","file":"xhci.c","a":3387,"b":3388},{"id":"r10","kind":"ln","depth":0,"text":"\tif (*ep_state & EP_SOFT_CLEAR_TOGGLE) {\n\t\txhci_warn(xhci, \"Can't enqueue URB while manually clearing toggle\\n\");\n\t\tret = -EINVAL;\n\t\tgoto free_priv;","file":"xhci.c","a":1689,"b":1692},{"id":"r11","kind":"ln","depth":0,"text":"cleanup:\n\txhci_free_command(xhci, stop_cmd);\n\tspin_lock_irqsave(&xhci->lock, flags);\n\tif (ep->ep_state & EP_SOFT_CLEAR_TOGGLE)\n\t\tep->ep_state &= ~EP_SOFT_CLEAR_TOGGLE;\n\tspin_unlock_irqrestore(&xhci->lock, flags);\n}","file":"xhci.c","a":3450,"b":3456},{"id":"r12","kind":"ph","depth":0,"text":"站④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章的老朋友）"},{"id":"r13","kind":"fn","depth":0,"text":"\tint\t\t\tstatus;\n\tenum xhci_cancelled_td_status\tcancel_status;\n\tstruct urb\t\t*urb;\n\tstruct xhci_segment\t*start_seg;","file":"xhci.h","a":1306,"b":1309},{"id":"r14","kind":"ln","depth":1,"text":"\tstruct xhci_segment\t*bounce_seg;\n\t/* actual_length of the URB has already been set */\n\tbool\t\t\turb_length_set;\n\tbool\t\t\terror_mid_td;","file":"xhci.h","a":1313,"b":1316},{"id":"r15","kind":"ln","depth":0,"text":"\t\tfallthrough;\n\tcase COMP_STALL_ERROR:\n\t\t/* Did we transfer part of the data (middle) phase? */\n\t\tif (trb_type == TRB_DATA || trb_type == TRB_NORMAL)\n\t\t\ttd->urb->actual_length = requested - remaining;\n\t\telse if (!td->urb_length_set)\n\t\t\ttd->urb->actual_length = 0;\n\t\tgoto finish_td;","file":"xhci-ring.c","a":2364,"b":2371},{"id":"r16","kind":"ph","depth":0,"text":"站⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的预告片）"},{"id":"r17","kind":"fn","depth":0,"text":"void usb_kill_urb(struct urb *urb)\n{\n\tmight_sleep();","file":"urb.c","a":703,"b":705},{"id":"r18","kind":"ln","depth":1,"text":"\tif (!(urb && urb->dev && urb->ep))\n\t\treturn;\n\tatomic_inc(&urb->reject);","file":"urb.c","a":706,"b":708},{"id":"r19","kind":"ln","depth":1,"text":"\t/*\n\t * Order the write of urb->reject above before the read\n\t * of urb->use_count below.  Pairs with the barriers in\n\t * __usb_hcd_giveback_urb() and usb_hcd_submit_urb().\n\t */\n\tsmp_mb__after_atomic();\n","file":"urb.c","a":709,"b":715},{"id":"r20","kind":"ln","depth":1,"text":"\tusb_hcd_unlink_urb(urb, -ENOENT);\n\twait_event(usb_kill_urb_queue, atomic_read(&urb->use_count) == 0);\n\n\tatomic_dec(&urb->reject);\n}","file":"urb.c","a":716,"b":720},{"id":"r21","kind":"ctx","depth":0,"text":"五站巡礼完：判据在一次次修复里越发牢固"}],"frames":[{"c":"r0","note":"案发：两颗 Set TR Dequeue 命令背靠背入队，第二颗只写一半就被 xHC 取走——命令环指针成垃圾值。今天这行注释+wmb 就是那枚补丁的全文。","ph":"站① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）"},{"c":"r1","note":"基线今天的 queue_trb。"},{"c":"r2","note":"取槽、前三枪（DW0-2）——修复前与修复后一模一样；出事的从来不是这几行，是它们与第四枪之间没有顺序保证。"},{"c":"r3","note":"★补丁全文=这两行：wmb() 插在 cycle 位所在的 DW3 之前——「先落数据、再翻 cycle」从口头合同变成 CPU 级强制。","refs":["r_gate"],"ev":[{"op":"dev","set":{"① 2021 wmb":"576667bad341——已巡（wmb 常驻）"}},{"op":"td","set":{"当前站":"① queue_trb wmb","一句话判决":"发布的开关必须是屏障之后的最后一步"}}]},{"c":"r4","note":"案发：VL805 端点 halt 后不更新 EP Context 的 cycle 位——信抄本的固件被现场打脸。判据：上下文抄本只能当参考，环上的 TRB 才是权威。","ph":"站② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）"},{"c":"r5","note":"把 dequeue 挪到下一个 TD（基线已再进化一轮，判决标准一毫米没动）。"},{"c":"r6","note":"环空分支：新 deq 取环游标，new_cycle 直接用环的 cycle_state——环空时抄本与现场一致，无争议。","ev":[{"op":"dev","set":{"② 2025 cycle":"6328bdc988d2——巡访中"}}]},{"c":"r7","note":"★有 TD 分支：new_cycle 从 TD 首颗 TRB 的 field[3] 现场读（& TRB_CYCLE）——不信 EP Context 抄本，只信环上的权威记录。","refs":["r_contract"],"ev":[{"op":"dev","set":{"② 2025 cycle":"6328bdc988d2——已巡（权威=环上 TRB）"}},{"op":"td","set":{"当前站":"② cycle 权威","一句话判决":"cycle 的权威记录在 TRB 上，不在口径抄本上"}}]},{"c":"r8","note":"状态位不是打上去就完事的标志——置位、拒绝、清位三点必须配对成完整的生命周期，缺一个出口就是泄漏。","ph":"站③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）"},{"c":"r9","note":"置位点：清 data toggle 前先挡门——「block queuing new trbs and ringing ep doorbell」。","ev":[{"op":"dev","set":{"③ ep_state":"置位 ✓（3388）——巡访中"}}]},{"c":"r10","note":"拒绝点：入队总口见位即拒（-EINVAL）——0008 第①相走过的 ep_state 检查就是这类门的日常形态。"},{"c":"r11","note":"★清位点：cleanup 标签汇合两条出口后，锁内查位清位——「if 条件下的清位在出口汇合后运行」正是这枚补丁的形态。","ev":[{"op":"dev","set":{"③ ep_state":"EP_SOFT_CLEAR_TOGGLE 三点——已巡（置位→拒绝→清位）"}},{"op":"td","set":{"当前站":"③ ep_state 出口纪律","一句话判决":"状态位必须配对清——置位/拒绝/清位三点连线"}}]},{"c":"r12","note":"出生证明是一枚 2015 年的补丁：EV1 记过账、EV2 到来时不得覆盖。今天连 STALL 错误分岔都要先问它一句。","ph":"站④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章的老朋友）"},{"c":"r13","note":"struct xhci_td 的成员区（状态位长住在 end_trb 旁边）。"},{"c":"r14","note":"★注释原话就是判据：「actual_length of the URB has already been set」——一个 bool 过程位，URB 级汇总值与 TD 级过程状态的分工。","ev":[{"op":"dev","set":{"④ 2015 一比特":"urb_length_set——巡访中"}}]},{"c":"r15","note":"★STALL 分岔也要先问它（:2369）：数据段中途记过账就不清零——十一年间消费者越变越多，这一比特守的门口越来越多。","ev":[{"op":"dev","set":{"④ 2015 一比特":"urb_length_set——已巡（EV1/EV2/STALL 三处消费）"}},{"op":"td","set":{"当前站":"④ urb_length_set","一句话判决":"先记账不放行、后到者不得覆盖——两颗事件间的记录合同"}}]},{"c":"r16","note":"kill 与 giveback 是两个 CPU 上的赛跑：reject 计数的写必须先于 use_count 的读可见——屏障配对写在注释里。","ph":"站⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的预告片）"},{"c":"r17","note":"usbcore 的 urb.c（本步进器唯一走出 xhci 的站——补丁史自带桥）。"},{"c":"r18","note":"先加拒绝计数：此后新提交会被拒之门外。"},{"c":"r19","note":"★屏障配对：注释点名对端——与 __usb_hcd_giveback_urb() / usb_hcd_submit_urb() 里的屏障成对成立（站① wmb 的跨模块同款思想：合同要两侧同时成立）。","ev":[{"op":"dev","set":{"⑤ usbcore":"usb_kill_urb 屏障——巡访中"}}]},{"c":"r20","note":"unlink 后睡等 use_count==0（正在飞的 urb 由 giveback 侧唤醒）——醒后撤拒绝计数，生命周期闭环。","ev":[{"op":"dev","set":{"⑤ usbcore":"usb_kill_urb 屏障——已巡（配对常驻）"}},{"op":"td","set":{"当前站":"⑤ usb_kill_urb","一句话判决":"屏障合同必须两侧配对——reject 先写可见、use_count 后读"}}]},{"c":"r21","note":"同一份基线上五枚补丁的现场：①发布的开关在屏障之后 ②cycle 权威在环上 ③状态位三点配对 ④过程位防覆盖 ⑤屏障两侧配对。修复本身还会被再修（站②已被 7c0c31c66a7f 重写）——不变的是判据。这也是读补丁史的方法论回声：先认判据，再看代码。","ev":[{"op":"td","set":{"当前站":"（收官）","一句话判决":"五枚补丁、五条判据——修复会老，判据长存"}}]}],"refs":[{"id":"r_gate","label":"p67 环约定","src":"xHCI 1.2（2019）","p":"p67","title":"完全成型才许拨 cycle（发布闸门）","quote":"Software shall never update the Enqueue Pointer (that is, toggle the Cycle bit of a TRB) until all TRBs between the previous and the new Enqueue Pointer location are fully formed.","note":"站① wmb 兑现的规范条款——补丁只是给「完全成型」补上了硬件级顺序保证。"},{"id":"r_contract","label":"§4.9.2.1","src":"xHCI 1.2（2019）","p":"p175","title":"cycle 合同本体（权威在环）","quote":"The Cycle bit shall be written by the producer with the current value of the PCS bit. The Cycle bit shall be treated as Read-Only by the consumer.","note":"站② 的判据底座：合同挂在每颗 TRB 的 cycle 位上——抄本（EP Context）不是合同方。"}],"world0":{"rings":{},"dev":{"title":"五枚补丁账本（第⑤步「回望」巡礼进度）","① 2021 wmb":"576667bad341——待巡","② 2025 cycle":"6328bdc988d2——待巡","③ ep_state":"EP_SOFT_CLEAR_TOGGLE 三点——待巡","④ 2015 一比特":"urb_length_set——待巡","⑤ usbcore":"usb_kill_urb 屏障——待巡"},"td":{"title":"本站判据（判据在一次次修复里越发牢固）","五步法":"症状→案发现场→根因→修复→回望","当前站":"（未开局）","一句话判决":"—"}}}</script>
+  </div>
+<!--STEPPER:0010:END-->
+
   <h2>五枚补丁落在课程地图的哪里</h2>
   <figure>
   <svg viewBox="0 0 880 350" role="img" aria-label="五枚补丁在六站全景图上的落点" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -844,6 +1038,421 @@ void usb_kill_urb(struct urb *urb)
     }
   }
   window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+/* marginnotes.js — 右缘批注组件（课程族共享，配 course.css 的 .mn 段）
+ * 读者在阅读途中随时把问题记在右缘（锚定最近的 h2/h3 节）；读完课把批注交给 LLM：
+ *   ① Chrome/Edge："关联本课文件" 后每次编辑自动写回 .html 内嵌块（File System Access
+ *      API；file:// 与 https:// 均为 secure context）——真正的"及时编辑"，课后直接
+ *      告诉 LLM"读这节课文件里的批注"；
+ *   ② 其它浏览器：导出批注版 HTML（下载，覆盖原文件即可）；
+ *   ③ 最快路径：复制全部批注（markdown），直接粘贴到对话里。
+ * 持久化：localStorage 为工作副本；载入时与文件内嵌 <!--MN:BEGIN--> 块按 id 取并集。
+ * LLM 侧解析：scripts/extract_reader_notes.py <lesson.html>。 */
+(function () {
+  'use strict';
+  try { init(); } catch (e) { /* 组件错误不白屏；无 JS 环境静态呈现不受影响 */ }
+  function init() {
+  var KEY = 'mn:' + location.pathname;
+  var BLOCK_RE = /<!--MN:BEGIN-->[\s\S]*?<!--MN:END-->/;
+  var BLOCK_TPL = function (notes) {
+    var json = JSON.stringify({ lesson: document.title, updated: new Date().toISOString(), notes: notes })
+      .replace(/</g, '\\u003c');
+    return '<!--MN:BEGIN--><script type="application/json" id="mn-data">' + json + '<\/script><!--MN:END-->';
+  };
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function uid() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  /* ---- 载入：localStorage ∪ 文件内嵌块 ---- */
+  var notes = [];
+  try { notes = (typeof localStorage !== 'undefined' && JSON.parse(localStorage.getItem(KEY) || '[]')) || []; } catch (e) { notes = []; }
+  var embeddedEl = document.getElementById('mn-data');
+  if (embeddedEl) {
+    try {
+      (JSON.parse(embeddedEl.textContent).notes || []).forEach(function (n) {
+        if (!notes.some(function (x) { return x.id === n.id; })) notes.push(n);
+      });
+    } catch (e) { /* 坏块忽略 */ }
+  }
+  function saveLocal() {
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify(notes)); } catch (e) { /* 隐私模式等 */ }
+  }
+
+  /* ---- 锚点：最近的 h2/h3 ---- */
+  var heads = Array.prototype.slice.call(document.querySelectorAll('main h2, main h3'));
+  function anchorOf(el) {
+    var h = null;
+    for (var i = 0; i < heads.length; i++) {
+      if (heads[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) h = heads[i];
+      else break;
+    }
+    return h ? h.textContent.trim().slice(0, 60) : '（开头）';
+  }
+
+  /* ---- 右缘栏 + 行内 ✎ ---- */
+  document.body.classList.add('mn-on');
+  var rail = document.createElement('aside');
+  rail.className = 'mn-rail';
+  rail.innerHTML = '<div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+    '<button type="button" class="mn-add">＋ 记一笔（锚定当前读到的节）</button>' +
+    '<div class="mn-list"></div>' +
+    '<div class="mn-actions">' +
+    '<button type="button" class="mn-link">🔗 关联本课文件（自动写回）</button>' +
+    '<button type="button" class="mn-dl">⬇ 导出批注版 HTML</button>' +
+    '<button type="button" class="mn-cp">📋 复制全部批注</button></div>' +
+    '<div class="mn-tip">读完后告诉老师：读这节课文件里的批注并逐条回答。</div>';
+  document.body.appendChild(rail);
+  var listEl = rail.querySelector('.mn-list'), cntEl = rail.querySelector('.mn-cnt');
+
+  var editId = null;
+  function openEditor(prefill) {
+    var id = editId;
+    var box = document.createElement('div');
+    box.className = 'mn-editor';
+    box.innerHTML = '<div class="mn-eanchor">锚点：' + esc(prefill.anchor) + '</div>' +
+      '<textarea rows="3" placeholder="记下你的问题/想法…（自动保存；随文件写回或复制给老师）"></textarea>' +
+      '<div><button type="button" class="mn-save">保存</button> ' +
+      '<button type="button" class="mn-cancel">取消</button> ' +
+      '<button type="button" class="mn-del">删除</button></div>';
+    var ta = box.querySelector('textarea');
+    ta.value = prefill.text || '';
+    box.querySelector('.mn-save').addEventListener('click', function () {
+      var t = ta.value.trim();
+      if (t) {
+        if (id) { var n = notes.find(function (x) { return x.id === id; }); if (n) { n.text = t; n.ts = Date.now(); } }
+        else notes.push({ id: uid(), anchor: prefill.anchor, text: t, ts: Date.now() });
+      } else if (id) notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    box.querySelector('.mn-cancel').addEventListener('click', function () { editId = null; box.remove(); });
+    box.querySelector('.mn-del').addEventListener('click', function () {
+      notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    rail.insertBefore(box, listEl);
+    ta.focus();
+  }
+  function render() {
+    cntEl.textContent = notes.length ? '（' + notes.length + '）' : '';
+    listEl.innerHTML = notes.length ? '' : '<div class="mn-empty">还没有批注。读到有疑问处，点节标题旁的 ✎ 或"记一笔"。</div>';
+    notes.slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (n) {
+      var d = document.createElement('div');
+      d.className = 'mn-item';
+      d.innerHTML = '<div class="mn-anchor">@' + esc(n.anchor) + '</div>' +
+        '<div class="mn-text">' + esc(n.text) + '</div>';
+      d.addEventListener('click', function () { editId = n.id; openEditor({ anchor: n.anchor, text: n.text }); });
+      listEl.appendChild(d);
+    });
+  }
+  rail.querySelector('.mn-add').addEventListener('click', function () {
+    /* 预取"当前读到"：视口内最后一个 h2/h3 */
+    var vis = heads.filter(function (h) { var r = h.getBoundingClientRect(); return r.top < innerHeight * 0.7; });
+    openEditor({ anchor: vis.length ? vis[vis.length - 1].textContent.trim().slice(0, 60) : '（开头）' });
+  });
+  heads.forEach(function (h) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mn-pen'; b.title = '在这一节记批注'; b.textContent = '✎';
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      editId = null;
+      openEditor({ anchor: h.textContent.trim().slice(0, 60) });
+    });
+    h.appendChild(b);
+  });
+  render();
+
+  /* ---- 写回/导出/复制 ---- */
+  var fh = null, fhText = null, writeTimer = null;
+  function scheduleWrite() {
+    if (!fh) return;
+    if (writeTimer) clearTimeout(writeTimer);
+    writeTimer = setTimeout(writeBack, 800);
+  }
+  async function writeBack() {
+    if (!fh) return;
+    try {
+      var w = await fh.createWritable();
+      await w.write(serializeInto(fhText));
+      await w.close();
+      rail.classList.add('mn-saved');
+      setTimeout(function () { rail.classList.remove('mn-saved'); }, 900);
+    } catch (e) { rail.querySelector('.mn-tip').textContent = '⚠ 自动写回失败：' + e.message + '（可用导出/复制兜底）'; }
+  }
+  function serializeInto(text) {
+    var block = BLOCK_TPL(notes);
+    if (BLOCK_RE.test(text)) return text.replace(BLOCK_RE, block);
+    if (/<\/body>/i.test(text)) return text.replace(/<\/body>/i, block + '\n</body>');
+    return text + '\n' + block;
+  }
+  rail.querySelector('.mn-link').addEventListener('click', async function () {
+    if (!window.showOpenFilePicker) {
+      rail.querySelector('.mn-tip').textContent = '此浏览器不支持直接写回（需 Chrome/Edge）。请用"导出批注版 HTML"或"复制全部批注"。';
+      return;
+    }
+    try {
+      var arr = document.contentType && document.contentType.indexOf('html') >= 0 ? [{
+        types: [{ description: 'HTML lesson', accept: { 'text/html': ['.html'] } }]
+      }] : undefined;
+      var handles = await window.showOpenFilePicker(arr && arr[0] ? { types: arr[0].types } : undefined);
+      fh = handles[0];
+      var r = await fh.getFile();
+      fhText = await r.text();
+      await writeBack();
+      rail.querySelector('.mn-link').textContent = '✅ 已关联：' + r.name + '（编辑即写回）';
+    } catch (e) { /* 用户取消等 */ }
+  });
+  rail.querySelector('.mn-dl').addEventListener('click', function () {
+    Promise.resolve(fhText || null).then(function (base) {
+      var text = base || ('<!DOCTYPE html>\n' + document.documentElement.outerHTML);
+      var blob = new Blob([serializeInto(text)], { type: 'text/html' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || 'lesson') + '-批注版.html';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    });
+  });
+  rail.querySelector('.mn-cp').addEventListener('click', function () {
+    var md = '# 《' + document.title + '》读者批注（' + notes.length + ' 条）\n\n' +
+      notes.slice().sort(function (a, b) { return a.ts - b.ts; })
+        .map(function (n) { return '## @' + n.anchor + '\n\n' + n.text + '\n'; }).join('\n');
+    var done = function () { rail.querySelector('.mn-tip').textContent = '✅ 已复制——直接粘贴给老师即可。'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(md).then(done);
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = md; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { }
+      ta.remove();
+    }
+  });
+  } /* init */
+})();
+
+</script>
+<script>
+/* codestepper.js — 代码步进放映机（课程族共享，配 course.css 的 .stepper 段）
+ * 数据驱动：宿主 div.stepper 内嵌 <script type="application/json" class="stepper-data">
+ *   { title, intro, baseline, phases[], rows[], frames[], refs[], world0 }
+ * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
+ * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
+ * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 账本。 */
+(function () {
+  'use strict';
+
+  /* ---------- 世界渲染（纯函数：state → HTML 字符串） ---------- */
+  var RING_ORDER = ['xfer', 'cmd', 'evt'];
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function cellHtml(c, ring, i, st) {
+    var cls = 'stw-cell st-' + (c.st || 'empty');
+    var ptr = [];
+    if (st && st.rings[ring].enq === i) ptr.push('<i class="stw-ptr pe">写▸enq</i>');
+    if (st && st.rings[ring].deq === i) ptr.push('<i class="stw-ptr pd">取▸deq</i>');
+    if (ring === 'evt') { /* 事件环指针语义反转，标签在 CSS 里换 */
+    }
+    return '<div class="' + cls + '">' + ptr.join('') +
+      '<b>' + esc(c.a) + '</b><span class="stw-t">' + (c.t ? esc(c.t) : '空') + '</span>' +
+      (c.f ? '<span class="stw-f">' + esc(c.f) + '</span>' : '') +
+      '<span class="stw-cyc">cyc=' + esc(c.cyc) + '</span></div>';
+  }
+  function worldHtml(W) {
+    var h = '';
+    RING_ORDER.forEach(function (k) {
+      if (!W.rings[k]) return;
+      var r = W.rings[k];
+      h += '<div class="stw-ring"><div class="stw-rhead"><b>' + esc(r.label) + '</b>' +
+        '<span class="stw-own">' + esc(r.own) + '</span></div><div class="stw-cells">';
+      r.cells.forEach(function (c, i) { h += cellHtml(c, k, i, W); });
+      h += '</div></div>';
+    });
+    ['dev', 'td'].forEach(function (k) {
+      if (!W[k]) return;
+      var b = W[k];
+      h += '<div class="stw-box"><b>' + esc(b.title) + '</b><table>';
+      Object.keys(b).forEach(function (f) {
+        if (f === 'title') return;
+        h += '<tr><th>' + esc(f) + '</th><td>' + esc(b[f]) + '</td></tr>';
+      });
+      h += '</table></div>';
+    });
+    return h;
+  }
+  function applyEv(W, ev) { /* 就地应用一条事件（深拷贝由调用方保证） */
+    if (!ev) return;
+    if (ev.op === 'cell') {
+      var c = W.rings[ev.ring].cells[ev.i];
+      Object.keys(ev.set || {}).forEach(function (k) { c[k] = ev.set[k]; });
+    } else if (ev.op === 'ptr') {
+      if (typeof ev.enq === 'number') W.rings[ev.ring].enq = ev.enq;
+      if (typeof ev.deq === 'number') W.rings[ev.ring].deq = ev.deq;
+    } else if (ev.op === 'dev' || ev.op === 'td') {
+      Object.keys(ev.set || {}).forEach(function (k) { W[ev.op][k] = ev.set[k]; });
+    }
+  }
+  function stateAt(D, idx) {
+    var W = JSON.parse(JSON.stringify(D.world0));
+    for (var i = 0; i <= idx && i < D.frames.length; i++)
+      (D.frames[i].ev || []).forEach(function (e) { applyEv(W, e); });
+    return W;
+  }
+
+  /* ---------- 弹窗（全局单例，多 stepper 共用） ---------- */
+  var modal = null;
+  function ensureModal() {
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'st-modal';
+    modal.innerHTML = '<div class="st-mbox" role="dialog" aria-modal="true">' +
+      '<button type="button" class="st-mclose">✕ 关闭</button><div class="st-mbody"></div></div>';
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || (e.target.getAttribute && e.target.getAttribute('class') === 'st-mclose'))
+        modal.classList.remove('show');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') modal.classList.remove('show');
+    });
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function showRef(ref) {
+    var m = ensureModal();
+    m.querySelector('.st-mbody').innerHTML =
+      '<h4>' + esc(ref.label) + ' · ' + esc(ref.title) + '</h4>' +
+      '<p class="st-msrc">' + esc(ref.src) + (ref.p ? ' · ' + esc(ref.p) : '') + '</p>' +
+      (ref.quote ? '<blockquote>' + esc(ref.quote) + '</blockquote>' : '') +
+      (ref.note ? '<p class="st-mnote">' + esc(ref.note) + '</p>' : '');
+    m.classList.add('show');
+  }
+
+  /* ---------- 每台 stepper 的初始化 ---------- */
+  function initStepper(root) {
+    var dataEl = root.querySelector('script.stepper-data');
+    if (!dataEl) return;
+    var D;
+    try { D = JSON.parse(dataEl.textContent); } catch (e) { return; /* 静态内容保留 */ }
+    var rows = {}, rowEls = {};
+    D.rows.forEach(function (r) { rows[r.id] = r; });
+    Array.prototype.forEach.call(root.querySelectorAll('.st-crow'), function (el) {
+      rowEls[el.getAttribute('data-id')] = el;
+    });
+    var codeBox = root.querySelector('.st-code');
+    var worldBox = root.querySelector('.st-world');
+    var noteBox = root.querySelector('.st-note');
+    var refsBox = root.querySelector('.st-refs');
+    if (!codeBox || !worldBox || !noteBox) return;
+
+    /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
+    var idx = 0, timer = null, lastWorld = null;
+    var N = D.frames.length;
+    var refMap = {};
+    (D.refs || []).forEach(function (r) { refMap[r.id] = r; });
+
+    /* 控制条 */
+    var ctl = document.createElement('div');
+    ctl.className = 'st-ctl';
+    ctl.innerHTML = '<button type="button" data-a="prev">◀ 上一行</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一行 ▶</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<span class="st-count"></span><span class="st-ph"></span>' +
+      '<span class="st-hint">←/→ 键也可步进</span>';
+    root.insertBefore(ctl, root.querySelector('.st-grid'));
+    var countEl = ctl.querySelector('.st-count'), phEl = ctl.querySelector('.st-ph');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+
+    /* 引用条（chips） */
+    var chips = document.createElement('div');
+    chips.className = 'st-chips';
+    (D.refs || []).forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'st-chip'; b.textContent = r.label + ' ' + r.title;
+      b.title = '查看规范原文'; b.setAttribute('data-ref', r.id);
+      b.addEventListener('click', function () { showRef(refMap[r.id]); });
+      chips.appendChild(b);
+    });
+    if (refsBox) { refsBox.innerHTML = ''; refsBox.appendChild(chips); }
+
+    function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = '播放'; }
+    function go(i) {
+      idx = Math.max(0, Math.min(N - 1, i));
+      var fr = D.frames[idx];
+      /* 当前行高亮 + 滚动跟随 */
+      Object.keys(rowEls).forEach(function (id) { rowEls[id].classList.remove('cur', 'done'); });
+      var cur = rowEls[fr.c];
+      if (cur) { cur.classList.add('cur'); cur.scrollIntoView({ block: 'nearest' }); }
+      /* 已执行过的同段行打 done（当前行之前出现过的行） */
+      var seen = {};
+      for (var k = 0; k <= idx; k++) seen[D.frames[k].c] = true;
+      Object.keys(seen).forEach(function (id) { if (rowEls[id] && id !== fr.c) rowEls[id].classList.add('done'); });
+      /* 世界面板重放 */
+      var W = stateAt(D, idx);
+      worldBox.innerHTML = worldHtml(W);
+      worldBox.classList.add('live');
+      lastWorld = W;
+      /* 当行解说 + 活跃引用 */
+      noteBox.innerHTML = (fr.note ? fr.note : '<span class="st-mut">（本行无注记）</span>') +
+        (fr.refs && fr.refs.length
+          ? ' <span class="st-fref">' + fr.refs.map(function (id) {
+              var r = refMap[id]; if (!r) return '';
+              return '<button type="button" class="st-chip on" data-ref="' + id + '">📎 ' + esc(r.label) + '</button>';
+            }).join('') + '</span>'
+          : '');
+      Array.prototype.forEach.call(noteBox.querySelectorAll('[data-ref]'), function (b) {
+        b.addEventListener('click', function () { showRef(refMap[b.getAttribute('data-ref')]); });
+      });
+      countEl.textContent = '行 ' + (idx + 1) + ' / ' + N;
+      phEl.textContent = fr.ph ? '· ' + fr.ph : '';
+      if (idx === N - 1) stop();
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { stop(); go(idx - 1); }
+      else if (a === 'next') { stop(); go(idx + 1); }
+      else if (a === 'reset') { stop(); go(0); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        if (idx === N - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === N - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2000);
+      }
+    });
+    /* 行点击跳帧：该行最近一次出现的帧 */
+    Object.keys(rowEls).forEach(function (id) {
+      rowEls[id].addEventListener('click', function () {
+        stop();
+        for (var k = idx; k < N; k++) if (D.frames[k].c === id) return go(k);
+        for (k = 0; k < N; k++) if (D.frames[k].c === id) return go(k);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      var r = root.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return; /* 只在视野内接管方向键 */
+      if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
+      else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
+    });
+    go(0);
+  }
+
+  document.querySelectorAll('.stepper').forEach(function (el) {
+    try { el.classList.add('js'); initStepper(el); }
+    catch (e) { /* 静态内容保留，组件自身错误不白屏 */ }
+  });
 })();
 
 </script>
