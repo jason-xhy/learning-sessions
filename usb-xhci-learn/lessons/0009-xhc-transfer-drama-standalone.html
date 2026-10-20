@@ -110,12 +110,108 @@ td.good { background: #e9f7ee; }
 
 footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
 
+/* ===== 代码步进放映机（assets/codestepper.js；静态优先：无 JS 时代码全列+world0+refs 全可读） =====
+   v2（2026-10-20 用户四条修正）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
+   普通行无行号）；语句/调用级帧；双栏加大加高。 */
+.stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
+.stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
+.stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
+.stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+.stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
+.stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
+@media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 44rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; }
+.stepper .st-crow code { font: inherit; }
+.stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: var(--muted); font-size: .74rem; }
+.stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
+.stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
+.stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
+.stepper .st-crow.ph { background: var(--ink); color: #fff; font-weight: 700; margin-top: .5rem; border-radius: 3px; }
+.stepper .st-crow.ph .st-tag { color: #cfcfc5; }
+.stepper.js .st-crow { cursor: pointer; }
+.stepper.js .st-crow:hover { background: #f4f4ee; }
+.stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
+.stepper.js .st-crow.done { opacity: .66; }
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 44rem; overflow-y: auto; }
+.stepper .stw-ring { margin: .35rem 0 .6rem; }
+.stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.stepper .stw-rhead b { font-size: .84rem; }
+.stepper .stw-own { color: var(--muted); font-size: .7rem; }
+.stepper .stw-cells { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .stw-cell { position: relative; border: 1px dashed var(--line); border-radius: 4px; padding: .35rem .45rem .38rem; min-width: 6.8rem; text-align: center; background: #fff; }
+.stepper .stw-cell b { display: block; color: var(--muted); font-size: .64rem; letter-spacing: .04em; }
+.stepper .stw-cell .stw-t { display: block; font-weight: 600; font-size: .78rem; }
+.stepper .stw-cell .stw-f { display: block; color: #4a4a3f; font-size: .67rem; }
+.stepper .stw-cell .stw-cyc { display: block; color: var(--muted); font-size: .64rem; }
+.stepper .stw-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .stw-cell.st-published { border: 1px solid #1a5fb4; background: #e8f0fb; }
+.stepper .stw-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .stw-ptr { position: absolute; top: -0.6rem; font-size: .6rem; font-style: normal; padding: 0 .25rem; border-radius: 3px; color: #fff; }
+.stepper .stw-ptr.pe { left: .2rem; background: #1a5fb4; }
+.stepper .stw-ptr.pd { right: .2rem; background: var(--good); }
+.stepper .stw-box { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .stw-box > b { display: block; background: #f0efe6; padding: .2rem .5rem; font-size: .8rem; }
+.stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
+.stepper .stw-box th { width: 6em; background: #fbfbf6; }
+.stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+.stepper .st-note .st-mut { color: var(--muted); }
+.stepper .st-refs { margin-top: .55rem; }
+.stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .st-chip { font: inherit; font-size: .78rem; padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 10px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-chip.on { border-color: var(--accent); background: #fff3c4; }
+.stepper .st-fref { margin-left: .3rem; }
+.stepper .st-refs details { font-size: .85rem; }
+/* 引用弹窗 */
+.st-modal { display: none; position: fixed; inset: 0; background: rgba(20,20,15,.45); z-index: 90; padding: 3rem 1rem; }
+.st-modal.show { display: flex; }
+.st-modal .st-mbox { position: relative; margin: auto; max-width: 40rem; max-height: 80vh; overflow-y: auto; background: #fffdf4; border: 1px solid var(--ink); border-radius: 8px; padding: 1rem 1.2rem; }
+.st-modal .st-mclose { position: absolute; top: .5rem; right: .6rem; font: inherit; font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.st-modal .st-mbody h4 { margin: 0 0 .3rem; }
+.st-modal .st-msrc { color: var(--muted); font-size: .85rem; }
+.st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
+.st-modal .st-mnote { font-size: .88rem; }
+
+/* ===== 右缘批注（assets/marginnotes.js） ===== */
+@media (min-width: 1180px) {
+  body.mn-on { padding-right: 264px; }
+  body.mn-on .mn-rail { display: flex; }
+}
+.mn-rail { display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 252px; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 40; }
+.mn-rail .mn-head { font-weight: 700; font-size: .95rem; }
+.mn-rail .mn-cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
+.mn-rail button { font: inherit; font-size: .8rem; padding: .25rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; text-align: left; }
+.mn-rail .mn-add { background: var(--ink); color: #fff; text-align: center; }
+.mn-rail .mn-list { flex: 1; }
+.mn-rail .mn-empty { color: var(--muted); font-size: .78rem; }
+.mn-rail .mn-item { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .35rem .5rem; margin: .35rem 0; cursor: pointer; }
+.mn-rail .mn-item:hover { border-color: var(--accent); }
+.mn-rail .mn-anchor { color: var(--accent); font-size: .72rem; font-weight: 600; }
+.mn-rail .mn-text { font-size: .82rem; white-space: pre-wrap; }
+.mn-rail .mn-editor { border: 1px solid var(--accent); border-radius: 5px; background: #fff; padding: .4rem .5rem; }
+.mn-rail .mn-editor textarea { width: 100%; font: inherit; font-size: .82rem; border: 1px solid var(--line); border-radius: 4px; padding: .3rem; }
+.mn-rail .mn-eanchor { color: var(--accent); font-size: .72rem; font-weight: 600; margin-bottom: .25rem; }
+.mn-rail .mn-actions { display: flex; flex-direction: column; gap: .3rem; }
+.mn-rail .mn-tip { color: var(--muted); font-size: .72rem; }
+.mn-rail.mn-saved { outline: 2px solid var(--good); }
+.mn-pen { font: inherit; font-size: .7rem; border: 1px solid var(--line); border-radius: 3px; background: #fbfbf6; cursor: pointer; margin-left: .4rem; vertical-align: 1px; padding: 0 .3rem; }
+
 @media print {
   body { background: #fff; padding: 0; font-size: 10.5pt; }
   .opt:disabled { opacity: 1; }
   .explain { display: block; }
   .player .frame { display: block !important; }
   .player .pctl { display: none; }
+  .mn-rail, .mn-pen { display: none !important; }
+  body.mn-on { padding-right: 1rem; }
+  .stepper .st-ctl { display: none; }
+  .stepper .st-code { max-height: none; }
+  .st-modal { display: none !important; }
 }
 
 </style>
@@ -1135,6 +1231,142 @@ static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir
 
   <div class="note"><b>读者问七（原话）</b>：「在GET_DESCRIPTOR最后这一段，一个中断的到来，xhci驱动能在事件环上收到2个事件，EV1、EV2，代码处理这两个事件的流程是什么？先处理哪一个后处理哪一个？对照源码进行分析。」</div>
   <p>先裁定：<strong>先 EV1、后 EV2，顺序是结构保证的 FIFO</strong>——xHC 按线上完成顺序写事件环（Data 阶段短包先落环＝帧 4/T7，Status 阶段收尾后落环＝帧 5/T10），驱动从中断前的 dequeue 位置起<strong>单循环逐颗消费</strong>，全程没有重排、没有优先级。两颗事件走<strong>同一条调用链</strong>，唯一的分岔在 <code>process_ctrl_td</code>：EV1 记录不放行，EV2 收尾归还 urb。</p>
+  <p>先把这两颗事件的<strong>完整一生</strong>用真实代码逐语句走一遍（①-⑥ 六站、三视角硬件幕、EV1/EV2 双圈消费）——下方 prose 是同一链路的逐段精读：</p>
+  <!--STEPPER:0009:BEGIN-->
+  <div class="stepper">
+    <div class="st-intro"><h4>▶ 64B 要 18B 回：一次中断两颗事件（EV1 记录不放行 · EV2 收尾归还）</h4><p>左侧＝这桩传输真实走过的内核代码（缩进＝调用父子；紫行＝usbcore 侧，绿行＝xHC/设备硬件动作）。右侧＝ep0 传输环、事件环、设备面板与两本账（预告 64 vs 实收 18）。用下方按钮或 ←/→ 键逐语句步进：①入队 ②TRB 化（胜负手=Data 的 ISP）③发布敲铃 ④硬件幕（短包+ZLP+两颗事件）⑤单循环两圈消费 ⑥给回。本步进器=第 6 章读者问七的代码全景，下方 prose 是同一链路的逐段精读。</p><p class="st-base">代码基线 master@62f4c998b297（与全课一致）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-grid">
+      <div class="st-code">
+<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>① 入队：usbcore 把 64B 读愿望交下来</code></div>
+<div class="st-crow ctx" data-id="r1"><span class="st-tag">usbcore</span><code>usbcore：usb_control_msg(GET_DESCRIPTOR Device, wLength=64) → usb_submit_urb() → hcd-&gt;driver-&gt;urb_enqueue()</code></div>
+<div class="st-crow fn" data-id="r2" style="padding-left:0.4em"><span class="st-file">▸ xhci.c : 1620</span><code>static int xhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flags)</code></div>
+<div class="st-crow ln" data-id="r3" style="padding-left:1.5em"><code>	else
+		num_tds = 1;</code></div>
+<div class="st-crow ln" data-id="r4" style="padding-left:1.5em"><code>	urb_priv = kzalloc_flex(*urb_priv, td, num_tds, mem_flags);
+	if (!urb_priv)
+		return -ENOMEM;
+
+	urb_priv-&gt;num_tds = num_tds;
+	urb_priv-&gt;num_tds_done = 0;
+	urb-&gt;hcpriv = urb_priv;</code></div>
+<div class="st-crow ph" data-id="r5"><span class="st-tag">▶</span><code>② TRB 化：三颗 TRB，胜负手在 Data 的 ISP（xhci-ring.c）</code></div>
+<div class="st-crow fn" data-id="r6" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 3775-3776</span><code>int xhci_queue_ctrl_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+		struct urb *urb, int slot_id, unsigned int ep_index)</code></div>
+<div class="st-crow ln" data-id="r7" style="padding-left:1.5em"><code>	/* 1 TRB for setup, 1 for status */
+	num_trbs = 2;</code></div>
+<div class="st-crow ln" data-id="r8" style="padding-left:1.5em"><code>	if (urb-&gt;transfer_buffer_length &gt; 0)
+		num_trbs++;</code></div>
+<div class="st-crow ln" data-id="r9" style="padding-left:1.5em"><code>	field = 0;
+	field |= TRB_IDT | TRB_TYPE(TRB_SETUP);</code></div>
+<div class="st-crow ln" data-id="r10" style="padding-left:1.5em"><code>			if (setup-&gt;bRequestType &amp; USB_DIR_IN)
+				field |= TRB_TX_TYPE(TRB_DATA_IN);
+			else
+				field |= TRB_TX_TYPE(TRB_DATA_OUT);</code></div>
+<div class="st-crow ln" data-id="r11" style="padding-left:1.5em"><code>	if (usb_urb_dir_in(urb))
+		field = TRB_ISP | TRB_TYPE(TRB_DATA);</code></div>
+<div class="st-crow ln" data-id="r12" style="padding-left:1.5em"><code>	queue_trb(xhci, ep_ring, false,
+			0,
+			0,
+			TRB_INTR_TARGET(0),
+			/* Event on completion */
+			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring-&gt;cycle_state);</code></div>
+<div class="st-crow ln" data-id="r13" style="padding-left:1.5em"><code>	 * isn&#x27;t reordered.
+	 */
+	wmb();
+	if (start_cycle)
+		start_trb-&gt;field[3] |= cpu_to_le32(start_cycle);
+	else
+		start_trb-&gt;field[3] &amp;= cpu_to_le32(~TRB_CYCLE);
+	xhci_ring_ep_doorbell(xhci, slot_id, ep_index, stream_id);</code></div>
+<div class="st-crow ph" data-id="r14"><span class="st-tag">▶</span><code>④ xHC 取指执行＋设备回话（硬件——绿行=xHC，设备视角看线上）</code></div>
+<div class="st-crow hw" data-id="r15"><span class="st-tag">xHC/设备</span><code>取指 Setup（槽+00）：线上 SETUP 事务（80 06 00 01 00 00 40 00）——设备在地址 0 上收到「要 64 字节」</code></div>
+<div class="st-crow hw" data-id="r16"><span class="st-tag">xHC/设备</span><code>设备回话：描述符只有 18 字节（bcdUSB…bNumConfigurations）——18＜64＝短包；xHC 取指 Data（槽+10·IN）并 DMA 直写接收缓冲</code></div>
+<div class="st-crow hw" data-id="r17"><span class="st-tag">xHC/设备</span><code>Status（槽+20·OUT 零长包）：主机发 ZLP 收尾确认，设备 ACK——控制传输三阶段走完（ZLP 用途①）</code></div>
+<div class="st-crow hw" data-id="r18"><span class="st-tag">xHC/设备</span><code>两枚旗标先后命中：ISP×短包 → EV1 落事件环槽0（CC=Short·回指+10·残量46）；IOC → EV2 落槽1（CC=Success·回指+20）——同一中断窗口，FIFO 先 EV1 后 EV2</code></div>
+<div class="st-crow ph" data-id="r19"><span class="st-tag">▶</span><code>⑤ 事件消费：单循环两圈（先 EV1 记录不放行，后 EV2 收尾归还）</code></div>
+<div class="st-crow ln" data-id="r20" style="padding-left:0.4em"><code>	/*
+	 * Clear the op reg interrupt status first,
+	 * so we can receive interrupts from other MSI-X interrupters.
+	 * USBSTS bits are write 1 to clear.
+	 */
+	writel(STS_EINT, &amp;xhci-&gt;op_regs-&gt;status);</code></div>
+<div class="st-crow fn" data-id="r21" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 3092-3094</span><code>static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir,
+			      bool skip_events)
+{</code></div>
+<div class="st-crow ln" data-id="r22" style="padding-left:1.5em"><code>	/* Process all OS owned event TRBs on this event ring */
+	while (unhandled_event_trb(ir-&gt;event_ring)) {</code></div>
+<div class="st-crow ln" data-id="r23" style="padding-left:1.5em"><code>		if (!skip_events)
+			err = xhci_handle_event_trb(xhci, ir, ir-&gt;event_ring-&gt;dequeue);</code></div>
+<div class="st-crow fn" data-id="r24" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 2632-2634</span><code>static int handle_tx_event(struct xhci_hcd *xhci,
+			   struct xhci_interrupter *ir,
+			   struct xhci_transfer_event *event)</code></div>
+<div class="st-crow ln" data-id="r25" style="padding-left:2.6em"><code>	slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event-&gt;flags));
+	ep_index = TRB_TO_EP_ID(le32_to_cpu(event-&gt;flags)) - 1;
+	trb_comp_code = GET_COMP_CODE(le32_to_cpu(event-&gt;transfer_len));
+	ep_trb_dma = le64_to_cpu(event-&gt;buffer);</code></div>
+<div class="st-crow ln" data-id="r26" style="padding-left:2.6em"><code>	/* find the transfer trb this events points to */
+	ep_trb = xhci_dma_to_trb(ep_ring-&gt;deq_seg, ep_trb_dma, NULL);</code></div>
+<div class="st-crow ln" data-id="r27" style="padding-left:2.6em"><code>
+	do {
+		td = list_first_entry(&amp;ep_ring-&gt;td_list, struct xhci_td,
+				      td_list);
+
+		/* Is this TRB not part of the currently executing TD? */
+		if (!trb_in_td(td, ep_trb_dma)) {</code></div>
+<div class="st-crow ln" data-id="r28" style="padding-left:2.6em"><code>	if (usb_endpoint_xfer_control(&amp;td-&gt;urb-&gt;ep-&gt;desc))
+		process_ctrl_td(xhci, ep, ep_ring, td, ep_trb, event);</code></div>
+<div class="st-crow fn" data-id="r29" style="padding-left:2.6em"><span class="st-file">▸ xhci-ring.c : 2306-2309</span><code>static void process_ctrl_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,
+			    struct xhci_ring *ep_ring,  struct xhci_td *td,
+			    union xhci_trb *ep_trb, struct xhci_transfer_event *event)
+{</code></div>
+<div class="st-crow ln" data-id="r30" style="padding-left:3.7em"><code>	case COMP_SHORT_PACKET:
+		td-&gt;status = 0;</code></div>
+<div class="st-crow ln" data-id="r31" style="padding-left:3.7em"><code>	if (trb_type == TRB_DATA ||
+		trb_type == TRB_NORMAL) {
+		td-&gt;urb_length_set = true;
+		td-&gt;urb-&gt;actual_length = requested - remaining;
+		xhci_dbg(xhci, &quot;Waiting for status stage event\n&quot;);
+		return;</code></div>
+<div class="st-crow ln" data-id="r32" style="padding-left:1.5em"><code>		/* Update SW event ring dequeue pointer */
+		inc_deq(xhci, ir-&gt;event_ring);</code></div>
+<div class="st-crow ln" data-id="r33" style="padding-left:2.6em"><code>	/* find the transfer trb this events points to */
+	ep_trb = xhci_dma_to_trb(ep_ring-&gt;deq_seg, ep_trb_dma, NULL);</code></div>
+<div class="st-crow ln" data-id="r34" style="padding-left:3.7em"><code>	case COMP_SUCCESS:
+		if (trb_type != TRB_STATUS) {
+			xhci_warn(xhci, &quot;WARN: Success on ctrl %s TRB without IOC set?\n&quot;,
+				  (trb_type == TRB_DATA) ? &quot;data&quot; : &quot;setup&quot;);
+			td-&gt;status = -ESHUTDOWN;
+			break;
+		}
+		td-&gt;status = 0;</code></div>
+<div class="st-crow ln" data-id="r35" style="padding-left:3.7em"><code>	/* at status stage */
+	if (!td-&gt;urb_length_set)
+		td-&gt;urb-&gt;actual_length = requested;
+
+finish_td:
+	finish_td(xhci, ep, ep_ring, td, trb_comp_code);</code></div>
+<div class="st-crow ln" data-id="r36" style="padding-left:1.5em"><code>	xhci_update_erst_dequeue(xhci, ir, true);</code></div>
+<div class="st-crow ph" data-id="r37"><span class="st-tag">▶</span><code>⑥ 给回：两本账结清，urb 带着实话回家</code></div>
+<div class="st-crow ln" data-id="r38" style="padding-left:0.4em"><code>	inc_td_cnt(urb);
+	/* Giveback the urb when all the tds are completed */
+	if (last_td_in_urb(td)) {</code></div>
+<div class="st-crow ln" data-id="r39" style="padding-left:0.4em"><code>		xhci_giveback_urb_in_irq(xhci, td, status);</code></div>
+<div class="st-crow ln" data-id="r40" style="padding-left:0.4em"><code>	xhci_urb_free_priv(urb_priv);
+	usb_hcd_unlink_urb_from_ep(hcd, urb);
+	trace_xhci_urb_giveback(urb);
+	usb_hcd_giveback_urb(hcd, urb, status);</code></div>
+<div class="st-crow ctx" data-id="r41"><span class="st-tag">usbcore</span><code>usbcore：urb-&gt;complete(urb) → 枚举流程拿到 18 字节设备描述符全文</code></div>
+      </div>
+      <div class="st-world">
+<div class="stw-ring"><div class="stw-rhead"><b>ep0 传输环（8 槽教具——本桩 TD 占槽+00/+10/+20）</b><span class="stw-own">生产者=驱动（写 TRB·推进 enq）｜消费者=xHC（取指·推进 deq）</span></div><div class="stw-cells"><div class="stw-cell st-empty"><b>+00</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+10</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+20</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+30</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+40</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+50</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+60</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+70</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div></div></div><div class="stw-ring"><div class="stw-rhead"><b>事件环（4 槽教具——本桩两颗事件将连落槽0/1）</b><span class="stw-own">生产者=xHC（写事件）｜消费者=驱动（读事件·写回 ERDP）</span></div><div class="stw-cells"><div class="stw-cell st-empty"><b>60000</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>60010</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>60020</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>60030</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div></div></div><div class="stw-box"><b>设备（键盘 · 三视角之橙色轴）</b><table><tr><th>地址</th><td>0（BSR=1 语境——还没落址）</td></tr><tr><th>状态</th><td>Default</td></tr><tr><th>当前动作</th><td>空闲</td></tr><tr><th>线上</th><td>—</td></tr></table></div><div class="stw-box"><b>两本账：urb → TD → TRB（预告 vs 实收）</b><table><tr><th>urb</th><td>usb_control_msg：GET_DESCRIPTOR(Device, wLength=64)，setup=80 06 00 01 00 00 40 00</td></tr><tr><th>TD</th><td>（未入队）</td></tr><tr><th>TRB</th><td>—</td></tr><tr><th>actual_length</th><td>—（预告 64）</td></tr><tr><th>status</th><td>排队中</td></tr></table></div>
+      </div>
+    </div>
+    <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
+    <div class="st-refs"><details><summary>📎 §4.10.1.1 短包 × ISP 才产事件（p191）</summary><p class="st-msrc">xHCI 1.2（2019） · p191</p><blockquote>If the Interrupt-on Short Packet (ISP) or if the Interrupt On Completion (IOC) flag is set to &#x27;1&#x27; in the TRB that the Short Packet condition occurred on, a Transfer Event shall be generated for that TRB with the Completion Code set to Short Packet.</blockquote><p class="st-mnote">EV1 的出生证明：Data TRB 打了 ISP、短包落在它身上——两条件相乘才有这颗事件。</p></details><details><summary>📎 §4.10 IOC 命中即产事件（p189）</summary><p class="st-msrc">xHCI 1.2（2019） · p189</p><blockquote>If upon transfer completion of a TRB the Interrupt On Completion (IOC) flag is set, the xHC shall generate a Transfer Event TRB. Note the generation of an Event TRB always generates an interrupt to the host.</blockquote><p class="st-mnote">EV2 的出生证明：Status TRB 的 IOC——两颗事件共享同一个中断窗口。</p></details><details><summary>📎 §4.11.2.2 三阶段 TRB 与 USB 阶段 1:1（p211）</summary><p class="st-msrc">xHCI 1.2（2019） · p211</p><blockquote>A control transfer consists of multiple transactions partitioned into stages: a setup stage, an optional data stage, and a terminating status stage. The xHCI defines the Setup Stage TRB, Data Stage TRB, and Status Stage TRB to provide a 1:1 mapping to the respective USB control transfer stages.</blockquote><p class="st-mnote">三颗 TRB 的剧本结构；Status 的零长载荷=ZLP 用途①。</p></details><details><summary>📎 §4.11.7.1 实收字节的算术（两本账对账）（p234）</summary><p class="st-msrc">xHCI 1.2（2019） · p234</p><blockquote>To determine the number of bytes actually transferred, software shall add the TRB Transfer Length fields of all TRBs up to and including the TRB that generated the Transfer Event, and subtract the Transfer Event TRB Transfer Length field.</blockquote><p class="st-mnote">内核实现=td-&gt;urb_length_set/actual_length=requested−remaining（:2384-2385）：EV1 记 64−46=18、EV2 不覆盖。</p></details><details><summary>📎 §4.9.4 事件环消费合同（CCS/ERDP）（p179/183）</summary><p class="st-msrc">xHCI 1.2（2019） · p179/183</p><blockquote>If the Cycle bit of the Event TRB pointed to by the Event Ring Dequeue Pointer equals CCS, then the Event TRB is a valid event, software processes it and advances the Event Ring Dequeue Pointer. … Software writes to the ERDP register shall always advance the Event Ring Dequeue Pointer value.</blockquote><p class="st-mnote">while 条件（unhandled_event_trb）与出循环写 ERDP 各兑现半条。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"64B 要 18B 回：一次中断两颗事件（EV1 记录不放行 · EV2 收尾归还）","intro":"左侧＝这桩传输真实走过的内核代码（缩进＝调用父子；紫行＝usbcore 侧，绿行＝xHC/设备硬件动作）。右侧＝ep0 传输环、事件环、设备面板与两本账（预告 64 vs 实收 18）。用下方按钮或 ←/→ 键逐语句步进：①入队 ②TRB 化（胜负手=Data 的 ISP）③发布敲铃 ④硬件幕（短包+ZLP+两颗事件）⑤单循环两圈消费 ⑥给回。本步进器=第 6 章读者问七的代码全景，下方 prose 是同一链路的逐段精读。","baseline":"代码基线 master@62f4c998b297（与全课一致）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"① 入队：usbcore 把 64B 读愿望交下来"},{"id":"r1","kind":"ctx","depth":0,"text":"usbcore：usb_control_msg(GET_DESCRIPTOR Device, wLength=64) → usb_submit_urb() → hcd->driver->urb_enqueue()"},{"id":"r2","kind":"fn","depth":0,"text":"static int xhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flags)","file":"xhci.c","a":1620,"b":1620},{"id":"r3","kind":"ln","depth":1,"text":"\telse\n\t\tnum_tds = 1;","file":"xhci.c","a":1639,"b":1640},{"id":"r4","kind":"ln","depth":1,"text":"\turb_priv = kzalloc_flex(*urb_priv, td, num_tds, mem_flags);\n\tif (!urb_priv)\n\t\treturn -ENOMEM;\n\n\turb_priv->num_tds = num_tds;\n\turb_priv->num_tds_done = 0;\n\turb->hcpriv = urb_priv;","file":"xhci.c","a":1642,"b":1648},{"id":"r5","kind":"ph","depth":0,"text":"② TRB 化：三颗 TRB，胜负手在 Data 的 ISP（xhci-ring.c）"},{"id":"r6","kind":"fn","depth":0,"text":"int xhci_queue_ctrl_tx(struct xhci_hcd *xhci, gfp_t mem_flags,\n\t\tstruct urb *urb, int slot_id, unsigned int ep_index)","file":"xhci-ring.c","a":3775,"b":3776},{"id":"r7","kind":"ln","depth":1,"text":"\t/* 1 TRB for setup, 1 for status */\n\tnum_trbs = 2;","file":"xhci-ring.c","a":3813,"b":3814},{"id":"r8","kind":"ln","depth":1,"text":"\tif (urb->transfer_buffer_length > 0)\n\t\tnum_trbs++;","file":"xhci-ring.c","a":3820,"b":3821},{"id":"r9","kind":"ln","depth":1,"text":"\tfield = 0;\n\tfield |= TRB_IDT | TRB_TYPE(TRB_SETUP);","file":"xhci-ring.c","a":3842,"b":3843},{"id":"r10","kind":"ln","depth":1,"text":"\t\t\tif (setup->bRequestType & USB_DIR_IN)\n\t\t\t\tfield |= TRB_TX_TYPE(TRB_DATA_IN);\n\t\t\telse\n\t\t\t\tfield |= TRB_TX_TYPE(TRB_DATA_OUT);","file":"xhci-ring.c","a":3850,"b":3853},{"id":"r11","kind":"ln","depth":1,"text":"\tif (usb_urb_dir_in(urb))\n\t\tfield = TRB_ISP | TRB_TYPE(TRB_DATA);","file":"xhci-ring.c","a":3866,"b":3867},{"id":"r12","kind":"ln","depth":1,"text":"\tqueue_trb(xhci, ep_ring, false,\n\t\t\t0,\n\t\t\t0,\n\t\t\tTRB_INTR_TARGET(0),\n\t\t\t/* Event on completion */\n\t\t\tfield | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring->cycle_state);","file":"xhci-ring.c","a":3910,"b":3915},{"id":"r13","kind":"ln","depth":1,"text":"\t * isn't reordered.\n\t */\n\twmb();\n\tif (start_cycle)\n\t\tstart_trb->field[3] |= cpu_to_le32(start_cycle);\n\telse\n\t\tstart_trb->field[3] &= cpu_to_le32(~TRB_CYCLE);\n\txhci_ring_ep_doorbell(xhci, slot_id, ep_index, stream_id);","file":"xhci-ring.c","a":3443,"b":3450},{"id":"r14","kind":"ph","depth":0,"text":"④ xHC 取指执行＋设备回话（硬件——绿行=xHC，设备视角看线上）"},{"id":"r15","kind":"hw","depth":0,"text":"取指 Setup（槽+00）：线上 SETUP 事务（80 06 00 01 00 00 40 00）——设备在地址 0 上收到「要 64 字节」"},{"id":"r16","kind":"hw","depth":0,"text":"设备回话：描述符只有 18 字节（bcdUSB…bNumConfigurations）——18＜64＝短包；xHC 取指 Data（槽+10·IN）并 DMA 直写接收缓冲"},{"id":"r17","kind":"hw","depth":0,"text":"Status（槽+20·OUT 零长包）：主机发 ZLP 收尾确认，设备 ACK——控制传输三阶段走完（ZLP 用途①）"},{"id":"r18","kind":"hw","depth":0,"text":"两枚旗标先后命中：ISP×短包 → EV1 落事件环槽0（CC=Short·回指+10·残量46）；IOC → EV2 落槽1（CC=Success·回指+20）——同一中断窗口，FIFO 先 EV1 后 EV2"},{"id":"r19","kind":"ph","depth":0,"text":"⑤ 事件消费：单循环两圈（先 EV1 记录不放行，后 EV2 收尾归还）"},{"id":"r20","kind":"ln","depth":0,"text":"\t/*\n\t * Clear the op reg interrupt status first,\n\t * so we can receive interrupts from other MSI-X interrupters.\n\t * USBSTS bits are write 1 to clear.\n\t */\n\twritel(STS_EINT, &xhci->op_regs->status);","file":"xhci-ring.c","a":3214,"b":3219},{"id":"r21","kind":"fn","depth":0,"text":"static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir,\n\t\t\t      bool skip_events)\n{","file":"xhci-ring.c","a":3092,"b":3094},{"id":"r22","kind":"ln","depth":1,"text":"\t/* Process all OS owned event TRBs on this event ring */\n\twhile (unhandled_event_trb(ir->event_ring)) {","file":"xhci-ring.c","a":3117,"b":3118},{"id":"r23","kind":"ln","depth":1,"text":"\t\tif (!skip_events)\n\t\t\terr = xhci_handle_event_trb(xhci, ir, ir->event_ring->dequeue);","file":"xhci-ring.c","a":3119,"b":3120},{"id":"r24","kind":"fn","depth":1,"text":"static int handle_tx_event(struct xhci_hcd *xhci,\n\t\t\t   struct xhci_interrupter *ir,\n\t\t\t   struct xhci_transfer_event *event)","file":"xhci-ring.c","a":2632,"b":2634},{"id":"r25","kind":"ln","depth":2,"text":"\tslot_id = TRB_TO_SLOT_ID(le32_to_cpu(event->flags));\n\tep_index = TRB_TO_EP_ID(le32_to_cpu(event->flags)) - 1;\n\ttrb_comp_code = GET_COMP_CODE(le32_to_cpu(event->transfer_len));\n\tep_trb_dma = le64_to_cpu(event->buffer);","file":"xhci-ring.c","a":2648,"b":2651},{"id":"r26","kind":"ln","depth":2,"text":"\t/* find the transfer trb this events points to */\n\tep_trb = xhci_dma_to_trb(ep_ring->deq_seg, ep_trb_dma, NULL);","file":"xhci-ring.c","a":2672,"b":2673},{"id":"r27","kind":"ln","depth":2,"text":"\n\tdo {\n\t\ttd = list_first_entry(&ep_ring->td_list, struct xhci_td,\n\t\t\t\t      td_list);\n\n\t\t/* Is this TRB not part of the currently executing TD? */\n\t\tif (!trb_in_td(td, ep_trb_dma)) {","file":"xhci-ring.c","a":2846,"b":2852},{"id":"r28","kind":"ln","depth":2,"text":"\tif (usb_endpoint_xfer_control(&td->urb->ep->desc))\n\t\tprocess_ctrl_td(xhci, ep, ep_ring, td, ep_trb, event);","file":"xhci-ring.c","a":2954,"b":2955},{"id":"r29","kind":"fn","depth":2,"text":"static void process_ctrl_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,\n\t\t\t    struct xhci_ring *ep_ring,  struct xhci_td *td,\n\t\t\t    union xhci_trb *ep_trb, struct xhci_transfer_event *event)\n{","file":"xhci-ring.c","a":2306,"b":2309},{"id":"r30","kind":"ln","depth":3,"text":"\tcase COMP_SHORT_PACKET:\n\t\ttd->status = 0;","file":"xhci-ring.c","a":2331,"b":2332},{"id":"r31","kind":"ln","depth":3,"text":"\tif (trb_type == TRB_DATA ||\n\t\ttrb_type == TRB_NORMAL) {\n\t\ttd->urb_length_set = true;\n\t\ttd->urb->actual_length = requested - remaining;\n\t\txhci_dbg(xhci, \"Waiting for status stage event\\n\");\n\t\treturn;","file":"xhci-ring.c","a":2382,"b":2387},{"id":"r32","kind":"ln","depth":1,"text":"\t\t/* Update SW event ring dequeue pointer */\n\t\tinc_deq(xhci, ir->event_ring);","file":"xhci-ring.c","a":3135,"b":3136},{"id":"r33","kind":"ln","depth":2,"text":"\t/* find the transfer trb this events points to */\n\tep_trb = xhci_dma_to_trb(ep_ring->deq_seg, ep_trb_dma, NULL);","file":"xhci-ring.c","a":2672,"b":2673},{"id":"r34","kind":"ln","depth":3,"text":"\tcase COMP_SUCCESS:\n\t\tif (trb_type != TRB_STATUS) {\n\t\t\txhci_warn(xhci, \"WARN: Success on ctrl %s TRB without IOC set?\\n\",\n\t\t\t\t  (trb_type == TRB_DATA) ? \"data\" : \"setup\");\n\t\t\ttd->status = -ESHUTDOWN;\n\t\t\tbreak;\n\t\t}\n\t\ttd->status = 0;","file":"xhci-ring.c","a":2322,"b":2329},{"id":"r35","kind":"ln","depth":3,"text":"\t/* at status stage */\n\tif (!td->urb_length_set)\n\t\ttd->urb->actual_length = requested;\n\nfinish_td:\n\tfinish_td(xhci, ep, ep_ring, td, trb_comp_code);","file":"xhci-ring.c","a":2390,"b":2395},{"id":"r36","kind":"ln","depth":1,"text":"\txhci_update_erst_dequeue(xhci, ir, true);","file":"xhci-ring.c","a":3142,"b":3142},{"id":"r37","kind":"ph","depth":0,"text":"⑥ 给回：两本账结清，urb 带着实话回家"},{"id":"r38","kind":"ln","depth":0,"text":"\tinc_td_cnt(urb);\n\t/* Giveback the urb when all the tds are completed */\n\tif (last_td_in_urb(td)) {","file":"xhci-ring.c","a":906,"b":908},{"id":"r39","kind":"ln","depth":0,"text":"\t\txhci_giveback_urb_in_irq(xhci, td, status);","file":"xhci-ring.c","a":919,"b":919},{"id":"r40","kind":"ln","depth":0,"text":"\txhci_urb_free_priv(urb_priv);\n\tusb_hcd_unlink_urb_from_ep(hcd, urb);\n\ttrace_xhci_urb_giveback(urb);\n\tusb_hcd_giveback_urb(hcd, urb, status);","file":"xhci-ring.c","a":821,"b":824},{"id":"r41","kind":"ctx","depth":0,"text":"usbcore：urb->complete(urb) → 枚举流程拿到 18 字节设备描述符全文"}],"frames":[{"c":"r0","note":"六站旅程第 1 站从简（0008 已逐行走过入队总入口）——本课主角在后面的事件侧。","ph":"① 入队：usbcore 把 64B 读愿望交下来"},{"c":"r1","note":"usbcore 的愿望：给我 64 字节设备描述符。缓冲区按 64 预备——设备会回多少，这份合同里没写。","ev":[{"op":"td","set":{"urb":"64B 读愿望 → urb_enqueue（进入 xHCI 驱动）"}}]},{"c":"r2","note":"入队总入口。"},{"c":"r3","note":"控制传输＝1 个 TD（num_tds 规则③）。"},{"c":"r4","note":"分配 urb_priv+TD、urb↔TD 互指——两本账立账（预告 64 记在 urb 侧）。","ev":[{"op":"td","set":{"TD":"TD1 建立（urb↔TD 互指）"}}]},{"c":"r5","note":"Setup 内联 8B＋Data（IN·ISP）＋Status（IOC）——ISP 是本剧本的伏笔：没有它，18B 短包不会有任何事件。","ph":"② TRB 化：三颗 TRB，胜负手在 Data 的 ISP（xhci-ring.c）"},{"c":"r6","note":"控制传输打包主函数。"},{"c":"r7","note":"控制传输骨架恒 2 颗：Setup+Status。"},{"c":"r8","note":"有数据段（64B）→ 第 3 颗，共 3 颗。"},{"c":"r9","note":"Setup 段：IDT 内联＋类型=SETUP（8 字节 setup 包直接装进 DW0-1）。","ev":[{"op":"cell","ring":"xfer","i":0,"set":{"t":"Setup","f":"DW0-1=80 06 00 01 00 00 40 00（内联）","cyc":"1","st":"written"}}]},{"c":"r10","note":"TRT 预告：数据段是 IN（设备把描述符发给主机）。","refs":["r_stage"]},{"c":"r11","note":"★胜负手：IN 方向的 Data TRB 打 ISP——「短包才有事件」的合同布线（若 64B 足额，则 ISP 不响、只等 Status 的 IOC）。","refs":["r_isp"],"ev":[{"op":"cell","ring":"xfer","i":1,"set":{"t":"Data","f":"DW0-1=接收缓冲 DW2=len64 DW3=ISP|DATA|DIR=IN","cyc":"1","st":"written"}}]},{"c":"r12","note":"Status 段：零长、方向 OUT、IOC——整桩的「完税回执」触发器。","refs":["r_ioc"],"ev":[{"op":"cell","ring":"xfer","i":2,"set":{"t":"Status","f":"DW2=len0 DW3=IOC|STATUS|OUT","cyc":"1","st":"written"}},{"op":"td","set":{"TRB":"Setup@+00 → Data@+10 → Status@+20"}}]},{"c":"r13","note":"原子发布：wmb→翻首颗 cycle→敲门铃（0008 细走）。三颗对 xHC 整体可见。","ev":[{"op":"cell","ring":"xfer","i":0,"set":{"st":"published"}},{"op":"cell","ring":"xfer","i":1,"set":{"st":"published"}},{"op":"cell","ring":"xfer","i":2,"set":{"st":"published"}},{"op":"ptr","ring":"xfer","enq":3},{"op":"td","set":{"status":"已发布+敲铃——等 xHC 取指"}}]},{"c":"r14","note":"左侧无代码行：这一幕的主角是 xHC 与设备。设备只有 18 字节的实话——短包由此发生。","ph":"④ xHC 取指执行＋设备回话（硬件——绿行=xHC，设备视角看线上）"},{"c":"r15","note":"三阶段开演（§3.2.9）：Setup→Data→Status。","refs":["r_stage"],"ev":[{"op":"cell","ring":"xfer","i":0,"set":{"f":"已取指 ✓","st":"consumed"}},{"op":"ptr","ring":"xfer","deq":1},{"op":"dev","set":{"当前动作":"解码：GET_DESCRIPTOR(64)","线上":"SETUP + DATA0(8B)：80 06 00 01 00 00 40 00"}}]},{"c":"r16","note":"★数据先于事件：18 字节此刻已经躺在驱动的接收缓冲里（DW0-1 合同兑付）——但「通知」还没来：ISP 事件在下一帧。这一拍是第 4 章立的锚。","refs":["r_isp"],"ev":[{"op":"cell","ring":"xfer","i":1,"set":{"f":"已取指 ✓（设备只回 18B）","st":"consumed"}},{"op":"ptr","ring":"xfer","deq":2},{"op":"dev","set":{"当前动作":"回 18 字节（短包）","线上":"DATA0(18B)＝设备描述符全文"}},{"op":"td","set":{"actual_length":"18（DMA 直写——先于事件）"}}]},{"c":"r17","note":"Status 阶段载荷恒 0：这次「空包」是主机的确认回执。","ev":[{"op":"cell","ring":"xfer","i":2,"set":{"f":"已取指 ✓","st":"consumed"}},{"op":"ptr","ring":"xfer","deq":3},{"op":"dev","set":{"当前动作":"Status 阶段 ACK","线上":"OUT 零长包（ZLP）← 主机确认"}}]},{"c":"r18","note":"一颗 TD 两颗事件：xHC 按线上完成顺序写环，没有重排。中断只拉一次——驱动马上进场。","refs":["r_isp","r_ioc"],"ev":[{"op":"cell","ring":"evt","i":0,"set":{"t":"EV1 短包","f":"CC=13·回指+10·残量46","cyc":"1","st":"published"}},{"op":"cell","ring":"evt","i":1,"set":{"t":"EV2 ✓TD","f":"CC=1·回指+20","cyc":"1","st":"published"}},{"op":"ptr","ring":"evt","enq":2},{"op":"td","set":{"status":"EV1/EV2 已落环——一次中断，两颗待消费"}}]},{"c":"r19","note":"读者问七的答案在代码里：while 条件=cycle 合同，每圈一颗，FIFO 结构保证顺序——分岔在 process_ctrl_td。","ph":"⑤ 事件消费：单循环两圈（先 EV1 记录不放行，后 EV2 收尾归还）"},{"c":"r20","note":"中断入口：先写 1 清 USBSTS 状态位（MSI-X 语义），再消费主中断器。"},{"c":"r21","note":"事件消费循环（中断上下文）。"},{"c":"r22","note":"循环条件=cycle 合同（0007⑤）：deq 处事件的 cyc==软件轮次 1——两颗都有效，进圈 1（EV1）。","ev":[{"op":"dev","set":{"当前动作":"（设备已完工——下面是驱动与环的独角戏）","线上":"—"}}]},{"c":"r23","note":"消费 deq 指着的 EV1：按类型分派——Transfer Event 走 handle_tx_event，下钻。"},{"c":"r24","note":"传输事件处理：从事件反查 TD。"},{"c":"r25","note":"EV1 三字段读两样：完成码=Short Packet、回指地址=Data 槽+10（DMA 视角）。"},{"c":"r26","note":"回指地址解析回内核里那颗 Data TRB 的本体（dma_to_trb）。"},{"c":"r27","note":"从 td_list 认领：回指+10 落在 TD1 区间 [+00,+20] ✓——两本账对账开始。"},{"c":"r28","note":"控制端点 → process_ctrl_td 下钻（分岔点）。"},{"c":"r29","note":"控制 TD 的分阶段记账（本剧本主角）。"},{"c":"r30","note":"完成码分诊：COMP_SHORT_PACKET → td->status=0（短包不是错误）。"},{"c":"r31","note":"★EV1 的归宿：事件落在 Data TRB → 只记 actual_length=requested−remaining=64−46=18、urb_length_set=true，打印「等 Status 事件」直接 return——TD 留在队列，不放行。","refs":["r_actual"],"ev":[{"op":"td","set":{"actual_length":"18（EV1 记账，不放行）","status":"等 Status 事件"}}]},{"c":"r32","note":""},{"c":"r22","note":"圈 2（EV2）：deq 处 cyc 仍==轮次——还有一颗。","ev":[{"op":"dev","set":{"当前动作":"（同一次中断的下半场）"}}]},{"c":"r23","note":"消费 EV2：同一条链。"},{"c":"r25","note":"EV2 三字段：完成码=Success、回指地址=Status 槽+20。"},{"c":"r33","note":"（同链重走：回指解析→认领→分派，路径与 EV1 完全一致——唯一的分岔在 process_ctrl_td。）"},{"c":"r34","note":"完成码分诊：COMP_SUCCESS 且事件恰落在 Status TRB ✓——「Success 只认 Status」的校验通过，td->status=0。","refs":["r_actual"]},{"c":"r35","note":"Status 段收尾：urb_length_set 已被 EV1 置 true——18 不被覆盖（两颗事件的记账在此合流）；转 finish_td。","ev":[{"op":"td","set":{"status":"0（Success·EV2 收尾）","actual_length":"18（EV1 的账保住）"}}]},{"c":"r32","note":""},{"c":"r36","note":"出循环：写回 ERDP＋清 EHB——向生产者 xHC 上报「两颗都收到了」。","refs":["r_erdp"]},{"c":"r37","note":"finish_td→xhci_dequeue_td（主环 deq 跳到 end_trb+1）→td_cleanup→给回——本站只看账本合拢。","ph":"⑥ 给回：两本账结清，urb 带着实话回家"},{"c":"r38","note":"TD 计数＋1；控制传输 1 TD 即 last_td_in_urb → 可以给回。"},{"c":"r39","note":"调用 xhci_giveback_urb_in_irq——下钻一层即终点站。"},{"c":"r40","note":"释放 urb_priv/TD 账本；usb_hcd_giveback_urb——usbcore 接力。","ev":[{"op":"td","set":{"status":"已给回：status=0 · actual=18","TD":"TD1 出队（两本账结清）"}}]},{"c":"r41","note":"预告 64、实收 18：两本账在 process_ctrl_td 合流（EV1 记数、EV2 放行），短包不是错误而是「提前给完了」的实话。一次门铃、一次中断、两颗事件——六站走完。SET_CONFIGURATION 等后续桩是同一台机器的同构两拍版。","ev":[{"op":"dev","set":{"当前动作":"回到空闲（等下一桩请求）","线上":"—"}}]}],"refs":[{"id":"r_isp","label":"§4.10.1.1","src":"xHCI 1.2（2019）","p":"p191","title":"短包 × ISP 才产事件","quote":"If the Interrupt-on Short Packet (ISP) or if the Interrupt On Completion (IOC) flag is set to '1' in the TRB that the Short Packet condition occurred on, a Transfer Event shall be generated for that TRB with the Completion Code set to Short Packet.","note":"EV1 的出生证明：Data TRB 打了 ISP、短包落在它身上——两条件相乘才有这颗事件。"},{"id":"r_ioc","label":"§4.10","src":"xHCI 1.2（2019）","p":"p189","title":"IOC 命中即产事件","quote":"If upon transfer completion of a TRB the Interrupt On Completion (IOC) flag is set, the xHC shall generate a Transfer Event TRB. Note the generation of an Event TRB always generates an interrupt to the host.","note":"EV2 的出生证明：Status TRB 的 IOC——两颗事件共享同一个中断窗口。"},{"id":"r_stage","label":"§4.11.2.2","src":"xHCI 1.2（2019）","p":"p211","title":"三阶段 TRB 与 USB 阶段 1:1","quote":"A control transfer consists of multiple transactions partitioned into stages: a setup stage, an optional data stage, and a terminating status stage. The xHCI defines the Setup Stage TRB, Data Stage TRB, and Status Stage TRB to provide a 1:1 mapping to the respective USB control transfer stages.","note":"三颗 TRB 的剧本结构；Status 的零长载荷=ZLP 用途①。"},{"id":"r_actual","label":"§4.11.7.1","src":"xHCI 1.2（2019）","p":"p234","title":"实收字节的算术（两本账对账）","quote":"To determine the number of bytes actually transferred, software shall add the TRB Transfer Length fields of all TRBs up to and including the TRB that generated the Transfer Event, and subtract the Transfer Event TRB Transfer Length field.","note":"内核实现=td->urb_length_set/actual_length=requested−remaining（:2384-2385）：EV1 记 64−46=18、EV2 不覆盖。"},{"id":"r_erdp","label":"§4.9.4","src":"xHCI 1.2（2019）","p":"p179/183","title":"事件环消费合同（CCS/ERDP）","quote":"If the Cycle bit of the Event TRB pointed to by the Event Ring Dequeue Pointer equals CCS, then the Event TRB is a valid event, software processes it and advances the Event Ring Dequeue Pointer. … Software writes to the ERDP register shall always advance the Event Ring Dequeue Pointer value.","note":"while 条件（unhandled_event_trb）与出循环写 ERDP 各兑现半条。"}],"world0":{"rings":{"xfer":{"label":"ep0 传输环（8 槽教具——本桩 TD 占槽+00/+10/+20）","own":"生产者=驱动（写 TRB·推进 enq）｜消费者=xHC（取指·推进 deq）","cells":[{"a":"+00","t":"","f":"","cyc":"—","st":"empty"},{"a":"+10","t":"","f":"","cyc":"—","st":"empty"},{"a":"+20","t":"","f":"","cyc":"—","st":"empty"},{"a":"+30","t":"","f":"","cyc":"—","st":"empty"},{"a":"+40","t":"","f":"","cyc":"—","st":"empty"},{"a":"+50","t":"","f":"","cyc":"—","st":"empty"},{"a":"+60","t":"","f":"","cyc":"—","st":"empty"},{"a":"+70","t":"","f":"","cyc":"—","st":"empty"}],"enq":0,"deq":0},"evt":{"label":"事件环（4 槽教具——本桩两颗事件将连落槽0/1）","own":"生产者=xHC（写事件）｜消费者=驱动（读事件·写回 ERDP）","cells":[{"a":"60000","t":"","f":"","cyc":"1","st":"empty"},{"a":"60010","t":"","f":"","cyc":"1","st":"empty"},{"a":"60020","t":"","f":"","cyc":"1","st":"empty"},{"a":"60030","t":"","f":"","cyc":"1","st":"empty"}],"enq":0,"deq":0}},"dev":{"title":"设备（键盘 · 三视角之橙色轴）","地址":"0（BSR=1 语境——还没落址）","状态":"Default","当前动作":"空闲","线上":"—"},"td":{"title":"两本账：urb → TD → TRB（预告 vs 实收）","urb":"usb_control_msg：GET_DESCRIPTOR(Device, wLength=64)，setup=80 06 00 01 00 00 40 00","TD":"（未入队）","TRB":"—","actual_length":"—（预告 64）","status":"排队中"}}}</script>
+  </div>
+<!--STEPPER:0009:END-->
+
   <p>消费循环本体在 <code>xhci_handle_events</code>（第 4 章贴过它的函数头）——while 的条件就是 0007 立过的 cycle 合同：<strong>事件上的 cycle 位等于环的 cycle_state，才算软件的事件</strong>：</p>
 <pre>/* xhci-ring.c:137-141（unhandled_event_trb——cycle 合同的软件侧判定） */
 static bool unhandled_event_trb(struct xhci_ring *ring)
@@ -1480,6 +1712,421 @@ static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xh
       }
     });
     go(0);
+  });
+})();
+
+</script>
+<script>
+/* marginnotes.js — 右缘批注组件（课程族共享，配 course.css 的 .mn 段）
+ * 读者在阅读途中随时把问题记在右缘（锚定最近的 h2/h3 节）；读完课把批注交给 LLM：
+ *   ① Chrome/Edge："关联本课文件" 后每次编辑自动写回 .html 内嵌块（File System Access
+ *      API；file:// 与 https:// 均为 secure context）——真正的"及时编辑"，课后直接
+ *      告诉 LLM"读这节课文件里的批注"；
+ *   ② 其它浏览器：导出批注版 HTML（下载，覆盖原文件即可）；
+ *   ③ 最快路径：复制全部批注（markdown），直接粘贴到对话里。
+ * 持久化：localStorage 为工作副本；载入时与文件内嵌 <!--MN:BEGIN--> 块按 id 取并集。
+ * LLM 侧解析：scripts/extract_reader_notes.py <lesson.html>。 */
+(function () {
+  'use strict';
+  try { init(); } catch (e) { /* 组件错误不白屏；无 JS 环境静态呈现不受影响 */ }
+  function init() {
+  var KEY = 'mn:' + location.pathname;
+  var BLOCK_RE = /<!--MN:BEGIN-->[\s\S]*?<!--MN:END-->/;
+  var BLOCK_TPL = function (notes) {
+    var json = JSON.stringify({ lesson: document.title, updated: new Date().toISOString(), notes: notes })
+      .replace(/</g, '\\u003c');
+    return '<!--MN:BEGIN--><script type="application/json" id="mn-data">' + json + '<\/script><!--MN:END-->';
+  };
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function uid() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  /* ---- 载入：localStorage ∪ 文件内嵌块 ---- */
+  var notes = [];
+  try { notes = (typeof localStorage !== 'undefined' && JSON.parse(localStorage.getItem(KEY) || '[]')) || []; } catch (e) { notes = []; }
+  var embeddedEl = document.getElementById('mn-data');
+  if (embeddedEl) {
+    try {
+      (JSON.parse(embeddedEl.textContent).notes || []).forEach(function (n) {
+        if (!notes.some(function (x) { return x.id === n.id; })) notes.push(n);
+      });
+    } catch (e) { /* 坏块忽略 */ }
+  }
+  function saveLocal() {
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify(notes)); } catch (e) { /* 隐私模式等 */ }
+  }
+
+  /* ---- 锚点：最近的 h2/h3 ---- */
+  var heads = Array.prototype.slice.call(document.querySelectorAll('main h2, main h3'));
+  function anchorOf(el) {
+    var h = null;
+    for (var i = 0; i < heads.length; i++) {
+      if (heads[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) h = heads[i];
+      else break;
+    }
+    return h ? h.textContent.trim().slice(0, 60) : '（开头）';
+  }
+
+  /* ---- 右缘栏 + 行内 ✎ ---- */
+  document.body.classList.add('mn-on');
+  var rail = document.createElement('aside');
+  rail.className = 'mn-rail';
+  rail.innerHTML = '<div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+    '<button type="button" class="mn-add">＋ 记一笔（锚定当前读到的节）</button>' +
+    '<div class="mn-list"></div>' +
+    '<div class="mn-actions">' +
+    '<button type="button" class="mn-link">🔗 关联本课文件（自动写回）</button>' +
+    '<button type="button" class="mn-dl">⬇ 导出批注版 HTML</button>' +
+    '<button type="button" class="mn-cp">📋 复制全部批注</button></div>' +
+    '<div class="mn-tip">读完后告诉老师：读这节课文件里的批注并逐条回答。</div>';
+  document.body.appendChild(rail);
+  var listEl = rail.querySelector('.mn-list'), cntEl = rail.querySelector('.mn-cnt');
+
+  var editId = null;
+  function openEditor(prefill) {
+    var id = editId;
+    var box = document.createElement('div');
+    box.className = 'mn-editor';
+    box.innerHTML = '<div class="mn-eanchor">锚点：' + esc(prefill.anchor) + '</div>' +
+      '<textarea rows="3" placeholder="记下你的问题/想法…（自动保存；随文件写回或复制给老师）"></textarea>' +
+      '<div><button type="button" class="mn-save">保存</button> ' +
+      '<button type="button" class="mn-cancel">取消</button> ' +
+      '<button type="button" class="mn-del">删除</button></div>';
+    var ta = box.querySelector('textarea');
+    ta.value = prefill.text || '';
+    box.querySelector('.mn-save').addEventListener('click', function () {
+      var t = ta.value.trim();
+      if (t) {
+        if (id) { var n = notes.find(function (x) { return x.id === id; }); if (n) { n.text = t; n.ts = Date.now(); } }
+        else notes.push({ id: uid(), anchor: prefill.anchor, text: t, ts: Date.now() });
+      } else if (id) notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    box.querySelector('.mn-cancel').addEventListener('click', function () { editId = null; box.remove(); });
+    box.querySelector('.mn-del').addEventListener('click', function () {
+      notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    rail.insertBefore(box, listEl);
+    ta.focus();
+  }
+  function render() {
+    cntEl.textContent = notes.length ? '（' + notes.length + '）' : '';
+    listEl.innerHTML = notes.length ? '' : '<div class="mn-empty">还没有批注。读到有疑问处，点节标题旁的 ✎ 或"记一笔"。</div>';
+    notes.slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (n) {
+      var d = document.createElement('div');
+      d.className = 'mn-item';
+      d.innerHTML = '<div class="mn-anchor">@' + esc(n.anchor) + '</div>' +
+        '<div class="mn-text">' + esc(n.text) + '</div>';
+      d.addEventListener('click', function () { editId = n.id; openEditor({ anchor: n.anchor, text: n.text }); });
+      listEl.appendChild(d);
+    });
+  }
+  rail.querySelector('.mn-add').addEventListener('click', function () {
+    /* 预取"当前读到"：视口内最后一个 h2/h3 */
+    var vis = heads.filter(function (h) { var r = h.getBoundingClientRect(); return r.top < innerHeight * 0.7; });
+    openEditor({ anchor: vis.length ? vis[vis.length - 1].textContent.trim().slice(0, 60) : '（开头）' });
+  });
+  heads.forEach(function (h) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mn-pen'; b.title = '在这一节记批注'; b.textContent = '✎';
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      editId = null;
+      openEditor({ anchor: h.textContent.trim().slice(0, 60) });
+    });
+    h.appendChild(b);
+  });
+  render();
+
+  /* ---- 写回/导出/复制 ---- */
+  var fh = null, fhText = null, writeTimer = null;
+  function scheduleWrite() {
+    if (!fh) return;
+    if (writeTimer) clearTimeout(writeTimer);
+    writeTimer = setTimeout(writeBack, 800);
+  }
+  async function writeBack() {
+    if (!fh) return;
+    try {
+      var w = await fh.createWritable();
+      await w.write(serializeInto(fhText));
+      await w.close();
+      rail.classList.add('mn-saved');
+      setTimeout(function () { rail.classList.remove('mn-saved'); }, 900);
+    } catch (e) { rail.querySelector('.mn-tip').textContent = '⚠ 自动写回失败：' + e.message + '（可用导出/复制兜底）'; }
+  }
+  function serializeInto(text) {
+    var block = BLOCK_TPL(notes);
+    if (BLOCK_RE.test(text)) return text.replace(BLOCK_RE, block);
+    if (/<\/body>/i.test(text)) return text.replace(/<\/body>/i, block + '\n</body>');
+    return text + '\n' + block;
+  }
+  rail.querySelector('.mn-link').addEventListener('click', async function () {
+    if (!window.showOpenFilePicker) {
+      rail.querySelector('.mn-tip').textContent = '此浏览器不支持直接写回（需 Chrome/Edge）。请用"导出批注版 HTML"或"复制全部批注"。';
+      return;
+    }
+    try {
+      var arr = document.contentType && document.contentType.indexOf('html') >= 0 ? [{
+        types: [{ description: 'HTML lesson', accept: { 'text/html': ['.html'] } }]
+      }] : undefined;
+      var handles = await window.showOpenFilePicker(arr && arr[0] ? { types: arr[0].types } : undefined);
+      fh = handles[0];
+      var r = await fh.getFile();
+      fhText = await r.text();
+      await writeBack();
+      rail.querySelector('.mn-link').textContent = '✅ 已关联：' + r.name + '（编辑即写回）';
+    } catch (e) { /* 用户取消等 */ }
+  });
+  rail.querySelector('.mn-dl').addEventListener('click', function () {
+    Promise.resolve(fhText || null).then(function (base) {
+      var text = base || ('<!DOCTYPE html>\n' + document.documentElement.outerHTML);
+      var blob = new Blob([serializeInto(text)], { type: 'text/html' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || 'lesson') + '-批注版.html';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    });
+  });
+  rail.querySelector('.mn-cp').addEventListener('click', function () {
+    var md = '# 《' + document.title + '》读者批注（' + notes.length + ' 条）\n\n' +
+      notes.slice().sort(function (a, b) { return a.ts - b.ts; })
+        .map(function (n) { return '## @' + n.anchor + '\n\n' + n.text + '\n'; }).join('\n');
+    var done = function () { rail.querySelector('.mn-tip').textContent = '✅ 已复制——直接粘贴给老师即可。'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(md).then(done);
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = md; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { }
+      ta.remove();
+    }
+  });
+  } /* init */
+})();
+
+</script>
+<script>
+/* codestepper.js — 代码步进放映机（课程族共享，配 course.css 的 .stepper 段）
+ * 数据驱动：宿主 div.stepper 内嵌 <script type="application/json" class="stepper-data">
+ *   { title, intro, baseline, phases[], rows[], frames[], refs[], world0 }
+ * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
+ * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
+ * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 账本。 */
+(function () {
+  'use strict';
+
+  /* ---------- 世界渲染（纯函数：state → HTML 字符串） ---------- */
+  var RING_ORDER = ['xfer', 'cmd', 'evt'];
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function cellHtml(c, ring, i, st) {
+    var cls = 'stw-cell st-' + (c.st || 'empty');
+    var ptr = [];
+    if (st && st.rings[ring].enq === i) ptr.push('<i class="stw-ptr pe">写▸enq</i>');
+    if (st && st.rings[ring].deq === i) ptr.push('<i class="stw-ptr pd">取▸deq</i>');
+    if (ring === 'evt') { /* 事件环指针语义反转，标签在 CSS 里换 */
+    }
+    return '<div class="' + cls + '">' + ptr.join('') +
+      '<b>' + esc(c.a) + '</b><span class="stw-t">' + (c.t ? esc(c.t) : '空') + '</span>' +
+      (c.f ? '<span class="stw-f">' + esc(c.f) + '</span>' : '') +
+      '<span class="stw-cyc">cyc=' + esc(c.cyc) + '</span></div>';
+  }
+  function worldHtml(W) {
+    var h = '';
+    RING_ORDER.forEach(function (k) {
+      if (!W.rings[k]) return;
+      var r = W.rings[k];
+      h += '<div class="stw-ring"><div class="stw-rhead"><b>' + esc(r.label) + '</b>' +
+        '<span class="stw-own">' + esc(r.own) + '</span></div><div class="stw-cells">';
+      r.cells.forEach(function (c, i) { h += cellHtml(c, k, i, W); });
+      h += '</div></div>';
+    });
+    ['dev', 'td'].forEach(function (k) {
+      if (!W[k]) return;
+      var b = W[k];
+      h += '<div class="stw-box"><b>' + esc(b.title) + '</b><table>';
+      Object.keys(b).forEach(function (f) {
+        if (f === 'title') return;
+        h += '<tr><th>' + esc(f) + '</th><td>' + esc(b[f]) + '</td></tr>';
+      });
+      h += '</table></div>';
+    });
+    return h;
+  }
+  function applyEv(W, ev) { /* 就地应用一条事件（深拷贝由调用方保证） */
+    if (!ev) return;
+    if (ev.op === 'cell') {
+      var c = W.rings[ev.ring].cells[ev.i];
+      Object.keys(ev.set || {}).forEach(function (k) { c[k] = ev.set[k]; });
+    } else if (ev.op === 'ptr') {
+      if (typeof ev.enq === 'number') W.rings[ev.ring].enq = ev.enq;
+      if (typeof ev.deq === 'number') W.rings[ev.ring].deq = ev.deq;
+    } else if (ev.op === 'dev' || ev.op === 'td') {
+      Object.keys(ev.set || {}).forEach(function (k) { W[ev.op][k] = ev.set[k]; });
+    }
+  }
+  function stateAt(D, idx) {
+    var W = JSON.parse(JSON.stringify(D.world0));
+    for (var i = 0; i <= idx && i < D.frames.length; i++)
+      (D.frames[i].ev || []).forEach(function (e) { applyEv(W, e); });
+    return W;
+  }
+
+  /* ---------- 弹窗（全局单例，多 stepper 共用） ---------- */
+  var modal = null;
+  function ensureModal() {
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'st-modal';
+    modal.innerHTML = '<div class="st-mbox" role="dialog" aria-modal="true">' +
+      '<button type="button" class="st-mclose">✕ 关闭</button><div class="st-mbody"></div></div>';
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || (e.target.getAttribute && e.target.getAttribute('class') === 'st-mclose'))
+        modal.classList.remove('show');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') modal.classList.remove('show');
+    });
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function showRef(ref) {
+    var m = ensureModal();
+    m.querySelector('.st-mbody').innerHTML =
+      '<h4>' + esc(ref.label) + ' · ' + esc(ref.title) + '</h4>' +
+      '<p class="st-msrc">' + esc(ref.src) + (ref.p ? ' · ' + esc(ref.p) : '') + '</p>' +
+      (ref.quote ? '<blockquote>' + esc(ref.quote) + '</blockquote>' : '') +
+      (ref.note ? '<p class="st-mnote">' + esc(ref.note) + '</p>' : '');
+    m.classList.add('show');
+  }
+
+  /* ---------- 每台 stepper 的初始化 ---------- */
+  function initStepper(root) {
+    var dataEl = root.querySelector('script.stepper-data');
+    if (!dataEl) return;
+    var D;
+    try { D = JSON.parse(dataEl.textContent); } catch (e) { return; /* 静态内容保留 */ }
+    var rows = {}, rowEls = {};
+    D.rows.forEach(function (r) { rows[r.id] = r; });
+    Array.prototype.forEach.call(root.querySelectorAll('.st-crow'), function (el) {
+      rowEls[el.getAttribute('data-id')] = el;
+    });
+    var codeBox = root.querySelector('.st-code');
+    var worldBox = root.querySelector('.st-world');
+    var noteBox = root.querySelector('.st-note');
+    var refsBox = root.querySelector('.st-refs');
+    if (!codeBox || !worldBox || !noteBox) return;
+
+    /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
+    var idx = 0, timer = null, lastWorld = null;
+    var N = D.frames.length;
+    var refMap = {};
+    (D.refs || []).forEach(function (r) { refMap[r.id] = r; });
+
+    /* 控制条 */
+    var ctl = document.createElement('div');
+    ctl.className = 'st-ctl';
+    ctl.innerHTML = '<button type="button" data-a="prev">◀ 上一行</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一行 ▶</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<span class="st-count"></span><span class="st-ph"></span>' +
+      '<span class="st-hint">←/→ 键也可步进</span>';
+    root.insertBefore(ctl, root.querySelector('.st-grid'));
+    var countEl = ctl.querySelector('.st-count'), phEl = ctl.querySelector('.st-ph');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+
+    /* 引用条（chips） */
+    var chips = document.createElement('div');
+    chips.className = 'st-chips';
+    (D.refs || []).forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'st-chip'; b.textContent = r.label + ' ' + r.title;
+      b.title = '查看规范原文'; b.setAttribute('data-ref', r.id);
+      b.addEventListener('click', function () { showRef(refMap[r.id]); });
+      chips.appendChild(b);
+    });
+    if (refsBox) { refsBox.innerHTML = ''; refsBox.appendChild(chips); }
+
+    function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = '播放'; }
+    function go(i) {
+      idx = Math.max(0, Math.min(N - 1, i));
+      var fr = D.frames[idx];
+      /* 当前行高亮 + 滚动跟随 */
+      Object.keys(rowEls).forEach(function (id) { rowEls[id].classList.remove('cur', 'done'); });
+      var cur = rowEls[fr.c];
+      if (cur) { cur.classList.add('cur'); cur.scrollIntoView({ block: 'nearest' }); }
+      /* 已执行过的同段行打 done（当前行之前出现过的行） */
+      var seen = {};
+      for (var k = 0; k <= idx; k++) seen[D.frames[k].c] = true;
+      Object.keys(seen).forEach(function (id) { if (rowEls[id] && id !== fr.c) rowEls[id].classList.add('done'); });
+      /* 世界面板重放 */
+      var W = stateAt(D, idx);
+      worldBox.innerHTML = worldHtml(W);
+      worldBox.classList.add('live');
+      lastWorld = W;
+      /* 当行解说 + 活跃引用 */
+      noteBox.innerHTML = (fr.note ? fr.note : '<span class="st-mut">（本行无注记）</span>') +
+        (fr.refs && fr.refs.length
+          ? ' <span class="st-fref">' + fr.refs.map(function (id) {
+              var r = refMap[id]; if (!r) return '';
+              return '<button type="button" class="st-chip on" data-ref="' + id + '">📎 ' + esc(r.label) + '</button>';
+            }).join('') + '</span>'
+          : '');
+      Array.prototype.forEach.call(noteBox.querySelectorAll('[data-ref]'), function (b) {
+        b.addEventListener('click', function () { showRef(refMap[b.getAttribute('data-ref')]); });
+      });
+      countEl.textContent = '行 ' + (idx + 1) + ' / ' + N;
+      phEl.textContent = fr.ph ? '· ' + fr.ph : '';
+      if (idx === N - 1) stop();
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { stop(); go(idx - 1); }
+      else if (a === 'next') { stop(); go(idx + 1); }
+      else if (a === 'reset') { stop(); go(0); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        if (idx === N - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === N - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2000);
+      }
+    });
+    /* 行点击跳帧：该行最近一次出现的帧 */
+    Object.keys(rowEls).forEach(function (id) {
+      rowEls[id].addEventListener('click', function () {
+        stop();
+        for (var k = idx; k < N; k++) if (D.frames[k].c === id) return go(k);
+        for (k = 0; k < N; k++) if (D.frames[k].c === id) return go(k);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      var r = root.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return; /* 只在视野内接管方向键 */
+      if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
+      else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
+    });
+    go(0);
+  }
+
+  document.querySelectorAll('.stepper').forEach(function (el) {
+    try { el.classList.add('js'); initStepper(el); }
+    catch (e) { /* 静态内容保留，组件自身错误不白屏 */ }
   });
 })();
 
