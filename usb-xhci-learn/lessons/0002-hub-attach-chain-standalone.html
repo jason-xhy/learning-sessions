@@ -416,8 +416,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 		hub-&gt;event_bits[0] = bits;</pre></div>
     <div class="fbranch">
       <div class="fnode"><b>判断</b>（status==0 成功路径）：清错误计数（赋值 0），唤醒工作队列
-<pre>/* hub.c:806-810 */
-
+<pre>/* hub.c:807-810 */
 	hub-&gt;nerrors = 0;
 
 	/* Something happened, let hub_wq figure it out */
