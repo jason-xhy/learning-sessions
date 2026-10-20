@@ -110,12 +110,108 @@ td.good { background: #e9f7ee; }
 
 footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
 
+/* ===== 代码步进放映机（assets/codestepper.js；静态优先：无 JS 时代码全列+world0+refs 全可读） =====
+   v2（2026-10-20 用户四条修正）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
+   普通行无行号）；语句/调用级帧；双栏加大加高。 */
+.stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
+.stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
+.stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
+.stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+.stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
+.stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
+@media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 44rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; }
+.stepper .st-crow code { font: inherit; }
+.stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: var(--muted); font-size: .74rem; }
+.stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
+.stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
+.stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
+.stepper .st-crow.ph { background: var(--ink); color: #fff; font-weight: 700; margin-top: .5rem; border-radius: 3px; }
+.stepper .st-crow.ph .st-tag { color: #cfcfc5; }
+.stepper.js .st-crow { cursor: pointer; }
+.stepper.js .st-crow:hover { background: #f4f4ee; }
+.stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
+.stepper.js .st-crow.done { opacity: .66; }
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 44rem; overflow-y: auto; }
+.stepper .stw-ring { margin: .35rem 0 .6rem; }
+.stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.stepper .stw-rhead b { font-size: .84rem; }
+.stepper .stw-own { color: var(--muted); font-size: .7rem; }
+.stepper .stw-cells { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .stw-cell { position: relative; border: 1px dashed var(--line); border-radius: 4px; padding: .35rem .45rem .38rem; min-width: 6.8rem; text-align: center; background: #fff; }
+.stepper .stw-cell b { display: block; color: var(--muted); font-size: .64rem; letter-spacing: .04em; }
+.stepper .stw-cell .stw-t { display: block; font-weight: 600; font-size: .78rem; }
+.stepper .stw-cell .stw-f { display: block; color: #4a4a3f; font-size: .67rem; }
+.stepper .stw-cell .stw-cyc { display: block; color: var(--muted); font-size: .64rem; }
+.stepper .stw-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .stw-cell.st-published { border: 1px solid #1a5fb4; background: #e8f0fb; }
+.stepper .stw-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .stw-ptr { position: absolute; top: -0.6rem; font-size: .6rem; font-style: normal; padding: 0 .25rem; border-radius: 3px; color: #fff; }
+.stepper .stw-ptr.pe { left: .2rem; background: #1a5fb4; }
+.stepper .stw-ptr.pd { right: .2rem; background: var(--good); }
+.stepper .stw-box { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .stw-box > b { display: block; background: #f0efe6; padding: .2rem .5rem; font-size: .8rem; }
+.stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
+.stepper .stw-box th { width: 6em; background: #fbfbf6; }
+.stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+.stepper .st-note .st-mut { color: var(--muted); }
+.stepper .st-refs { margin-top: .55rem; }
+.stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .st-chip { font: inherit; font-size: .78rem; padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 10px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-chip.on { border-color: var(--accent); background: #fff3c4; }
+.stepper .st-fref { margin-left: .3rem; }
+.stepper .st-refs details { font-size: .85rem; }
+/* 引用弹窗 */
+.st-modal { display: none; position: fixed; inset: 0; background: rgba(20,20,15,.45); z-index: 90; padding: 3rem 1rem; }
+.st-modal.show { display: flex; }
+.st-modal .st-mbox { position: relative; margin: auto; max-width: 40rem; max-height: 80vh; overflow-y: auto; background: #fffdf4; border: 1px solid var(--ink); border-radius: 8px; padding: 1rem 1.2rem; }
+.st-modal .st-mclose { position: absolute; top: .5rem; right: .6rem; font: inherit; font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.st-modal .st-mbody h4 { margin: 0 0 .3rem; }
+.st-modal .st-msrc { color: var(--muted); font-size: .85rem; }
+.st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
+.st-modal .st-mnote { font-size: .88rem; }
+
+/* ===== 右缘批注（assets/marginnotes.js） ===== */
+@media (min-width: 1180px) {
+  body.mn-on { padding-right: 264px; }
+  body.mn-on .mn-rail { display: flex; }
+}
+.mn-rail { display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 252px; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 40; }
+.mn-rail .mn-head { font-weight: 700; font-size: .95rem; }
+.mn-rail .mn-cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
+.mn-rail button { font: inherit; font-size: .8rem; padding: .25rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; text-align: left; }
+.mn-rail .mn-add { background: var(--ink); color: #fff; text-align: center; }
+.mn-rail .mn-list { flex: 1; }
+.mn-rail .mn-empty { color: var(--muted); font-size: .78rem; }
+.mn-rail .mn-item { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .35rem .5rem; margin: .35rem 0; cursor: pointer; }
+.mn-rail .mn-item:hover { border-color: var(--accent); }
+.mn-rail .mn-anchor { color: var(--accent); font-size: .72rem; font-weight: 600; }
+.mn-rail .mn-text { font-size: .82rem; white-space: pre-wrap; }
+.mn-rail .mn-editor { border: 1px solid var(--accent); border-radius: 5px; background: #fff; padding: .4rem .5rem; }
+.mn-rail .mn-editor textarea { width: 100%; font: inherit; font-size: .82rem; border: 1px solid var(--line); border-radius: 4px; padding: .3rem; }
+.mn-rail .mn-eanchor { color: var(--accent); font-size: .72rem; font-weight: 600; margin-bottom: .25rem; }
+.mn-rail .mn-actions { display: flex; flex-direction: column; gap: .3rem; }
+.mn-rail .mn-tip { color: var(--muted); font-size: .72rem; }
+.mn-rail.mn-saved { outline: 2px solid var(--good); }
+.mn-pen { font: inherit; font-size: .7rem; border: 1px solid var(--line); border-radius: 3px; background: #fbfbf6; cursor: pointer; margin-left: .4rem; vertical-align: 1px; padding: 0 .3rem; }
+
 @media print {
   body { background: #fff; padding: 0; font-size: 10.5pt; }
   .opt:disabled { opacity: 1; }
   .explain { display: block; }
   .player .frame { display: block !important; }
   .player .pctl { display: none; }
+  .mn-rail, .mn-pen { display: none !important; }
+  body.mn-on { padding-right: 1rem; }
+  .stepper .st-ctl { display: none; }
+  .stepper .st-code { max-height: none; }
+  .st-modal { display: none !important; }
 }
 
 </style>
@@ -228,99 +324,480 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     </svg>
     <figcaption>九条事件全序实测（m45_xhci.log A3 九条逐字段 PASS）。<strong>注意事件 6 与 7：短包 TD 一口气产两条事件</strong>——Short Packet（CC=13，残量 46）落在 Data TRB、Success 落在 Status TRB。</figcaption>
   </figure>
-  <p>逐帧推演这次枚举的全握手（无 JS 时全部帧定格可读）：</p>
-  <div class="player">
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 1 帧</span><span>开场：端口插入，第一颗事件落环</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>槽0 6000</b><span style="color:#1a7f37;font-weight:600">EV1 PORT</span> port=1</div>
-          <div class="u"><b>槽1 6010</b>空 cyc=0</div>
-          <div class="u"><b>槽2 6020</b>空 cyc=0</div>
-          <div class="u"><b>槽3 6030</b>空 cyc=0</div>
-          <div class="u"><b>槽4 6040</b>空 cyc=0</div>
-          <div class="u"><b>槽5 6050</b>空 cyc=0</div>
-        </div>
-        xHC 检测到端口 1 插入（SuperSpeed），把 Port Status Change Event 写进事件环槽 0（cyc=1 发布）并拉中断。hub 线 0002 里"主机开始复位流程"之前，xHC 侧先发生的就是这一颗事件——<strong>枚举的起点是事件，不是轮询</strong>。
-      </div>
-    </div>
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 2 帧</span><span>BSR=1 阶段：设备还叫"地址 0"，先取 8 字节描述符</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>槽0</b>EV1 PORT ✓</div>
-          <div class="u"><b>槽1</b><span style="color:#1a5fb4;font-weight:600">EV2 CC EnSlot</span> slot=1</div>
-          <div class="u"><b>槽2</b><span style="color:#1a5fb4;font-weight:600">EV3 CC Addr BSR=1</span></div>
-          <div class="u"><b>槽3</b><span style="color:#a00000;font-weight:600">EV4 TR ✓</span>TD1 Status</div>
-          <div class="u"><b>槽4</b>空</div>
-          <div class="u"><b>槽5</b>空</div>
-        </div>
-        驱动发 Enable Slot → Address Device <strong>BSR=1</strong>（Block Set Address，命令 TRB 的 BSR 位，内核 <code>xhci_queue_address_device</code> xhci-ring.c:4412：SETUP_CONTEXT_ONLY 时打上 TRB_BSR）。BSR=1=<strong>只建上下文不设址</strong>，设备停在地址 0——于是 TD1 的 GET_DESCRIPTOR(8B)（setup8 逐字节 <code>80 06 00 01 00 00 08 00</code>）<strong>在地址 0 上服务</strong>（实测 dev_addr=0 通过设备过滤）。这正是 hub 线 0002 课"先取 8 字节定 ep0 包长"的 xHC 侧实现。
-        <div class="note" id="topic-event-count">
-          <p><strong>专题 · 一颗 TD 该回几颗事件？</strong>规范对 Transfer Event 的产生只立了三种情况（§4.11.3.1，p222）：<strong>①</strong> 某颗 TRB 完成，且它的 <strong>IOC</strong>（Interrupt On Completion，DW3 bit5）为 1；<strong>②</strong> 传输中发生短包，且该 TRB 的 <strong>ISP</strong>（Interrupt-on-Short Packet，DW3 bit2）为 1；<strong>③</strong> TRB 执行中出错。xHC 不欠"每个 TD 一颗事件通知"——只有命中条件才写事件。</p>
-          <p>驱动排一桩控制传输（<code>xhci_queue_ctrl_tx</code> xhci-ring.c:3775）时，三段的布线刻意不对称——正是 0007 图里见过的 Data·ISP / Status·IOC 标签：</p>
-          <pre>/* xhci-ring.c:3865-3867（IN 方向的 Data TRB：只打 ISP） */
+  <p>数字全部出自实测日志。下面把这桩标本里 <strong>TD1（GET_DESCRIPTOR 8B）</strong>拆到行级逐帧推演——左侧代码逐行走（缩进=调用父子），右侧三环+设备+两本账逐行联动：</p>
+  <!--STEPPER:0008:BEGIN-->
+  <div class="stepper">
+    <div class="st-intro"><h4>▶ TD1 的一生：GET_DESCRIPTOR(8B) 从 usbcore 到回调的逐行旅程</h4><p>左侧＝这桩传输真实走过的内核代码（缩进＝调用父子；紫行＝usbcore 侧上下文，绿行＝xHC/设备硬件动作——硬件没有驱动代码）。右侧＝同一时刻的三个环（传输/命令/事件，各标生产者与消费者归属）、设备面板与两本账（urb→TD→TRB）。用下方按钮或 ←/→ 键逐语句步进：每个函数调用=一帧，帧推进时右侧即时显示这步对环与设备做了什么。底部引用条可点开规范原文（已逐条核验页码）。数字全部来自 M4.5 引擎实测日志（事件环 6 槽、TD1 三颗 TRB 落 +00/+10/+20、EV4 落 6030）。</p><p class="st-base">代码基线 master@62f4c998b297（与全课一致）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-grid">
+      <div class="st-code">
+<div class="st-crow ctx" data-id="r0"><span class="st-tag">usbcore</span><code>usbcore：usb_control_msg(GET_DESCRIPTOR Device, wLength=8) → usb_submit_urb() → hcd-&gt;driver-&gt;urb_enqueue()</code></div>
+<div class="st-crow fn" data-id="r1" style="padding-left:0.4em"><span class="st-file">▸ xhci.c : 1620</span><code>static int xhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flags)</code></div>
+<div class="st-crow ln" data-id="r2" style="padding-left:1.5em"><code>	ep_index = xhci_get_endpoint_index(&amp;urb-&gt;ep-&gt;desc);</code></div>
+<div class="st-crow ln" data-id="r3" style="padding-left:1.5em"><code>	else
+		num_tds = 1;</code></div>
+<div class="st-crow ln" data-id="r4" style="padding-left:1.5em"><code>	urb_priv = kzalloc_flex(*urb_priv, td, num_tds, mem_flags);
+	if (!urb_priv)
+		return -ENOMEM;</code></div>
+<div class="st-crow ln" data-id="r5" style="padding-left:1.5em"><code>	urb_priv-&gt;num_tds = num_tds;
+	urb_priv-&gt;num_tds_done = 0;
+	urb-&gt;hcpriv = urb_priv;</code></div>
+<div class="st-crow ln" data-id="r6" style="padding-left:1.5em"><code>	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</code></div>
+<div class="st-crow ln" data-id="r7" style="padding-left:1.5em"><code>	slot_id = urb-&gt;dev-&gt;slot_id;</code></div>
+<div class="st-crow ln" data-id="r8" style="padding-left:1.5em"><code>	ep_state = &amp;xhci-&gt;devs[slot_id]-&gt;eps[ep_index].ep_state;</code></div>
+<div class="st-crow ln" data-id="r9" style="padding-left:1.5em"><code>	if (*ep_state &amp; (EP_GETTING_STREAMS | EP_GETTING_NO_STREAMS)) {
+		xhci_warn(xhci, &quot;WARN: Can&#x27;t enqueue URB, ep in streams transition state %x\n&quot;,
+			  *ep_state);
+		ret = -EINVAL;
+		goto free_priv;
+	}
+	if (*ep_state &amp; EP_SOFT_CLEAR_TOGGLE) {
+		xhci_warn(xhci, &quot;Can&#x27;t enqueue URB while manually clearing toggle\n&quot;);
+		ret = -EINVAL;
+		goto free_priv;
+	}</code></div>
+<div class="st-crow ln" data-id="r10" style="padding-left:1.5em"><code>	case USB_ENDPOINT_XFER_CONTROL:
+		ret = xhci_queue_ctrl_tx(xhci, GFP_ATOMIC, urb,
+					 slot_id, ep_index);</code></div>
+<div class="st-crow ph" data-id="r11"><span class="st-tag">▶</span><code>② TRB 化：一桩 URB 打包成三颗 TRB（xhci-ring.c）</code></div>
+<div class="st-crow fn" data-id="r12" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 3775-3776</span><code>int xhci_queue_ctrl_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+		struct urb *urb, int slot_id, unsigned int ep_index)</code></div>
+<div class="st-crow ln" data-id="r13" style="padding-left:1.5em"><code>	ep_ring = xhci_urb_to_transfer_ring(xhci, urb);
+	if (!ep_ring)
+		return -EINVAL;</code></div>
+<div class="st-crow ln" data-id="r14" style="padding-left:1.5em"><code>	/*
+	 * Need to copy setup packet into setup TRB, so we can&#x27;t use the setup
+	 * DMA address.
+	 */
+	if (!urb-&gt;setup_packet)
+		return -EINVAL;</code></div>
+<div class="st-crow ln" data-id="r15" style="padding-left:1.5em"><code>	/* 1 TRB for setup, 1 for status */
+	num_trbs = 2;</code></div>
+<div class="st-crow ln" data-id="r16" style="padding-left:1.5em"><code>	if (urb-&gt;transfer_buffer_length &gt; 0)
+		num_trbs++;</code></div>
+<div class="st-crow ln" data-id="r17" style="padding-left:1.5em"><code>	ret = prepare_transfer(xhci, xhci-&gt;devs[slot_id],
+			ep_index, urb-&gt;stream_id,
+			num_trbs, urb, 0, mem_flags);
+	if (ret &lt; 0)</code></div>
+<div class="st-crow fn" data-id="r18" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 3330-3337</span><code>static int prepare_transfer(struct xhci_hcd *xhci,
+		struct xhci_virt_device *xdev,
+		unsigned int ep_index,
+		unsigned int stream_id,
+		unsigned int num_trbs,
+		struct urb *urb,
+		unsigned int td_index,
+		gfp_t mem_flags)</code></div>
+<div class="st-crow ln" data-id="r19" style="padding-left:2.6em"><code>	ep_ring = xhci_triad_to_transfer_ring(xhci, xdev-&gt;slot_id, ep_index,
+					      stream_id);
+	if (!ep_ring) {
+		xhci_dbg(xhci, &quot;Can&#x27;t prepare ring for bad stream ID %u\n&quot;,
+				stream_id);
+		return -EINVAL;
+	}</code></div>
+<div class="st-crow ln" data-id="r20" style="padding-left:2.6em"><code>	ret = prepare_ring(xhci, ep_ring, GET_EP_CTX_STATE(ep_ctx),
+			   num_trbs, mem_flags);
+	if (ret)
+		return ret;</code></div>
+<div class="st-crow ln" data-id="r21" style="padding-left:2.6em"><code>	urb_priv = urb-&gt;hcpriv;
+	td = &amp;urb_priv-&gt;td[td_index];</code></div>
+<div class="st-crow ln" data-id="r22" style="padding-left:2.6em"><code>	INIT_LIST_HEAD(&amp;td-&gt;td_list);
+	INIT_LIST_HEAD(&amp;td-&gt;cancelled_td_list);</code></div>
+<div class="st-crow ln" data-id="r23" style="padding-left:2.6em"><code>	if (td_index == 0) {
+		ret = usb_hcd_link_urb_to_ep(bus_to_hcd(urb-&gt;dev-&gt;bus), urb);
+		if (unlikely(ret))
+			return ret;
+	}</code></div>
+<div class="st-crow ln" data-id="r24" style="padding-left:2.6em"><code>	td-&gt;urb = urb;</code></div>
+<div class="st-crow ln" data-id="r25" style="padding-left:2.6em"><code>	list_add_tail(&amp;td-&gt;td_list, &amp;ep_ring-&gt;td_list);</code></div>
+<div class="st-crow ln" data-id="r26" style="padding-left:2.6em"><code>	td-&gt;start_seg = ep_ring-&gt;enq_seg;
+	td-&gt;start_trb = ep_ring-&gt;enqueue;</code></div>
+<div class="st-crow ln" data-id="r27" style="padding-left:1.5em"><code>	urb_priv = urb-&gt;hcpriv;
+	td = &amp;urb_priv-&gt;td[0];</code></div>
+<div class="st-crow ln" data-id="r28" style="padding-left:1.5em"><code>	/*
+	 * Don&#x27;t give the first TRB to the hardware (by toggling the cycle bit)
+	 * until we&#x27;ve finished creating all the other TRBs.  The ring&#x27;s cycle
+	 * state may change as we enqueue the other TRBs, so save it too.
+	 */</code></div>
+<div class="st-crow ln" data-id="r29" style="padding-left:1.5em"><code>	start_trb = &amp;ep_ring-&gt;enqueue-&gt;generic;
+	start_cycle = ep_ring-&gt;cycle_state;</code></div>
+<div class="st-crow ln" data-id="r30" style="padding-left:1.5em"><code>	/* Queue setup TRB - see section 6.4.1.2.1 */
+	/* FIXME better way to translate setup_packet into two u32 fields? */
+	setup = (struct usb_ctrlrequest *) urb-&gt;setup_packet;</code></div>
+<div class="st-crow ln" data-id="r31" style="padding-left:1.5em"><code>	field = 0;
+	field |= TRB_IDT | TRB_TYPE(TRB_SETUP);</code></div>
+<div class="st-crow ln" data-id="r32" style="padding-left:1.5em"><code>	if (start_cycle == 0)
+		field |= 0x1;</code></div>
+<div class="st-crow ln" data-id="r33" style="padding-left:1.5em"><code>	/* xHCI 1.0/1.1 6.4.1.2.1: Transfer Type field */
+	if ((xhci-&gt;hci_version &gt;= 0x100) || (xhci-&gt;quirks &amp; XHCI_MTK_HOST)) {
+		if (urb-&gt;transfer_buffer_length &gt; 0) {</code></div>
+<div class="st-crow ln" data-id="r34" style="padding-left:1.5em"><code>			if (setup-&gt;bRequestType &amp; USB_DIR_IN)
+				field |= TRB_TX_TYPE(TRB_DATA_IN);
+			else
+				field |= TRB_TX_TYPE(TRB_DATA_OUT);</code></div>
+<div class="st-crow ln" data-id="r35" style="padding-left:1.5em"><code>	queue_trb(xhci, ep_ring, true,
+		  setup-&gt;bRequestType | setup-&gt;bRequest &lt;&lt; 8 | le16_to_cpu(setup-&gt;wValue) &lt;&lt; 16,
+		  le16_to_cpu(setup-&gt;wIndex) | le16_to_cpu(setup-&gt;wLength) &lt;&lt; 16,
+		  TRB_LEN(8) | TRB_INTR_TARGET(0),
+		  /* Immediate data in pointer */
+		  field);</code></div>
+<div class="st-crow fn" data-id="r36" style="padding-left:2.6em"><span class="st-file">▸ xhci-ring.c : 3244-3246</span><code>static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
+		bool more_trbs_coming,
+		u32 field1, u32 field2, u32 field3, u32 field4)</code></div>
+<div class="st-crow ln" data-id="r37" style="padding-left:3.7em"><code>	struct xhci_generic_trb *trb;
+
+	trb = &amp;ring-&gt;enqueue-&gt;generic;</code></div>
+<div class="st-crow ln" data-id="r38" style="padding-left:3.7em"><code>	trb-&gt;field[0] = cpu_to_le32(field1);
+	trb-&gt;field[1] = cpu_to_le32(field2);</code></div>
+<div class="st-crow ln" data-id="r39" style="padding-left:3.7em"><code>	trb-&gt;field[2] = cpu_to_le32(field3);</code></div>
+<div class="st-crow ln" data-id="r40" style="padding-left:3.7em"><code>	/* make sure TRB is fully written before giving it to the controller */
+	wmb();
+	trb-&gt;field[3] = cpu_to_le32(field4);</code></div>
+<div class="st-crow ln" data-id="r41" style="padding-left:3.7em"><code>
+	trace_xhci_queue_trb(ring, trb,
+			     xhci_trb_virt_to_dma(ring-&gt;enq_seg, ring-&gt;enqueue));
+</code></div>
+<div class="st-crow fn" data-id="r42" style="padding-left:3.7em"><span class="st-file">▸ xhci-ring.c : 285-286</span><code>static void inc_enq(struct xhci_hcd *xhci, struct xhci_ring *ring,
+			bool more_trbs_coming)</code></div>
+<div class="st-crow ln" data-id="r43" style="padding-left:4.800000000000001em"><code>	u32 chain;
+
+	chain = le32_to_cpu(ring-&gt;enqueue-&gt;generic.field[3]) &amp; TRB_CHAIN;</code></div>
+<div class="st-crow ln" data-id="r44" style="padding-left:4.800000000000001em"><code>	if (last_trb_on_seg(ring-&gt;enq_seg, ring-&gt;enqueue)) {
+		xhci_err(xhci, &quot;Tried to move enqueue past ring segment\n&quot;);
+		return;
+	}</code></div>
+<div class="st-crow ln" data-id="r45" style="padding-left:4.800000000000001em"><code>	ring-&gt;enqueue++;</code></div>
+<div class="st-crow ln" data-id="r46" style="padding-left:4.800000000000001em"><code>
+	/*
+	 * If we are in the middle of a TD or the caller plans to enqueue more
+	 * TDs as one transfer (eg. control), traverse any link TRBs right now.
+	 * Otherwise, enqueue can stay on a link until the next prepare_ring().
+	 * This avoids enqueue entering deq_seg and simplifies ring expansion.
+	 */
+	if (trb_is_link(ring-&gt;enqueue) &amp;&amp; (chain || more_trbs_coming))
+		inc_enq_past_link(xhci, ring, chain);
+}</code></div>
+<div class="st-crow ln" data-id="r47" style="padding-left:1.5em"><code>	/* If there&#x27;s data, queue data TRBs */
 	/* Only set interrupt on short packet for IN endpoints */
 	if (usb_urb_dir_in(urb))
-		field = TRB_ISP | TRB_TYPE(TRB_DATA);</pre>
-          <pre>/* xhci-ring.c:3910-3915（Status TRB：打 IOC） */
-	queue_trb(xhci, ep_ring, false,
+		field = TRB_ISP | TRB_TYPE(TRB_DATA);
+	else
+		field = TRB_TYPE(TRB_DATA);</code></div>
+<div class="st-crow ln" data-id="r48" style="padding-left:1.5em"><code>	if (urb-&gt;transfer_buffer_length &gt; 0) {
+		u32 length_field, remainder;
+		u64 addr;</code></div>
+<div class="st-crow ln" data-id="r49" style="padding-left:1.5em"><code>
+		if (xhci_urb_suitable_for_idt(urb)) {
+			memcpy(&amp;addr, urb-&gt;transfer_buffer,
+			       urb-&gt;transfer_buffer_length);
+			le64_to_cpus(&amp;addr);
+			field |= TRB_IDT;</code></div>
+<div class="st-crow ln" data-id="r50" style="padding-left:1.5em"><code>		} else {
+			addr = (u64) urb-&gt;transfer_dma;
+		}</code></div>
+<div class="st-crow ln" data-id="r51" style="padding-left:1.5em"><code>
+		remainder = xhci_td_remainder(xhci, 0,
+				urb-&gt;transfer_buffer_length,
+				urb-&gt;transfer_buffer_length,
+				urb, 1);
+		length_field = TRB_LEN(urb-&gt;transfer_buffer_length) |
+				TRB_TD_SIZE(remainder) |
+				TRB_INTR_TARGET(0);</code></div>
+<div class="st-crow ln" data-id="r52" style="padding-left:1.5em"><code>		if (setup-&gt;bRequestType &amp; USB_DIR_IN)
+			field |= TRB_DIR_IN;</code></div>
+<div class="st-crow ln" data-id="r53" style="padding-left:1.5em"><code>		queue_trb(xhci, ep_ring, true,
+				lower_32_bits(addr),
+				upper_32_bits(addr),
+				length_field,
+				field | ep_ring-&gt;cycle_state);
+	}</code></div>
+<div class="st-crow ln" data-id="r54" style="padding-left:1.5em"><code>	/* Save the DMA address of the last TRB in the TD */
+	td-&gt;end_trb = ep_ring-&gt;enqueue;
+	td-&gt;end_seg = ep_ring-&gt;enq_seg;</code></div>
+<div class="st-crow ln" data-id="r55" style="padding-left:1.5em"><code>
+	/* Queue status TRB - see Table 7 and sections 4.11.2.2 and 6.4.1.2.3 */
+	/* If the device sent data, the status stage is an OUT transfer */</code></div>
+<div class="st-crow ln" data-id="r56" style="padding-left:1.5em"><code>	if (urb-&gt;transfer_buffer_length &gt; 0 &amp;&amp; setup-&gt;bRequestType &amp; USB_DIR_IN)
+		field = 0;
+	else
+		field = TRB_DIR_IN;</code></div>
+<div class="st-crow ln" data-id="r57" style="padding-left:1.5em"><code>	queue_trb(xhci, ep_ring, false,
 			0,
 			0,
 			TRB_INTR_TARGET(0),
 			/* Event on completion */
-			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring->cycle_state);</pre>
-          <p>对到动画上：<strong>TD1</strong> 要 8 字节、设备足额交 8 字节——Data TRB 的 ISP 条件未命中，Setup 本就静默，只有 Status 的 IOC 命中 → 整桩 TD 一颗事件（EV4，落在 Status TRB 上）。<strong>TD2</strong> 要 64 字节、设备只有 18 字节——Data TRB 的 ISP 命中 → EV6（Short Packet，长度信息就挂在这颗 TRB 的事件上）；控制传输照常走完 Status 握手，IOC 再交 EV7。<strong>TD3</strong>（SET_CONFIG）没有 Data 段，干净走完也只回一颗 EV9——<strong>事件颗数跟着"命中几条条件"走，不跟着 TD 走</strong>。</p>
-          <p>那夹在中间的 <strong>EV5 呢</strong>？它压根不是 Transfer Event，是<strong>命令完成事件</strong>——这一族的核对对象不是任何 TD，而是<strong>命令环</strong>：事件的 DW0-1 回指它完成的那颗命令 TRB，<code>handle_cmd_completion</code>（xhci-ring.c:1803）拿它与命令环游标核对，命中后唤醒排队时登记的 <code>xhci_command</code> 等待者（如 <code>xhci_setup_device</code> 里睡着的 wait_for_completion），随后命令环游标前移一格。三类事件三套口径：Transfer → 端点环上的 TD/URB；命令完成 → 命令环上的命令与等待者；端口事件（EV1）→ 没有口径，直接读 PORTSC 状态位。</p>
-        </div>
+			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring-&gt;cycle_state);</code></div>
+<div class="st-crow ln" data-id="r58" style="padding-left:1.5em"><code>	giveback_first_trb(xhci, slot_id, ep_index, 0,
+			start_cycle, start_trb);</code></div>
+<div class="st-crow fn" data-id="r59" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 3437-3442</span><code>static void giveback_first_trb(struct xhci_hcd *xhci, int slot_id,
+		unsigned int ep_index, unsigned int stream_id, int start_cycle,
+		struct xhci_generic_trb *start_trb)
+{
+	/*
+	 * Pass all the TRBs to the hardware at once and make sure this write</code></div>
+<div class="st-crow ln" data-id="r60" style="padding-left:2.6em"><code>	 * isn&#x27;t reordered.
+	 */
+	wmb();</code></div>
+<div class="st-crow ln" data-id="r61" style="padding-left:2.6em"><code>	if (start_cycle)
+		start_trb-&gt;field[3] |= cpu_to_le32(start_cycle);
+	else
+		start_trb-&gt;field[3] &amp;= cpu_to_le32(~TRB_CYCLE);</code></div>
+<div class="st-crow ln" data-id="r62" style="padding-left:2.6em"><code>	xhci_ring_ep_doorbell(xhci, slot_id, ep_index, stream_id);</code></div>
+<div class="st-crow fn" data-id="r63" style="padding-left:2.6em"><span class="st-file">▸ xhci-ring.c : 551-555</span><code>void xhci_ring_ep_doorbell(struct xhci_hcd *xhci,
+		unsigned int slot_id,
+		unsigned int ep_index,
+		unsigned int stream_id)
+{</code></div>
+<div class="st-crow ln" data-id="r64" style="padding-left:3.7em"><code>	__le32 __iomem *db_addr = &amp;xhci-&gt;dba-&gt;doorbell[slot_id];</code></div>
+<div class="st-crow ln" data-id="r65" style="padding-left:3.7em"><code>	unsigned int ep_state = ep-&gt;ep_state;
+
+	/* Don&#x27;t ring the doorbell for this endpoint if there are pending
+	 * cancellations because we don&#x27;t want to interrupt processing.
+	 * We don&#x27;t want to restart any stream rings if there&#x27;s a set dequeue
+	 * pointer command pending because the device can choose to start any
+	 * stream once the endpoint is on the HW schedule.</code></div>
+<div class="st-crow ln" data-id="r66" style="padding-left:3.7em"><code>	if (ep_state &amp; (EP_STOP_CMD_PENDING | SET_DEQ_PENDING | EP_HALTED |
+			EP_CLEARING_TT | EP_DROP_PENDING))
+		return;</code></div>
+<div class="st-crow ln" data-id="r67" style="padding-left:3.7em"><code>	trace_xhci_ring_ep_doorbell(slot_id, DB_VALUE(ep_index, stream_id));</code></div>
+<div class="st-crow ln" data-id="r68" style="padding-left:3.7em"><code>	writel(DB_VALUE(ep_index, stream_id), db_addr);</code></div>
+<div class="st-crow ln" data-id="r69" style="padding-left:3.7em"><code>	/* flush the write */
+	readl(db_addr);</code></div>
+<div class="st-crow ln" data-id="r70" style="padding-left:1.5em"><code>	return 0;</code></div>
+<div class="st-crow ph" data-id="r71"><span class="st-tag">▶</span><code>③ xHC 取指执行 + 设备线上事务（硬件——无驱动代码）</code></div>
+<div class="st-crow hw" data-id="r72"><span class="st-tag">xHC/设备</span><code>xHC 读到门铃 → 把 ep0 排入调度</code></div>
+<div class="st-crow hw" data-id="r73"><span class="st-tag">xHC/设备</span><code>取指槽+00 Setup TRB：cycle=1 与消费轮次相符 → 有效，取出执行；deq +00→+10</code></div>
+<div class="st-crow hw" data-id="r74"><span class="st-tag">xHC/设备</span><code>设备解码 SETUP：GET_DESCRIPTOR(Device, wLength=8) —— 在地址 0 上应答</code></div>
+<div class="st-crow hw" data-id="r75"><span class="st-tag">xHC/设备</span><code>取指槽+10 Data TRB（IN 8B）→ 线上发 IN 令牌 → 设备回 8 字节：12 01 00 03 FF FF FF 09（ROM 实测）</code></div>
+<div class="st-crow hw" data-id="r76"><span class="st-tag">xHC/设备</span><code>取指槽+20 Status TRB（OUT）→ 设备 ACK，三阶段握手完成</code></div>
+<div class="st-crow hw" data-id="r77"><span class="st-tag">xHC/设备</span><code>IOC 命中（三条件之①）→ xHC 写事件：事件环槽 6030 = EV4 TR ✓TD1（CC=Success·回指 Status 槽+20·cyc=1）→ 拉中断</code></div>
+<div class="st-crow ph" data-id="r78"><span class="st-tag">▶</span><code>④ 事件消费与回调（驱动 · 中断上下文）</code></div>
+<div class="st-crow fn" data-id="r79" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 3092-3094</span><code>static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir,
+			      bool skip_events)
+{</code></div>
+<div class="st-crow ln" data-id="r80" style="padding-left:1.5em"><code>	xhci_clear_interrupt_pending(ir);</code></div>
+<div class="st-crow ln" data-id="r81" style="padding-left:1.5em"><code>	/* Process all OS owned event TRBs on this event ring */
+	while (unhandled_event_trb(ir-&gt;event_ring)) {</code></div>
+<div class="st-crow ln" data-id="r82" style="padding-left:1.5em"><code>		if (!skip_events)
+			err = xhci_handle_event_trb(xhci, ir, ir-&gt;event_ring-&gt;dequeue);</code></div>
+<div class="st-crow ln" data-id="r83" style="padding-left:1.5em"><code>		inc_deq(xhci, ir-&gt;event_ring);</code></div>
+<div class="st-crow ln" data-id="r84" style="padding-left:1.5em"><code>	xhci_update_erst_dequeue(xhci, ir, true);</code></div>
+<div class="st-crow fn" data-id="r85" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 2992-2993</span><code>static int xhci_handle_event_trb(struct xhci_hcd *xhci, struct xhci_interrupter *ir,
+				 union xhci_trb *event)</code></div>
+<div class="st-crow ln" data-id="r86" style="padding-left:2.6em"><code>	rmb();
+	trb_type = TRB_FIELD_TO_TYPE(le32_to_cpu(event-&gt;event_cmd.flags));</code></div>
+<div class="st-crow ln" data-id="r87" style="padding-left:2.6em"><code>	switch (trb_type) {
+	case TRB_COMPLETION:
+		handle_cmd_completion(xhci, &amp;event-&gt;event_cmd);
+		break;
+	case TRB_PORT_STATUS:</code></div>
+<div class="st-crow ln" data-id="r88" style="padding-left:2.6em"><code>		handle_port_status(xhci, event);
+		break;
+	case TRB_TRANSFER:
+		handle_tx_event(xhci, ir, &amp;event-&gt;trans_event);
+		break;
+	case TRB_DEV_NOTE:
+		handle_device_notification(xhci, event);</code></div>
+<div class="st-crow fn" data-id="r89" style="padding-left:2.6em"><span class="st-file">▸ xhci-ring.c : 2632-2634</span><code>static int handle_tx_event(struct xhci_hcd *xhci,
+			   struct xhci_interrupter *ir,
+			   struct xhci_transfer_event *event)</code></div>
+<div class="st-crow ln" data-id="r90" style="padding-left:3.7em"><code>	slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event-&gt;flags));
+	ep_index = TRB_TO_EP_ID(le32_to_cpu(event-&gt;flags)) - 1;
+	trb_comp_code = GET_COMP_CODE(le32_to_cpu(event-&gt;transfer_len));
+	ep_trb_dma = le64_to_cpu(event-&gt;buffer);</code></div>
+<div class="st-crow ln" data-id="r91" style="padding-left:3.7em"><code>	ep = xhci_get_virt_ep(xhci, slot_id, ep_index);
+	if (!ep) {
+		xhci_err(xhci, &quot;ERROR Invalid Transfer event\n&quot;);
+		goto err_out;
+	}</code></div>
+<div class="st-crow ln" data-id="r92" style="padding-left:3.7em"><code>	ep_ring = xhci_dma_to_transfer_ring(ep, ep_trb_dma);
+	ep_ctx = xhci_get_ep_ctx(xhci, ep-&gt;vdev-&gt;out_ctx, ep_index);
+
+	if (GET_EP_CTX_STATE(ep_ctx) == EP_STATE_DISABLED) {
+		xhci_err(xhci,
+			 &quot;ERROR Transfer event for disabled endpoint slot %u ep %u\n&quot;,
+			  slot_id, ep_index);
+		goto err_out;
+	}
+
+	if (!ep_ring)
+		return handle_transferless_tx_event(xhci, ep, trb_comp_code);</code></div>
+<div class="st-crow ln" data-id="r93" style="padding-left:3.7em"><code>	/* find the transfer trb this events points to */
+	ep_trb = xhci_dma_to_trb(ep_ring-&gt;deq_seg, ep_trb_dma, NULL);</code></div>
+<div class="st-crow ln" data-id="r94" style="padding-left:3.7em"><code>	switch (trb_comp_code) {
+	/* Skip codes that require special handling depending on
+	 * transfer type</code></div>
+<div class="st-crow ln" data-id="r95" style="padding-left:3.7em"><code>	 */
+	case COMP_SUCCESS:
+		if (EVENT_TRB_LEN(le32_to_cpu(event-&gt;transfer_len)) != 0) {
+			trb_comp_code = COMP_SHORT_PACKET;
+			xhci_dbg(xhci, &quot;Successful completion on short TX for slot %u ep %u with last td comp code %d\n&quot;,
+				 slot_id, ep_index, ep_ring-&gt;old_trb_comp_code);
+		}
+		break;
+	case COMP_SHORT_PACKET:</code></div>
+<div class="st-crow ln" data-id="r96" style="padding-left:3.7em"><code>
+	do {
+		td = list_first_entry(&amp;ep_ring-&gt;td_list, struct xhci_td,</code></div>
+<div class="st-crow ln" data-id="r97" style="padding-left:3.7em"><code>
+		/* Is this TRB not part of the currently executing TD? */
+		if (!trb_in_td(td, ep_trb_dma)) {</code></div>
+<div class="st-crow ln" data-id="r98" style="padding-left:3.7em"><code>		goto check_endpoint_halted;
+
+	td-&gt;status = status;
+
+	/* update the urb&#x27;s actual_length and give back to the core */
+	if (usb_endpoint_xfer_control(&amp;td-&gt;urb-&gt;ep-&gt;desc))
+		process_ctrl_td(xhci, ep, ep_ring, td, ep_trb, event);
+	else if (usb_endpoint_xfer_isoc(&amp;td-&gt;urb-&gt;ep-&gt;desc))
+		process_isoc_td(xhci, ep, ep_ring, td, ep_trb, event);
+	else
+		process_bulk_intr_td(xhci, ep, ep_ring, td, ep_trb, event);
+	return 0;
+</code></div>
+<div class="st-crow fn" data-id="r99" style="padding-left:3.7em"><span class="st-file">▸ xhci-ring.c : 2306-2309</span><code>static void process_ctrl_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,
+			    struct xhci_ring *ep_ring,  struct xhci_td *td,
+			    union xhci_trb *ep_trb, struct xhci_transfer_event *event)
+{</code></div>
+<div class="st-crow ln" data-id="r100" style="padding-left:4.800000000000001em"><code>	trb_type = TRB_FIELD_TO_TYPE(le32_to_cpu(ep_trb-&gt;generic.field[3]));
+	ep_ctx = xhci_get_ep_ctx(xhci, ep-&gt;vdev-&gt;out_ctx, ep-&gt;ep_index);
+	trb_comp_code = GET_COMP_CODE(le32_to_cpu(event-&gt;transfer_len));
+	requested = td-&gt;urb-&gt;transfer_buffer_length;
+	remaining = EVENT_TRB_LEN(le32_to_cpu(event-&gt;transfer_len));</code></div>
+<div class="st-crow ln" data-id="r101" style="padding-left:4.800000000000001em"><code>	switch (trb_comp_code) {
+	case COMP_SUCCESS:
+		if (trb_type != TRB_STATUS) {
+			xhci_warn(xhci, &quot;WARN: Success on ctrl %s TRB without IOC set?\n&quot;,
+				  (trb_type == TRB_DATA) ? &quot;data&quot; : &quot;setup&quot;);
+			td-&gt;status = -ESHUTDOWN;
+			break;
+		}
+		td-&gt;status = 0;</code></div>
+<div class="st-crow ln" data-id="r102" style="padding-left:4.800000000000001em"><code>	 * if on data stage then update the actual_length of the URB and flag it
+	 * as set, so it won&#x27;t be overwritten in the event for the last TRB.
+	 */
+	if (trb_type == TRB_DATA ||
+		trb_type == TRB_NORMAL) {
+		td-&gt;urb_length_set = true;
+		td-&gt;urb-&gt;actual_length = requested - remaining;
+		xhci_dbg(xhci, &quot;Waiting for status stage event\n&quot;);
+		return;
+	}</code></div>
+<div class="st-crow ln" data-id="r103" style="padding-left:4.800000000000001em"><code>	/* at status stage */
+	if (!td-&gt;urb_length_set)
+		td-&gt;urb-&gt;actual_length = requested;</code></div>
+<div class="st-crow ln" data-id="r104" style="padding-left:4.800000000000001em"><code>
+finish_td:
+	finish_td(xhci, ep, ep_ring, td, trb_comp_code);</code></div>
+<div class="st-crow fn" data-id="r105" style="padding-left:4.800000000000001em"><span class="st-file">▸ xhci-ring.c : 2247-2250</span><code>static void finish_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,
+		      struct xhci_ring *ep_ring, struct xhci_td *td,
+		      u32 trb_comp_code)
+{</code></div>
+<div class="st-crow ln" data-id="r106" style="padding-left:5.9em"><code>	ep_ctx = xhci_get_ep_ctx(xhci, ep-&gt;vdev-&gt;out_ctx, ep-&gt;ep_index);
+</code></div>
+<div class="st-crow ln" data-id="r107" style="padding-left:5.9em"><code>	switch (trb_comp_code) {
+	case COMP_STOPPED_LENGTH_INVALID:
+	case COMP_STOPPED_SHORT_PACKET:
+	case COMP_STOPPED:
+		/*
+		 * The &quot;Stop Endpoint&quot; completion will take care of any
+		 * stopped TDs. A stopped TD may be restarted, so don&#x27;t update
+		 * the ring dequeue pointer or take this TD off any lists yet.
+		 */
+		return;
+	}</code></div>
+<div class="st-crow ln" data-id="r108" style="padding-left:5.9em"><code>	if (xhci_halted_host_endpoint(xhci, ep_ctx, trb_comp_code)) {
+		/*
+		 * xhci internal endpoint state will go to a &quot;halt&quot; state for
+		 * any stall, including default control pipe protocol stall.
+		 * To clear the host side halt we need to issue a reset endpoint
+		 * command, followed by a set dequeue command to move past the
+		 * TD.
+		 * Class drivers clear the device side halt from a functional
+		 * stall later. Hub TT buffer should only be cleared for FS/LS
+		 * devices behind HS hubs for functional stalls.
+		 */
+		if (!(ep-&gt;ep_index == 0 &amp;&amp; trb_comp_code == COMP_STALL_ERROR))
+			xhci_clear_hub_tt_buffer(xhci, td, ep);
+
+		xhci_handle_halted_endpoint(xhci, ep, td, EP_HARD_RESET);
+
+		return; /* xhci_handle_halted_endpoint marked td cancelled */
+	}</code></div>
+<div class="st-crow ln" data-id="r109" style="padding-left:5.9em"><code>	xhci_dequeue_td(xhci, td, ep_ring, td-&gt;status);</code></div>
+<div class="st-crow fn" data-id="r110" style="padding-left:5.9em"><span class="st-file">▸ xhci-ring.c : 924-926</span><code>static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xhci_ring *ring,
+			    u32 status)
+{</code></div>
+<div class="st-crow ln" data-id="r111" style="padding-left:7.000000000000001em"><code>	ring-&gt;dequeue = td-&gt;end_trb;
+	ring-&gt;deq_seg = td-&gt;end_seg;
+	inc_deq(xhci, ring);</code></div>
+<div class="st-crow ln" data-id="r112" style="padding-left:7.000000000000001em"><code>	xhci_td_cleanup(xhci, td, ring, status);</code></div>
+<div class="st-crow fn" data-id="r113" style="padding-left:7.000000000000001em"><span class="st-file">▸ xhci-ring.c : 877-879</span><code>static void xhci_td_cleanup(struct xhci_hcd *xhci, struct xhci_td *td,
+			    struct xhci_ring *ep_ring, int status)
+{</code></div>
+<div class="st-crow ln" data-id="r114" style="padding-left:8.100000000000001em"><code>	urb = td-&gt;urb;</code></div>
+<div class="st-crow ln" data-id="r115" style="padding-left:8.100000000000001em"><code>	 * If the host controller said we transferred more data than the buffer
+	 * length, urb-&gt;actual_length will be a very big number (since it&#x27;s
+	 * unsigned).  Play it safe and say we didn&#x27;t transfer anything.
+	 */
+	if (urb-&gt;actual_length &gt; urb-&gt;transfer_buffer_length) {
+		xhci_warn(xhci, &quot;URB req %u and actual %u transfer length mismatch\n&quot;,
+			  urb-&gt;transfer_buffer_length, urb-&gt;actual_length);
+		urb-&gt;actual_length = 0;
+		status = 0;
+	}
+	/* TD might be removed from td_list if we are giving back a cancelled URB */</code></div>
+<div class="st-crow ln" data-id="r116" style="padding-left:8.100000000000001em"><code>		list_del_init(&amp;td-&gt;td_list);
+	/* Giving back a cancelled URB, or if a slated TD completed anyway */
+	if (!list_empty(&amp;td-&gt;cancelled_td_list))
+		list_del_init(&amp;td-&gt;cancelled_td_list);
+
+	inc_td_cnt(urb);</code></div>
+<div class="st-crow ln" data-id="r117" style="padding-left:8.100000000000001em"><code>	if (last_td_in_urb(td)) {
+		if ((urb-&gt;actual_length != urb-&gt;transfer_buffer_length &amp;&amp;
+		     (urb-&gt;transfer_flags &amp; URB_SHORT_NOT_OK)) ||
+		    (status != 0 &amp;&amp; !usb_endpoint_xfer_isoc(&amp;urb-&gt;ep-&gt;desc)))
+			xhci_dbg(xhci, &quot;Giveback URB %p, len = %d, expected = %d, status = %d\n&quot;,
+				 urb, urb-&gt;actual_length,
+				 urb-&gt;transfer_buffer_length, status);
+
+		/* set isoc urb status to 0 just as EHCI, UHCI, and OHCI */
+		if (usb_pipetype(urb-&gt;pipe) == PIPE_ISOCHRONOUS)</code></div>
+<div class="st-crow ln" data-id="r118" style="padding-left:8.100000000000001em"><code>		xhci_giveback_urb_in_irq(xhci, td, status);</code></div>
+<div class="st-crow fn" data-id="r119" style="padding-left:8.100000000000001em"><span class="st-file">▸ xhci-ring.c : 807-809</span><code>static void xhci_giveback_urb_in_irq(struct xhci_hcd *xhci,
+				     struct xhci_td *cur_td, int status)
+{</code></div>
+<div class="st-crow ln" data-id="r120" style="padding-left:9.200000000000001em"><code>	xhci_urb_free_priv(urb_priv);
+	usb_hcd_unlink_urb_from_ep(hcd, urb);</code></div>
+<div class="st-crow ln" data-id="r121" style="padding-left:9.200000000000001em"><code>	trace_xhci_urb_giveback(urb);
+	usb_hcd_giveback_urb(hcd, urb, status);</code></div>
+<div class="st-crow ctx" data-id="r122"><span class="st-tag">usbcore</span><code>usbcore：urb-&gt;complete(urb) → usb_control_msg 返回 8 → 枚举流程拿到 bMaxPacketSize0</code></div>
+      </div>
+      <div class="st-world">
+<div class="stw-ring"><div class="stw-rhead"><b>ep0 传输环（段基址 0x1de0000 · TRB=16B · 槽=偏移）</b><span class="stw-own">生产者=驱动（写 TRB·推进 enq）｜消费者=xHC（取指·推进 deq）</span></div><div class="stw-cells"><div class="stw-cell st-empty"><b>+00</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+10</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+20</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+30</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+40</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+50</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+60</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+70</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div></div></div><div class="stw-ring"><div class="stw-rhead"><b>命令环（前情：两命令已消费=EV2/EV3）</b><span class="stw-own">生产者=驱动｜消费者=xHC（本课 TD1 全程静置）</span></div><div class="stw-cells"><div class="stw-cell st-consumed"><b>+0</b><span class="stw-t">Enable Slot</span><span class="stw-f">已消费 ✓</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-consumed"><b>+10</b><span class="stw-t">AddrDev BSR=1</span><span class="stw-f">已消费 ✓</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>+20</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>+30</b><span class="stw-t">Link</span><span class="stw-f">回绕</span><span class="stw-cyc">cyc=1</span></div></div></div><div class="stw-ring"><div class="stw-rhead"><b>事件环（6 槽 · 标本特意取小）</b><span class="stw-own">生产者=xHC（写事件）｜消费者=驱动（读事件·写回 ERDP）</span></div><div class="stw-cells"><div class="stw-cell st-consumed"><b>6000</b><span class="stw-t">EV1 PORT</span><span class="stw-f">已消费 ✓</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-consumed"><b>6010</b><span class="stw-t">EV2 CC EnSlot</span><span class="stw-f">已消费 ✓</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-consumed"><b>6020</b><span class="stw-t">EV3 CC Addr BSR=1</span><span class="stw-f">已消费 ✓</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>6030</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>6040</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div><div class="stw-cell st-empty"><b>6050</b><span class="stw-t">空</span><span class="stw-cyc">cyc=—</span></div></div></div><div class="stw-box"><b>设备（M4.5 引擎模型）</b><table><tr><th>地址</th><td>0（BSR=1 已建上下文、未落址）</td></tr><tr><th>状态</th><td>Default</td></tr><tr><th>当前动作</th><td>空闲</td></tr><tr><th>线上</th><td>—</td></tr></table></div><div class="stw-box"><b>两本账：urb → TD → TRB</b><table><tr><th>urb</th><td>usb_control_msg：GET_DESCRIPTOR(Device, wLength=8)，setup=80 06 00 01 00 00 08 00</td></tr><tr><th>TD</th><td>（未入队）</td></tr><tr><th>TRB</th><td>—</td></tr><tr><th>actual_length</th><td>—</td></tr><tr><th>status</th><td>排队中</td></tr></table></div>
       </div>
     </div>
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 3 帧</span><span>BSR=0：xHC 亲自上线发 SET_ADDRESS——先于 CCC</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>槽0-3</b>EV1-EV4 ✓</div>
-          <div class="u"><b>槽4</b><span style="color:#1a5fb4;font-weight:600">EV5 CC Addr BSR=0</span> slot=1</div>
-          <div class="u"><b>槽5</b>空</div>
-        </div>
-        <div class="buftt">
-          <div class="slot busy">dev_ctx：Default（addr=0, state=1）→ <b>Addressed（addr=1, state=2）</b></div>
-        </div>
-        驱动发 Address Device <strong>BSR=0</strong>（SETUP_CONTEXT_ADDRESS，内核 <code>xhci_setup_device</code> xhci.c:4318）。<strong>SET_ADDRESS 不是驱动的控制传输</strong>——xHC 在总线上自己发（§4.6.5；引擎钩子日志：SET_ADDRESS wire txn addr=1，4.0µs 完成），<strong>线上事务完成后才写 CCC 事件</strong>（实测日志序：wire txn 行在前、EV5 行在后；A5 断言 PASS）。此后设备在地址 1 服务。规范 §4.3.4 Address Assignment 的两段式（BSR=1 探路、BSR=0 落址）你在 0002 死记过的时序，在这里是两条命令加一颗线上事务。
-      </div>
-    </div>
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 4 帧</span><span>64B 描述符短包：双事件 + 环回绕 + cycle 轮转</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>槽0</b><span style="color:#a00000;font-weight:600">EV7 TR ✓TD2</span> cyc=<b>0</b></div>
-          <div class="u"><b>槽1-4</b>EV1-EV5 ✓</div>
-          <div class="u"><b>槽5</b><span style="color:#a00000;font-weight:600">EV6 TR Short</span> 残46 cyc=1</div>
-        </div>
-        TD2=GET_DESCRIPTOR(64B)（<code>80 06 00 01 00 00 40 00</code>）@地址 1。设备只有 18B → <strong>短包</strong>：一条 Short Packet 事件（CC=13，残量 64−18=46）落 Data TRB、一条 Success 落 Status TRB——hub 线 0002 讲的"描述符长度以实际短包为准"，在事件环上是两颗事件。EV6 落槽 5 后<strong>环满回绕</strong>：EV7 落回槽 0，<strong>轮次翻转为 0</strong>（实测：前 6 条 cyc=1、后 3 条 cyc=0）——软件消费者的 <code>cycle_state ^= 1</code>（inc_deq）在这次消费里真实执行了一次。
-      </div>
-    </div>
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 5 帧</span><span>收官：配置端点 + SET_CONFIG，九条全序核对</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>槽0</b>EV7 ✓</div>
-          <div class="u"><b>槽1</b><span style="color:#1a5fb4;font-weight:600">EV8 CC CfgEP</span> cyc=0</div>
-          <div class="u"><b>槽2</b><span style="color:#a00000;font-weight:600">EV9 TR ✓TD3</span> cyc=0</div>
-          <div class="u"><b>槽3-5</b>（旧轮已消费）</div>
-        </div>
-        <table>
-          <tr><th>核对项（实测 PASS）</th><th>数值</th></tr>
-          <tr><td>事件总数</td><td>9（引擎产出 = 驱动消费）</td></tr>
-          <tr><td>ep0 门铃次数 ↔ TD 数</td><td>3 ↔ 3（每次门铃恰消费一个 TD，事件数 1/2/1）</td></tr>
-          <tr><td>ep0 hw dequeue</td><td>= TD3 Status+0x10 = <strong>驱动下一入队位</strong>（0x1de0080 两侧相等）</td></tr>
-          <tr><td>命令环游标</td><td>= 末命令+0x10（4 命令无回绕）</td></tr>
-          <tr><td>设备终态</td><td>dev_addr=1、configured=1（18B 描述符逐字节==ROM）</td></tr>
-        </table>
-        TD3=SET_CONFIGURATION(1)（<code>00 09 01 00 00 00 00 00</code>）两段式单 Success 事件。<strong>0009 的六站闭环在九颗事件里全部走过一遍</strong>：③每敲一次铃（3 次）→ ④xHC 消费一个 TD → ⑤事件回程（1/2/1）→ ⑥ usbcore 继续。收尾注记：<span class="diff">标本≠产品</span> 6 槽事件环是仿真<strong>特意取小、好让回绕尽早出现</strong>（真实 xHC 事件环每段 256/512 TRB）；引擎也不建模 slot state=Configured(3)（§4.3.5 有此态，"已配置"以设备侧 configured 标志观测——引擎边界，M4.5 合同 §2.3）。
-      </div>
-    </div>
+    <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
+    <div class="st-refs"><details><summary>📎 §4.7 门铃寄存器（p58）</summary><p class="st-msrc">xHCI 1.2（2019） · p58</p><blockquote>Each Doorbell Register provides system software with a mechanism for notifying the xHC if it has Slot or Endpoint related work to perform.</blockquote><p class="st-mnote">门铃=软件通知 xHC「有活」的唯一机制；Target 字段指端点。寄存器布局另见 §5.6。</p></details><details><summary>📎 p67 环约定 完全成型才许拨 cycle（发布闸门）（p67）</summary><p class="st-msrc">xHCI 1.2（2019） · p67</p><blockquote>Software shall never update the Enqueue Pointer (that is, toggle the Cycle bit of a TRB) until all TRBs between the previous and the new Enqueue Pointer location are fully formed.</blockquote><p class="st-mnote">giveback_first_trb 翻首颗 cycle 位兑现的正是这条；cycle 校验语义见 §4.9.2。</p></details><details><summary>📎 §3.2.9 控制传输三段 TD（p68）</summary><p class="st-msrc">xHCI 1.2（2019） · p68</p><blockquote>A control transfer may optionally contain a Data stage between the Setup and Status stages. The xHCI defines three types of TDs: Setup Stage, Data Stage, and Status Stage TDs, which correspond to respective USB control transfer stages.</blockquote><p class="st-mnote">规范账本按阶段记 TD（2-3 件）；内核 struct xhci_td 按 URB 记（1 件）——两本账，0007/0009 已立法。</p></details><details><summary>📎 p85-86 规范自己的 GET_DESCRIPTOR(8) 工作示例（p85-86）</summary><p class="st-msrc">xHCI 1.2（2019） · p85-86</p><blockquote>TRB Type = Setup Stage TRB. Transfer Type (TRT) = IN Data Stage (3). TRB Transfer Length = 8. Immediate Data (IDT) = 1. bmRequestType = 80h … bRequest = 6 (GET_DESCRIPTOR) … Data Stage TRB: Data Buffer Pointer = The address of the Device Descriptor receive buffer.</blockquote><p class="st-mnote">规范的槽初始化流程里就演示了这桩 8 字节读——与内核打包、M4.5 标本三方一致。</p></details><details><summary>📎 §4.11.2 Setup TRB 必须内联（IDT）（p212）</summary><p class="st-msrc">xHCI 1.2（2019） · p212</p><blockquote>A Setup Stage TRB shall contain immediate data (IDT flag = &#x27;1&#x27;), its Parameter fields shall contain the 8-byte USB SETUP Data, which defines the request and the request&#x27;s parameters that will be sent to the device in the USB Setup stage transaction.</blockquote><p class="st-mnote">所以内核复制 setup 包进 DW0-1，不用 DMA 地址。</p></details><details><summary>📎 §4.10 IOC 命中即产事件（p189）</summary><p class="st-msrc">xHCI 1.2（2019） · p189</p><blockquote>If upon transfer completion of a TRB the Interrupt On Completion (IOC) flag is set, the xHC shall generate a Transfer Event TRB. Note the generation of an Event TRB always generates an interrupt to the host.</blockquote><p class="st-mnote">Status TRB 打 IOC → EV4 落在 Status TRB 上。</p></details><details><summary>📎 §4.10.1.1 短包 × ISP 才产事件（p191）</summary><p class="st-msrc">xHCI 1.2（2019） · p191</p><blockquote>If the Interrupt-on Short Packet (ISP) or if the Interrupt On Completion (IOC) flag is set to &#x27;1&#x27; in the TRB that the Short Packet condition occurred on, a Transfer Event shall be generated for that TRB with the Completion Code set to Short Packet.</blockquote><p class="st-mnote">TD2（64B 请求 18B 短包）的 EV6 由此而来；TD1 足额 8B，ISP 未命中。</p></details><details><summary>📎 §4.11.3.1 事件产生三条件 + 错误恒产（p189-191/222）</summary><p class="st-msrc">xHCI 1.2（2019） · p189-191/222</p><blockquote>Detection of an error during a transfer shall always generate a Transfer Event, irrespective of whether the Interrupt-on-Short or Interrupt On Completion (IOC) flags are set in the Transfer TRB.</blockquote><p class="st-mnote">三条件：①IOC 命中 ②ISP×短包 ③错误恒产——xHC 不欠「每 TD 一颗事件」。</p></details><details><summary>📎 §4.9.4 事件环消费合同（CCS/ERDP）（p179/183）</summary><p class="st-msrc">xHCI 1.2（2019） · p179/183</p><blockquote>If the Cycle bit of the Event TRB pointed to by the Event Ring Dequeue Pointer equals CCS, then the Event TRB is a valid event, software processes it and advances the Event Ring Dequeue Pointer. … Software writes to the ERDP register shall always advance the Event Ring Dequeue Pointer value.</blockquote><p class="st-mnote">事件环的生产者/消费者与传输环对调：xHC 写、驱动读并写回 ERDP 报进度。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"TD1 的一生：GET_DESCRIPTOR(8B) 从 usbcore 到回调的逐行旅程","intro":"左侧＝这桩传输真实走过的内核代码（缩进＝调用父子；紫行＝usbcore 侧上下文，绿行＝xHC/设备硬件动作——硬件没有驱动代码）。右侧＝同一时刻的三个环（传输/命令/事件，各标生产者与消费者归属）、设备面板与两本账（urb→TD→TRB）。用下方按钮或 ←/→ 键逐语句步进：每个函数调用=一帧，帧推进时右侧即时显示这步对环与设备做了什么。底部引用条可点开规范原文（已逐条核验页码）。数字全部来自 M4.5 引擎实测日志（事件环 6 槽、TD1 三颗 TRB 落 +00/+10/+20、EV4 落 6030）。","baseline":"代码基线 master@62f4c998b297（与全课一致）","rows":[{"id":"r0","kind":"ctx","depth":0,"text":"usbcore：usb_control_msg(GET_DESCRIPTOR Device, wLength=8) → usb_submit_urb() → hcd->driver->urb_enqueue()"},{"id":"r1","kind":"fn","depth":0,"text":"static int xhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flags)","file":"xhci.c","a":1620,"b":1620},{"id":"r2","kind":"ln","depth":1,"text":"\tep_index = xhci_get_endpoint_index(&urb->ep->desc);","file":"xhci.c","a":1630,"b":1630},{"id":"r3","kind":"ln","depth":1,"text":"\telse\n\t\tnum_tds = 1;","file":"xhci.c","a":1639,"b":1640},{"id":"r4","kind":"ln","depth":1,"text":"\turb_priv = kzalloc_flex(*urb_priv, td, num_tds, mem_flags);\n\tif (!urb_priv)\n\t\treturn -ENOMEM;","file":"xhci.c","a":1642,"b":1644},{"id":"r5","kind":"ln","depth":1,"text":"\turb_priv->num_tds = num_tds;\n\turb_priv->num_tds_done = 0;\n\turb->hcpriv = urb_priv;","file":"xhci.c","a":1646,"b":1648},{"id":"r6","kind":"ln","depth":1,"text":"\tspin_lock_irqsave(&xhci->lock, flags);","file":"xhci.c","a":1652,"b":1652},{"id":"r7","kind":"ln","depth":1,"text":"\tslot_id = urb->dev->slot_id;","file":"xhci.c","a":1661,"b":1661},{"id":"r8","kind":"ln","depth":1,"text":"\tep_state = &xhci->devs[slot_id]->eps[ep_index].ep_state;","file":"xhci.c","a":1681,"b":1681},{"id":"r9","kind":"ln","depth":1,"text":"\tif (*ep_state & (EP_GETTING_STREAMS | EP_GETTING_NO_STREAMS)) {\n\t\txhci_warn(xhci, \"WARN: Can't enqueue URB, ep in streams transition state %x\\n\",\n\t\t\t  *ep_state);\n\t\tret = -EINVAL;\n\t\tgoto free_priv;\n\t}\n\tif (*ep_state & EP_SOFT_CLEAR_TOGGLE) {\n\t\txhci_warn(xhci, \"Can't enqueue URB while manually clearing toggle\\n\");\n\t\tret = -EINVAL;\n\t\tgoto free_priv;\n\t}","file":"xhci.c","a":1683,"b":1693},{"id":"r10","kind":"ln","depth":1,"text":"\tcase USB_ENDPOINT_XFER_CONTROL:\n\t\tret = xhci_queue_ctrl_tx(xhci, GFP_ATOMIC, urb,\n\t\t\t\t\t slot_id, ep_index);","file":"xhci.c","a":1697,"b":1699},{"id":"r11","kind":"ph","depth":0,"text":"② TRB 化：一桩 URB 打包成三颗 TRB（xhci-ring.c）"},{"id":"r12","kind":"fn","depth":0,"text":"int xhci_queue_ctrl_tx(struct xhci_hcd *xhci, gfp_t mem_flags,\n\t\tstruct urb *urb, int slot_id, unsigned int ep_index)","file":"xhci-ring.c","a":3775,"b":3776},{"id":"r13","kind":"ln","depth":1,"text":"\tep_ring = xhci_urb_to_transfer_ring(xhci, urb);\n\tif (!ep_ring)\n\t\treturn -EINVAL;","file":"xhci-ring.c","a":3788,"b":3790},{"id":"r14","kind":"ln","depth":1,"text":"\t/*\n\t * Need to copy setup packet into setup TRB, so we can't use the setup\n\t * DMA address.\n\t */\n\tif (!urb->setup_packet)\n\t\treturn -EINVAL;","file":"xhci-ring.c","a":3792,"b":3797},{"id":"r15","kind":"ln","depth":1,"text":"\t/* 1 TRB for setup, 1 for status */\n\tnum_trbs = 2;","file":"xhci-ring.c","a":3813,"b":3814},{"id":"r16","kind":"ln","depth":1,"text":"\tif (urb->transfer_buffer_length > 0)\n\t\tnum_trbs++;","file":"xhci-ring.c","a":3820,"b":3821},{"id":"r17","kind":"ln","depth":1,"text":"\tret = prepare_transfer(xhci, xhci->devs[slot_id],\n\t\t\tep_index, urb->stream_id,\n\t\t\tnum_trbs, urb, 0, mem_flags);\n\tif (ret \u003c 0)","file":"xhci-ring.c","a":3822,"b":3825},{"id":"r18","kind":"fn","depth":1,"text":"static int prepare_transfer(struct xhci_hcd *xhci,\n\t\tstruct xhci_virt_device *xdev,\n\t\tunsigned int ep_index,\n\t\tunsigned int stream_id,\n\t\tunsigned int num_trbs,\n\t\tstruct urb *urb,\n\t\tunsigned int td_index,\n\t\tgfp_t mem_flags)","file":"xhci-ring.c","a":3330,"b":3337},{"id":"r19","kind":"ln","depth":2,"text":"\tep_ring = xhci_triad_to_transfer_ring(xhci, xdev->slot_id, ep_index,\n\t\t\t\t\t      stream_id);\n\tif (!ep_ring) {\n\t\txhci_dbg(xhci, \"Can't prepare ring for bad stream ID %u\\n\",\n\t\t\t\tstream_id);\n\t\treturn -EINVAL;\n\t}","file":"xhci-ring.c","a":3345,"b":3351},{"id":"r20","kind":"ln","depth":2,"text":"\tret = prepare_ring(xhci, ep_ring, GET_EP_CTX_STATE(ep_ctx),\n\t\t\t   num_trbs, mem_flags);\n\tif (ret)\n\t\treturn ret;","file":"xhci-ring.c","a":3353,"b":3356},{"id":"r21","kind":"ln","depth":2,"text":"\turb_priv = urb->hcpriv;\n\ttd = &urb_priv->td[td_index];","file":"xhci-ring.c","a":3358,"b":3359},{"id":"r22","kind":"ln","depth":2,"text":"\tINIT_LIST_HEAD(&td->td_list);\n\tINIT_LIST_HEAD(&td->cancelled_td_list);","file":"xhci-ring.c","a":3361,"b":3362},{"id":"r23","kind":"ln","depth":2,"text":"\tif (td_index == 0) {\n\t\tret = usb_hcd_link_urb_to_ep(bus_to_hcd(urb->dev->bus), urb);\n\t\tif (unlikely(ret))\n\t\t\treturn ret;\n\t}","file":"xhci-ring.c","a":3364,"b":3368},{"id":"r24","kind":"ln","depth":2,"text":"\ttd->urb = urb;","file":"xhci-ring.c","a":3370,"b":3370},{"id":"r25","kind":"ln","depth":2,"text":"\tlist_add_tail(&td->td_list, &ep_ring->td_list);","file":"xhci-ring.c","a":3372,"b":3372},{"id":"r26","kind":"ln","depth":2,"text":"\ttd->start_seg = ep_ring->enq_seg;\n\ttd->start_trb = ep_ring->enqueue;","file":"xhci-ring.c","a":3373,"b":3374},{"id":"r27","kind":"ln","depth":1,"text":"\turb_priv = urb->hcpriv;\n\ttd = &urb_priv->td[0];","file":"xhci-ring.c","a":3828,"b":3829},{"id":"r28","kind":"ln","depth":1,"text":"\t/*\n\t * Don't give the first TRB to the hardware (by toggling the cycle bit)\n\t * until we've finished creating all the other TRBs.  The ring's cycle\n\t * state may change as we enqueue the other TRBs, so save it too.\n\t */","file":"xhci-ring.c","a":3831,"b":3835},{"id":"r29","kind":"ln","depth":1,"text":"\tstart_trb = &ep_ring->enqueue->generic;\n\tstart_cycle = ep_ring->cycle_state;","file":"xhci-ring.c","a":3836,"b":3837},{"id":"r30","kind":"ln","depth":1,"text":"\t/* Queue setup TRB - see section 6.4.1.2.1 */\n\t/* FIXME better way to translate setup_packet into two u32 fields? */\n\tsetup = (struct usb_ctrlrequest *) urb->setup_packet;","file":"xhci-ring.c","a":3839,"b":3841},{"id":"r31","kind":"ln","depth":1,"text":"\tfield = 0;\n\tfield |= TRB_IDT | TRB_TYPE(TRB_SETUP);","file":"xhci-ring.c","a":3842,"b":3843},{"id":"r32","kind":"ln","depth":1,"text":"\tif (start_cycle == 0)\n\t\tfield |= 0x1;","file":"xhci-ring.c","a":3844,"b":3845},{"id":"r33","kind":"ln","depth":1,"text":"\t/* xHCI 1.0/1.1 6.4.1.2.1: Transfer Type field */\n\tif ((xhci->hci_version >= 0x100) || (xhci->quirks & XHCI_MTK_HOST)) {\n\t\tif (urb->transfer_buffer_length > 0) {","file":"xhci-ring.c","a":3847,"b":3849},{"id":"r34","kind":"ln","depth":1,"text":"\t\t\tif (setup->bRequestType & USB_DIR_IN)\n\t\t\t\tfield |= TRB_TX_TYPE(TRB_DATA_IN);\n\t\t\telse\n\t\t\t\tfield |= TRB_TX_TYPE(TRB_DATA_OUT);","file":"xhci-ring.c","a":3850,"b":3853},{"id":"r35","kind":"ln","depth":1,"text":"\tqueue_trb(xhci, ep_ring, true,\n\t\t  setup->bRequestType | setup->bRequest \u003c\u003c 8 | le16_to_cpu(setup->wValue) \u003c\u003c 16,\n\t\t  le16_to_cpu(setup->wIndex) | le16_to_cpu(setup->wLength) \u003c\u003c 16,\n\t\t  TRB_LEN(8) | TRB_INTR_TARGET(0),\n\t\t  /* Immediate data in pointer */\n\t\t  field);","file":"xhci-ring.c","a":3857,"b":3862},{"id":"r36","kind":"fn","depth":2,"text":"static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,\n\t\tbool more_trbs_coming,\n\t\tu32 field1, u32 field2, u32 field3, u32 field4)","file":"xhci-ring.c","a":3244,"b":3246},{"id":"r37","kind":"ln","depth":3,"text":"\tstruct xhci_generic_trb *trb;\n\n\ttrb = &ring->enqueue->generic;","file":"xhci-ring.c","a":3248,"b":3250},{"id":"r38","kind":"ln","depth":3,"text":"\ttrb->field[0] = cpu_to_le32(field1);\n\ttrb->field[1] = cpu_to_le32(field2);","file":"xhci-ring.c","a":3251,"b":3252},{"id":"r39","kind":"ln","depth":3,"text":"\ttrb->field[2] = cpu_to_le32(field3);","file":"xhci-ring.c","a":3253,"b":3253},{"id":"r40","kind":"ln","depth":3,"text":"\t/* make sure TRB is fully written before giving it to the controller */\n\twmb();\n\ttrb->field[3] = cpu_to_le32(field4);","file":"xhci-ring.c","a":3254,"b":3256},{"id":"r41","kind":"ln","depth":3,"text":"\n\ttrace_xhci_queue_trb(ring, trb,\n\t\t\t     xhci_trb_virt_to_dma(ring->enq_seg, ring->enqueue));\n","file":"xhci-ring.c","a":3257,"b":3260},{"id":"r42","kind":"fn","depth":3,"text":"static void inc_enq(struct xhci_hcd *xhci, struct xhci_ring *ring,\n\t\t\tbool more_trbs_coming)","file":"xhci-ring.c","a":285,"b":286},{"id":"r43","kind":"ln","depth":4,"text":"\tu32 chain;\n\n\tchain = le32_to_cpu(ring->enqueue->generic.field[3]) & TRB_CHAIN;","file":"xhci-ring.c","a":288,"b":290},{"id":"r44","kind":"ln","depth":4,"text":"\tif (last_trb_on_seg(ring->enq_seg, ring->enqueue)) {\n\t\txhci_err(xhci, \"Tried to move enqueue past ring segment\\n\");\n\t\treturn;\n\t}","file":"xhci-ring.c","a":292,"b":295},{"id":"r45","kind":"ln","depth":4,"text":"\tring->enqueue++;","file":"xhci-ring.c","a":297,"b":297},{"id":"r46","kind":"ln","depth":4,"text":"\n\t/*\n\t * If we are in the middle of a TD or the caller plans to enqueue more\n\t * TDs as one transfer (eg. control), traverse any link TRBs right now.\n\t * Otherwise, enqueue can stay on a link until the next prepare_ring().\n\t * This avoids enqueue entering deq_seg and simplifies ring expansion.\n\t */\n\tif (trb_is_link(ring->enqueue) && (chain || more_trbs_coming))\n\t\tinc_enq_past_link(xhci, ring, chain);\n}","file":"xhci-ring.c","a":298,"b":307},{"id":"r47","kind":"ln","depth":1,"text":"\t/* If there's data, queue data TRBs */\n\t/* Only set interrupt on short packet for IN endpoints */\n\tif (usb_urb_dir_in(urb))\n\t\tfield = TRB_ISP | TRB_TYPE(TRB_DATA);\n\telse\n\t\tfield = TRB_TYPE(TRB_DATA);","file":"xhci-ring.c","a":3864,"b":3869},{"id":"r48","kind":"ln","depth":1,"text":"\tif (urb->transfer_buffer_length > 0) {\n\t\tu32 length_field, remainder;\n\t\tu64 addr;","file":"xhci-ring.c","a":3871,"b":3873},{"id":"r49","kind":"ln","depth":1,"text":"\n\t\tif (xhci_urb_suitable_for_idt(urb)) {\n\t\t\tmemcpy(&addr, urb->transfer_buffer,\n\t\t\t       urb->transfer_buffer_length);\n\t\t\tle64_to_cpus(&addr);\n\t\t\tfield |= TRB_IDT;","file":"xhci-ring.c","a":3874,"b":3879},{"id":"r50","kind":"ln","depth":1,"text":"\t\t} else {\n\t\t\taddr = (u64) urb->transfer_dma;\n\t\t}","file":"xhci-ring.c","a":3880,"b":3882},{"id":"r51","kind":"ln","depth":1,"text":"\n\t\tremainder = xhci_td_remainder(xhci, 0,\n\t\t\t\turb->transfer_buffer_length,\n\t\t\t\turb->transfer_buffer_length,\n\t\t\t\turb, 1);\n\t\tlength_field = TRB_LEN(urb->transfer_buffer_length) |\n\t\t\t\tTRB_TD_SIZE(remainder) |\n\t\t\t\tTRB_INTR_TARGET(0);","file":"xhci-ring.c","a":3883,"b":3890},{"id":"r52","kind":"ln","depth":1,"text":"\t\tif (setup->bRequestType & USB_DIR_IN)\n\t\t\tfield |= TRB_DIR_IN;","file":"xhci-ring.c","a":3891,"b":3892},{"id":"r53","kind":"ln","depth":1,"text":"\t\tqueue_trb(xhci, ep_ring, true,\n\t\t\t\tlower_32_bits(addr),\n\t\t\t\tupper_32_bits(addr),\n\t\t\t\tlength_field,\n\t\t\t\tfield | ep_ring->cycle_state);\n\t}","file":"xhci-ring.c","a":3893,"b":3898},{"id":"r54","kind":"ln","depth":1,"text":"\t/* Save the DMA address of the last TRB in the TD */\n\ttd->end_trb = ep_ring->enqueue;\n\ttd->end_seg = ep_ring->enq_seg;","file":"xhci-ring.c","a":3900,"b":3902},{"id":"r55","kind":"ln","depth":1,"text":"\n\t/* Queue status TRB - see Table 7 and sections 4.11.2.2 and 6.4.1.2.3 */\n\t/* If the device sent data, the status stage is an OUT transfer */","file":"xhci-ring.c","a":3903,"b":3905},{"id":"r56","kind":"ln","depth":1,"text":"\tif (urb->transfer_buffer_length > 0 && setup->bRequestType & USB_DIR_IN)\n\t\tfield = 0;\n\telse\n\t\tfield = TRB_DIR_IN;","file":"xhci-ring.c","a":3906,"b":3909},{"id":"r57","kind":"ln","depth":1,"text":"\tqueue_trb(xhci, ep_ring, false,\n\t\t\t0,\n\t\t\t0,\n\t\t\tTRB_INTR_TARGET(0),\n\t\t\t/* Event on completion */\n\t\t\tfield | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring->cycle_state);","file":"xhci-ring.c","a":3910,"b":3915},{"id":"r58","kind":"ln","depth":1,"text":"\tgiveback_first_trb(xhci, slot_id, ep_index, 0,\n\t\t\tstart_cycle, start_trb);","file":"xhci-ring.c","a":3917,"b":3918},{"id":"r59","kind":"fn","depth":1,"text":"static void giveback_first_trb(struct xhci_hcd *xhci, int slot_id,\n\t\tunsigned int ep_index, unsigned int stream_id, int start_cycle,\n\t\tstruct xhci_generic_trb *start_trb)\n{\n\t/*\n\t * Pass all the TRBs to the hardware at once and make sure this write","file":"xhci-ring.c","a":3437,"b":3442},{"id":"r60","kind":"ln","depth":2,"text":"\t * isn't reordered.\n\t */\n\twmb();","file":"xhci-ring.c","a":3443,"b":3445},{"id":"r61","kind":"ln","depth":2,"text":"\tif (start_cycle)\n\t\tstart_trb->field[3] |= cpu_to_le32(start_cycle);\n\telse\n\t\tstart_trb->field[3] &= cpu_to_le32(~TRB_CYCLE);","file":"xhci-ring.c","a":3446,"b":3449},{"id":"r62","kind":"ln","depth":2,"text":"\txhci_ring_ep_doorbell(xhci, slot_id, ep_index, stream_id);","file":"xhci-ring.c","a":3450,"b":3450},{"id":"r63","kind":"fn","depth":2,"text":"void xhci_ring_ep_doorbell(struct xhci_hcd *xhci,\n\t\tunsigned int slot_id,\n\t\tunsigned int ep_index,\n\t\tunsigned int stream_id)\n{","file":"xhci-ring.c","a":551,"b":555},{"id":"r64","kind":"ln","depth":3,"text":"\t__le32 __iomem *db_addr = &xhci->dba->doorbell[slot_id];","file":"xhci-ring.c","a":556,"b":556},{"id":"r65","kind":"ln","depth":3,"text":"\tunsigned int ep_state = ep->ep_state;\n\n\t/* Don't ring the doorbell for this endpoint if there are pending\n\t * cancellations because we don't want to interrupt processing.\n\t * We don't want to restart any stream rings if there's a set dequeue\n\t * pointer command pending because the device can choose to start any\n\t * stream once the endpoint is on the HW schedule.","file":"xhci-ring.c","a":558,"b":564},{"id":"r66","kind":"ln","depth":3,"text":"\tif (ep_state & (EP_STOP_CMD_PENDING | SET_DEQ_PENDING | EP_HALTED |\n\t\t\tEP_CLEARING_TT | EP_DROP_PENDING))\n\t\treturn;","file":"xhci-ring.c","a":566,"b":568},{"id":"r67","kind":"ln","depth":3,"text":"\ttrace_xhci_ring_ep_doorbell(slot_id, DB_VALUE(ep_index, stream_id));","file":"xhci-ring.c","a":570,"b":570},{"id":"r68","kind":"ln","depth":3,"text":"\twritel(DB_VALUE(ep_index, stream_id), db_addr);","file":"xhci-ring.c","a":572,"b":572},{"id":"r69","kind":"ln","depth":3,"text":"\t/* flush the write */\n\treadl(db_addr);","file":"xhci-ring.c","a":573,"b":574},{"id":"r70","kind":"ln","depth":1,"text":"\treturn 0;","file":"xhci-ring.c","a":3919,"b":3919},{"id":"r71","kind":"ph","depth":0,"text":"③ xHC 取指执行 + 设备线上事务（硬件——无驱动代码）"},{"id":"r72","kind":"hw","depth":0,"text":"xHC 读到门铃 → 把 ep0 排入调度"},{"id":"r73","kind":"hw","depth":0,"text":"取指槽+00 Setup TRB：cycle=1 与消费轮次相符 → 有效，取出执行；deq +00→+10"},{"id":"r74","kind":"hw","depth":0,"text":"设备解码 SETUP：GET_DESCRIPTOR(Device, wLength=8) —— 在地址 0 上应答"},{"id":"r75","kind":"hw","depth":0,"text":"取指槽+10 Data TRB（IN 8B）→ 线上发 IN 令牌 → 设备回 8 字节：12 01 00 03 FF FF FF 09（ROM 实测）"},{"id":"r76","kind":"hw","depth":0,"text":"取指槽+20 Status TRB（OUT）→ 设备 ACK，三阶段握手完成"},{"id":"r77","kind":"hw","depth":0,"text":"IOC 命中（三条件之①）→ xHC 写事件：事件环槽 6030 = EV4 TR ✓TD1（CC=Success·回指 Status 槽+20·cyc=1）→ 拉中断"},{"id":"r78","kind":"ph","depth":0,"text":"④ 事件消费与回调（驱动 · 中断上下文）"},{"id":"r79","kind":"fn","depth":0,"text":"static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir,\n\t\t\t      bool skip_events)\n{","file":"xhci-ring.c","a":3092,"b":3094},{"id":"r80","kind":"ln","depth":1,"text":"\txhci_clear_interrupt_pending(ir);","file":"xhci-ring.c","a":3099,"b":3099},{"id":"r81","kind":"ln","depth":1,"text":"\t/* Process all OS owned event TRBs on this event ring */\n\twhile (unhandled_event_trb(ir->event_ring)) {","file":"xhci-ring.c","a":3117,"b":3118},{"id":"r82","kind":"ln","depth":1,"text":"\t\tif (!skip_events)\n\t\t\terr = xhci_handle_event_trb(xhci, ir, ir->event_ring->dequeue);","file":"xhci-ring.c","a":3119,"b":3120},{"id":"r83","kind":"ln","depth":1,"text":"\t\tinc_deq(xhci, ir->event_ring);","file":"xhci-ring.c","a":3136,"b":3136},{"id":"r84","kind":"ln","depth":1,"text":"\txhci_update_erst_dequeue(xhci, ir, true);","file":"xhci-ring.c","a":3142,"b":3142},{"id":"r85","kind":"fn","depth":1,"text":"static int xhci_handle_event_trb(struct xhci_hcd *xhci, struct xhci_interrupter *ir,\n\t\t\t\t union xhci_trb *event)","file":"xhci-ring.c","a":2992,"b":2993},{"id":"r86","kind":"ln","depth":2,"text":"\trmb();\n\ttrb_type = TRB_FIELD_TO_TYPE(le32_to_cpu(event->event_cmd.flags));","file":"xhci-ring.c","a":3005,"b":3006},{"id":"r87","kind":"ln","depth":2,"text":"\tswitch (trb_type) {\n\tcase TRB_COMPLETION:\n\t\thandle_cmd_completion(xhci, &event->event_cmd);\n\t\tbreak;\n\tcase TRB_PORT_STATUS:","file":"xhci-ring.c","a":3009,"b":3013},{"id":"r88","kind":"ln","depth":2,"text":"\t\thandle_port_status(xhci, event);\n\t\tbreak;\n\tcase TRB_TRANSFER:\n\t\thandle_tx_event(xhci, ir, &event->trans_event);\n\t\tbreak;\n\tcase TRB_DEV_NOTE:\n\t\thandle_device_notification(xhci, event);","file":"xhci-ring.c","a":3014,"b":3020},{"id":"r89","kind":"fn","depth":2,"text":"static int handle_tx_event(struct xhci_hcd *xhci,\n\t\t\t   struct xhci_interrupter *ir,\n\t\t\t   struct xhci_transfer_event *event)","file":"xhci-ring.c","a":2632,"b":2634},{"id":"r90","kind":"ln","depth":3,"text":"\tslot_id = TRB_TO_SLOT_ID(le32_to_cpu(event->flags));\n\tep_index = TRB_TO_EP_ID(le32_to_cpu(event->flags)) - 1;\n\ttrb_comp_code = GET_COMP_CODE(le32_to_cpu(event->transfer_len));\n\tep_trb_dma = le64_to_cpu(event->buffer);","file":"xhci-ring.c","a":2648,"b":2651},{"id":"r91","kind":"ln","depth":3,"text":"\tep = xhci_get_virt_ep(xhci, slot_id, ep_index);\n\tif (!ep) {\n\t\txhci_err(xhci, \"ERROR Invalid Transfer event\\n\");\n\t\tgoto err_out;\n\t}","file":"xhci-ring.c","a":2653,"b":2657},{"id":"r92","kind":"ln","depth":3,"text":"\tep_ring = xhci_dma_to_transfer_ring(ep, ep_trb_dma);\n\tep_ctx = xhci_get_ep_ctx(xhci, ep->vdev->out_ctx, ep_index);\n\n\tif (GET_EP_CTX_STATE(ep_ctx) == EP_STATE_DISABLED) {\n\t\txhci_err(xhci,\n\t\t\t \"ERROR Transfer event for disabled endpoint slot %u ep %u\\n\",\n\t\t\t  slot_id, ep_index);\n\t\tgoto err_out;\n\t}\n\n\tif (!ep_ring)\n\t\treturn handle_transferless_tx_event(xhci, ep, trb_comp_code);","file":"xhci-ring.c","a":2659,"b":2670},{"id":"r93","kind":"ln","depth":3,"text":"\t/* find the transfer trb this events points to */\n\tep_trb = xhci_dma_to_trb(ep_ring->deq_seg, ep_trb_dma, NULL);","file":"xhci-ring.c","a":2672,"b":2673},{"id":"r94","kind":"ln","depth":3,"text":"\tswitch (trb_comp_code) {\n\t/* Skip codes that require special handling depending on\n\t * transfer type","file":"xhci-ring.c","a":2676,"b":2678},{"id":"r95","kind":"ln","depth":3,"text":"\t */\n\tcase COMP_SUCCESS:\n\t\tif (EVENT_TRB_LEN(le32_to_cpu(event->transfer_len)) != 0) {\n\t\t\ttrb_comp_code = COMP_SHORT_PACKET;\n\t\t\txhci_dbg(xhci, \"Successful completion on short TX for slot %u ep %u with last td comp code %d\\n\",\n\t\t\t\t slot_id, ep_index, ep_ring->old_trb_comp_code);\n\t\t}\n\t\tbreak;\n\tcase COMP_SHORT_PACKET:","file":"xhci-ring.c","a":2679,"b":2687},{"id":"r96","kind":"ln","depth":3,"text":"\n\tdo {\n\t\ttd = list_first_entry(&ep_ring->td_list, struct xhci_td,","file":"xhci-ring.c","a":2846,"b":2848},{"id":"r97","kind":"ln","depth":3,"text":"\n\t\t/* Is this TRB not part of the currently executing TD? */\n\t\tif (!trb_in_td(td, ep_trb_dma)) {","file":"xhci-ring.c","a":2850,"b":2852},{"id":"r98","kind":"ln","depth":3,"text":"\t\tgoto check_endpoint_halted;\n\n\ttd->status = status;\n\n\t/* update the urb's actual_length and give back to the core */\n\tif (usb_endpoint_xfer_control(&td->urb->ep->desc))\n\t\tprocess_ctrl_td(xhci, ep, ep_ring, td, ep_trb, event);\n\telse if (usb_endpoint_xfer_isoc(&td->urb->ep->desc))\n\t\tprocess_isoc_td(xhci, ep, ep_ring, td, ep_trb, event);\n\telse\n\t\tprocess_bulk_intr_td(xhci, ep, ep_ring, td, ep_trb, event);\n\treturn 0;\n","file":"xhci-ring.c","a":2949,"b":2961},{"id":"r99","kind":"fn","depth":3,"text":"static void process_ctrl_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,\n\t\t\t    struct xhci_ring *ep_ring,  struct xhci_td *td,\n\t\t\t    union xhci_trb *ep_trb, struct xhci_transfer_event *event)\n{","file":"xhci-ring.c","a":2306,"b":2309},{"id":"r100","kind":"ln","depth":4,"text":"\ttrb_type = TRB_FIELD_TO_TYPE(le32_to_cpu(ep_trb->generic.field[3]));\n\tep_ctx = xhci_get_ep_ctx(xhci, ep->vdev->out_ctx, ep->ep_index);\n\ttrb_comp_code = GET_COMP_CODE(le32_to_cpu(event->transfer_len));\n\trequested = td->urb->transfer_buffer_length;\n\tremaining = EVENT_TRB_LEN(le32_to_cpu(event->transfer_len));","file":"xhci-ring.c","a":2315,"b":2319},{"id":"r101","kind":"ln","depth":4,"text":"\tswitch (trb_comp_code) {\n\tcase COMP_SUCCESS:\n\t\tif (trb_type != TRB_STATUS) {\n\t\t\txhci_warn(xhci, \"WARN: Success on ctrl %s TRB without IOC set?\\n\",\n\t\t\t\t  (trb_type == TRB_DATA) ? \"data\" : \"setup\");\n\t\t\ttd->status = -ESHUTDOWN;\n\t\t\tbreak;\n\t\t}\n\t\ttd->status = 0;","file":"xhci-ring.c","a":2321,"b":2329},{"id":"r102","kind":"ln","depth":4,"text":"\t * if on data stage then update the actual_length of the URB and flag it\n\t * as set, so it won't be overwritten in the event for the last TRB.\n\t */\n\tif (trb_type == TRB_DATA ||\n\t\ttrb_type == TRB_NORMAL) {\n\t\ttd->urb_length_set = true;\n\t\ttd->urb->actual_length = requested - remaining;\n\t\txhci_dbg(xhci, \"Waiting for status stage event\\n\");\n\t\treturn;\n\t}","file":"xhci-ring.c","a":2379,"b":2388},{"id":"r103","kind":"ln","depth":4,"text":"\t/* at status stage */\n\tif (!td->urb_length_set)\n\t\ttd->urb->actual_length = requested;","file":"xhci-ring.c","a":2390,"b":2392},{"id":"r104","kind":"ln","depth":4,"text":"\nfinish_td:\n\tfinish_td(xhci, ep, ep_ring, td, trb_comp_code);","file":"xhci-ring.c","a":2393,"b":2395},{"id":"r105","kind":"fn","depth":4,"text":"static void finish_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,\n\t\t      struct xhci_ring *ep_ring, struct xhci_td *td,\n\t\t      u32 trb_comp_code)\n{","file":"xhci-ring.c","a":2247,"b":2250},{"id":"r106","kind":"ln","depth":5,"text":"\tep_ctx = xhci_get_ep_ctx(xhci, ep->vdev->out_ctx, ep->ep_index);\n","file":"xhci-ring.c","a":2253,"b":2254},{"id":"r107","kind":"ln","depth":5,"text":"\tswitch (trb_comp_code) {\n\tcase COMP_STOPPED_LENGTH_INVALID:\n\tcase COMP_STOPPED_SHORT_PACKET:\n\tcase COMP_STOPPED:\n\t\t/*\n\t\t * The \"Stop Endpoint\" completion will take care of any\n\t\t * stopped TDs. A stopped TD may be restarted, so don't update\n\t\t * the ring dequeue pointer or take this TD off any lists yet.\n\t\t */\n\t\treturn;\n\t}","file":"xhci-ring.c","a":2255,"b":2265},{"id":"r108","kind":"ln","depth":5,"text":"\tif (xhci_halted_host_endpoint(xhci, ep_ctx, trb_comp_code)) {\n\t\t/*\n\t\t * xhci internal endpoint state will go to a \"halt\" state for\n\t\t * any stall, including default control pipe protocol stall.\n\t\t * To clear the host side halt we need to issue a reset endpoint\n\t\t * command, followed by a set dequeue command to move past the\n\t\t * TD.\n\t\t * Class drivers clear the device side halt from a functional\n\t\t * stall later. Hub TT buffer should only be cleared for FS/LS\n\t\t * devices behind HS hubs for functional stalls.\n\t\t */\n\t\tif (!(ep->ep_index == 0 && trb_comp_code == COMP_STALL_ERROR))\n\t\t\txhci_clear_hub_tt_buffer(xhci, td, ep);\n\n\t\txhci_handle_halted_endpoint(xhci, ep, td, EP_HARD_RESET);\n\n\t\treturn; /* xhci_handle_halted_endpoint marked td cancelled */\n\t}","file":"xhci-ring.c","a":2267,"b":2284},{"id":"r109","kind":"ln","depth":5,"text":"\txhci_dequeue_td(xhci, td, ep_ring, td->status);","file":"xhci-ring.c","a":2286,"b":2286},{"id":"r110","kind":"fn","depth":5,"text":"static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xhci_ring *ring,\n\t\t\t    u32 status)\n{","file":"xhci-ring.c","a":924,"b":926},{"id":"r111","kind":"ln","depth":6,"text":"\tring->dequeue = td->end_trb;\n\tring->deq_seg = td->end_seg;\n\tinc_deq(xhci, ring);","file":"xhci-ring.c","a":927,"b":929},{"id":"r112","kind":"ln","depth":6,"text":"\txhci_td_cleanup(xhci, td, ring, status);","file":"xhci-ring.c","a":931,"b":931},{"id":"r113","kind":"fn","depth":6,"text":"static void xhci_td_cleanup(struct xhci_hcd *xhci, struct xhci_td *td,\n\t\t\t    struct xhci_ring *ep_ring, int status)\n{","file":"xhci-ring.c","a":877,"b":879},{"id":"r114","kind":"ln","depth":7,"text":"\turb = td->urb;","file":"xhci-ring.c","a":883,"b":883},{"id":"r115","kind":"ln","depth":7,"text":"\t * If the host controller said we transferred more data than the buffer\n\t * length, urb->actual_length will be a very big number (since it's\n\t * unsigned).  Play it safe and say we didn't transfer anything.\n\t */\n\tif (urb->actual_length > urb->transfer_buffer_length) {\n\t\txhci_warn(xhci, \"URB req %u and actual %u transfer length mismatch\\n\",\n\t\t\t  urb->transfer_buffer_length, urb->actual_length);\n\t\turb->actual_length = 0;\n\t\tstatus = 0;\n\t}\n\t/* TD might be removed from td_list if we are giving back a cancelled URB */","file":"xhci-ring.c","a":889,"b":899},{"id":"r116","kind":"ln","depth":7,"text":"\t\tlist_del_init(&td->td_list);\n\t/* Giving back a cancelled URB, or if a slated TD completed anyway */\n\tif (!list_empty(&td->cancelled_td_list))\n\t\tlist_del_init(&td->cancelled_td_list);\n\n\tinc_td_cnt(urb);","file":"xhci-ring.c","a":901,"b":906},{"id":"r117","kind":"ln","depth":7,"text":"\tif (last_td_in_urb(td)) {\n\t\tif ((urb->actual_length != urb->transfer_buffer_length &&\n\t\t     (urb->transfer_flags & URB_SHORT_NOT_OK)) ||\n\t\t    (status != 0 && !usb_endpoint_xfer_isoc(&urb->ep->desc)))\n\t\t\txhci_dbg(xhci, \"Giveback URB %p, len = %d, expected = %d, status = %d\\n\",\n\t\t\t\t urb, urb->actual_length,\n\t\t\t\t urb->transfer_buffer_length, status);\n\n\t\t/* set isoc urb status to 0 just as EHCI, UHCI, and OHCI */\n\t\tif (usb_pipetype(urb->pipe) == PIPE_ISOCHRONOUS)","file":"xhci-ring.c","a":908,"b":917},{"id":"r118","kind":"ln","depth":7,"text":"\t\txhci_giveback_urb_in_irq(xhci, td, status);","file":"xhci-ring.c","a":919,"b":919},{"id":"r119","kind":"fn","depth":7,"text":"static void xhci_giveback_urb_in_irq(struct xhci_hcd *xhci,\n\t\t\t\t     struct xhci_td *cur_td, int status)\n{","file":"xhci-ring.c","a":807,"b":809},{"id":"r120","kind":"ln","depth":8,"text":"\txhci_urb_free_priv(urb_priv);\n\tusb_hcd_unlink_urb_from_ep(hcd, urb);","file":"xhci-ring.c","a":821,"b":822},{"id":"r121","kind":"ln","depth":8,"text":"\ttrace_xhci_urb_giveback(urb);\n\tusb_hcd_giveback_urb(hcd, urb, status);","file":"xhci-ring.c","a":823,"b":824},{"id":"r122","kind":"ctx","depth":0,"text":"usbcore：urb->complete(urb) → usb_control_msg 返回 8 → 枚举流程拿到 bMaxPacketSize0"}],"frames":[{"c":"r0","note":"hub 线 0002 讲过「先取 8 字节定 ep0 包长」——请求从 usbcore 下来：一个 urb，带 8 字节 setup 包和 8 字节接收缓冲。接下来全是 xhci-hcd 驱动的代码。","ev":[{"op":"td","set":{"urb":"usb_control_msg → usb_submit_urb → urb_enqueue（进入 xHCI 驱动）"}}]},{"c":"r1","note":"xHCI 驱动的入队总入口（hcd_driver 回调）。"},{"c":"r2","note":"先回答「这是哪个端点」：ep0 → ep_index=0。"},{"c":"r3","note":"控制传输整桩 = 1 个 TD——内核账本按 URB 记件（0009 的两本账）。"},{"c":"r4","note":"一次分配 urb_priv + num_tds 个 xhci_td：账本载体诞生。"},{"c":"r5","note":"urb->hcpriv 挂上——此后 urb 与 TD 账本互指。"},{"c":"r6","note":"拿主机控制器锁：入队与中断里的事件消费是并发的。"},{"c":"r7","note":"设备已在槽 1（EV2 Enable Slot 的成果）。"},{"c":"r8","note":"读软件侧端点状态位（专题二的十个位）——入队前先过门。"},{"c":"r9","note":"流切换中拒绝入队（-EINVAL）；EP_SOFT_CLEAR_TOGGLE 同罪（:1689-1693）——ep_state 簿记的消费端（专题二伏笔）。"},{"c":"r10","note":"按传输类型分派：控制传输走 xhci_queue_ctrl_tx——进入打包车间。"},{"c":"r11","note":"目标形态（规范自己的工作示例就是这桩请求）：Setup TRB（IDT 内联 8 字节）+ Data TRB（IN·ISP）+ Status TRB（IOC）——三颗，恰好把传输环的三个槽填满。","ph":"② TRB 化：一桩 URB 打包成三颗 TRB（xhci-ring.c）"},{"c":"r12","note":"控制传输打包主函数。"},{"c":"r13","note":"找到 ep0 的传输环——等下三颗 TRB 都写进这里（驱动持虚拟地址，xHC 持 DMA 视角）。"},{"c":"r14","note":"setup 包必须内联进 Setup TRB（下有 IDT 位），没有 DMA 地址可用——没有 setup 包直接拒绝。"},{"c":"r15","note":"控制传输骨架恒两颗：Setup + Status。"},{"c":"r16","note":"有数据段才加第三颗——TD1 要 8 字节 → 共 3 颗。"},{"c":"r17","note":"调用 prepare_transfer：先准备 TD 账本与环空间——下钻。"},{"c":"r18","note":"准备传输：找环、验空间、立 TD。"},{"c":"r19","note":"（槽,端点,流）三元组定位目标环——流 ID=0 → 默认环；环号非法直接 -EINVAL。"},{"c":"r20","note":"调用 prepare_ring：环容量检查，满了会先扩段。TD1 时环全空，直过。"},{"c":"r21","note":"取出刚才在 xhci_urb_enqueue 里分配的第 0 个 TD。"},{"c":"r22","note":"TD 链表节点初始化——马上要挂进环的 td_list。"},{"c":"r23","note":"usbcore 侧 urb→端点链表也挂上（cancel 路径要用）。"},{"c":"r24","note":"两本账第一笔记账：TD1 ↔ urb 互指（1 个 URB = 1 个 TD）。","ev":[{"op":"td","set":{"TD":"TD1 建立（urb↔TD 互指）"}}]},{"c":"r25","note":"TD 挂到环的 td_list 尾——将来事件回程按这张表对账。","ev":[{"op":"td","set":{"TD":"TD1 已挂 ep_ring->td_list"}}]},{"c":"r26","note":"记下 TD 首颗 TRB 位置（enq 现在指着槽 +00）——发布时要从这里放行。","ev":[{"op":"td","set":{"TRB":"首颗=槽+00（start_trb 已记）"}}]},{"c":"r27","note":"取回 TD。"},{"c":"r28","note":"关键合同（0007 讲过的发布闸门）：首颗 TRB 先写反轮 cycle（无效），整桩写完才翻——xHC 永远看不见半截 TD。"},{"c":"r29","note":"存下首颗位置 start_trb=槽+00 与当前轮次 start_cycle=1。","ev":[{"op":"cell","ring":"xfer","i":0,"set":{"t":"Setup（预留）","f":"cycle 未发布","cyc":"0","st":"written"}}]},{"c":"r30","note":"setup 包指针（8 字节在 urb 里）。"},{"c":"r31","note":"IDT=立即数据：8 字节 setup 直接装进 TRB 的 DW0-1；类型=Setup。"},{"c":"r32","note":"首颗的 cycle 位反着写（0），发布函数稍后统一翻。"},{"c":"r33","note":"xHCI 1.0+ 的 TRT 位：在 Setup TRB 里预告数据段方向。"},{"c":"r34","note":"TD1 数据段是 IN → TRT=IN Data Stage（规范 Table 6-24）。"},{"c":"r35","note":"第一次调用 queue_trb：Setup TRB 上环（more_trbs_coming=true，后面还有两颗）——下钻看这 16 字节怎么写。"},{"c":"r36","note":"通用写 TRB 函数：四枪写 16 字节 + 推进 enq。"},{"c":"r37","note":"取 enqueue 指针指向的可写槽（此刻=槽+00）。"},{"c":"r38","note":"DW0-1 = setup 8 字节本身：80 06 00 01 / 00 00 08 00（IDT 的意义）。","ev":[{"op":"cell","ring":"xfer","i":0,"set":{"t":"Setup","f":"DW0-1=80 06 00 01 00 00 08 00（内联）","cyc":"0","st":"written"}}]},{"c":"r39","note":"DW2 = 长度 8 + 中断目标 0。","ev":[{"op":"cell","ring":"xfer","i":0,"set":{"f":"DW2=len8|INT_TGT0"}}]},{"c":"r40","note":"屏障：DW3 必须最后写——cycle 位就是「发布开关」。DW3 = IDT|SETUP|TRT=IN + cycle=0（反轮=对 xHC 无效）。","ev":[{"op":"cell","ring":"xfer","i":0,"set":{"f":"DW3=IDT|SETUP|TRT=IN cyc=0"}}]},{"c":"r41","note":"trace 点。"},{"c":"r42","note":"推进生产者指针。"},{"c":"r43","note":"记住当前槽的 chain 位（控制传输三颗都不 chain）。"},{"c":"r44","note":"越段保护。"},{"c":"r45","note":"enq：+00 → +10——生产者指针只属于驱动，只有它能推。","ev":[{"op":"ptr","ring":"xfer","enq":1}]},{"c":"r46","note":"若连续多颗 TD 排队会顺手跨过 Link；TD1 三颗不跨段。"},{"c":"r47","note":"IN 方向的 Data TRB 只打 ISP、不打 IOC——短包才有事件（规范三条件之②）。TD1 是 IN（设备把描述符发给主机）→ field = ISP | DATA。"},{"c":"r48","note":"有数据段（8 字节）→ 进入 Data TRB 装配。"},{"c":"r49","note":"IDT 判定只对 OUT 方向小包成立（suitable_for_idt 要求 dir_out）——TD1 是 IN，不走内联。"},{"c":"r50","note":"走 DMA 地址：DW0-1 = 接收缓冲地址——设备回的 8 字节将由 xHC 直接 DMA 写进这里（数据先于事件到——0009 立过的锚）。","ev":[{"op":"cell","ring":"xfer","i":1,"set":{"t":"Data","f":"DW0-1=buf DMA 地址","st":"published","cyc":"1"}}]},{"c":"r51","note":"长度字段：len 8 + TD 剩余量 + 中断目标。"},{"c":"r52","note":"方向位 DIR=IN。","ev":[{"op":"cell","ring":"xfer","i":1,"set":{"f":"DW2=len8|INT_TGT0 DW3=ISP|DATA|DIR=IN cyc=1"}}]},{"c":"r53","note":"第二次调用 queue_trb：Data TRB 上环（槽+10）——重访上面 queue_trb 的写四枪。"},{"c":"r37","note":""},{"c":"r38","note":""},{"c":"r39","note":""},{"c":"r40","note":""},{"c":"r37","note":"这次写的是槽+10。"},{"c":"r38","note":"DW0-1 = 缓冲区 DMA 地址（不是内联数据——IN 方向不 IDT）。"},{"c":"r39","note":"DW2 = len 8（同构）。"},{"c":"r40","note":"DW3 = ISP|DATA|DIR=IN + cycle=1（直接带当轮——非首颗无需等发布）。"},{"c":"r45","note":"enq：+10 → +20。","ev":[{"op":"ptr","ring":"xfer","enq":2}]},{"c":"r54","note":"记下 TD 末颗位置 end_trb=Status 槽+20——事件回指核对用。","ev":[{"op":"td","set":{"TRB":"Setup@+00 → Data@+10 → Status@+20（end_trb=+20）"}}]},{"c":"r55","note":"Status 段方向与数据段相反：数据 IN → Status OUT。"},{"c":"r56","note":"TD1 数据段是 IN → field=0（OUT）；对照：无数据段时 Status 为 IN。"},{"c":"r57","note":"第三次调用 queue_trb：Status TRB 上环（槽+20），末颗打 IOC——整桩 TD 的「完税回执」触发器（规范三条件之①）。六行只是一次调用=一帧。"},{"c":"r37","note":"这次写的是槽+20。"},{"c":"r38","note":"DW0-1 = 0（Status 段无数据）。"},{"c":"r39","note":"DW2 = 中断目标 0（长度 0）。"},{"c":"r40","note":"DW3 = IOC|STATUS|OUT + cycle=1。"},{"c":"r45","note":"enq：+20 → +30——三颗齐了。","ev":[{"op":"ptr","ring":"xfer","enq":3}]},{"c":"r58","note":"调用 giveback_first_trb：发布 + 敲铃——下钻。"},{"c":"r59","note":"原子发布：把整桩 TD 一次性交给硬件。"},{"c":"r60","note":"屏障：先写完三颗，再翻开关。"},{"c":"r61","note":"首颗 cycle 0→1：槽+00 对 xHC 生效——三颗 TRB 此刻整体可见（规范的「完全成型才许拨 cycle」）。","ev":[{"op":"cell","ring":"xfer","i":0,"set":{"f":"DW3=IDT|SETUP|TRT=IN cyc=1（已发布）","st":"published","cyc":"1"}}]},{"c":"r62","note":"调用 xhci_ring_ep_doorbell——下钻。"},{"c":"r63","note":"敲 ep0 的门铃。"},{"c":"r64","note":"门铃寄存器数组（MMIO）——每个设备槽一个 32 位门铃。"},{"c":"r65","note":"取端点对象、读软件 ep_state（纯软件簿记；上方 8 行注释 :557-565 讲禁敲铃五态的来历）。"},{"c":"r66","note":"五个禁敲铃状态位任一在身就 return（专题二主角在此亮键）——TD1 时全 0，放行。"},{"c":"r67","note":"trace 点。"},{"c":"r68","note":"一个 32 位写就完事：DB_VALUE(target=ep0, stream=0)——xHC 从此知道「槽 1 有活」。","ev":[{"op":"td","set":{"status":"③ 已发布+敲铃——等 xHC 取指"}}]},{"c":"r69","note":"回读冲刷 posted write（确保写出 CPU）。"},{"c":"r70","note":"xhci_urb_enqueue 同步返回 0——usbcore 的 usb_submit_urb 到此结束。数据一字未动：接下来是硬件的事。"},{"c":"r71","note":"左侧没有代码行：xHC 与设备不是这段软件的执行者。绿色行是它们的动作，右侧环面板是它们留下的痕迹（数字全部来自 M4.5 引擎实测日志）。","ph":"③ xHC 取指执行 + 设备线上事务（硬件——无驱动代码）"},{"c":"r72","note":"门铃只是「有活」的通知；xHC 自己决定何时来取（§4.7）。","refs":["r_db"]},{"c":"r73","note":"cycle 校验（§4.9.2）：消费者的轮次钥匙对得上才取——0007 的「轮次员」在硬件侧。","refs":["r_cycle"],"ev":[{"op":"cell","ring":"xfer","i":0,"set":{"f":"已取指 ✓（cyc=1）","st":"consumed"}},{"op":"ptr","ring":"xfer","deq":1},{"op":"dev","set":{"当前动作":"收到 SETUP 事务","线上":"SETUP + DATA0(8B)：80 06 00 01 00 00 08 00"}}]},{"c":"r74","note":"BSR=1 的意义在此：设备还没落址，仍以地址 0 服务这桩请求（hub 线 0002 的「地址 0 阶段」）。","refs":["r_3td"],"ev":[{"op":"dev","set":{"当前动作":"解码请求：GET_DESCRIPTOR(8)","状态":"Default·addr=0"}}]},{"c":"r75","note":"数据由 xHC 直接 DMA 写进驱动的接收缓冲（Data TRB 的 DW0-1）——此刻还没有任何事件：「完税回执」在后面（0009 的关键锚）。","refs":["r_spec8"],"ev":[{"op":"cell","ring":"xfer","i":1,"set":{"f":"已取指 ✓","st":"consumed"}},{"op":"ptr","ring":"xfer","deq":2},{"op":"dev","set":{"当前动作":"IN 令牌 → 回 8 字节","线上":"DATA0(8B)：12 01 00 03 FF FF FF 09"}},{"op":"td","set":{"actual_length":"8（DMA 直写缓冲——先于事件）"}}]},{"c":"r76","note":"控制传输三阶段（Setup→Data→Status）走完；Status 段无数据，纯握手。","refs":["r_3td"],"ev":[{"op":"cell","ring":"xfer","i":2,"set":{"f":"已取指 ✓","st":"consumed"}},{"op":"ptr","ring":"xfer","deq":3},{"op":"dev","set":{"当前动作":"Status 阶段 ACK","线上":"Status: ACK"}}]},{"c":"r77","note":"事件回指的是 Status TRB——驱动靠它认「整桩完成」；生产者侧：事件环 enq 6030→6040。","refs":["r_ioc","r_evtgen"],"ev":[{"op":"cell","ring":"evt","i":3,"set":{"t":"EV4 TR ✓TD1","f":"CC=1·回指+20","cyc":"1","st":"published"}},{"op":"ptr","ring":"evt","enq":4},{"op":"td","set":{"status":"EV4 已落环——等驱动消费"}}]},{"c":"r78","note":"同一张事件环，主角换成消费者：驱动逐颗读事件、对账 TD、给回 urb。","ph":"④ 事件消费与回调（驱动 · 中断上下文）"},{"c":"r79","note":"中断里的事件消费循环。"},{"c":"r80","note":"先清中断门。"},{"c":"r81","note":"unhandled = dequeue 处事件 cycle 与消费者轮次相符——事件环的 cycle 合同（方向与传输环相反）。"},{"c":"r82","note":"调用 xhci_handle_event_trb：一颗一颗消费 deq 指着的事件——下钻。"},{"c":"r83","note":"驱动推进事件环 deq（软件侧指针）。","ev":[{"op":"cell","ring":"evt","i":3,"set":{"f":"已消费 ✓","st":"consumed"}},{"op":"ptr","ring":"evt","deq":4}]},{"c":"r84","note":"把新 deq 写回 ERDP 寄存器——消费者向生产者报告进度（EHB 顺手清）。规范：ERDP 写入必须前进。","refs":["r_erdp"]},{"c":"r85","note":"按事件类型分派（三类三套口径）。"},{"c":"r86","note":"屏障：先读 cycle 有效位，再读事件数据；EV4 是 Transfer Event。"},{"c":"r87","note":"switch 分派①：命令完成事件 → handle_cmd_completion 对账命令环（EV5 那族）。"},{"c":"r88","note":"分派②端口事件 → 直接读 PORTSC（EV1 那族）；分派③传输事件 → handle_tx_event 对账端点环上的 TD——EV4 走这支，下钻。"},{"c":"r89","note":"传输事件处理：从事件反查 TD。"},{"c":"r90","note":"事件四元组解码：槽 1、ep0、完成码、ep_trb_dma——DW0-1 的「回指」= xHC 告诉你它执行到了哪颗 TRB（+20）。"},{"c":"r91","note":"软件侧端点对象（无效则报错退出）。"},{"c":"r92","note":"回指地址落在哪个环（ep0 环）+ 端点禁用检查。"},{"c":"r93","note":"调用 xhci_dma_to_trb：DMA 地址 → 虚拟地址，拿到内核里那颗 Status TRB 的本体。"},{"c":"r94","note":"完成码分流开始。"},{"c":"r95","note":"Success 但残量≠0 会被改判 Short（TD2 的剧情）；TD1 残量 0，直过（Short Packet 分支是 TD2 走的）。"},{"c":"r96","note":"从 td_list 头取 TD——两本账对账开始。"},{"c":"r97","note":"调用 trb_in_td：回指 +20 落在 TD1 区间 [+00, +20] 内 ✓——区间核对。"},{"c":"r98","note":"按端点类型分派：ep0 = 控制端点 → 调用 process_ctrl_td——下钻（等时走 process_isoc_td，永不 halt 那族）。"},{"c":"r99","note":"控制 TD 的分阶段记账。"},{"c":"r100","note":"回指 TRB 类型 = Status；remaining = 0（Success 全额）。"},{"c":"r101","note":"Success 只认落在 Status TRB 上的事件——正是本例（若落在非 Status TRB 上反而告警「Success 无 IOC？」）。td->status = 0。"},{"c":"r102","note":"对照剧情：若事件落在 Data TRB（TD2 的 EV6）——只记 actual_length、压住不收，打印「等 Status 事件」直接 return——控制传输按阶段分两步记。"},{"c":"r103","note":"TD1 无中途事件 → actual_length = requested = 8。","ev":[{"op":"td","set":{"actual_length":"8","status":"0（Success）"}}]},{"c":"r104","note":"调用 finish_td 收尾——下钻。"},{"c":"r105","note":"收尾：要不要 halt、怎么出队。"},{"c":"r106","note":"取 EP 上下文。"},{"c":"r107","note":"Stopped 族特殊让路（Stop EP 完成处理器接管）。"},{"c":"r108","note":"Success 不 halt——xhci_halted_host_endpoint 判 false，直走出队（STALL 才走清 TT + Reset EP 恢复链——专题二的主角）。"},{"c":"r109","note":"调用 xhci_dequeue_td——下钻。"},{"c":"r110","note":"TD 出队 + 给回。"},{"c":"r111","note":"软件侧环游标对齐到 TD 末颗+1（与 xHC 的 deq 会师——标本实测 hw_deq = Status+0x10）。"},{"c":"r112","note":"调用 xhci_td_cleanup——账务清理与给回，下钻。"},{"c":"r113","note":"账务清理。"},{"c":"r114","note":"urb = td->urb——两本账最后一次互查。"},{"c":"r115","note":"长度健全性检查（防硬件谎报超额）。"},{"c":"r116","note":"TD 从 td_list 摘除；inc_td_cnt 计数。"},{"c":"r117","note":"控制传输 1 TD 即 last_td_in_urb → 可以给回。"},{"c":"r118","note":"调用 xhci_giveback_urb_in_irq——下钻。"},{"c":"r119","note":"交还 urb。"},{"c":"r120","note":"释放 urb_priv/TD 账本结构；从 usbcore 的端点链表摘下。"},{"c":"r121","note":"调用 usb_hcd_giveback_urb——usbcore 接力。","ev":[{"op":"td","set":{"status":"⑥ 已给回：status=0 · actual=8","TD":"TD1 出队（td_list 已摘）"}}]},{"c":"r122","note":"六站闭环：①入队 ②TRB 化 ③发布敲铃 ④取指执行 ⑤事件回程 ⑥回调。核心代码约二十行、一次门铃、一颗事件——TD1 走完一生。下一桩 TD2（64B 短包）将看到同一套机器如何一次回两颗事件。","ev":[{"op":"dev","set":{"当前动作":"回到空闲（等下一桩请求）","线上":"—"}}]}],"refs":[{"id":"r_db","label":"§4.7","src":"xHCI 1.2（2019）","p":"p58","title":"门铃寄存器","quote":"Each Doorbell Register provides system software with a mechanism for notifying the xHC if it has Slot or Endpoint related work to perform.","note":"门铃=软件通知 xHC「有活」的唯一机制；Target 字段指端点。寄存器布局另见 §5.6。"},{"id":"r_cycle","label":"p67 环约定","src":"xHCI 1.2（2019）","p":"p67","title":"完全成型才许拨 cycle（发布闸门）","quote":"Software shall never update the Enqueue Pointer (that is, toggle the Cycle bit of a TRB) until all TRBs between the previous and the new Enqueue Pointer location are fully formed.","note":"giveback_first_trb 翻首颗 cycle 位兑现的正是这条；cycle 校验语义见 §4.9.2。"},{"id":"r_3td","label":"§3.2.9","src":"xHCI 1.2（2019）","p":"p68","title":"控制传输三段 TD","quote":"A control transfer may optionally contain a Data stage between the Setup and Status stages. The xHCI defines three types of TDs: Setup Stage, Data Stage, and Status Stage TDs, which correspond to respective USB control transfer stages.","note":"规范账本按阶段记 TD（2-3 件）；内核 struct xhci_td 按 URB 记（1 件）——两本账，0007/0009 已立法。"},{"id":"r_spec8","label":"p85-86","src":"xHCI 1.2（2019）","p":"p85-86","title":"规范自己的 GET_DESCRIPTOR(8) 工作示例","quote":"TRB Type = Setup Stage TRB. Transfer Type (TRT) = IN Data Stage (3). TRB Transfer Length = 8. Immediate Data (IDT) = 1. bmRequestType = 80h … bRequest = 6 (GET_DESCRIPTOR) … Data Stage TRB: Data Buffer Pointer = The address of the Device Descriptor receive buffer.","note":"规范的槽初始化流程里就演示了这桩 8 字节读——与内核打包、M4.5 标本三方一致。"},{"id":"r_idt","label":"§4.11.2","src":"xHCI 1.2（2019）","p":"p212","title":"Setup TRB 必须内联（IDT）","quote":"A Setup Stage TRB shall contain immediate data (IDT flag = '1'), its Parameter fields shall contain the 8-byte USB SETUP Data, which defines the request and the request's parameters that will be sent to the device in the USB Setup stage transaction.","note":"所以内核复制 setup 包进 DW0-1，不用 DMA 地址。"},{"id":"r_ioc","label":"§4.10","src":"xHCI 1.2（2019）","p":"p189","title":"IOC 命中即产事件","quote":"If upon transfer completion of a TRB the Interrupt On Completion (IOC) flag is set, the xHC shall generate a Transfer Event TRB. Note the generation of an Event TRB always generates an interrupt to the host.","note":"Status TRB 打 IOC → EV4 落在 Status TRB 上。"},{"id":"r_isp","label":"§4.10.1.1","src":"xHCI 1.2（2019）","p":"p191","title":"短包 × ISP 才产事件","quote":"If the Interrupt-on Short Packet (ISP) or if the Interrupt On Completion (IOC) flag is set to '1' in the TRB that the Short Packet condition occurred on, a Transfer Event shall be generated for that TRB with the Completion Code set to Short Packet.","note":"TD2（64B 请求 18B 短包）的 EV6 由此而来；TD1 足额 8B，ISP 未命中。"},{"id":"r_evtgen","label":"§4.11.3.1","src":"xHCI 1.2（2019）","p":"p189-191/222","title":"事件产生三条件 + 错误恒产","quote":"Detection of an error during a transfer shall always generate a Transfer Event, irrespective of whether the Interrupt-on-Short or Interrupt On Completion (IOC) flags are set in the Transfer TRB.","note":"三条件：①IOC 命中 ②ISP×短包 ③错误恒产——xHC 不欠「每 TD 一颗事件」。"},{"id":"r_erdp","label":"§4.9.4","src":"xHCI 1.2（2019）","p":"p179/183","title":"事件环消费合同（CCS/ERDP）","quote":"If the Cycle bit of the Event TRB pointed to by the Event Ring Dequeue Pointer equals CCS, then the Event TRB is a valid event, software processes it and advances the Event Ring Dequeue Pointer. … Software writes to the ERDP register shall always advance the Event Ring Dequeue Pointer value.","note":"事件环的生产者/消费者与传输环对调：xHC 写、驱动读并写回 ERDP 报进度。"}],"world0":{"rings":{"xfer":{"label":"ep0 传输环（段基址 0x1de0000 · TRB=16B · 槽=偏移）","own":"生产者=驱动（写 TRB·推进 enq）｜消费者=xHC（取指·推进 deq）","cells":[{"a":"+00","t":"","f":"","cyc":"—","st":"empty"},{"a":"+10","t":"","f":"","cyc":"—","st":"empty"},{"a":"+20","t":"","f":"","cyc":"—","st":"empty"},{"a":"+30","t":"","f":"","cyc":"—","st":"empty"},{"a":"+40","t":"","f":"","cyc":"—","st":"empty"},{"a":"+50","t":"","f":"","cyc":"—","st":"empty"},{"a":"+60","t":"","f":"","cyc":"—","st":"empty"},{"a":"+70","t":"","f":"","cyc":"—","st":"empty"}],"enq":0,"deq":0},"cmd":{"label":"命令环（前情：两命令已消费=EV2/EV3）","own":"生产者=驱动｜消费者=xHC（本课 TD1 全程静置）","cells":[{"a":"+0","t":"Enable Slot","f":"已消费 ✓","cyc":"1","st":"consumed"},{"a":"+10","t":"AddrDev BSR=1","f":"已消费 ✓","cyc":"1","st":"consumed"},{"a":"+20","t":"","f":"","cyc":"—","st":"empty"},{"a":"+30","t":"Link","f":"回绕","cyc":"1","st":"empty"}],"enq":2,"deq":2},"evt":{"label":"事件环（6 槽 · 标本特意取小）","own":"生产者=xHC（写事件）｜消费者=驱动（读事件·写回 ERDP）","cells":[{"a":"6000","t":"EV1 PORT","f":"已消费 ✓","cyc":"1","st":"consumed"},{"a":"6010","t":"EV2 CC EnSlot","f":"已消费 ✓","cyc":"1","st":"consumed"},{"a":"6020","t":"EV3 CC Addr BSR=1","f":"已消费 ✓","cyc":"1","st":"consumed"},{"a":"6030","t":"","f":"","cyc":"—","st":"empty"},{"a":"6040","t":"","f":"","cyc":"—","st":"empty"},{"a":"6050","t":"","f":"","cyc":"—","st":"empty"}],"enq":3,"deq":3}},"dev":{"title":"设备（M4.5 引擎模型）","地址":"0（BSR=1 已建上下文、未落址）","状态":"Default","当前动作":"空闲","线上":"—"},"td":{"title":"两本账：urb → TD → TRB","urb":"usb_control_msg：GET_DESCRIPTOR(Device, wLength=8)，setup=80 06 00 01 00 00 08 00","TD":"（未入队）","TRB":"—","actual_length":"—","status":"排队中"}}}</script>
   </div>
+<!--STEPPER:0008:END-->
+
+  <!--STEPPER:0008:PRESERVED:BEGIN-->
+  <div class="note" id="topic-event-count">
+    <p><strong>专题 · 一颗 TD 该回几颗事件？</strong>规范对 Transfer Event 的产生只立了三种情况（§4.11.3.1，p222）：<strong>①</strong> 某颗 TRB 完成，且它的 <strong>IOC</strong>（Interrupt On Completion，DW3 bit5）为 1；<strong>②</strong> 传输中发生短包，且该 TRB 的 <strong>ISP</strong>（Interrupt-on-Short Packet，DW3 bit2）为 1；<strong>③</strong> TRB 执行中出错。xHC 不欠「每个 TD 一颗事件通知」——只有命中条件才写事件。步进器第②相的 :3864-3869（Data·ISP）与 :3910-3915（Status·IOC）就是这两枚旗标的布线。</p>
+    <p>对到标本上：<strong>TD1</strong> 要 8 字节、设备足额交 8 字节——ISP 未命中，只有 Status 的 IOC 命中 → 整桩一颗事件（EV4，落在 Status TRB 上）。<strong>TD2</strong> 要 64 字节、设备只有 18 字节——ISP 命中 → EV6（Short Packet，残量 46）；Status 照常走完，IOC 再交 EV7。<strong>TD3</strong>（SET_CONFIG）没有 Data 段，干净走完只回 EV9——<strong>事件颗数跟着「命中几条条件」走，不跟着 TD 走</strong>。</p>
+    <p>夹在中间的 <strong>EV5</strong> 不是 Transfer Event，是<strong>命令完成事件</strong>——核对对象是<strong>命令环</strong>：事件的 DW0-1 回指它完成的那颗命令 TRB，<code>handle_cmd_completion</code>（xhci-ring.c:1803）拿它与命令环游标核对，命中后唤醒排队时登记的 <code>xhci_command</code> 等待者（如 <code>xhci_setup_device</code> 里睡着的 wait_for_completion），随后命令环游标前移一格。三类事件三套口径：Transfer → 端点环上的 TD/URB；命令完成 → 命令环上的命令与等待者；端口事件（EV1）→ 没有口径，直接读 PORTSC 状态位。</p>
+  </div>
+  <p>收官核对（M4.5 实测全 PASS）：</p>
+  <table>
+    <tr><th>核对项（实测 PASS）</th><th>数值</th></tr>
+    <tr><td>事件总数</td><td>9（引擎产出 = 驱动消费）</td></tr>
+    <tr><td>ep0 门铃次数 ↔ TD 数</td><td>3 ↔ 3（每次门铃恰消费一个 TD，事件数 1/2/1）</td></tr>
+    <tr><td>ep0 hw dequeue</td><td>= TD3 Status+0x10 = <strong>驱动下一入队位</strong>（0x1de0080 两侧相等）</td></tr>
+    <tr><td>命令环游标</td><td>= 末命令+0x10（4 命令无回绕）</td></tr>
+    <tr><td>设备终态</td><td>dev_addr=1、configured=1（18B 描述符逐字节==ROM）</td></tr>
+  </table>
+<!--STEPPER:0008:PRESERVED:END-->
+
 
   <h2>专题一 · 四种传输各自的命运：错误路径全图</h2>
   <p>六站旅程与 M4.5 标本走的都是 happy path（九颗事件全是 Success/Short Packet）。真实总线上会出错——xHCI 把错误约定成两层：<strong>完成码 CC</strong>（Table 6-91 p507：事件回程携带的"判决书"）与<strong>端点状态后果</strong>（这个判决会不会让 xHC 侧端点停机）。第二层的裁决函数只有一个，值得整段读：</p>
@@ -746,6 +1223,421 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
       }
     });
     go(0);
+  });
+})();
+
+</script>
+<script>
+/* marginnotes.js — 右缘批注组件（课程族共享，配 course.css 的 .mn 段）
+ * 读者在阅读途中随时把问题记在右缘（锚定最近的 h2/h3 节）；读完课把批注交给 LLM：
+ *   ① Chrome/Edge："关联本课文件" 后每次编辑自动写回 .html 内嵌块（File System Access
+ *      API；file:// 与 https:// 均为 secure context）——真正的"及时编辑"，课后直接
+ *      告诉 LLM"读这节课文件里的批注"；
+ *   ② 其它浏览器：导出批注版 HTML（下载，覆盖原文件即可）；
+ *   ③ 最快路径：复制全部批注（markdown），直接粘贴到对话里。
+ * 持久化：localStorage 为工作副本；载入时与文件内嵌 <!--MN:BEGIN--> 块按 id 取并集。
+ * LLM 侧解析：scripts/extract_reader_notes.py <lesson.html>。 */
+(function () {
+  'use strict';
+  try { init(); } catch (e) { /* 组件错误不白屏；无 JS 环境静态呈现不受影响 */ }
+  function init() {
+  var KEY = 'mn:' + location.pathname;
+  var BLOCK_RE = /<!--MN:BEGIN-->[\s\S]*?<!--MN:END-->/;
+  var BLOCK_TPL = function (notes) {
+    var json = JSON.stringify({ lesson: document.title, updated: new Date().toISOString(), notes: notes })
+      .replace(/</g, '\\u003c');
+    return '<!--MN:BEGIN--><script type="application/json" id="mn-data">' + json + '<\/script><!--MN:END-->';
+  };
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function uid() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  /* ---- 载入：localStorage ∪ 文件内嵌块 ---- */
+  var notes = [];
+  try { notes = (typeof localStorage !== 'undefined' && JSON.parse(localStorage.getItem(KEY) || '[]')) || []; } catch (e) { notes = []; }
+  var embeddedEl = document.getElementById('mn-data');
+  if (embeddedEl) {
+    try {
+      (JSON.parse(embeddedEl.textContent).notes || []).forEach(function (n) {
+        if (!notes.some(function (x) { return x.id === n.id; })) notes.push(n);
+      });
+    } catch (e) { /* 坏块忽略 */ }
+  }
+  function saveLocal() {
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify(notes)); } catch (e) { /* 隐私模式等 */ }
+  }
+
+  /* ---- 锚点：最近的 h2/h3 ---- */
+  var heads = Array.prototype.slice.call(document.querySelectorAll('main h2, main h3'));
+  function anchorOf(el) {
+    var h = null;
+    for (var i = 0; i < heads.length; i++) {
+      if (heads[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) h = heads[i];
+      else break;
+    }
+    return h ? h.textContent.trim().slice(0, 60) : '（开头）';
+  }
+
+  /* ---- 右缘栏 + 行内 ✎ ---- */
+  document.body.classList.add('mn-on');
+  var rail = document.createElement('aside');
+  rail.className = 'mn-rail';
+  rail.innerHTML = '<div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+    '<button type="button" class="mn-add">＋ 记一笔（锚定当前读到的节）</button>' +
+    '<div class="mn-list"></div>' +
+    '<div class="mn-actions">' +
+    '<button type="button" class="mn-link">🔗 关联本课文件（自动写回）</button>' +
+    '<button type="button" class="mn-dl">⬇ 导出批注版 HTML</button>' +
+    '<button type="button" class="mn-cp">📋 复制全部批注</button></div>' +
+    '<div class="mn-tip">读完后告诉老师：读这节课文件里的批注并逐条回答。</div>';
+  document.body.appendChild(rail);
+  var listEl = rail.querySelector('.mn-list'), cntEl = rail.querySelector('.mn-cnt');
+
+  var editId = null;
+  function openEditor(prefill) {
+    var id = editId;
+    var box = document.createElement('div');
+    box.className = 'mn-editor';
+    box.innerHTML = '<div class="mn-eanchor">锚点：' + esc(prefill.anchor) + '</div>' +
+      '<textarea rows="3" placeholder="记下你的问题/想法…（自动保存；随文件写回或复制给老师）"></textarea>' +
+      '<div><button type="button" class="mn-save">保存</button> ' +
+      '<button type="button" class="mn-cancel">取消</button> ' +
+      '<button type="button" class="mn-del">删除</button></div>';
+    var ta = box.querySelector('textarea');
+    ta.value = prefill.text || '';
+    box.querySelector('.mn-save').addEventListener('click', function () {
+      var t = ta.value.trim();
+      if (t) {
+        if (id) { var n = notes.find(function (x) { return x.id === id; }); if (n) { n.text = t; n.ts = Date.now(); } }
+        else notes.push({ id: uid(), anchor: prefill.anchor, text: t, ts: Date.now() });
+      } else if (id) notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    box.querySelector('.mn-cancel').addEventListener('click', function () { editId = null; box.remove(); });
+    box.querySelector('.mn-del').addEventListener('click', function () {
+      notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    rail.insertBefore(box, listEl);
+    ta.focus();
+  }
+  function render() {
+    cntEl.textContent = notes.length ? '（' + notes.length + '）' : '';
+    listEl.innerHTML = notes.length ? '' : '<div class="mn-empty">还没有批注。读到有疑问处，点节标题旁的 ✎ 或"记一笔"。</div>';
+    notes.slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (n) {
+      var d = document.createElement('div');
+      d.className = 'mn-item';
+      d.innerHTML = '<div class="mn-anchor">@' + esc(n.anchor) + '</div>' +
+        '<div class="mn-text">' + esc(n.text) + '</div>';
+      d.addEventListener('click', function () { editId = n.id; openEditor({ anchor: n.anchor, text: n.text }); });
+      listEl.appendChild(d);
+    });
+  }
+  rail.querySelector('.mn-add').addEventListener('click', function () {
+    /* 预取"当前读到"：视口内最后一个 h2/h3 */
+    var vis = heads.filter(function (h) { var r = h.getBoundingClientRect(); return r.top < innerHeight * 0.7; });
+    openEditor({ anchor: vis.length ? vis[vis.length - 1].textContent.trim().slice(0, 60) : '（开头）' });
+  });
+  heads.forEach(function (h) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mn-pen'; b.title = '在这一节记批注'; b.textContent = '✎';
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      editId = null;
+      openEditor({ anchor: h.textContent.trim().slice(0, 60) });
+    });
+    h.appendChild(b);
+  });
+  render();
+
+  /* ---- 写回/导出/复制 ---- */
+  var fh = null, fhText = null, writeTimer = null;
+  function scheduleWrite() {
+    if (!fh) return;
+    if (writeTimer) clearTimeout(writeTimer);
+    writeTimer = setTimeout(writeBack, 800);
+  }
+  async function writeBack() {
+    if (!fh) return;
+    try {
+      var w = await fh.createWritable();
+      await w.write(serializeInto(fhText));
+      await w.close();
+      rail.classList.add('mn-saved');
+      setTimeout(function () { rail.classList.remove('mn-saved'); }, 900);
+    } catch (e) { rail.querySelector('.mn-tip').textContent = '⚠ 自动写回失败：' + e.message + '（可用导出/复制兜底）'; }
+  }
+  function serializeInto(text) {
+    var block = BLOCK_TPL(notes);
+    if (BLOCK_RE.test(text)) return text.replace(BLOCK_RE, block);
+    if (/<\/body>/i.test(text)) return text.replace(/<\/body>/i, block + '\n</body>');
+    return text + '\n' + block;
+  }
+  rail.querySelector('.mn-link').addEventListener('click', async function () {
+    if (!window.showOpenFilePicker) {
+      rail.querySelector('.mn-tip').textContent = '此浏览器不支持直接写回（需 Chrome/Edge）。请用"导出批注版 HTML"或"复制全部批注"。';
+      return;
+    }
+    try {
+      var arr = document.contentType && document.contentType.indexOf('html') >= 0 ? [{
+        types: [{ description: 'HTML lesson', accept: { 'text/html': ['.html'] } }]
+      }] : undefined;
+      var handles = await window.showOpenFilePicker(arr && arr[0] ? { types: arr[0].types } : undefined);
+      fh = handles[0];
+      var r = await fh.getFile();
+      fhText = await r.text();
+      await writeBack();
+      rail.querySelector('.mn-link').textContent = '✅ 已关联：' + r.name + '（编辑即写回）';
+    } catch (e) { /* 用户取消等 */ }
+  });
+  rail.querySelector('.mn-dl').addEventListener('click', function () {
+    Promise.resolve(fhText || null).then(function (base) {
+      var text = base || ('<!DOCTYPE html>\n' + document.documentElement.outerHTML);
+      var blob = new Blob([serializeInto(text)], { type: 'text/html' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || 'lesson') + '-批注版.html';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    });
+  });
+  rail.querySelector('.mn-cp').addEventListener('click', function () {
+    var md = '# 《' + document.title + '》读者批注（' + notes.length + ' 条）\n\n' +
+      notes.slice().sort(function (a, b) { return a.ts - b.ts; })
+        .map(function (n) { return '## @' + n.anchor + '\n\n' + n.text + '\n'; }).join('\n');
+    var done = function () { rail.querySelector('.mn-tip').textContent = '✅ 已复制——直接粘贴给老师即可。'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(md).then(done);
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = md; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { }
+      ta.remove();
+    }
+  });
+  } /* init */
+})();
+
+</script>
+<script>
+/* codestepper.js — 代码步进放映机（课程族共享，配 course.css 的 .stepper 段）
+ * 数据驱动：宿主 div.stepper 内嵌 <script type="application/json" class="stepper-data">
+ *   { title, intro, baseline, phases[], rows[], frames[], refs[], world0 }
+ * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
+ * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
+ * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 账本。 */
+(function () {
+  'use strict';
+
+  /* ---------- 世界渲染（纯函数：state → HTML 字符串） ---------- */
+  var RING_ORDER = ['xfer', 'cmd', 'evt'];
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function cellHtml(c, ring, i, st) {
+    var cls = 'stw-cell st-' + (c.st || 'empty');
+    var ptr = [];
+    if (st && st.rings[ring].enq === i) ptr.push('<i class="stw-ptr pe">写▸enq</i>');
+    if (st && st.rings[ring].deq === i) ptr.push('<i class="stw-ptr pd">取▸deq</i>');
+    if (ring === 'evt') { /* 事件环指针语义反转，标签在 CSS 里换 */
+    }
+    return '<div class="' + cls + '">' + ptr.join('') +
+      '<b>' + esc(c.a) + '</b><span class="stw-t">' + (c.t ? esc(c.t) : '空') + '</span>' +
+      (c.f ? '<span class="stw-f">' + esc(c.f) + '</span>' : '') +
+      '<span class="stw-cyc">cyc=' + esc(c.cyc) + '</span></div>';
+  }
+  function worldHtml(W) {
+    var h = '';
+    RING_ORDER.forEach(function (k) {
+      if (!W.rings[k]) return;
+      var r = W.rings[k];
+      h += '<div class="stw-ring"><div class="stw-rhead"><b>' + esc(r.label) + '</b>' +
+        '<span class="stw-own">' + esc(r.own) + '</span></div><div class="stw-cells">';
+      r.cells.forEach(function (c, i) { h += cellHtml(c, k, i, W); });
+      h += '</div></div>';
+    });
+    ['dev', 'td'].forEach(function (k) {
+      if (!W[k]) return;
+      var b = W[k];
+      h += '<div class="stw-box"><b>' + esc(b.title) + '</b><table>';
+      Object.keys(b).forEach(function (f) {
+        if (f === 'title') return;
+        h += '<tr><th>' + esc(f) + '</th><td>' + esc(b[f]) + '</td></tr>';
+      });
+      h += '</table></div>';
+    });
+    return h;
+  }
+  function applyEv(W, ev) { /* 就地应用一条事件（深拷贝由调用方保证） */
+    if (!ev) return;
+    if (ev.op === 'cell') {
+      var c = W.rings[ev.ring].cells[ev.i];
+      Object.keys(ev.set || {}).forEach(function (k) { c[k] = ev.set[k]; });
+    } else if (ev.op === 'ptr') {
+      if (typeof ev.enq === 'number') W.rings[ev.ring].enq = ev.enq;
+      if (typeof ev.deq === 'number') W.rings[ev.ring].deq = ev.deq;
+    } else if (ev.op === 'dev' || ev.op === 'td') {
+      Object.keys(ev.set || {}).forEach(function (k) { W[ev.op][k] = ev.set[k]; });
+    }
+  }
+  function stateAt(D, idx) {
+    var W = JSON.parse(JSON.stringify(D.world0));
+    for (var i = 0; i <= idx && i < D.frames.length; i++)
+      (D.frames[i].ev || []).forEach(function (e) { applyEv(W, e); });
+    return W;
+  }
+
+  /* ---------- 弹窗（全局单例，多 stepper 共用） ---------- */
+  var modal = null;
+  function ensureModal() {
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'st-modal';
+    modal.innerHTML = '<div class="st-mbox" role="dialog" aria-modal="true">' +
+      '<button type="button" class="st-mclose">✕ 关闭</button><div class="st-mbody"></div></div>';
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || (e.target.getAttribute && e.target.getAttribute('class') === 'st-mclose'))
+        modal.classList.remove('show');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') modal.classList.remove('show');
+    });
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function showRef(ref) {
+    var m = ensureModal();
+    m.querySelector('.st-mbody').innerHTML =
+      '<h4>' + esc(ref.label) + ' · ' + esc(ref.title) + '</h4>' +
+      '<p class="st-msrc">' + esc(ref.src) + (ref.p ? ' · ' + esc(ref.p) : '') + '</p>' +
+      (ref.quote ? '<blockquote>' + esc(ref.quote) + '</blockquote>' : '') +
+      (ref.note ? '<p class="st-mnote">' + esc(ref.note) + '</p>' : '');
+    m.classList.add('show');
+  }
+
+  /* ---------- 每台 stepper 的初始化 ---------- */
+  function initStepper(root) {
+    var dataEl = root.querySelector('script.stepper-data');
+    if (!dataEl) return;
+    var D;
+    try { D = JSON.parse(dataEl.textContent); } catch (e) { return; /* 静态内容保留 */ }
+    var rows = {}, rowEls = {};
+    D.rows.forEach(function (r) { rows[r.id] = r; });
+    Array.prototype.forEach.call(root.querySelectorAll('.st-crow'), function (el) {
+      rowEls[el.getAttribute('data-id')] = el;
+    });
+    var codeBox = root.querySelector('.st-code');
+    var worldBox = root.querySelector('.st-world');
+    var noteBox = root.querySelector('.st-note');
+    var refsBox = root.querySelector('.st-refs');
+    if (!codeBox || !worldBox || !noteBox) return;
+
+    /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
+    var idx = 0, timer = null, lastWorld = null;
+    var N = D.frames.length;
+    var refMap = {};
+    (D.refs || []).forEach(function (r) { refMap[r.id] = r; });
+
+    /* 控制条 */
+    var ctl = document.createElement('div');
+    ctl.className = 'st-ctl';
+    ctl.innerHTML = '<button type="button" data-a="prev">◀ 上一行</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一行 ▶</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<span class="st-count"></span><span class="st-ph"></span>' +
+      '<span class="st-hint">←/→ 键也可步进</span>';
+    root.insertBefore(ctl, root.querySelector('.st-grid'));
+    var countEl = ctl.querySelector('.st-count'), phEl = ctl.querySelector('.st-ph');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+
+    /* 引用条（chips） */
+    var chips = document.createElement('div');
+    chips.className = 'st-chips';
+    (D.refs || []).forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'st-chip'; b.textContent = r.label + ' ' + r.title;
+      b.title = '查看规范原文'; b.setAttribute('data-ref', r.id);
+      b.addEventListener('click', function () { showRef(refMap[r.id]); });
+      chips.appendChild(b);
+    });
+    if (refsBox) { refsBox.innerHTML = ''; refsBox.appendChild(chips); }
+
+    function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = '播放'; }
+    function go(i) {
+      idx = Math.max(0, Math.min(N - 1, i));
+      var fr = D.frames[idx];
+      /* 当前行高亮 + 滚动跟随 */
+      Object.keys(rowEls).forEach(function (id) { rowEls[id].classList.remove('cur', 'done'); });
+      var cur = rowEls[fr.c];
+      if (cur) { cur.classList.add('cur'); cur.scrollIntoView({ block: 'nearest' }); }
+      /* 已执行过的同段行打 done（当前行之前出现过的行） */
+      var seen = {};
+      for (var k = 0; k <= idx; k++) seen[D.frames[k].c] = true;
+      Object.keys(seen).forEach(function (id) { if (rowEls[id] && id !== fr.c) rowEls[id].classList.add('done'); });
+      /* 世界面板重放 */
+      var W = stateAt(D, idx);
+      worldBox.innerHTML = worldHtml(W);
+      worldBox.classList.add('live');
+      lastWorld = W;
+      /* 当行解说 + 活跃引用 */
+      noteBox.innerHTML = (fr.note ? fr.note : '<span class="st-mut">（本行无注记）</span>') +
+        (fr.refs && fr.refs.length
+          ? ' <span class="st-fref">' + fr.refs.map(function (id) {
+              var r = refMap[id]; if (!r) return '';
+              return '<button type="button" class="st-chip on" data-ref="' + id + '">📎 ' + esc(r.label) + '</button>';
+            }).join('') + '</span>'
+          : '');
+      Array.prototype.forEach.call(noteBox.querySelectorAll('[data-ref]'), function (b) {
+        b.addEventListener('click', function () { showRef(refMap[b.getAttribute('data-ref')]); });
+      });
+      countEl.textContent = '行 ' + (idx + 1) + ' / ' + N;
+      phEl.textContent = fr.ph ? '· ' + fr.ph : '';
+      if (idx === N - 1) stop();
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { stop(); go(idx - 1); }
+      else if (a === 'next') { stop(); go(idx + 1); }
+      else if (a === 'reset') { stop(); go(0); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        if (idx === N - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === N - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2000);
+      }
+    });
+    /* 行点击跳帧：该行最近一次出现的帧 */
+    Object.keys(rowEls).forEach(function (id) {
+      rowEls[id].addEventListener('click', function () {
+        stop();
+        for (var k = idx; k < N; k++) if (D.frames[k].c === id) return go(k);
+        for (k = 0; k < N; k++) if (D.frames[k].c === id) return go(k);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      var r = root.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return; /* 只在视野内接管方向键 */
+      if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
+      else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
+    });
+    go(0);
+  }
+
+  document.querySelectorAll('.stepper').forEach(function (el) {
+    try { el.classList.add('js'); initStepper(el); }
+    catch (e) { /* 静态内容保留，组件自身错误不白屏 */ }
   });
 })();
 
