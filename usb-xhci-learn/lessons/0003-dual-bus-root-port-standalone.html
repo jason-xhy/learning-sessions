@@ -110,12 +110,108 @@ td.good { background: #e9f7ee; }
 
 footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
 
+/* ===== 代码步进放映机（assets/codestepper.js；静态优先：无 JS 时代码全列+world0+refs 全可读） =====
+   v2（2026-10-20 用户四条修正）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
+   普通行无行号）；语句/调用级帧；双栏加大加高。 */
+.stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
+.stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
+.stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
+.stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+.stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
+.stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
+@media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 44rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; }
+.stepper .st-crow code { font: inherit; }
+.stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: var(--muted); font-size: .74rem; }
+.stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
+.stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
+.stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
+.stepper .st-crow.ph { background: var(--ink); color: #fff; font-weight: 700; margin-top: .5rem; border-radius: 3px; }
+.stepper .st-crow.ph .st-tag { color: #cfcfc5; }
+.stepper.js .st-crow { cursor: pointer; }
+.stepper.js .st-crow:hover { background: #f4f4ee; }
+.stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
+.stepper.js .st-crow.done { opacity: .66; }
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 44rem; overflow-y: auto; }
+.stepper .stw-ring { margin: .35rem 0 .6rem; }
+.stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.stepper .stw-rhead b { font-size: .84rem; }
+.stepper .stw-own { color: var(--muted); font-size: .7rem; }
+.stepper .stw-cells { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .stw-cell { position: relative; border: 1px dashed var(--line); border-radius: 4px; padding: .35rem .45rem .38rem; min-width: 6.8rem; text-align: center; background: #fff; }
+.stepper .stw-cell b { display: block; color: var(--muted); font-size: .64rem; letter-spacing: .04em; }
+.stepper .stw-cell .stw-t { display: block; font-weight: 600; font-size: .78rem; }
+.stepper .stw-cell .stw-f { display: block; color: #4a4a3f; font-size: .67rem; }
+.stepper .stw-cell .stw-cyc { display: block; color: var(--muted); font-size: .64rem; }
+.stepper .stw-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .stw-cell.st-published { border: 1px solid #1a5fb4; background: #e8f0fb; }
+.stepper .stw-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .stw-ptr { position: absolute; top: -0.6rem; font-size: .6rem; font-style: normal; padding: 0 .25rem; border-radius: 3px; color: #fff; }
+.stepper .stw-ptr.pe { left: .2rem; background: #1a5fb4; }
+.stepper .stw-ptr.pd { right: .2rem; background: var(--good); }
+.stepper .stw-box { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .stw-box > b { display: block; background: #f0efe6; padding: .2rem .5rem; font-size: .8rem; }
+.stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
+.stepper .stw-box th { width: 6em; background: #fbfbf6; }
+.stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+.stepper .st-note .st-mut { color: var(--muted); }
+.stepper .st-refs { margin-top: .55rem; }
+.stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .st-chip { font: inherit; font-size: .78rem; padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 10px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-chip.on { border-color: var(--accent); background: #fff3c4; }
+.stepper .st-fref { margin-left: .3rem; }
+.stepper .st-refs details { font-size: .85rem; }
+/* 引用弹窗 */
+.st-modal { display: none; position: fixed; inset: 0; background: rgba(20,20,15,.45); z-index: 90; padding: 3rem 1rem; }
+.st-modal.show { display: flex; }
+.st-modal .st-mbox { position: relative; margin: auto; max-width: 40rem; max-height: 80vh; overflow-y: auto; background: #fffdf4; border: 1px solid var(--ink); border-radius: 8px; padding: 1rem 1.2rem; }
+.st-modal .st-mclose { position: absolute; top: .5rem; right: .6rem; font: inherit; font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.st-modal .st-mbody h4 { margin: 0 0 .3rem; }
+.st-modal .st-msrc { color: var(--muted); font-size: .85rem; }
+.st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
+.st-modal .st-mnote { font-size: .88rem; }
+
+/* ===== 右缘批注（assets/marginnotes.js） ===== */
+@media (min-width: 1180px) {
+  body.mn-on { padding-right: 264px; }
+  body.mn-on .mn-rail { display: flex; }
+}
+.mn-rail { display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 252px; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 40; }
+.mn-rail .mn-head { font-weight: 700; font-size: .95rem; }
+.mn-rail .mn-cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
+.mn-rail button { font: inherit; font-size: .8rem; padding: .25rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; text-align: left; }
+.mn-rail .mn-add { background: var(--ink); color: #fff; text-align: center; }
+.mn-rail .mn-list { flex: 1; }
+.mn-rail .mn-empty { color: var(--muted); font-size: .78rem; }
+.mn-rail .mn-item { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .35rem .5rem; margin: .35rem 0; cursor: pointer; }
+.mn-rail .mn-item:hover { border-color: var(--accent); }
+.mn-rail .mn-anchor { color: var(--accent); font-size: .72rem; font-weight: 600; }
+.mn-rail .mn-text { font-size: .82rem; white-space: pre-wrap; }
+.mn-rail .mn-editor { border: 1px solid var(--accent); border-radius: 5px; background: #fff; padding: .4rem .5rem; }
+.mn-rail .mn-editor textarea { width: 100%; font: inherit; font-size: .82rem; border: 1px solid var(--line); border-radius: 4px; padding: .3rem; }
+.mn-rail .mn-eanchor { color: var(--accent); font-size: .72rem; font-weight: 600; margin-bottom: .25rem; }
+.mn-rail .mn-actions { display: flex; flex-direction: column; gap: .3rem; }
+.mn-rail .mn-tip { color: var(--muted); font-size: .72rem; }
+.mn-rail.mn-saved { outline: 2px solid var(--good); }
+.mn-pen { font: inherit; font-size: .7rem; border: 1px solid var(--line); border-radius: 3px; background: #fbfbf6; cursor: pointer; margin-left: .4rem; vertical-align: 1px; padding: 0 .3rem; }
+
 @media print {
   body { background: #fff; padding: 0; font-size: 10.5pt; }
   .opt:disabled { opacity: 1; }
   .explain { display: block; }
   .player .frame { display: block !important; }
   .player .pctl { display: none; }
+  .mn-rail, .mn-pen { display: none !important; }
+  body.mn-on { padding-right: 1rem; }
+  .stepper .st-ctl { display: none; }
+  .stepper .st-code { max-height: none; }
+  .st-modal { display: none !important; }
 }
 
 </style>
@@ -260,6 +356,200 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     }
   }
   window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+/* marginnotes.js — 右缘批注组件（课程族共享，配 course.css 的 .mn 段）
+ * 读者在阅读途中随时把问题记在右缘（锚定最近的 h2/h3 节）；读完课把批注交给 LLM：
+ *   ① Chrome/Edge："关联本课文件" 后每次编辑自动写回 .html 内嵌块（File System Access
+ *      API；file:// 与 https:// 均为 secure context）——真正的"及时编辑"，课后直接
+ *      告诉 LLM"读这节课文件里的批注"；
+ *   ② 其它浏览器：导出批注版 HTML（下载，覆盖原文件即可）；
+ *   ③ 最快路径：复制全部批注（markdown），直接粘贴到对话里。
+ * 持久化：localStorage 为工作副本；载入时与文件内嵌 <!--MN:BEGIN--> 块按 id 取并集。
+ * LLM 侧解析：scripts/extract_reader_notes.py <lesson.html>。 */
+(function () {
+  'use strict';
+  try { init(); } catch (e) { /* 组件错误不白屏；无 JS 环境静态呈现不受影响 */ }
+  function init() {
+  var KEY = 'mn:' + location.pathname;
+  var BLOCK_RE = /<!--MN:BEGIN-->[\s\S]*?<!--MN:END-->/;
+  var BLOCK_TPL = function (notes) {
+    var json = JSON.stringify({ lesson: document.title, updated: new Date().toISOString(), notes: notes })
+      .replace(/</g, '\\u003c');
+    return '<!--MN:BEGIN--><script type="application/json" id="mn-data">' + json + '<\/script><!--MN:END-->';
+  };
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function uid() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  /* ---- 载入：localStorage ∪ 文件内嵌块 ---- */
+  var notes = [];
+  try { notes = (typeof localStorage !== 'undefined' && JSON.parse(localStorage.getItem(KEY) || '[]')) || []; } catch (e) { notes = []; }
+  var embeddedEl = document.getElementById('mn-data');
+  if (embeddedEl) {
+    try {
+      (JSON.parse(embeddedEl.textContent).notes || []).forEach(function (n) {
+        if (!notes.some(function (x) { return x.id === n.id; })) notes.push(n);
+      });
+    } catch (e) { /* 坏块忽略 */ }
+  }
+  function saveLocal() {
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify(notes)); } catch (e) { /* 隐私模式等 */ }
+  }
+
+  /* ---- 锚点：最近的 h2/h3 ---- */
+  var heads = Array.prototype.slice.call(document.querySelectorAll('main h2, main h3'));
+  function anchorOf(el) {
+    var h = null;
+    for (var i = 0; i < heads.length; i++) {
+      if (heads[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) h = heads[i];
+      else break;
+    }
+    return h ? h.textContent.trim().slice(0, 60) : '（开头）';
+  }
+
+  /* ---- 右缘栏 + 行内 ✎ ---- */
+  document.body.classList.add('mn-on');
+  var rail = document.createElement('aside');
+  rail.className = 'mn-rail';
+  rail.innerHTML = '<div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+    '<button type="button" class="mn-add">＋ 记一笔（锚定当前读到的节）</button>' +
+    '<div class="mn-list"></div>' +
+    '<div class="mn-actions">' +
+    '<button type="button" class="mn-link">🔗 关联本课文件（自动写回）</button>' +
+    '<button type="button" class="mn-dl">⬇ 导出批注版 HTML</button>' +
+    '<button type="button" class="mn-cp">📋 复制全部批注</button></div>' +
+    '<div class="mn-tip">读完后告诉老师：读这节课文件里的批注并逐条回答。</div>';
+  document.body.appendChild(rail);
+  var listEl = rail.querySelector('.mn-list'), cntEl = rail.querySelector('.mn-cnt');
+
+  var editId = null;
+  function openEditor(prefill) {
+    var id = editId;
+    var box = document.createElement('div');
+    box.className = 'mn-editor';
+    box.innerHTML = '<div class="mn-eanchor">锚点：' + esc(prefill.anchor) + '</div>' +
+      '<textarea rows="3" placeholder="记下你的问题/想法…（自动保存；随文件写回或复制给老师）"></textarea>' +
+      '<div><button type="button" class="mn-save">保存</button> ' +
+      '<button type="button" class="mn-cancel">取消</button> ' +
+      '<button type="button" class="mn-del">删除</button></div>';
+    var ta = box.querySelector('textarea');
+    ta.value = prefill.text || '';
+    box.querySelector('.mn-save').addEventListener('click', function () {
+      var t = ta.value.trim();
+      if (t) {
+        if (id) { var n = notes.find(function (x) { return x.id === id; }); if (n) { n.text = t; n.ts = Date.now(); } }
+        else notes.push({ id: uid(), anchor: prefill.anchor, text: t, ts: Date.now() });
+      } else if (id) notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    box.querySelector('.mn-cancel').addEventListener('click', function () { editId = null; box.remove(); });
+    box.querySelector('.mn-del').addEventListener('click', function () {
+      notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    rail.insertBefore(box, listEl);
+    ta.focus();
+  }
+  function render() {
+    cntEl.textContent = notes.length ? '（' + notes.length + '）' : '';
+    listEl.innerHTML = notes.length ? '' : '<div class="mn-empty">还没有批注。读到有疑问处，点节标题旁的 ✎ 或"记一笔"。</div>';
+    notes.slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (n) {
+      var d = document.createElement('div');
+      d.className = 'mn-item';
+      d.innerHTML = '<div class="mn-anchor">@' + esc(n.anchor) + '</div>' +
+        '<div class="mn-text">' + esc(n.text) + '</div>';
+      d.addEventListener('click', function () { editId = n.id; openEditor({ anchor: n.anchor, text: n.text }); });
+      listEl.appendChild(d);
+    });
+  }
+  rail.querySelector('.mn-add').addEventListener('click', function () {
+    /* 预取"当前读到"：视口内最后一个 h2/h3 */
+    var vis = heads.filter(function (h) { var r = h.getBoundingClientRect(); return r.top < innerHeight * 0.7; });
+    openEditor({ anchor: vis.length ? vis[vis.length - 1].textContent.trim().slice(0, 60) : '（开头）' });
+  });
+  heads.forEach(function (h) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mn-pen'; b.title = '在这一节记批注'; b.textContent = '✎';
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      editId = null;
+      openEditor({ anchor: h.textContent.trim().slice(0, 60) });
+    });
+    h.appendChild(b);
+  });
+  render();
+
+  /* ---- 写回/导出/复制 ---- */
+  var fh = null, fhText = null, writeTimer = null;
+  function scheduleWrite() {
+    if (!fh) return;
+    if (writeTimer) clearTimeout(writeTimer);
+    writeTimer = setTimeout(writeBack, 800);
+  }
+  async function writeBack() {
+    if (!fh) return;
+    try {
+      var w = await fh.createWritable();
+      await w.write(serializeInto(fhText));
+      await w.close();
+      rail.classList.add('mn-saved');
+      setTimeout(function () { rail.classList.remove('mn-saved'); }, 900);
+    } catch (e) { rail.querySelector('.mn-tip').textContent = '⚠ 自动写回失败：' + e.message + '（可用导出/复制兜底）'; }
+  }
+  function serializeInto(text) {
+    var block = BLOCK_TPL(notes);
+    if (BLOCK_RE.test(text)) return text.replace(BLOCK_RE, block);
+    if (/<\/body>/i.test(text)) return text.replace(/<\/body>/i, block + '\n</body>');
+    return text + '\n' + block;
+  }
+  rail.querySelector('.mn-link').addEventListener('click', async function () {
+    if (!window.showOpenFilePicker) {
+      rail.querySelector('.mn-tip').textContent = '此浏览器不支持直接写回（需 Chrome/Edge）。请用"导出批注版 HTML"或"复制全部批注"。';
+      return;
+    }
+    try {
+      var arr = document.contentType && document.contentType.indexOf('html') >= 0 ? [{
+        types: [{ description: 'HTML lesson', accept: { 'text/html': ['.html'] } }]
+      }] : undefined;
+      var handles = await window.showOpenFilePicker(arr && arr[0] ? { types: arr[0].types } : undefined);
+      fh = handles[0];
+      var r = await fh.getFile();
+      fhText = await r.text();
+      await writeBack();
+      rail.querySelector('.mn-link').textContent = '✅ 已关联：' + r.name + '（编辑即写回）';
+    } catch (e) { /* 用户取消等 */ }
+  });
+  rail.querySelector('.mn-dl').addEventListener('click', function () {
+    Promise.resolve(fhText || null).then(function (base) {
+      var text = base || ('<!DOCTYPE html>\n' + document.documentElement.outerHTML);
+      var blob = new Blob([serializeInto(text)], { type: 'text/html' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || 'lesson') + '-批注版.html';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    });
+  });
+  rail.querySelector('.mn-cp').addEventListener('click', function () {
+    var md = '# 《' + document.title + '》读者批注（' + notes.length + ' 条）\n\n' +
+      notes.slice().sort(function (a, b) { return a.ts - b.ts; })
+        .map(function (n) { return '## @' + n.anchor + '\n\n' + n.text + '\n'; }).join('\n');
+    var done = function () { rail.querySelector('.mn-tip').textContent = '✅ 已复制——直接粘贴给老师即可。'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(md).then(done);
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = md; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { }
+      ta.remove();
+    }
+  });
+  } /* init */
 })();
 
 </script>
