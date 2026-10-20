@@ -110,12 +110,108 @@ td.good { background: #e9f7ee; }
 
 footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
 
+/* ===== 代码步进放映机（assets/codestepper.js；静态优先：无 JS 时代码全列+world0+refs 全可读） =====
+   v2（2026-10-20 用户四条修正）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
+   普通行无行号）；语句/调用级帧；双栏加大加高。 */
+.stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
+.stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
+.stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
+.stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+.stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
+.stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
+@media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 44rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; }
+.stepper .st-crow code { font: inherit; }
+.stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: var(--muted); font-size: .74rem; }
+.stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
+.stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
+.stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
+.stepper .st-crow.ph { background: var(--ink); color: #fff; font-weight: 700; margin-top: .5rem; border-radius: 3px; }
+.stepper .st-crow.ph .st-tag { color: #cfcfc5; }
+.stepper.js .st-crow { cursor: pointer; }
+.stepper.js .st-crow:hover { background: #f4f4ee; }
+.stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
+.stepper.js .st-crow.done { opacity: .66; }
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 44rem; overflow-y: auto; }
+.stepper .stw-ring { margin: .35rem 0 .6rem; }
+.stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.stepper .stw-rhead b { font-size: .84rem; }
+.stepper .stw-own { color: var(--muted); font-size: .7rem; }
+.stepper .stw-cells { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .stw-cell { position: relative; border: 1px dashed var(--line); border-radius: 4px; padding: .35rem .45rem .38rem; min-width: 6.8rem; text-align: center; background: #fff; }
+.stepper .stw-cell b { display: block; color: var(--muted); font-size: .64rem; letter-spacing: .04em; }
+.stepper .stw-cell .stw-t { display: block; font-weight: 600; font-size: .78rem; }
+.stepper .stw-cell .stw-f { display: block; color: #4a4a3f; font-size: .67rem; }
+.stepper .stw-cell .stw-cyc { display: block; color: var(--muted); font-size: .64rem; }
+.stepper .stw-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .stw-cell.st-published { border: 1px solid #1a5fb4; background: #e8f0fb; }
+.stepper .stw-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .stw-ptr { position: absolute; top: -0.6rem; font-size: .6rem; font-style: normal; padding: 0 .25rem; border-radius: 3px; color: #fff; }
+.stepper .stw-ptr.pe { left: .2rem; background: #1a5fb4; }
+.stepper .stw-ptr.pd { right: .2rem; background: var(--good); }
+.stepper .stw-box { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .stw-box > b { display: block; background: #f0efe6; padding: .2rem .5rem; font-size: .8rem; }
+.stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
+.stepper .stw-box th { width: 6em; background: #fbfbf6; }
+.stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+.stepper .st-note .st-mut { color: var(--muted); }
+.stepper .st-refs { margin-top: .55rem; }
+.stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .st-chip { font: inherit; font-size: .78rem; padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 10px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-chip.on { border-color: var(--accent); background: #fff3c4; }
+.stepper .st-fref { margin-left: .3rem; }
+.stepper .st-refs details { font-size: .85rem; }
+/* 引用弹窗 */
+.st-modal { display: none; position: fixed; inset: 0; background: rgba(20,20,15,.45); z-index: 90; padding: 3rem 1rem; }
+.st-modal.show { display: flex; }
+.st-modal .st-mbox { position: relative; margin: auto; max-width: 40rem; max-height: 80vh; overflow-y: auto; background: #fffdf4; border: 1px solid var(--ink); border-radius: 8px; padding: 1rem 1.2rem; }
+.st-modal .st-mclose { position: absolute; top: .5rem; right: .6rem; font: inherit; font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.st-modal .st-mbody h4 { margin: 0 0 .3rem; }
+.st-modal .st-msrc { color: var(--muted); font-size: .85rem; }
+.st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
+.st-modal .st-mnote { font-size: .88rem; }
+
+/* ===== 右缘批注（assets/marginnotes.js） ===== */
+@media (min-width: 1180px) {
+  body.mn-on { padding-right: 264px; }
+  body.mn-on .mn-rail { display: flex; }
+}
+.mn-rail { display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 252px; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 40; }
+.mn-rail .mn-head { font-weight: 700; font-size: .95rem; }
+.mn-rail .mn-cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
+.mn-rail button { font: inherit; font-size: .8rem; padding: .25rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; text-align: left; }
+.mn-rail .mn-add { background: var(--ink); color: #fff; text-align: center; }
+.mn-rail .mn-list { flex: 1; }
+.mn-rail .mn-empty { color: var(--muted); font-size: .78rem; }
+.mn-rail .mn-item { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .35rem .5rem; margin: .35rem 0; cursor: pointer; }
+.mn-rail .mn-item:hover { border-color: var(--accent); }
+.mn-rail .mn-anchor { color: var(--accent); font-size: .72rem; font-weight: 600; }
+.mn-rail .mn-text { font-size: .82rem; white-space: pre-wrap; }
+.mn-rail .mn-editor { border: 1px solid var(--accent); border-radius: 5px; background: #fff; padding: .4rem .5rem; }
+.mn-rail .mn-editor textarea { width: 100%; font: inherit; font-size: .82rem; border: 1px solid var(--line); border-radius: 4px; padding: .3rem; }
+.mn-rail .mn-eanchor { color: var(--accent); font-size: .72rem; font-weight: 600; margin-bottom: .25rem; }
+.mn-rail .mn-actions { display: flex; flex-direction: column; gap: .3rem; }
+.mn-rail .mn-tip { color: var(--muted); font-size: .72rem; }
+.mn-rail.mn-saved { outline: 2px solid var(--good); }
+.mn-pen { font: inherit; font-size: .7rem; border: 1px solid var(--line); border-radius: 3px; background: #fbfbf6; cursor: pointer; margin-left: .4rem; vertical-align: 1px; padding: 0 .3rem; }
+
 @media print {
   body { background: #fff; padding: 0; font-size: 10.5pt; }
   .opt:disabled { opacity: 1; }
   .explain { display: block; }
   .player .frame { display: block !important; }
   .player .pctl { display: none; }
+  .mn-rail, .mn-pen { display: none !important; }
+  body.mn-on { padding-right: 1rem; }
+  .stepper .st-ctl { display: none; }
+  .stepper .st-code { max-height: none; }
+  .st-modal { display: none !important; }
 }
 
 </style>
@@ -139,6 +235,140 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   </div>
 
   <h2>七步链路（USB2 视角）</h2>
+  <p>先把这条链用<strong>真实代码</strong>逐语句走一遍（hub.c 的状态机与工作队列——去抖四圈采样逐帧推进）——下方 step/flow 精读是同一链路的静态版：</p>
+  <!--STEPPER:0002:BEGIN-->
+  <div class="stepper">
+    <div class="st-intro"><h4>▶ 一次插拔的 usbcore 旅程：从 hub_irq 位图到复位定速（七步链的代码主线）</h4><p>左侧＝这条链真实走过的内核代码（drivers/usb/core/hub.c——hub 线没有环与 TRB，主角是状态机与工作队列）。右侧＝端口面板（VBUS/D+/连接位/稳定计数/速度）与七步链账本。用下方按钮或 ←/→ 键逐语句步进：去抖状态机的四圈采样用重访同一段代码逐圈推进（25→50→75→100ms）。下方 step/flow 精读是同一链路的静态版，互为参照。</p><p class="st-base">代码基线 master@62f4c998b297（与全课一致）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-grid">
+      <div class="st-code">
+<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>② 中断上报：hub_irq 收下端口位图（hub.c）</code></div>
+<div class="st-crow ctx" data-id="r1"><span class="st-tag">usbcore</span><code>usbcore：hub 中断 IN 完成 → hub_irq(urb)（urb-&gt;complete 回调，中断上下文）</code></div>
+<div class="st-crow fn" data-id="r2" style="padding-left:0.4em"><span class="st-file">▸ hub.c : 776-778</span><code>static void hub_irq(struct urb *urb)
+{
+	struct usb_hub *hub = urb-&gt;context;</code></div>
+<div class="st-crow ln" data-id="r3" style="padding-left:1.5em"><code>		bits = 0;
+		for (i = 0; i &lt; urb-&gt;actual_length; ++i)
+			bits |= ((unsigned long) ((*hub-&gt;buffer)[i]))
+					&lt;&lt; (i*8);
+		hub-&gt;event_bits[0] = bits;</code></div>
+<div class="st-crow ln" data-id="r4" style="padding-left:1.5em"><code>
+	hub-&gt;nerrors = 0;
+
+	/* Something happened, let hub_wq figure it out */
+	kick_hub_wq(hub);</code></div>
+<div class="st-crow ln" data-id="r5" style="padding-left:1.5em"><code>		if ((++hub-&gt;nerrors &lt; 10) || hub-&gt;error)
+			goto resubmit;
+		hub-&gt;error = status;</code></div>
+<div class="st-crow ph" data-id="r6"><span class="st-tag">▶</span><code>③ 工作队列：所有 hub 共用一个 hub_event 循环</code></div>
+<div class="st-crow fn" data-id="r7" style="padding-left:0.4em"><span class="st-file">▸ hub.c : 5887-5889</span><code>static void hub_event(struct work_struct *work)
+{
+	struct usb_device *hdev;</code></div>
+<div class="st-crow ln" data-id="r8" style="padding-left:1.5em"><code>			pm_runtime_get_noresume(&amp;port_dev-&gt;dev);
+			pm_runtime_barrier(&amp;port_dev-&gt;dev);
+			usb_lock_port(port_dev);
+			port_event(hub, i);
+			usb_unlock_port(port_dev);
+			pm_runtime_put_sync(&amp;port_dev-&gt;dev);</code></div>
+<div class="st-crow ph" data-id="r9"><span class="st-tag">▶</span><code>④ 连接变化：先复活校验，复活失败才全新枚举</code></div>
+<div class="st-crow fn" data-id="r10" style="padding-left:0.4em"><span class="st-file">▸ hub.c : 5650-5652</span><code>static void hub_port_connect_change(struct usb_hub *hub, int port1,
+					u16 portstatus, u16 portchange)
+		__must_hold(&amp;port_dev-&gt;status_lock)</code></div>
+<div class="st-crow ln" data-id="r11" style="padding-left:1.5em"><code>	if ((portstatus &amp; USB_PORT_STAT_CONNECTION) &amp;&amp; udev &amp;&amp;
+			udev-&gt;state != USB_STATE_NOTATTACHED) {
+		if (portstatus &amp; USB_PORT_STAT_ENABLE) {
+			/*
+			 * USB-3 connections are initialized automatically by
+			 * the hostcontroller hardware. Therefore check for
+			 * changed device descriptors before resuscitating the
+			 * device.</code></div>
+<div class="st-crow ln" data-id="r12" style="padding-left:1.5em"><code>	/* successfully revalidated the connection */
+	if (status == 0)
+		return;</code></div>
+<div class="st-crow ln" data-id="r13" style="padding-left:1.5em"><code>	usb_unlock_port(port_dev);
+	hub_port_connect(hub, port1, portstatus, portchange);
+	usb_lock_port(port_dev);</code></div>
+<div class="st-crow ph" data-id="r14"><span class="st-tag">▶</span><code>⑤ 去抖状态机：25ms 步进 × ≥100ms 稳定（hub_port_debounce）</code></div>
+<div class="st-crow fn" data-id="r15" style="padding-left:0.4em"><span class="st-file">▸ hub.c : 4709-4711</span><code>int hub_port_debounce(struct usb_hub *hub, int port1, bool must_be_connected)
+{
+	int ret;</code></div>
+<div class="st-crow ln" data-id="r16" style="padding-left:1.5em"><code>	for (total_time = 0; ; total_time += HUB_DEBOUNCE_STEP) {
+		ret = usb_hub_port_status(hub, port1, &amp;portstatus, &amp;portchange);
+		if (ret &lt; 0)
+			return ret;
+
+		if (!(portchange &amp; USB_PORT_STAT_C_CONNECTION) &amp;&amp;
+		     (portstatus &amp; USB_PORT_STAT_CONNECTION) == connection) {
+			if (!must_be_connected ||
+			     (connection == USB_PORT_STAT_CONNECTION))
+				stable_time += HUB_DEBOUNCE_STEP;
+			if (stable_time &gt;= HUB_DEBOUNCE_STABLE)
+				break;
+		} else {
+			stable_time = 0;
+			connection = portstatus &amp; USB_PORT_STAT_CONNECTION;
+		}</code></div>
+<div class="st-crow ln" data-id="r17" style="padding-left:1.5em"><code>		if (portchange &amp; USB_PORT_STAT_C_CONNECTION) {
+			usb_clear_port_feature(hub-&gt;hdev, port1,
+					USB_PORT_FEAT_C_CONNECTION);
+		}
+
+		if (total_time &gt;= HUB_DEBOUNCE_TIMEOUT)
+			break;
+		msleep(HUB_DEBOUNCE_STEP);</code></div>
+<div class="st-crow ln" data-id="r18" style="padding-left:1.5em"><code>	if (stable_time &lt; HUB_DEBOUNCE_STABLE)
+		return -ETIMEDOUT;
+	return portstatus;</code></div>
+<div class="st-crow ph" data-id="r19"><span class="st-tag">▶</span><code>⑥ 复位定速：hub_port_init 的开局三步</code></div>
+<div class="st-crow ln" data-id="r20" style="padding-left:0.4em"><code>#define HUB_ROOT_RESET_TIME	60	/* times are in msec */
+#define HUB_SHORT_RESET_TIME	10
+#define HUB_BH_RESET_TIME	50
+#define HUB_LONG_RESET_TIME	200
+#define HUB_RESET_TIMEOUT	800</code></div>
+<div class="st-crow ln" data-id="r21" style="padding-left:0.4em"><code>	if (!hdev-&gt;parent) {
+		delay = HUB_ROOT_RESET_TIME;
+		if (port1 == hdev-&gt;bus-&gt;otg_port)
+			hdev-&gt;bus-&gt;b_hnp_enable = 0;
+	}
+
+	/* Some low speed devices have problems with the quick delay, so */
+	/*  be a bit pessimistic with those devices. RHbug #23670 */
+	if (oldspeed == USB_SPEED_LOW)
+		delay = HUB_LONG_RESET_TIME;</code></div>
+<div class="st-crow ln" data-id="r22" style="padding-left:0.4em"><code>	retval = hub_port_reset(hub, port1, udev, delay, false);</code></div>
+<div class="st-crow ln" data-id="r23" style="padding-left:0.4em"><code>	/* Don&#x27;t allow speed changes at reset, except usb 3.0 to faster */
+	if (oldspeed != USB_SPEED_UNKNOWN &amp;&amp; oldspeed != udev-&gt;speed &amp;&amp;
+	    !(oldspeed == USB_SPEED_SUPER &amp;&amp; udev-&gt;speed &gt; oldspeed)) {
+		dev_dbg(&amp;udev-&gt;dev, &quot;device reset changed speed!\n&quot;);
+		goto fail;
+	}</code></div>
+<div class="st-crow ln" data-id="r24" style="padding-left:0.4em"><code>		switch (udev-&gt;speed) {
+		case USB_SPEED_SUPER_PLUS:
+		case USB_SPEED_SUPER:
+			udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(512);
+			break;
+		case USB_SPEED_HIGH:		/* fixed at 64 */
+			udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);
+			break;
+		case USB_SPEED_FULL:		/* 8, 16, 32, or 64 */
+			/* to determine the ep0 maxpacket size, try to read
+			 * the device descriptor to get bMaxPacketSize0 and
+			 * then correct our initial guess.
+			 */
+			udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);
+			break;</code></div>
+<div class="st-crow ctx" data-id="r25"><span class="st-tag">usbcore</span><code>usbcore 侧七步走完——接力棒交给 xHCI 驱动</code></div>
+      </div>
+      <div class="st-world">
+<div class="stw-box"><b>端口面板（hub 下行口 2 · 规范 §7.1.5/§7.1.7 视角）</b><table><tr><th>VBUS</th><td>已供电（主机→hub）</td></tr><tr><th>D+ 上拉</th><td>已拉起（设备宣告 attach）</td></tr><tr><th>连接位</th><td>—（还没读口）</td></tr><tr><th>稳定计数</th><td>0 ms</td></tr><tr><th>速度</th><td>未知</td></tr><tr><th>ep0 包长</th><td>—</td></tr></table></div><div class="stw-box"><b>七步链账本（usbcore 侧——xHCI 还没登场）</b><table><tr><th>① 供电+attach</th><td>✓ 设备拉 D+ 宣告</td></tr><tr><th>② 中断上报</th><td>（待）</td></tr><tr><th>③ 工作队列</th><td>（待）</td></tr><tr><th>④ 连接变化</th><td>（待）</td></tr><tr><th>⑤ 去抖</th><td>（待）</td></tr><tr><th>⑥ 复位定速</th><td>（待）</td></tr><tr><th>⑦ 枚举开工</th><td>（待）</td></tr></table></div>
+      </div>
+    </div>
+    <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
+    <div class="st-refs"><details><summary>📎 Table 7-14 去抖间隔 TATTDB ≥100ms（p216）</summary><p class="st-msrc">USB 2.0（2024-09-27 版） · p216</p><blockquote>Debounce interval provided by USB system software after attach TATTDB Figure 7-29 100 ms</blockquote><p class="st-mnote">hub_port_debounce 的 25ms 步进×4 圈=100ms 正是这条的内核实现（数值一致）。</p></details><details><summary>📎 §7.1.7.5 复位时长 TDRST/TRSTRCY（p181）</summary><p class="st-msrc">USB 2.0（2024-09-27 版） · p181</p><blockquote>The reset signaling must be driven for a minimum of 10ms (TDRST). … Hubs and devices must be able to accept a SetAddress() request … after the reset recovery time 10 ms (TRSTRCY) after the reset is removed.</blockquote><p class="st-mnote">内核三档初值（10/60/200ms）都 ≥TDRST；根口 60ms 另满足 §7.1.7.5 根口 ≥50ms 的加严条款。</p></details><details><summary>📎 §7.1.5.1 attach＝设备拉 D+/D- 上拉（速度声明）（p169）</summary><p class="st-msrc">USB 2.0（2024-09-27 版） · p169</p><blockquote>Full-speed and low-speed devices are differentiated by the position of the pull-up resistor on the downstream end of the cable: Full-speed devices are terminated as shown in Figure 7-20 with the pull-up resistor on the D+ line. Low-speed devices are terminated as shown in Figure 7-21 with the pull-up resistor on the D- line.</blockquote><p class="st-mnote">步骤①的电气面：FS 拉 D+、LS 拉 D-——hub 靠上拉位置判速度（图 7-29 时序）。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"一次插拔的 usbcore 旅程：从 hub_irq 位图到复位定速（七步链的代码主线）","intro":"左侧＝这条链真实走过的内核代码（drivers/usb/core/hub.c——hub 线没有环与 TRB，主角是状态机与工作队列）。右侧＝端口面板（VBUS/D+/连接位/稳定计数/速度）与七步链账本。用下方按钮或 ←/→ 键逐语句步进：去抖状态机的四圈采样用重访同一段代码逐圈推进（25→50→75→100ms）。下方 step/flow 精读是同一链路的静态版，互为参照。","baseline":"代码基线 master@62f4c998b297（与全课一致）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"② 中断上报：hub_irq 收下端口位图（hub.c）"},{"id":"r1","kind":"ctx","depth":0,"text":"usbcore：hub 中断 IN 完成 → hub_irq(urb)（urb->complete 回调，中断上下文）"},{"id":"r2","kind":"fn","depth":0,"text":"static void hub_irq(struct urb *urb)\n{\n\tstruct usb_hub *hub = urb->context;","file":"hub.c","a":776,"b":778},{"id":"r3","kind":"ln","depth":1,"text":"\t\tbits = 0;\n\t\tfor (i = 0; i \u003c urb->actual_length; ++i)\n\t\t\tbits |= ((unsigned long) ((*hub->buffer)[i]))\n\t\t\t\t\t\u003c\u003c (i*8);\n\t\thub->event_bits[0] = bits;","file":"hub.c","a":799,"b":803},{"id":"r4","kind":"ln","depth":1,"text":"\n\thub->nerrors = 0;\n\n\t/* Something happened, let hub_wq figure it out */\n\tkick_hub_wq(hub);","file":"hub.c","a":806,"b":810},{"id":"r5","kind":"ln","depth":1,"text":"\t\tif ((++hub->nerrors \u003c 10) || hub->error)\n\t\t\tgoto resubmit;\n\t\thub->error = status;","file":"hub.c","a":792,"b":794},{"id":"r6","kind":"ph","depth":0,"text":"③ 工作队列：所有 hub 共用一个 hub_event 循环"},{"id":"r7","kind":"fn","depth":0,"text":"static void hub_event(struct work_struct *work)\n{\n\tstruct usb_device *hdev;","file":"hub.c","a":5887,"b":5889},{"id":"r8","kind":"ln","depth":1,"text":"\t\t\tpm_runtime_get_noresume(&port_dev->dev);\n\t\t\tpm_runtime_barrier(&port_dev->dev);\n\t\t\tusb_lock_port(port_dev);\n\t\t\tport_event(hub, i);\n\t\t\tusb_unlock_port(port_dev);\n\t\t\tpm_runtime_put_sync(&port_dev->dev);","file":"hub.c","a":5963,"b":5968},{"id":"r9","kind":"ph","depth":0,"text":"④ 连接变化：先复活校验，复活失败才全新枚举"},{"id":"r10","kind":"fn","depth":0,"text":"static void hub_port_connect_change(struct usb_hub *hub, int port1,\n\t\t\t\t\tu16 portstatus, u16 portchange)\n\t\t__must_hold(&port_dev->status_lock)","file":"hub.c","a":5650,"b":5652},{"id":"r11","kind":"ln","depth":1,"text":"\tif ((portstatus & USB_PORT_STAT_CONNECTION) && udev &&\n\t\t\tudev->state != USB_STATE_NOTATTACHED) {\n\t\tif (portstatus & USB_PORT_STAT_ENABLE) {\n\t\t\t/*\n\t\t\t * USB-3 connections are initialized automatically by\n\t\t\t * the hostcontroller hardware. Therefore check for\n\t\t\t * changed device descriptors before resuscitating the\n\t\t\t * device.","file":"hub.c","a":5675,"b":5682},{"id":"r12","kind":"ln","depth":1,"text":"\t/* successfully revalidated the connection */\n\tif (status == 0)\n\t\treturn;","file":"hub.c","a":5715,"b":5717},{"id":"r13","kind":"ln","depth":1,"text":"\tusb_unlock_port(port_dev);\n\thub_port_connect(hub, port1, portstatus, portchange);\n\tusb_lock_port(port_dev);","file":"hub.c","a":5719,"b":5721},{"id":"r14","kind":"ph","depth":0,"text":"⑤ 去抖状态机：25ms 步进 × ≥100ms 稳定（hub_port_debounce）"},{"id":"r15","kind":"fn","depth":0,"text":"int hub_port_debounce(struct usb_hub *hub, int port1, bool must_be_connected)\n{\n\tint ret;","file":"hub.c","a":4709,"b":4711},{"id":"r16","kind":"ln","depth":1,"text":"\tfor (total_time = 0; ; total_time += HUB_DEBOUNCE_STEP) {\n\t\tret = usb_hub_port_status(hub, port1, &portstatus, &portchange);\n\t\tif (ret \u003c 0)\n\t\t\treturn ret;\n\n\t\tif (!(portchange & USB_PORT_STAT_C_CONNECTION) &&\n\t\t     (portstatus & USB_PORT_STAT_CONNECTION) == connection) {\n\t\t\tif (!must_be_connected ||\n\t\t\t     (connection == USB_PORT_STAT_CONNECTION))\n\t\t\t\tstable_time += HUB_DEBOUNCE_STEP;\n\t\t\tif (stable_time >= HUB_DEBOUNCE_STABLE)\n\t\t\t\tbreak;\n\t\t} else {\n\t\t\tstable_time = 0;\n\t\t\tconnection = portstatus & USB_PORT_STAT_CONNECTION;\n\t\t}","file":"hub.c","a":4717,"b":4732},{"id":"r17","kind":"ln","depth":1,"text":"\t\tif (portchange & USB_PORT_STAT_C_CONNECTION) {\n\t\t\tusb_clear_port_feature(hub->hdev, port1,\n\t\t\t\t\tUSB_PORT_FEAT_C_CONNECTION);\n\t\t}\n\n\t\tif (total_time >= HUB_DEBOUNCE_TIMEOUT)\n\t\t\tbreak;\n\t\tmsleep(HUB_DEBOUNCE_STEP);","file":"hub.c","a":4734,"b":4741},{"id":"r18","kind":"ln","depth":1,"text":"\tif (stable_time \u003c HUB_DEBOUNCE_STABLE)\n\t\treturn -ETIMEDOUT;\n\treturn portstatus;","file":"hub.c","a":4747,"b":4749},{"id":"r19","kind":"ph","depth":0,"text":"⑥ 复位定速：hub_port_init 的开局三步"},{"id":"r20","kind":"ln","depth":0,"text":"#define HUB_ROOT_RESET_TIME\t60\t/* times are in msec */\n#define HUB_SHORT_RESET_TIME\t10\n#define HUB_BH_RESET_TIME\t50\n#define HUB_LONG_RESET_TIME\t200\n#define HUB_RESET_TIMEOUT\t800","file":"hub.c","a":2914,"b":2918},{"id":"r21","kind":"ln","depth":0,"text":"\tif (!hdev->parent) {\n\t\tdelay = HUB_ROOT_RESET_TIME;\n\t\tif (port1 == hdev->bus->otg_port)\n\t\t\thdev->bus->b_hnp_enable = 0;\n\t}\n\n\t/* Some low speed devices have problems with the quick delay, so */\n\t/*  be a bit pessimistic with those devices. RHbug #23670 */\n\tif (oldspeed == USB_SPEED_LOW)\n\t\tdelay = HUB_LONG_RESET_TIME;","file":"hub.c","a":4939,"b":4948},{"id":"r22","kind":"ln","depth":0,"text":"\tretval = hub_port_reset(hub, port1, udev, delay, false);","file":"hub.c","a":4952,"b":4952},{"id":"r23","kind":"ln","depth":0,"text":"\t/* Don't allow speed changes at reset, except usb 3.0 to faster */\n\tif (oldspeed != USB_SPEED_UNKNOWN && oldspeed != udev->speed &&\n\t    !(oldspeed == USB_SPEED_SUPER && udev->speed > oldspeed)) {\n\t\tdev_dbg(&udev->dev, \"device reset changed speed!\\n\");\n\t\tgoto fail;\n\t}","file":"hub.c","a":4959,"b":4964},{"id":"r24","kind":"ln","depth":0,"text":"\t\tswitch (udev->speed) {\n\t\tcase USB_SPEED_SUPER_PLUS:\n\t\tcase USB_SPEED_SUPER:\n\t\t\tudev->ep0.desc.wMaxPacketSize = cpu_to_le16(512);\n\t\t\tbreak;\n\t\tcase USB_SPEED_HIGH:\t\t/* fixed at 64 */\n\t\t\tudev->ep0.desc.wMaxPacketSize = cpu_to_le16(64);\n\t\t\tbreak;\n\t\tcase USB_SPEED_FULL:\t\t/* 8, 16, 32, or 64 */\n\t\t\t/* to determine the ep0 maxpacket size, try to read\n\t\t\t * the device descriptor to get bMaxPacketSize0 and\n\t\t\t * then correct our initial guess.\n\t\t\t */\n\t\t\tudev->ep0.desc.wMaxPacketSize = cpu_to_le16(64);\n\t\t\tbreak;","file":"hub.c","a":4971,"b":4985},{"id":"r25","kind":"ctx","depth":0,"text":"usbcore 侧七步走完——接力棒交给 xHCI 驱动"}],"frames":[{"c":"r0","note":"hub 的中断端点每 250ms（或有事件时）回一份端口位图——attach 就是从这里进内核的视野。","ph":"② 中断上报：hub_irq 收下端口位图（hub.c）"},{"c":"r1","note":"hub 线的「六站」从 usbcore 开始——xHCI 在更下面等着，但本课先看 hub.c 这层。","ev":[{"op":"td","set":{"② 中断上报":"进行中"}}]},{"c":"r2","note":"hub 中断端点的完成回调。"},{"c":"r3","note":"逐字节移位拼装端口位图：bit(i)=口 i+1 有变化——刚插上的口 2 置位。","ev":[{"op":"dev","set":{"连接位":"位图 bit1=1（口 2 有变化）"}}]},{"c":"r4","note":"成功路径：清错误计数，踢工作队列——「Something happened, let hub_wq figure it out」。","ev":[{"op":"td","set":{"② 中断上报":"✓ 位图已存 event_bits","③ 工作队列":"已踢（kick_hub_wq）"}}]},{"c":"r5","note":"（对照·失败路径）：连错 10 次才认账转恢复——容错带。"},{"c":"r6","note":"进程上下文逐口检查 change_bits——命中者压住运行时 PM 后进分派。","ph":"③ 工作队列：所有 hub 共用一个 hub_event 循环"},{"c":"r7","note":"hub 工作队列主体（work 注册在 hub_probe）。"},{"c":"r8","note":"压住 runtime pm → 锁口 → port_event 分类处理（过流/恢复/连接变化）——口 2 是连接变化。","ev":[{"op":"td","set":{"③ 工作队列":"✓ port_event(口2)","④ 连接变化":"分派中"}}]},{"c":"r9","note":"拔插同一设备不该重新走全套枚举——先问「老朋友还在吗」。","ph":"④ 连接变化：先复活校验，复活失败才全新枚举"},{"c":"r10","note":"连接变化处理入口。"},{"c":"r11","note":"连接位在 + 老设备还在 + 端口使能 → 复活校验：重读设备描述符做 descriptors_changed 比对（USB3 的连接由主机硬件自动初始化）。"},{"c":"r12","note":"（分支一·复活成功）：status==0 直接 return——设备还在，不重新枚举。"},{"c":"r13","note":"（分支二·本剧本走这支）：全新设备/复活失败 → hub_port_connect 全新枚举（接⑦）——去抖与复位在此之前已由 port_event 侧完成，下面补看那两台状态机。","ev":[{"op":"td","set":{"④ 连接变化":"✓ → hub_port_connect（全新枚举）"}}]},{"c":"r14","note":"接上戏份：port_event 读口发现连接位翻转后先去抖——「采样→比较→累加/清零→睡 25ms」的循环，规范 TATTDB ≥100ms。","ph":"⑤ 去抖状态机：25ms 步进 × ≥100ms 稳定（hub_port_debounce）"},{"c":"r15","note":"去抖状态机（源码即状态机）。"},{"c":"r16","note":"第 1 圈（t=25ms）：读口——无连接变化位 且 连接位与上次相同 → 稳定计数累加 25ms。","refs":["r_tattdb"],"ev":[{"op":"dev","set":{"稳定计数":"25 ms","连接位":"1（稳定在位）"}},{"op":"td","set":{"⑤ 去抖":"采样中（25/100ms）"}}]},{"c":"r17","note":"清掉连接变化位；总时长未到 2s → 睡 25ms 回圈。"},{"c":"r16","note":"第 2 圈（t=50ms）：仍稳定 → 50ms。","ev":[{"op":"dev","set":{"稳定计数":"50 ms"}}]},{"c":"r16","note":"第 3 圈（t=75ms）：仍稳定 → 75ms。","ev":[{"op":"dev","set":{"稳定计数":"75 ms"}}]},{"c":"r16","note":"第 4 圈（t=100ms）：stable_time ≥ 100ms（HUB_DEBOUNCE_STABLE）→ break——接稳了。","ev":[{"op":"dev","set":{"稳定计数":"100 ms ✓（≥TATTDB）"}},{"op":"td","set":{"⑤ 去抖":"✓ 100ms 稳定达标"}}]},{"c":"r18","note":"出口：稳定不足 100ms 才 -ETIMEDOUT；本例返回最终 portstatus（步骤⑥用同一份状态）。"},{"c":"r19","note":"复位是「让设备回到Default、顺便报速度」的总开关——时长按端口角色三档，复位后 ep0 包长按速度定值。","ph":"⑥ 复位定速：hub_port_init 的开局三步"},{"c":"r20","note":"三档初值＋总超时：根口 60ms（规范 §7.1.7.5 要求根口 ≥50ms，内核多留裕量）、普通口 10ms、低速口 200ms、总超时 800ms。","refs":["r_tdrst"]},{"c":"r21","note":"按角色选值：本例 hub 下行口非根口 → delay=HUB_SHORT_RESET_TIME（10ms）；低速设备翻 200ms 档（老设备兼容）。"},{"c":"r22","note":"发复位并等待——复位里驱动 SE0（§7.1.7.5），结束后设备回 Default 态、速度已知。","ev":[{"op":"dev","set":{"速度":"复位中 → HS（高速）"}}]},{"c":"r23","note":"复位不得换速（SS 升速是唯一豁免）——违者直接 fail 重来。","refs":["r_tdrst"]},{"c":"r24","note":"按速度定 ep0 包长：SS/SSP=512、HS=64、LS=8 是定值；FS 先猜 64、再按描述符 bMaxPacketSize0 修正——本例 HS=64。","ev":[{"op":"dev","set":{"速度":"HS ✓","ep0 包长":"64（定值）"}},{"op":"td","set":{"⑥ 复位定速":"✓ 速度=HS · ep0=64","⑦ 枚举开工":"就绪——SET_ADDRESS/描述符走起（0008 的 xHCI 侧六站从这接棒）"}}]},{"c":"r25","note":"一次插拔的 usbcore 面：位图→工作队列→复活判定→去抖状态机→复位定速。SET_ADDRESS 之后的「主机内部」正是 xHC 线（0006-0009）打开的黑盒——hub 线与 xHC 线在此交接。","ev":[{"op":"dev","set":{"当前":"枚举开工（接 0003/0006）"}}]}],"refs":[{"id":"r_tattdb","label":"Table 7-14","src":"USB 2.0（2024-09-27 版）","p":"p216","title":"去抖间隔 TATTDB ≥100ms","quote":"Debounce interval provided by USB system software after attach TATTDB Figure 7-29 100 ms","note":"hub_port_debounce 的 25ms 步进×4 圈=100ms 正是这条的内核实现（数值一致）。"},{"id":"r_tdrst","label":"§7.1.7.5","src":"USB 2.0（2024-09-27 版）","p":"p181","title":"复位时长 TDRST/TRSTRCY","quote":"The reset signaling must be driven for a minimum of 10ms (TDRST). … Hubs and devices must be able to accept a SetAddress() request … after the reset recovery time 10 ms (TRSTRCY) after the reset is removed.","note":"内核三档初值（10/60/200ms）都 ≥TDRST；根口 60ms 另满足 §7.1.7.5 根口 ≥50ms 的加严条款。"},{"id":"r_attach","label":"§7.1.5.1","src":"USB 2.0（2024-09-27 版）","p":"p169","title":"attach＝设备拉 D+/D- 上拉（速度声明）","quote":"Full-speed and low-speed devices are differentiated by the position of the pull-up resistor on the downstream end of the cable: Full-speed devices are terminated as shown in Figure 7-20 with the pull-up resistor on the D+ line. Low-speed devices are terminated as shown in Figure 7-21 with the pull-up resistor on the D- line.","note":"步骤①的电气面：FS 拉 D+、LS 拉 D-——hub 靠上拉位置判速度（图 7-29 时序）。"}],"world0":{"rings":{},"dev":{"title":"端口面板（hub 下行口 2 · 规范 §7.1.5/§7.1.7 视角）","VBUS":"已供电（主机→hub）","D+ 上拉":"已拉起（设备宣告 attach）","连接位":"—（还没读口）","稳定计数":"0 ms","速度":"未知","ep0 包长":"—"},"td":{"title":"七步链账本（usbcore 侧——xHCI 还没登场）","① 供电+attach":"✓ 设备拉 D+ 宣告","② 中断上报":"（待）","③ 工作队列":"（待）","④ 连接变化":"（待）","⑤ 去抖":"（待）","⑥ 复位定速":"（待）","⑦ 枚举开工":"（待）"}}}</script>
+  </div>
+<!--STEPPER:0002:END-->
+
+
   <div class="step"><div class="stepnum">1</div><div><b>物理连接</b>：<strong>谁拉 VBUS</strong>——主机经集线器下行口供电（§7.2 电源分配），hub 不发电、只转发；<strong>谁拉 D+</strong>——设备侧经 1.5 kΩ 上拉到 3.0–3.6 V 声明"我在"（§7.1.5），hub 侧用 15 kΩ 下拉采样分压，且上拉电源须随 VBUS 断开而关断。设备须在 VBUS 达 4.01 V 后 <strong>100 ms</strong> 内完成 attach。<span class="where">§7.1.7.3 Fig 7-29（TSIGATT<100ms、TATTDB 去抖 ≥100ms、TRSTRCY 复位恢复 10ms）</span></div></div>
   <figure>
     <svg viewBox="0 0 880 330" role="img" aria-label="VBUS 与 attach 信号时序" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -179,52 +409,64 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <div class="flow">
     <div class="fnode"><span class="ftag">②</span><b>赋值</b>：把中断端点送来的端口位图逐字节移位拼装，写入 <code>event_bits[0]</code>
 <pre>/* hub.c:799-803 */
-bits = 0;
-for (i = 0; i &lt; urb-&gt;actual_length; ++i)
-        bits |= ((unsigned long) ((*hub-&gt;buffer)[i])) &lt;&lt; (i*8);
-hub-&gt;event_bits[0] = bits;</pre></div>
+		bits = 0;
+		for (i = 0; i &lt; urb-&gt;actual_length; ++i)
+			bits |= ((unsigned long) ((*hub-&gt;buffer)[i]))
+					&lt;&lt; (i*8);
+		hub-&gt;event_bits[0] = bits;</pre></div>
     <div class="fbranch">
       <div class="fnode"><b>判断</b>（status==0 成功路径）：清错误计数（赋值 0），唤醒工作队列
 <pre>/* hub.c:806-810 */
-hub-&gt;nerrors = 0;
-/* Something happened, let hub_wq figure it out */
-kick_hub_wq(hub);</pre></div>
+
+	hub-&gt;nerrors = 0;
+
+	/* Something happened, let hub_wq figure it out */
+	kick_hub_wq(hub);</pre></div>
       <div class="fnode"><b>判断</b>（status&lt;0 失败路径）：先自增再比较，&lt;10 次则 goto 重提交；第 10 次把状态存入 hub-&gt;error
 <pre>/* hub.c:792-794 */
-if ((++hub-&gt;nerrors &lt; 10) || hub-&gt;error)
-        goto resubmit;
-hub-&gt;error = status;</pre></div>
+		if ((++hub-&gt;nerrors &lt; 10) || hub-&gt;error)
+			goto resubmit;
+		hub-&gt;error = status;</pre></div>
     </div>
     <div class="farrow">↓ 成功路径</div>
     <div class="fnode"><span class="ftag">③</span><b>判断＋循环</b>：hub_event 对每个端口检查 <code>change_bits</code>/<code>wakeup_bits</code>，命中者压住 runtime pm 后进入分派
 <pre>/* hub.c:5963-5968 */
-pm_runtime_get_noresume(&amp;port_dev-&gt;dev);
-pm_runtime_barrier(&amp;port_dev-&gt;dev);
-usb_lock_port(port_dev);
-port_event(hub, i);
-usb_unlock_port(port_dev);
-pm_runtime_put_sync(&amp;port_dev-&gt;dev);</pre></div>
+			pm_runtime_get_noresume(&amp;port_dev-&gt;dev);
+			pm_runtime_barrier(&amp;port_dev-&gt;dev);
+			usb_lock_port(port_dev);
+			port_event(hub, i);
+			usb_unlock_port(port_dev);
+			pm_runtime_put_sync(&amp;port_dev-&gt;dev);</pre></div>
     <div class="farrow">↓ 连接变化位</div>
     <div class="fnode"><span class="ftag">④</span><b>判断</b>：老设备还在且端口使能 → 复活校验；<b>赋值</b>：status=0 表示无事可做
 <pre>/* hub.c:5675-5690（节选） */
-if ((portstatus &amp; USB_PORT_STAT_CONNECTION) &amp;&amp; udev &amp;&amp;
-                udev-&gt;state != USB_STATE_NOTATTACHED) {
-        if (portstatus &amp; USB_PORT_STAT_ENABLE) {
-                descr = usb_get_device_descriptor(udev);
-                ...
-                if (descriptors_changed(udev, descr,
-                                udev-&gt;bos)) {</pre></div>
+	if ((portstatus &amp; USB_PORT_STAT_CONNECTION) &amp;&amp; udev &amp;&amp;
+			udev-&gt;state != USB_STATE_NOTATTACHED) {
+		if (portstatus &amp; USB_PORT_STAT_ENABLE) {
+			/*
+			 * USB-3 connections are initialized automatically by
+			 * the hostcontroller hardware. Therefore check for
+			 * changed device descriptors before resuscitating the
+			 * device.
+			 */
+			descr = usb_get_device_descriptor(udev);
+			if (IS_ERR(descr)) {
+				dev_dbg(&amp;udev-&gt;dev,
+						"can't read device descriptor %ld\n",
+						PTR_ERR(descr));
+			} else {
+				if (descriptors_changed(udev, descr,</pre></div>
     <div class="fbranch">
       <div class="fnode">复活成功：<b>判断</b> status==0 → 直接返回（设备还在，不重新枚举）
 <pre>/* hub.c:5715-5717 */
-/* successfully revalidated the connection */
-if (status == 0)
-        return;</pre></div>
+	/* successfully revalidated the connection */
+	if (status == 0)
+		return;</pre></div>
       <div class="fnode">复活失败/新设备 → <b>调用</b> hub_port_connect（接步骤⑤⑥⑦）
 <pre>/* hub.c:5719-5721 */
-usb_unlock_port(port_dev);
-hub_port_connect(hub, port1, portstatus, portchange);
-usb_lock_port(port_dev);</pre></div>
+	usb_unlock_port(port_dev);
+	hub_port_connect(hub, port1, portstatus, portchange);
+	usb_lock_port(port_dev);</pre></div>
     </div>
   </div>
   <div class="step"><div class="stepnum">5</div><div><b>去抖</b>：<code>hub_port_debounce</code> 每 <strong>25 ms</strong> 步进采样，连续稳定 <strong>≥100 ms</strong> 才认为接稳；总超时 <strong>2 s</strong> 放弃。核对规范 TATTDB ≥100 ms（数值一致）。<span class="where">hub.c:4709（宏 :138-140：STEP 25 / STABLE 100 / TIMEOUT 2000）</span></div></div>
@@ -232,36 +474,38 @@ usb_lock_port(port_dev);</pre></div>
   <div class="flow">
     <div class="fnode"><b>调用＋判断</b>：读端口状态；<b>判断</b>：无连接变化位 且 连接位与上次采样相同 → 稳定计数累加，否则清零并记住新状态
 <pre>/* hub.c:4717-4732（节选） */
-for (total_time = 0; ; total_time += HUB_DEBOUNCE_STEP) {
-        ret = usb_hub_port_status(hub, port1, &amp;portstatus, &amp;portchange);
-        if (ret &lt; 0)
-                return ret;
-        if (!(portchange &amp; USB_PORT_STAT_C_CONNECTION) &amp;&amp;
-             (portstatus &amp; USB_PORT_STAT_CONNECTION) == connection) {
-                if (!must_be_connected ||
-                     (connection == USB_PORT_STAT_CONNECTION))
-                        stable_time += HUB_DEBOUNCE_STEP;
-                if (stable_time &gt;= HUB_DEBOUNCE_STABLE)
-                        break;
-        } else {
-                stable_time = 0;
-                connection = portstatus &amp; USB_PORT_STAT_CONNECTION;
-        }</pre></div>
+	for (total_time = 0; ; total_time += HUB_DEBOUNCE_STEP) {
+		ret = usb_hub_port_status(hub, port1, &amp;portstatus, &amp;portchange);
+		if (ret &lt; 0)
+			return ret;
+
+		if (!(portchange &amp; USB_PORT_STAT_C_CONNECTION) &amp;&amp;
+		     (portstatus &amp; USB_PORT_STAT_CONNECTION) == connection) {
+			if (!must_be_connected ||
+			     (connection == USB_PORT_STAT_CONNECTION))
+				stable_time += HUB_DEBOUNCE_STEP;
+			if (stable_time &gt;= HUB_DEBOUNCE_STABLE)
+				break;
+		} else {
+			stable_time = 0;
+			connection = portstatus &amp; USB_PORT_STAT_CONNECTION;
+		}</pre></div>
     <div class="fnode"><b>赋值＋调用</b>：每轮清掉连接变化位；<b>判断</b>：总时长到 2 s 即退出；sleep 25 ms
 <pre>/* hub.c:4734-4741（节选） */
-if (portchange &amp; USB_PORT_STAT_C_CONNECTION) {
-        usb_clear_port_feature(hub-&gt;hdev, port1,
-                        USB_PORT_FEAT_C_CONNECTION);
-}
-if (total_time &gt;= HUB_DEBOUNCE_TIMEOUT)
-        break;
-msleep(HUB_DEBOUNCE_STEP);</pre></div>
+		if (portchange &amp; USB_PORT_STAT_C_CONNECTION) {
+			usb_clear_port_feature(hub-&gt;hdev, port1,
+					USB_PORT_FEAT_C_CONNECTION);
+		}
+
+		if (total_time &gt;= HUB_DEBOUNCE_TIMEOUT)
+			break;
+		msleep(HUB_DEBOUNCE_STEP);</pre></div>
     <div class="fbranch">
       <div class="fnode">出口一：<b>判断</b>稳定不足 100 ms → 超时失败
 <pre>/* hub.c:4747-4749 */
-if (stable_time &lt; HUB_DEBOUNCE_STABLE)
-        return -ETIMEDOUT;
-return portstatus;</pre></div>
+	if (stable_time &lt; HUB_DEBOUNCE_STABLE)
+		return -ETIMEDOUT;
+	return portstatus;</pre></div>
       <div class="fnode">出口二：stable ≥ 100 ms → 以最终 portstatus 返回（步骤⑥用同一份状态）</div>
     </div>
     <div class="farrow">↺ 未达标 → 回到采样（整个函数就是"采样→比较→累加/清零→睡 25ms"的状态机）</div>
@@ -275,14 +519,7 @@ return portstatus;</pre></div>
 #define HUB_SHORT_RESET_TIME	10
 #define HUB_BH_RESET_TIME	50
 #define HUB_LONG_RESET_TIME	200
-#define HUB_RESET_TIMEOUT	800
-
-/* hub.c:4939-4948（选值） */
-if (!hdev-&gt;parent) {
-        delay = HUB_ROOT_RESET_TIME;    /* 根口：规范 §7.1.7.5 */
-...
-if (oldspeed == USB_SPEED_LOW)
-        delay = HUB_LONG_RESET_TIME;</pre></div>
+#define HUB_RESET_TIMEOUT	800</pre></div>
     <div class="farrow">↓</div>
     <div class="fnode"><b>调用</b>：发复位并等待完成（速度在复位后即知）
 <pre>/* hub.c:4952 */
@@ -290,24 +527,30 @@ retval = hub_port_reset(hub, port1, udev, delay, false);</pre></div>
     <div class="farrow">↓</div>
     <div class="fnode"><b>判断</b>：复位不得换速（SS 升速是唯一豁免），违者失败
 <pre>/* hub.c:4959-4964 */
-if (oldspeed != USB_SPEED_UNKNOWN &amp;&amp; oldspeed != udev-&gt;speed &amp;&amp;
-    !(oldspeed == USB_SPEED_SUPER &amp;&amp; udev-&gt;speed &gt; oldspeed)) {
-        dev_dbg(&amp;udev-&gt;dev, "device reset changed speed!\n");
-        goto fail;
-}</pre></div>
+	/* Don't allow speed changes at reset, except usb 3.0 to faster */
+	if (oldspeed != USB_SPEED_UNKNOWN &amp;&amp; oldspeed != udev-&gt;speed &amp;&amp;
+	    !(oldspeed == USB_SPEED_SUPER &amp;&amp; udev-&gt;speed &gt; oldspeed)) {
+		dev_dbg(&amp;udev-&gt;dev, "device reset changed speed!\n");
+		goto fail;
+	}</pre></div>
     <div class="farrow">↓</div>
     <div class="fnode"><b>判断＋赋值</b>：按速度定 ep0 包长——SS/SSP 512、HS 64、LS 8 是定值；FS 需试探（§5.5.3：8/16/32/64）<span class="diff">实现≠规范：内核一次读 64 字节缓冲，§5.5.3 允许只读前 8 字节定 wMaxPacketSize</span>
 <pre>/* hub.c:4971-4985（节选） */
-switch (udev-&gt;speed) {
-case USB_SPEED_SUPER_PLUS:
-case USB_SPEED_SUPER:
-        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(512);
-        break;
-case USB_SPEED_HIGH:            /* fixed at 64 */
-        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);
-        break;
-case USB_SPEED_FULL:            /* 8, 16, 32, or 64 */
-        udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);</pre></div>
+		switch (udev-&gt;speed) {
+		case USB_SPEED_SUPER_PLUS:
+		case USB_SPEED_SUPER:
+			udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(512);
+			break;
+		case USB_SPEED_HIGH:		/* fixed at 64 */
+			udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);
+			break;
+		case USB_SPEED_FULL:		/* 8, 16, 32, or 64 */
+			/* to determine the ep0 maxpacket size, try to read
+			 * the device descriptor to get bMaxPacketSize0 and
+			 * then correct our initial guess.
+			 */
+			udev-&gt;ep0.desc.wMaxPacketSize = cpu_to_le16(64);
+			break;</pre></div>
     <div class="farrow">↓ 进入 SET_ADDRESS 与描述符读取（步骤⑦）</div>
   </div>
   <div class="step"><div class="stepnum">7</div><div><b>设备框架收尾</b>：SET_ADDRESS → 读全量描述符 → <code>usb_new_device</code> 取配置描述符、announce、绑定驱动。此后的每次默认管道读写，都是一记控制传输（见下图）。<span class="where">hub.c:2652</span></div></div>
@@ -437,6 +680,421 @@ case USB_SPEED_FULL:            /* 8, 16, 32, or 64 */
     }
   }
   window.Quiz = { render: render };
+})();
+
+</script>
+<script>
+/* marginnotes.js — 右缘批注组件（课程族共享，配 course.css 的 .mn 段）
+ * 读者在阅读途中随时把问题记在右缘（锚定最近的 h2/h3 节）；读完课把批注交给 LLM：
+ *   ① Chrome/Edge："关联本课文件" 后每次编辑自动写回 .html 内嵌块（File System Access
+ *      API；file:// 与 https:// 均为 secure context）——真正的"及时编辑"，课后直接
+ *      告诉 LLM"读这节课文件里的批注"；
+ *   ② 其它浏览器：导出批注版 HTML（下载，覆盖原文件即可）；
+ *   ③ 最快路径：复制全部批注（markdown），直接粘贴到对话里。
+ * 持久化：localStorage 为工作副本；载入时与文件内嵌 <!--MN:BEGIN--> 块按 id 取并集。
+ * LLM 侧解析：scripts/extract_reader_notes.py <lesson.html>。 */
+(function () {
+  'use strict';
+  try { init(); } catch (e) { /* 组件错误不白屏；无 JS 环境静态呈现不受影响 */ }
+  function init() {
+  var KEY = 'mn:' + location.pathname;
+  var BLOCK_RE = /<!--MN:BEGIN-->[\s\S]*?<!--MN:END-->/;
+  var BLOCK_TPL = function (notes) {
+    var json = JSON.stringify({ lesson: document.title, updated: new Date().toISOString(), notes: notes })
+      .replace(/</g, '\\u003c');
+    return '<!--MN:BEGIN--><script type="application/json" id="mn-data">' + json + '<\/script><!--MN:END-->';
+  };
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function uid() { return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  /* ---- 载入：localStorage ∪ 文件内嵌块 ---- */
+  var notes = [];
+  try { notes = (typeof localStorage !== 'undefined' && JSON.parse(localStorage.getItem(KEY) || '[]')) || []; } catch (e) { notes = []; }
+  var embeddedEl = document.getElementById('mn-data');
+  if (embeddedEl) {
+    try {
+      (JSON.parse(embeddedEl.textContent).notes || []).forEach(function (n) {
+        if (!notes.some(function (x) { return x.id === n.id; })) notes.push(n);
+      });
+    } catch (e) { /* 坏块忽略 */ }
+  }
+  function saveLocal() {
+    try { if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, JSON.stringify(notes)); } catch (e) { /* 隐私模式等 */ }
+  }
+
+  /* ---- 锚点：最近的 h2/h3 ---- */
+  var heads = Array.prototype.slice.call(document.querySelectorAll('main h2, main h3'));
+  function anchorOf(el) {
+    var h = null;
+    for (var i = 0; i < heads.length; i++) {
+      if (heads[i].compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) h = heads[i];
+      else break;
+    }
+    return h ? h.textContent.trim().slice(0, 60) : '（开头）';
+  }
+
+  /* ---- 右缘栏 + 行内 ✎ ---- */
+  document.body.classList.add('mn-on');
+  var rail = document.createElement('aside');
+  rail.className = 'mn-rail';
+  rail.innerHTML = '<div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+    '<button type="button" class="mn-add">＋ 记一笔（锚定当前读到的节）</button>' +
+    '<div class="mn-list"></div>' +
+    '<div class="mn-actions">' +
+    '<button type="button" class="mn-link">🔗 关联本课文件（自动写回）</button>' +
+    '<button type="button" class="mn-dl">⬇ 导出批注版 HTML</button>' +
+    '<button type="button" class="mn-cp">📋 复制全部批注</button></div>' +
+    '<div class="mn-tip">读完后告诉老师：读这节课文件里的批注并逐条回答。</div>';
+  document.body.appendChild(rail);
+  var listEl = rail.querySelector('.mn-list'), cntEl = rail.querySelector('.mn-cnt');
+
+  var editId = null;
+  function openEditor(prefill) {
+    var id = editId;
+    var box = document.createElement('div');
+    box.className = 'mn-editor';
+    box.innerHTML = '<div class="mn-eanchor">锚点：' + esc(prefill.anchor) + '</div>' +
+      '<textarea rows="3" placeholder="记下你的问题/想法…（自动保存；随文件写回或复制给老师）"></textarea>' +
+      '<div><button type="button" class="mn-save">保存</button> ' +
+      '<button type="button" class="mn-cancel">取消</button> ' +
+      '<button type="button" class="mn-del">删除</button></div>';
+    var ta = box.querySelector('textarea');
+    ta.value = prefill.text || '';
+    box.querySelector('.mn-save').addEventListener('click', function () {
+      var t = ta.value.trim();
+      if (t) {
+        if (id) { var n = notes.find(function (x) { return x.id === id; }); if (n) { n.text = t; n.ts = Date.now(); } }
+        else notes.push({ id: uid(), anchor: prefill.anchor, text: t, ts: Date.now() });
+      } else if (id) notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    box.querySelector('.mn-cancel').addEventListener('click', function () { editId = null; box.remove(); });
+    box.querySelector('.mn-del').addEventListener('click', function () {
+      notes = notes.filter(function (x) { return x.id !== id; });
+      editId = null; saveLocal(); render(); box.remove(); scheduleWrite();
+    });
+    rail.insertBefore(box, listEl);
+    ta.focus();
+  }
+  function render() {
+    cntEl.textContent = notes.length ? '（' + notes.length + '）' : '';
+    listEl.innerHTML = notes.length ? '' : '<div class="mn-empty">还没有批注。读到有疑问处，点节标题旁的 ✎ 或"记一笔"。</div>';
+    notes.slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (n) {
+      var d = document.createElement('div');
+      d.className = 'mn-item';
+      d.innerHTML = '<div class="mn-anchor">@' + esc(n.anchor) + '</div>' +
+        '<div class="mn-text">' + esc(n.text) + '</div>';
+      d.addEventListener('click', function () { editId = n.id; openEditor({ anchor: n.anchor, text: n.text }); });
+      listEl.appendChild(d);
+    });
+  }
+  rail.querySelector('.mn-add').addEventListener('click', function () {
+    /* 预取"当前读到"：视口内最后一个 h2/h3 */
+    var vis = heads.filter(function (h) { var r = h.getBoundingClientRect(); return r.top < innerHeight * 0.7; });
+    openEditor({ anchor: vis.length ? vis[vis.length - 1].textContent.trim().slice(0, 60) : '（开头）' });
+  });
+  heads.forEach(function (h) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mn-pen'; b.title = '在这一节记批注'; b.textContent = '✎';
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      editId = null;
+      openEditor({ anchor: h.textContent.trim().slice(0, 60) });
+    });
+    h.appendChild(b);
+  });
+  render();
+
+  /* ---- 写回/导出/复制 ---- */
+  var fh = null, fhText = null, writeTimer = null;
+  function scheduleWrite() {
+    if (!fh) return;
+    if (writeTimer) clearTimeout(writeTimer);
+    writeTimer = setTimeout(writeBack, 800);
+  }
+  async function writeBack() {
+    if (!fh) return;
+    try {
+      var w = await fh.createWritable();
+      await w.write(serializeInto(fhText));
+      await w.close();
+      rail.classList.add('mn-saved');
+      setTimeout(function () { rail.classList.remove('mn-saved'); }, 900);
+    } catch (e) { rail.querySelector('.mn-tip').textContent = '⚠ 自动写回失败：' + e.message + '（可用导出/复制兜底）'; }
+  }
+  function serializeInto(text) {
+    var block = BLOCK_TPL(notes);
+    if (BLOCK_RE.test(text)) return text.replace(BLOCK_RE, block);
+    if (/<\/body>/i.test(text)) return text.replace(/<\/body>/i, block + '\n</body>');
+    return text + '\n' + block;
+  }
+  rail.querySelector('.mn-link').addEventListener('click', async function () {
+    if (!window.showOpenFilePicker) {
+      rail.querySelector('.mn-tip').textContent = '此浏览器不支持直接写回（需 Chrome/Edge）。请用"导出批注版 HTML"或"复制全部批注"。';
+      return;
+    }
+    try {
+      var arr = document.contentType && document.contentType.indexOf('html') >= 0 ? [{
+        types: [{ description: 'HTML lesson', accept: { 'text/html': ['.html'] } }]
+      }] : undefined;
+      var handles = await window.showOpenFilePicker(arr && arr[0] ? { types: arr[0].types } : undefined);
+      fh = handles[0];
+      var r = await fh.getFile();
+      fhText = await r.text();
+      await writeBack();
+      rail.querySelector('.mn-link').textContent = '✅ 已关联：' + r.name + '（编辑即写回）';
+    } catch (e) { /* 用户取消等 */ }
+  });
+  rail.querySelector('.mn-dl').addEventListener('click', function () {
+    Promise.resolve(fhText || null).then(function (base) {
+      var text = base || ('<!DOCTYPE html>\n' + document.documentElement.outerHTML);
+      var blob = new Blob([serializeInto(text)], { type: 'text/html' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || 'lesson') + '-批注版.html';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
+    });
+  });
+  rail.querySelector('.mn-cp').addEventListener('click', function () {
+    var md = '# 《' + document.title + '》读者批注（' + notes.length + ' 条）\n\n' +
+      notes.slice().sort(function (a, b) { return a.ts - b.ts; })
+        .map(function (n) { return '## @' + n.anchor + '\n\n' + n.text + '\n'; }).join('\n');
+    var done = function () { rail.querySelector('.mn-tip').textContent = '✅ 已复制——直接粘贴给老师即可。'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(md).then(done);
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = md; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { }
+      ta.remove();
+    }
+  });
+  } /* init */
+})();
+
+</script>
+<script>
+/* codestepper.js — 代码步进放映机（课程族共享，配 course.css 的 .stepper 段）
+ * 数据驱动：宿主 div.stepper 内嵌 <script type="application/json" class="stepper-data">
+ *   { title, intro, baseline, phases[], rows[], frames[], refs[], world0 }
+ * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
+ * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
+ * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 账本。 */
+(function () {
+  'use strict';
+
+  /* ---------- 世界渲染（纯函数：state → HTML 字符串） ---------- */
+  var RING_ORDER = ['xfer', 'cmd', 'evt'];
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function cellHtml(c, ring, i, st) {
+    var cls = 'stw-cell st-' + (c.st || 'empty');
+    var ptr = [];
+    if (st && st.rings[ring].enq === i) ptr.push('<i class="stw-ptr pe">写▸enq</i>');
+    if (st && st.rings[ring].deq === i) ptr.push('<i class="stw-ptr pd">取▸deq</i>');
+    if (ring === 'evt') { /* 事件环指针语义反转，标签在 CSS 里换 */
+    }
+    return '<div class="' + cls + '">' + ptr.join('') +
+      '<b>' + esc(c.a) + '</b><span class="stw-t">' + (c.t ? esc(c.t) : '空') + '</span>' +
+      (c.f ? '<span class="stw-f">' + esc(c.f) + '</span>' : '') +
+      '<span class="stw-cyc">cyc=' + esc(c.cyc) + '</span></div>';
+  }
+  function worldHtml(W) {
+    var h = '';
+    RING_ORDER.forEach(function (k) {
+      if (!W.rings[k]) return;
+      var r = W.rings[k];
+      h += '<div class="stw-ring"><div class="stw-rhead"><b>' + esc(r.label) + '</b>' +
+        '<span class="stw-own">' + esc(r.own) + '</span></div><div class="stw-cells">';
+      r.cells.forEach(function (c, i) { h += cellHtml(c, k, i, W); });
+      h += '</div></div>';
+    });
+    ['dev', 'td'].forEach(function (k) {
+      if (!W[k]) return;
+      var b = W[k];
+      h += '<div class="stw-box"><b>' + esc(b.title) + '</b><table>';
+      Object.keys(b).forEach(function (f) {
+        if (f === 'title') return;
+        h += '<tr><th>' + esc(f) + '</th><td>' + esc(b[f]) + '</td></tr>';
+      });
+      h += '</table></div>';
+    });
+    return h;
+  }
+  function applyEv(W, ev) { /* 就地应用一条事件（深拷贝由调用方保证） */
+    if (!ev) return;
+    if (ev.op === 'cell') {
+      var c = W.rings[ev.ring].cells[ev.i];
+      Object.keys(ev.set || {}).forEach(function (k) { c[k] = ev.set[k]; });
+    } else if (ev.op === 'ptr') {
+      if (typeof ev.enq === 'number') W.rings[ev.ring].enq = ev.enq;
+      if (typeof ev.deq === 'number') W.rings[ev.ring].deq = ev.deq;
+    } else if (ev.op === 'dev' || ev.op === 'td') {
+      Object.keys(ev.set || {}).forEach(function (k) { W[ev.op][k] = ev.set[k]; });
+    }
+  }
+  function stateAt(D, idx) {
+    var W = JSON.parse(JSON.stringify(D.world0));
+    for (var i = 0; i <= idx && i < D.frames.length; i++)
+      (D.frames[i].ev || []).forEach(function (e) { applyEv(W, e); });
+    return W;
+  }
+
+  /* ---------- 弹窗（全局单例，多 stepper 共用） ---------- */
+  var modal = null;
+  function ensureModal() {
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'st-modal';
+    modal.innerHTML = '<div class="st-mbox" role="dialog" aria-modal="true">' +
+      '<button type="button" class="st-mclose">✕ 关闭</button><div class="st-mbody"></div></div>';
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || (e.target.getAttribute && e.target.getAttribute('class') === 'st-mclose'))
+        modal.classList.remove('show');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') modal.classList.remove('show');
+    });
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function showRef(ref) {
+    var m = ensureModal();
+    m.querySelector('.st-mbody').innerHTML =
+      '<h4>' + esc(ref.label) + ' · ' + esc(ref.title) + '</h4>' +
+      '<p class="st-msrc">' + esc(ref.src) + (ref.p ? ' · ' + esc(ref.p) : '') + '</p>' +
+      (ref.quote ? '<blockquote>' + esc(ref.quote) + '</blockquote>' : '') +
+      (ref.note ? '<p class="st-mnote">' + esc(ref.note) + '</p>' : '');
+    m.classList.add('show');
+  }
+
+  /* ---------- 每台 stepper 的初始化 ---------- */
+  function initStepper(root) {
+    var dataEl = root.querySelector('script.stepper-data');
+    if (!dataEl) return;
+    var D;
+    try { D = JSON.parse(dataEl.textContent); } catch (e) { return; /* 静态内容保留 */ }
+    var rows = {}, rowEls = {};
+    D.rows.forEach(function (r) { rows[r.id] = r; });
+    Array.prototype.forEach.call(root.querySelectorAll('.st-crow'), function (el) {
+      rowEls[el.getAttribute('data-id')] = el;
+    });
+    var codeBox = root.querySelector('.st-code');
+    var worldBox = root.querySelector('.st-world');
+    var noteBox = root.querySelector('.st-note');
+    var refsBox = root.querySelector('.st-refs');
+    if (!codeBox || !worldBox || !noteBox) return;
+
+    /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
+    var idx = 0, timer = null, lastWorld = null;
+    var N = D.frames.length;
+    var refMap = {};
+    (D.refs || []).forEach(function (r) { refMap[r.id] = r; });
+
+    /* 控制条 */
+    var ctl = document.createElement('div');
+    ctl.className = 'st-ctl';
+    ctl.innerHTML = '<button type="button" data-a="prev">◀ 上一行</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一行 ▶</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<span class="st-count"></span><span class="st-ph"></span>' +
+      '<span class="st-hint">←/→ 键也可步进</span>';
+    root.insertBefore(ctl, root.querySelector('.st-grid'));
+    var countEl = ctl.querySelector('.st-count'), phEl = ctl.querySelector('.st-ph');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+
+    /* 引用条（chips） */
+    var chips = document.createElement('div');
+    chips.className = 'st-chips';
+    (D.refs || []).forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'st-chip'; b.textContent = r.label + ' ' + r.title;
+      b.title = '查看规范原文'; b.setAttribute('data-ref', r.id);
+      b.addEventListener('click', function () { showRef(refMap[r.id]); });
+      chips.appendChild(b);
+    });
+    if (refsBox) { refsBox.innerHTML = ''; refsBox.appendChild(chips); }
+
+    function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = '播放'; }
+    function go(i) {
+      idx = Math.max(0, Math.min(N - 1, i));
+      var fr = D.frames[idx];
+      /* 当前行高亮 + 滚动跟随 */
+      Object.keys(rowEls).forEach(function (id) { rowEls[id].classList.remove('cur', 'done'); });
+      var cur = rowEls[fr.c];
+      if (cur) { cur.classList.add('cur'); cur.scrollIntoView({ block: 'nearest' }); }
+      /* 已执行过的同段行打 done（当前行之前出现过的行） */
+      var seen = {};
+      for (var k = 0; k <= idx; k++) seen[D.frames[k].c] = true;
+      Object.keys(seen).forEach(function (id) { if (rowEls[id] && id !== fr.c) rowEls[id].classList.add('done'); });
+      /* 世界面板重放 */
+      var W = stateAt(D, idx);
+      worldBox.innerHTML = worldHtml(W);
+      worldBox.classList.add('live');
+      lastWorld = W;
+      /* 当行解说 + 活跃引用 */
+      noteBox.innerHTML = (fr.note ? fr.note : '<span class="st-mut">（本行无注记）</span>') +
+        (fr.refs && fr.refs.length
+          ? ' <span class="st-fref">' + fr.refs.map(function (id) {
+              var r = refMap[id]; if (!r) return '';
+              return '<button type="button" class="st-chip on" data-ref="' + id + '">📎 ' + esc(r.label) + '</button>';
+            }).join('') + '</span>'
+          : '');
+      Array.prototype.forEach.call(noteBox.querySelectorAll('[data-ref]'), function (b) {
+        b.addEventListener('click', function () { showRef(refMap[b.getAttribute('data-ref')]); });
+      });
+      countEl.textContent = '行 ' + (idx + 1) + ' / ' + N;
+      phEl.textContent = fr.ph ? '· ' + fr.ph : '';
+      if (idx === N - 1) stop();
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { stop(); go(idx - 1); }
+      else if (a === 'next') { stop(); go(idx + 1); }
+      else if (a === 'reset') { stop(); go(0); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        if (idx === N - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === N - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2000);
+      }
+    });
+    /* 行点击跳帧：该行最近一次出现的帧 */
+    Object.keys(rowEls).forEach(function (id) {
+      rowEls[id].addEventListener('click', function () {
+        stop();
+        for (var k = idx; k < N; k++) if (D.frames[k].c === id) return go(k);
+        for (k = 0; k < N; k++) if (D.frames[k].c === id) return go(k);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      var r = root.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return; /* 只在视野内接管方向键 */
+      if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
+      else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
+    });
+    go(0);
+  }
+
+  document.querySelectorAll('.stepper').forEach(function (el) {
+    try { el.classList.add('js'); initStepper(el); }
+    catch (e) { /* 静态内容保留，组件自身错误不白屏 */ }
+  });
 })();
 
 </script>
