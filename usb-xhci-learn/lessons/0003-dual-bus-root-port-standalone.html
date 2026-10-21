@@ -658,6 +658,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 })();
 
 </script>
+<!--QUIZ:0003:BEGIN-->
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '双总线',
@@ -677,5 +678,6 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'A 对。xhci.c 里 usb2_rhub（:5379）与 usb3_rhub（:372）两套根 hub 结构共享物理根口，分别注册在 USB2 总线与 SS 总线上；/sys/bus/usb/devices 下可见成对根 hub（如 usb1、usb2）。正因如此，hub.c 的同一个 hub_event 循环和同一套 ch9 框架能服务两代设备。' }
 ]);
 </script>
+<!--QUIZ:0003:END-->
 </body>
 </html>

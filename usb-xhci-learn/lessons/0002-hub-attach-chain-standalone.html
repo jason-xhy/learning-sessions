@@ -1306,6 +1306,7 @@ retval = hub_port_reset(hub, port1, udev, delay, false);</pre></div>
 })();
 
 </script>
+<!--QUIZ:0002:BEGIN-->
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '链路时序',
@@ -1330,5 +1331,6 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'A 对。hub_port_init（hub.c:4979-4985）：FS 的 ep0 可以是 8/16/32/64（§5.5.3），内核先按 64 猜、读设备描述符的 bMaxPacketSize0 再修正；SS/SSP=512、HS=64、LS=8 是定值。【实现≠规范】§5.5.3 允许主机只读描述符前 8 字节来确定 wMaxPacketSize，内核实际一次读 64 字节缓冲（GET_DESCRIPTOR_BUFSIZE，hub.c:4932）——读法不同，判据相同。' }
 ]);
 </script>
+<!--QUIZ:0002:END-->
 </body>
 </html>

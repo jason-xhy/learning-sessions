@@ -1071,6 +1071,7 @@ static void hub_tt_work(struct work_struct *work)
 })();
 
 </script>
+<!--QUIZ:0004:BEGIN-->
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: 'TT 翻译',
@@ -1095,5 +1096,6 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'D 对。split 的构造与调度由 xHC 硬件承担——驱动只填上下文：tt_info "used to construct split transaction tokens"（xhci.h:346）、think_time/666-1 进 TT_THINK_TIME（xhci.c:5337-5342）。usbcore 侧只剩错误恢复：hub_clear_tt_buffer（hub.c:816-831，§11.24.2.3，控制端点双向各清一次 devinfo^0x8000），经 hub_tt_work 异步执行（:840、:1587）。' }
 ]);
 </script>
+<!--QUIZ:0004:END-->
 </body>
 </html>

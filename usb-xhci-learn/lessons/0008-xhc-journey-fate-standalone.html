@@ -1846,6 +1846,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
 })();
 
 </script>
+<!--QUIZ:0008:BEGIN-->
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '标本时序',
@@ -1880,5 +1881,6 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'D 对（本课专题二代码步进器）：STALL 事件→finish_td 判 halt→EP_HALTED＋Reset Endpoint（硬）；Reset EP 完成处理器发现 hw_deq 压在取消 TD 上→td_to_noop＋Set TR Dequeue Pointer（SET_DEQ_PENDING）；Set TR Deq 完成才 td_cleanup 交还 -EPIPE。A 的 Stop Endpoint 属于 URB 取消/停机路径（EP_STOP_CMD_PENDING）；B 的 D+A 属于之后的 usb_clear_halt 阶段（且被 EP_HARD_CLEAR_TOGGLE 消费跳过，:3361-3365）；C 是设备级操作，粒度完全不对。' }
 ]);
 </script>
+<!--QUIZ:0008:END-->
 </body>
 </html>

@@ -2707,6 +2707,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 })();
 
 </script>
+<!--QUIZ:0007:BEGIN-->
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '环合同',
@@ -2765,7 +2766,7 @@ Quiz.render(document.getElementById('quiz'), [
     answer: 2,
     explain: 'C 对（整体定位约定框＋环机制地图）。TRB 控制字、Link TRB、门铃寄存器、事件环全部住在主存与 MMIO 里，USB 线上只传令牌、数据包与握手——设备固件对环一无所知，bulk IN 时它只是「应令牌回数据、收 ACK」的一方。A 与 B 编造了不存在的抄送与包头字段；D 把「共享内存」的主人说成了三方——它只在软件与 xHC 之间共享。' }
 ]);
-
 </script>
+<!--QUIZ:0007:END-->
 </body>
 </html>

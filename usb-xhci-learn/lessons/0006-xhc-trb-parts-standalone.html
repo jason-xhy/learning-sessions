@@ -1856,6 +1856,7 @@ struct xhci_transfer_event {
 })();
 
 </script>
+<!--QUIZ:0006:BEGIN-->
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '结构关系',
@@ -1890,5 +1891,6 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'B 对。xhci-mem.c:129-130 只对 ring->last_seg 段尾 Link 置 LINK_TOGGLE——中间段 Link 只跳转不翻轮次，多段环转一整圈 cycle_state 只翻一次（对 0007 cycle 合同的关键补全）。扩容时这条不变量被精心维护：新段按独立小环初始化（新末段带 TC），splice 后把多余 TC 撤掉（xhci-mem.c:169-177），全环永远恰一个 TC。C 是事件环的几何方案（0007 第 2 章）；D 无此语义。' }
 ]);
 </script>
+<!--QUIZ:0006:END-->
 </body>
 </html>

@@ -2340,6 +2340,7 @@ static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xh
 })();
 
 </script>
+<!--QUIZ:0009:BEGIN-->
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '控制语法',
@@ -2409,5 +2410,6 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'A 对（第 6 章）。xHC 按线上完成顺序写事件环（Data 阶段短包先、Status 收尾后），驱动 while (unhandled_event_trb) 单循环每圈恰好消费 dequeue 处一颗（:3117-3120/:3135-3142）——无重排无优先级；EV2 的 :2391-2392 靠 EV1 已置的 urb_length_set 保住 18 不被覆盖。B/D 错——顺序是结构保证不是择要处理；C 错——整条链在同一个 hardirq 上下文持一把 xhci->lock 里跑完（xhci_giveback_urb_in_irq 名字里 in_irq 的由来）。' }
 ]);
 </script>
+<!--QUIZ:0009:END-->
 </body>
 </html>
