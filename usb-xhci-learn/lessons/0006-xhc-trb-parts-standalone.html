@@ -111,8 +111,11 @@ td.good { background: #e9f7ee; }
 footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
 
 /* ===== 代码步进放映机（assets/codestepper.js；静态优先：无 JS 时代码全列+world0+refs 全可读） =====
-   v2（2026-10-20 用户四条修正）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
-   普通行无行号）；语句/调用级帧；双栏加大加高。 */
+   v2（2026-10-20）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
+   普通行无行号）；语句/调用级帧；双栏加大加高。
+   v3（2026-10-21 用户裁定"窗口太大"）：宽度不再一刀切 96vw——JS 量出最长代码行实际
+   渲染宽度后给 .st-code 与整台 .stepper 设定紧致像素宽（prose 行不驱动宽度）；
+   无 JS 静态态回落 min(96vw,1720px)；面板高度 44rem→36rem。 */
 .stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
 .stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
 .stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
@@ -124,8 +127,10 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
 .stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
 @media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
-.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 44rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 36rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
 .stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; }
+/* prose 行（相标/上下文/硬件旁白）可折行，不参与代码宽度测量 */
+.stepper .st-crow.ctx, .stepper .st-crow.hw, .stepper .st-crow.ph { white-space: normal; }
 .stepper .st-crow code { font: inherit; }
 .stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
 .stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: var(--muted); font-size: .74rem; }
@@ -138,7 +143,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper.js .st-crow:hover { background: #f4f4ee; }
 .stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
 .stepper.js .st-crow.done { opacity: .66; }
-.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 44rem; overflow-y: auto; }
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 36rem; overflow-y: auto; }
 .stepper .stw-ring { margin: .35rem 0 .6rem; }
 .stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
 .stepper .stw-rhead b { font-size: .84rem; }
@@ -177,12 +182,17 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
 .st-modal .st-mnote { font-size: .88rem; }
 
-/* ===== 右缘批注（assets/marginnotes.js） ===== */
-@media (min-width: 1180px) {
-  body.mn-on { padding-right: 264px; }
-  body.mn-on .mn-rail { display: flex; }
-}
-.mn-rail { display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 252px; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 40; }
+/* ===== 右缘批注（assets/marginnotes.js）—— v2 滑动抽屉（2026-10-21 用户裁定）：
+   默认收起；鼠标滑到右缘热区（或点右缘竖标签）弹出；✕ 收起、📌 钉住；编辑器在场不自动收。 ===== */
+.mn-zone { position: fixed; top: 0; right: 0; bottom: 0; width: 18px; z-index: 58; }
+.mn-tab { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 59; writing-mode: vertical-rl; font: inherit; font-size: .78rem; letter-spacing: .06em; padding: .7rem .25rem; border: 1px solid var(--line); border-right: 0; border-radius: 6px 0 0 6px; background: #f4f2e8; color: #55503f; cursor: pointer; }
+.mn-tab:hover { background: #ece9db; color: var(--ink); }
+.mn-rail { position: fixed; top: 0; right: 0; bottom: 0; width: 264px; display: flex; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 60; box-shadow: -5px 0 16px rgba(30,28,18,.10); transform: translateX(103%); visibility: hidden; transition: transform .25s ease, visibility 0s linear .25s; }
+.mn-rail.open { transform: translateX(0); visibility: visible; transition: transform .25s ease; }
+.mn-headrow { display: flex; align-items: center; gap: .35rem; }
+.mn-head { font-weight: 700; font-size: .95rem; flex: 1; }
+.mn-rail .mn-pin, .mn-rail .mn-shut { font: inherit; font-size: .74rem; padding: .15rem .45rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; white-space: nowrap; }
+.mn-rail.pinned .mn-pin { border-color: var(--accent); background: #fff3c4; }
 .mn-rail .mn-head { font-weight: 700; font-size: .95rem; }
 .mn-rail .mn-cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
 .mn-rail button { font: inherit; font-size: .8rem; padding: .25rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; text-align: left; }
@@ -207,10 +217,11 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   .explain { display: block; }
   .player .frame { display: block !important; }
   .player .pctl { display: none; }
-  .mn-rail, .mn-pen { display: none !important; }
-  body.mn-on { padding-right: 1rem; }
+  .mn-rail, .mn-pen, .mn-tab, .mn-zone { display: none !important; }
+  .stepper { position: static; transform: none; width: auto !important; }
+  .stepper .st-grid { grid-template-columns: 1fr; }
   .stepper .st-ctl { display: none; }
-  .stepper .st-code { max-height: none; }
+  .stepper .st-code { width: auto !important; max-height: none; }
   .st-modal { display: none !important; }
 }
 
@@ -1234,6 +1245,8 @@ struct xhci_transfer_event {
 </script>
 <script>
 /* marginnotes.js — 右缘批注组件（课程族共享，配 course.css 的 .mn 段）
+ * v2（2026-10-21 用户裁定）：滑动抽屉——默认收起，鼠标滑到屏幕右缘热区或点右缘
+ * 竖标签弹出；📌 钉住后离开不收；编辑器在场不自动收。
  * 读者在阅读途中随时把问题记在右缘（锚定最近的 h2/h3 节）；读完课把批注交给 LLM：
  *   ① Chrome/Edge："关联本课文件" 后每次编辑自动写回 .html 内嵌块（File System Access
  *      API；file:// 与 https:// 均为 secure context）——真正的"及时编辑"，课后直接
@@ -1286,11 +1299,15 @@ struct xhci_transfer_event {
     return h ? h.textContent.trim().slice(0, 60) : '（开头）';
   }
 
-  /* ---- 右缘栏 + 行内 ✎ ---- */
+  /* ---- 右缘栏（v2 滑动抽屉）+ 行内 ✎ ----
+   * 默认收起；鼠标滑到右缘热区或点竖标签弹出；✕ 收起、📌 钉住（钉住=离开不收）；
+   * 编辑器在场/聚焦时不自动收——打字打到一半抽屉消失是最糟的体验。 */
   document.body.classList.add('mn-on');
   var rail = document.createElement('aside');
   rail.className = 'mn-rail';
-  rail.innerHTML = '<div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+  rail.innerHTML = '<div class="mn-headrow"><div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+    '<button type="button" class="mn-pin">📌 钉住</button>' +
+    '<button type="button" class="mn-shut">✕</button></div>' +
     '<button type="button" class="mn-add">＋ 记一笔（锚定当前读到的节）</button>' +
     '<div class="mn-list"></div>' +
     '<div class="mn-actions">' +
@@ -1299,10 +1316,57 @@ struct xhci_transfer_event {
     '<button type="button" class="mn-cp">📋 复制全部批注</button></div>' +
     '<div class="mn-tip">读完后告诉老师：读这节课文件里的批注并逐条回答。</div>';
   document.body.appendChild(rail);
+  var zone = document.createElement('div');
+  zone.className = 'mn-zone';
+  document.body.appendChild(zone);
+  var tab = document.createElement('button');
+  tab.type = 'button'; tab.className = 'mn-tab'; tab.textContent = '📝 边读边记';
+  tab.title = '点开批注栏（或把鼠标滑到屏幕右缘）';
+  document.body.appendChild(tab);
   var listEl = rail.querySelector('.mn-list'), cntEl = rail.querySelector('.mn-cnt');
+  var pinBtn = rail.querySelector('.mn-pin'), shutBtn = rail.querySelector('.mn-shut');
+  var pinned = false, closeTimer = null;
+  function editorAlive() { return !!rail.querySelector('.mn-editor'); }
+  function setPin(v) {
+    pinned = v;
+    rail.classList.toggle('pinned', v);
+    pinBtn.textContent = v ? '📌 已钉住' : '📌 钉住';
+  }
+  function openRail(pin) {
+    if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+    rail.classList.add('open');
+    if (pin) setPin(true);
+  }
+  function closeRail() {
+    if (editorAlive()) return; /* 编辑器在场不收 */
+    setPin(false);
+    rail.classList.remove('open');
+  }
+  function scheduleClose() {
+    if (pinned || editorAlive()) return;
+    if (closeTimer) clearTimeout(closeTimer);
+    closeTimer = setTimeout(function () { if (!rail.matches(':hover')) closeRail(); }, 400);
+  }
+  zone.addEventListener('mouseenter', function () { openRail(false); });
+  tab.addEventListener('mouseenter', function () { openRail(false); }); /* 标签叠在热区中段（z 更高）：hover 也弹出，整条右缘统一响应；点击才钉住 */
+  tab.addEventListener('click', function () { openRail(true); });
+  pinBtn.addEventListener('click', function () { setPin(!pinned); });
+  shutBtn.addEventListener('click', closeRail);
+  rail.addEventListener('mouseenter', function () { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } });
+  rail.addEventListener('mouseleave', scheduleClose);
+  /* 看门狗：鼠标从未进过抽屉就往左走时，rail 的 mouseleave 不会触发——
+   * document 级 mousemove 兜底：开着、未钉、无编辑器、光标已远离右缘 → 排程收起。 */
+  document.addEventListener('mousemove', function (e) {
+    if (!rail.classList.contains('open') || pinned || editorAlive()) return;
+    if (e.clientX < innerWidth - 290) scheduleClose();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && rail.classList.contains('open')) closeRail();
+  });
 
   var editId = null;
   function openEditor(prefill) {
+    openRail(true); /* 从行内 ✎ 进入时抽屉必须在场 */
     var id = editId;
     var box = document.createElement('div');
     box.className = 'mn-editor';
@@ -1331,6 +1395,7 @@ struct xhci_transfer_event {
   }
   function render() {
     cntEl.textContent = notes.length ? '（' + notes.length + '）' : '';
+    tab.textContent = '📝 边读边记' + (notes.length ? ' · ' + notes.length : '');
     listEl.innerHTML = notes.length ? '' : '<div class="mn-empty">还没有批注。读到有疑问处，点节标题旁的 ✎ 或"记一笔"。</div>';
     notes.slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (n) {
       var d = document.createElement('div');
@@ -1433,7 +1498,8 @@ struct xhci_transfer_event {
  * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
  * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
  * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
- * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 账本。 */
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 账本。
+ * v3（2026-10-21）：init 后量最宽代码行给 .st-code/.stepper 设定紧致像素宽（宽度自适应）。 */
 (function () {
   'use strict';
 
@@ -1540,6 +1606,7 @@ struct xhci_transfer_event {
     var worldBox = root.querySelector('.st-world');
     var noteBox = root.querySelector('.st-note');
     var refsBox = root.querySelector('.st-refs');
+    var gridBox = root.querySelector('.st-grid');
     if (!codeBox || !worldBox || !noteBox) return;
 
     /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
@@ -1637,7 +1704,51 @@ struct xhci_transfer_event {
       if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
       else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
     });
+
+    /* 宽度自适应（v3 2026-10-21 用户裁定"窗口太大"）：代码窗宽度=实际最宽代码行
+     * （ln/fn）的渲染宽度；prose 行与文字段落不驱动宽度。整台 .stepper 随之紧致，
+     * 上限仍 96vw/1720px（超宽代码回落横向滚动），窄窗堆叠布局下不启用。 */
+    function fitWidth() {
+      if (innerWidth <= 1100) {
+        root.style.width = ''; gridBox.style.gridTemplateColumns = ''; codeBox.style.width = '';
+        return;
+      }
+      var maxW = 0;
+      Array.prototype.forEach.call(root.querySelectorAll('.st-crow.ln, .st-crow.fn'), function (el) {
+        var cs = getComputedStyle(el), cw = 0;
+        var code = el.querySelector('code');
+        if (code) cw = Math.max(cw, code.getBoundingClientRect().width);
+        var file = el.querySelector('.st-file');
+        if (file) { /* 徽标是 block（填满行宽），量文字须用 Range */
+          var rg = document.createRange();
+          rg.selectNodeContents(file);
+          var fr = rg.getBoundingClientRect();
+          if (fr.width) cw = Math.max(cw, fr.width);
+        }
+        var rowW = cw + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + 2;
+        if (rowW > maxW) maxW = rowW;
+      });
+      if (!maxW) return;
+      var csR = getComputedStyle(root);
+      var chrome = (parseFloat(csR.paddingLeft) || 0) + (parseFloat(csR.paddingRight) || 0) + 2; /* 容器内边距+边框 */
+      var worldW = worldBox.getBoundingClientRect().width || 400;
+      var gap = parseFloat(getComputedStyle(gridBox).columnGap) || 14;
+      var cap = Math.min(document.documentElement.clientWidth * 0.96, 1720);
+      var codeW = Math.min(Math.ceil(maxW) + 18, cap - chrome - gap - 320); /* 18=滚动条与舍入余量 */
+      if (codeW < 320) codeW = 320;
+      codeBox.style.width = codeW + 'px';
+      gridBox.style.gridTemplateColumns = codeW + 'px minmax(300px, 1fr)';
+      var total = codeW + worldW + gap + chrome;
+      root.style.width = Math.max(Math.min(total, cap), Math.min(720, cap)) + 'px';
+    }
+    var fitTimer = null;
+    window.addEventListener('resize', function () {
+      if (fitTimer) clearTimeout(fitTimer);
+      fitTimer = setTimeout(fitWidth, 150);
+    });
+
     go(0);
+    fitWidth();
   }
 
   document.querySelectorAll('.stepper').forEach(function (el) {

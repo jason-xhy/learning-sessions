@@ -111,8 +111,11 @@ td.good { background: #e9f7ee; }
 footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .88rem; }
 
 /* ===== 代码步进放映机（assets/codestepper.js；静态优先：无 JS 时代码全列+world0+refs 全可读） =====
-   v2（2026-10-20 用户四条修正）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
-   普通行无行号）；语句/调用级帧；双栏加大加高。 */
+   v2（2026-10-20）：破 46rem 版心全宽；代码整行显示（fn=文件名+起始行独立徽标行，
+   普通行无行号）；语句/调用级帧；双栏加大加高。
+   v3（2026-10-21 用户裁定"窗口太大"）：宽度不再一刀切 96vw——JS 量出最长代码行实际
+   渲染宽度后给 .st-code 与整台 .stepper 设定紧致像素宽（prose 行不驱动宽度）；
+   无 JS 静态态回落 min(96vw,1720px)；面板高度 44rem→36rem。 */
 .stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
 .stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
 .stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
@@ -124,8 +127,10 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
 .stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
 @media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
-.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 44rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 36rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
 .stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; }
+/* prose 行（相标/上下文/硬件旁白）可折行，不参与代码宽度测量 */
+.stepper .st-crow.ctx, .stepper .st-crow.hw, .stepper .st-crow.ph { white-space: normal; }
 .stepper .st-crow code { font: inherit; }
 .stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
 .stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: var(--muted); font-size: .74rem; }
@@ -138,7 +143,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper.js .st-crow:hover { background: #f4f4ee; }
 .stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
 .stepper.js .st-crow.done { opacity: .66; }
-.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 44rem; overflow-y: auto; }
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 36rem; overflow-y: auto; }
 .stepper .stw-ring { margin: .35rem 0 .6rem; }
 .stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
 .stepper .stw-rhead b { font-size: .84rem; }
@@ -177,12 +182,17 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
 .st-modal .st-mnote { font-size: .88rem; }
 
-/* ===== 右缘批注（assets/marginnotes.js） ===== */
-@media (min-width: 1180px) {
-  body.mn-on { padding-right: 264px; }
-  body.mn-on .mn-rail { display: flex; }
-}
-.mn-rail { display: none; position: fixed; top: 0; right: 0; bottom: 0; width: 252px; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 40; }
+/* ===== 右缘批注（assets/marginnotes.js）—— v2 滑动抽屉（2026-10-21 用户裁定）：
+   默认收起；鼠标滑到右缘热区（或点右缘竖标签）弹出；✕ 收起、📌 钉住；编辑器在场不自动收。 ===== */
+.mn-zone { position: fixed; top: 0; right: 0; bottom: 0; width: 18px; z-index: 58; }
+.mn-tab { position: fixed; right: 0; top: 50%; transform: translateY(-50%); z-index: 59; writing-mode: vertical-rl; font: inherit; font-size: .78rem; letter-spacing: .06em; padding: .7rem .25rem; border: 1px solid var(--line); border-right: 0; border-radius: 6px 0 0 6px; background: #f4f2e8; color: #55503f; cursor: pointer; }
+.mn-tab:hover { background: #ece9db; color: var(--ink); }
+.mn-rail { position: fixed; top: 0; right: 0; bottom: 0; width: 264px; display: flex; flex-direction: column; gap: .45rem; padding: .8rem .7rem; border-left: 1px solid var(--line); background: #faf9f3; overflow-y: auto; font-size: .85rem; box-sizing: border-box; z-index: 60; box-shadow: -5px 0 16px rgba(30,28,18,.10); transform: translateX(103%); visibility: hidden; transition: transform .25s ease, visibility 0s linear .25s; }
+.mn-rail.open { transform: translateX(0); visibility: visible; transition: transform .25s ease; }
+.mn-headrow { display: flex; align-items: center; gap: .35rem; }
+.mn-head { font-weight: 700; font-size: .95rem; flex: 1; }
+.mn-rail .mn-pin, .mn-rail .mn-shut { font: inherit; font-size: .74rem; padding: .15rem .45rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; white-space: nowrap; }
+.mn-rail.pinned .mn-pin { border-color: var(--accent); background: #fff3c4; }
 .mn-rail .mn-head { font-weight: 700; font-size: .95rem; }
 .mn-rail .mn-cnt { color: var(--muted); font-weight: 400; font-size: .8rem; }
 .mn-rail button { font: inherit; font-size: .8rem; padding: .25rem .55rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; text-align: left; }
@@ -207,10 +217,11 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   .explain { display: block; }
   .player .frame { display: block !important; }
   .player .pctl { display: none; }
-  .mn-rail, .mn-pen { display: none !important; }
-  body.mn-on { padding-right: 1rem; }
+  .mn-rail, .mn-pen, .mn-tab, .mn-zone { display: none !important; }
+  .stepper { position: static; transform: none; width: auto !important; }
+  .stepper .st-grid { grid-template-columns: 1fr; }
   .stepper .st-ctl { display: none; }
-  .stepper .st-code { max-height: none; }
+  .stepper .st-code { width: auto !important; max-height: none; }
   .st-modal { display: none !important; }
 }
 
@@ -225,7 +236,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）——规范锚点：xHCI 1.2（2019）§4.10.2 Errors（p195-203）/ §4.8.3 Endpoint Context State（p162）/ §4.6.8-4.6.10（Reset/Stop Endpoint、Set TR Dequeue，p128/133/141）/ §6.4.5 Table 6-91 CC 码全表（p507）——解剖标本：M4.5 自研引擎 v0.3 仿真日志（九条事件全序实测）</p>
 
   <h2>整体定位（happy path 走完了，本课看真实标本与出错的命运）</h2>
-  <p>xHC 线三课攒齐了三张图：0006 的<strong>零件图</strong>（TRB 字段、槽/TD/段/环、切分语法、几何）、0007 的<strong>运转图</strong>（cycle 合同、回绕点、四个控制位）与 0009 的<strong>传输剧</strong>（六站旅程、三视角、两套口径）——但都停在 happy path：事件全是 Success/Short Packet，端点从不出错。本课收官三件事：①用我们亲手实现的 <strong>M4.5 引擎标本</strong>把 set_address 全握手的九条事件逐帧跑一遍——数字全部出自实测日志，含短包双事件、事件环回绕与轮转；②把<strong>四种传输各自的错误路径</strong>拆成两张判决表（CC 码→errno→端点后果；分派与重试策略）；③拆开软件侧的第二台状态机 <strong>ep_state 十个状态位</strong>，用五帧动画走完 STALL 从判决到恢复的软硬协同。下页的全景图仍是坐标：本课深钻的是④⑤两站的出错面，与⑥站回调延迟的微观来源。</p>
+  <p>xHC 线三课攒齐了三张图：0006 的<strong>零件图</strong>（TRB 字段、槽/TD/段/环、切分语法、几何）、0007 的<strong>运转图</strong>（cycle 合同、回绕点、四个控制位）与 0009 的<strong>传输剧</strong>（六站旅程、三视角、两套口径）——但都停在 happy path：事件全是 Success/Short Packet，端点从不出错。本课收官三件事：①用我们亲手实现的 <strong>M4.5 引擎标本</strong>把 set_address 全握手的九条事件逐帧跑一遍——数字全部出自实测日志，含短包双事件、事件环回绕与轮转；②把<strong>四种传输各自的错误路径</strong>拆成两张判决表（CC 码→errno→端点后果；分派与重试策略）；③拆开软件侧的第二台状态机 <strong>ep_state 十个状态位</strong>，用逐语句代码走查走完 STALL 从判决到恢复的软硬协同。下页的全景图仍是坐标：本课深钻的是④⑤两站的出错面，与⑥站回调延迟的微观来源。</p>
 
   <figure>
     <svg viewBox="0 0 880 350" role="img" aria-label="一次控制传输的六站全景" style="width:100%;background:#fff;border:1px solid #e3e3da">
@@ -964,74 +975,144 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
 <pre>/* xhci.c:5592-5593（xhci_clear_tt_buffer_complete） */
 	xhci-&gt;devs[slot_id]-&gt;eps[ep_index].ep_state &amp;= ~EP_CLEARING_TT;
 	xhci_ring_doorbell_for_active_rings(xhci, slot_id, ep_index);</pre>
-  <p>最后用五帧动画把"两台状态机 + 命令环"协同走一遍——剧情：bulk IN 端点收到一次 <strong>STALL</strong>（功能性 stall），从事件到设备恢复运行的完整软硬协同时序（无 JS 时全部帧定格可读）：</p>
-  <div class="player">
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 1 帧</span><span>STALL 判决书到达：Transfer Event(CC=6)</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>软件 ep_state</b>全 0（此前无故障）</div>
-          <div class="u"><b>硬件 EP ctx</b>RUNNING → HALTING</div>
-          <div class="u"><b>命令环</b>—</div>
-          <div class="u"><b>事件环</b><span style="color:#a00000;font-weight:600">Transfer Event：STALL，ep=bulk IN</span></div>
-          <div class="u"><b>urb</b>未给回</div>
-        </div>
-        handle_tx_event 给 td-&gt;status 打上 -EPIPE（:2705-2708），分派 process_bulk_intr_td——错误不是终点，urb 还不能给回：<strong>得先把 xHC 侧端点从 HALTED 状态恢复，TD 才能结清</strong>。
+  <p>最后把这条软硬协同时序用<strong>真实代码</strong>逐语句走一遍——剧情：bulk IN 端点收到一次 <strong>STALL</strong>（功能性 stall），从事件到设备恢复运行的完整代码路径：左列代码（xhci-ring.c 为主，⑦站进 message.c/xhci.c），右列两台状态机与命令/事件环的同步记账（无 JS 时代码全列与初态快照静态可读）：</p>
+  <!--STEPPER:0008B:BEGIN-->
+  <div class="stepper">
+    <div class="st-intro"><h4>▶ STALL 恢复链：一次功能性 stall 的软硬双机代码走查</h4><p>左列＝恢复链真实走过的内核代码（xhci-ring.c 主线；⑦站进 usbcore message.c 与 xhci.c 收尾——绿行=xHC/设备侧动作）。右列＝两台状态机的同步记账：软件 ep_state 位图、硬件 EP ctx、命令环/事件环、urb 账本。逐语句步进：①判决书→②halt 裁决→③Reset Endpoint 上环→④完成与缓存作废→⑤Set TR Dequeue→⑥urb 给回→⑦usb_clear_halt 回零。</p><p class="st-base">代码基线 master@62f4c998b297（与全课一致）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-grid">
+      <div class="st-code">
+<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>① 判决书到达：Transfer Event(CC=6)——错误不是终点</code></div>
+<div class="st-crow hw" data-id="r1"><span class="st-tag">xHC/设备</span><code>bulk IN 传输中，设备对 IN 令牌回 STALL 握手 → xHC 生成 Transfer Event：CC=Stall Error</code></div>
+<div class="st-crow ln" data-id="r2" style="padding-left:0.4em"><code>	case COMP_STALL_ERROR:
+		xhci_dbg(xhci, &quot;Stalled endpoint for slot %u ep %u\n&quot;, slot_id,
+			 ep_index);
+		status = -EPIPE;
+		break;</code></div>
+<div class="st-crow ph" data-id="r3"><span class="st-tag">▶</span><code>② finish_td 裁决：halt 成立 → 转入硬复位恢复链</code></div>
+<div class="st-crow ln" data-id="r4" style="padding-left:0.4em"><code>	if (xhci_halted_host_endpoint(xhci, ep_ctx, trb_comp_code)) {</code></div>
+<div class="st-crow ln" data-id="r5" style="padding-left:0.4em"><code>		if (!(ep-&gt;ep_index == 0 &amp;&amp; trb_comp_code == COMP_STALL_ERROR))
+			xhci_clear_hub_tt_buffer(xhci, td, ep);</code></div>
+<div class="st-crow ln" data-id="r6" style="padding-left:0.4em"><code>		xhci_handle_halted_endpoint(xhci, ep, td, EP_HARD_RESET);
+
+		return; /* xhci_handle_halted_endpoint marked td cancelled */</code></div>
+<div class="st-crow ph" data-id="r7"><span class="st-tag">▶</span><code>③ xhci_handle_halted_endpoint：置两枚状态位、TD 转入取消链表、Reset Endpoint 上环</code></div>
+<div class="st-crow fn" data-id="r8" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 982-986</span><code>static int xhci_handle_halted_endpoint(struct xhci_hcd *xhci,
+				struct xhci_virt_ep *ep,
+				struct xhci_td *td,
+				enum xhci_ep_reset_type reset_type)
+{</code></div>
+<div class="st-crow ln" data-id="r9" style="padding-left:0.4em"><code>	if (rhub_port-&gt;link_inactive || !rhub_port-&gt;connected) {
+		ep-&gt;ep_state |= EP_DROP_PENDING;
+		return -ENODEV;
+	}</code></div>
+<div class="st-crow ln" data-id="r10" style="padding-left:0.4em"><code>	/* add td to cancelled list and let reset ep handler take care of it */
+	if (reset_type == EP_HARD_RESET) {
+		ep-&gt;ep_state |= EP_HARD_CLEAR_TOGGLE;
+		if (td &amp;&amp; list_empty(&amp;td-&gt;cancelled_td_list)) {
+			list_add_tail(&amp;td-&gt;cancelled_td_list, &amp;ep-&gt;cancelled_td_list);
+			td-&gt;cancel_status = TD_HALTED;
+		}
+	}</code></div>
+<div class="st-crow ln" data-id="r11" style="padding-left:0.4em"><code>	if (ep-&gt;ep_state &amp; EP_HALTED) {
+		xhci_dbg(xhci, &quot;Reset ep command for ep_index %d already pending\n&quot;,
+			 ep-&gt;ep_index);
+		return 0;
+	}</code></div>
+<div class="st-crow ln" data-id="r12" style="padding-left:0.4em"><code>	err = xhci_reset_halted_ep(xhci, slot_id, ep-&gt;ep_index, reset_type);
+	if (err)</code></div>
+<div class="st-crow ln" data-id="r13" style="padding-left:0.4em"><code>	ep-&gt;ep_state |= EP_HALTED;
+
+	xhci_ring_cmd_db(xhci);</code></div>
+<div class="st-crow ph" data-id="r14"><span class="st-tag">▶</span><code>④ Reset EP 完成事件：清 EP_HALTED，顺手作废 xHC 缓存的取消 TD</code></div>
+<div class="st-crow hw" data-id="r15"><span class="st-tag">xHC/设备</span><code>命令环回执：Command Completion（Reset Endpoint ✓）——硬件 EP ctx Halted→Stopped</code></div>
+<div class="st-crow ln" data-id="r16" style="padding-left:0.4em"><code>	xhci_invalidate_cancelled_tds(xhci, ep);</code></div>
+<div class="st-crow ln" data-id="r17" style="padding-left:0.4em"><code>		/*
+		 * If a ring stopped on the TD we need to cancel then we have to
+		 * move the xHC endpoint ring dequeue pointer past this TD.
+		 * Rings halted due to STALL may show hw_deq is past the stalled
+		 * TD, but still require a set TR Deq command to flush xHC cache.
+		 */</code></div>
+<div class="st-crow ln" data-id="r18" style="padding-left:0.4em"><code>		if (td-&gt;cancel_status == TD_HALTED || trb_in_td(td, hw_deq)) {</code></div>
+<div class="st-crow ln" data-id="r19" style="padding-left:0.4em"><code>				td_to_noop(xhci, ep, td, false);
+				td-&gt;cancel_status = TD_CLEARING_CACHE;
+				cached_td = td;</code></div>
+<div class="st-crow ln" data-id="r20" style="padding-left:0.4em"><code>	if (!cached_td)
+		return 0;
+
+	err = xhci_move_deq_to_next_td(xhci, ep, cached_td-&gt;urb-&gt;stream_id);</code></div>
+<div class="st-crow ln" data-id="r21" style="padding-left:0.4em"><code>	ep-&gt;ep_state &amp;= ~EP_HALTED;</code></div>
+<div class="st-crow ph" data-id="r22"><span class="st-tag">▶</span><code>⑤ xhci_move_deq_to_next_td：算新游标，Set TR Dequeue 命令上环</code></div>
+<div class="st-crow fn" data-id="r23" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 689-692</span><code>static int xhci_move_deq_to_next_td(struct xhci_hcd *xhci,
+				    struct xhci_virt_ep *ep,
+				    unsigned int stream_id)
+{</code></div>
+<div class="st-crow ln" data-id="r24" style="padding-left:0.4em"><code>	if ((ep-&gt;ep_state &amp; SET_DEQ_PENDING)) {
+		xhci_warn(xhci, &quot;Set TR Deq already pending\n&quot;);
+		return -EBUSY;
+	}</code></div>
+<div class="st-crow ln" data-id="r25" style="padding-left:0.4em"><code>	} else {
+		td = list_first_entry(&amp;ring-&gt;td_list, struct xhci_td, td_list);
+		ep-&gt;queued_deq_seg = td-&gt;start_seg;
+		ep-&gt;queued_deq_ptr = td-&gt;start_trb;
+		new_cycle = le32_to_cpu(td-&gt;start_trb-&gt;generic.field[3]) &amp; TRB_CYCLE;
+	}</code></div>
+<div class="st-crow ln" data-id="r26" style="padding-left:0.4em"><code>	ret = queue_command(xhci, cmd,
+		lower_32_bits(addr) | trb_sct | new_cycle,
+		upper_32_bits(addr),
+		STREAM_ID_FOR_TRB(stream_id), SLOT_ID_FOR_TRB(ep-&gt;vdev-&gt;slot_id) |
+		EP_INDEX_FOR_TRB(ep-&gt;ep_index) | TRB_TYPE(TRB_SET_DEQ), false);</code></div>
+<div class="st-crow ln" data-id="r27" style="padding-left:0.4em"><code>	 * Stop the TD queueing code from ringing the doorbell until this
+	 * command completes. The HC won&#x27;t set the dequeue pointer if the ring
+	 * is running, and ringing the doorbell starts the ring.
+	 */
+	ep-&gt;ep_state |= SET_DEQ_PENDING;
+	xhci_ring_cmd_db(xhci);</code></div>
+<div class="st-crow ph" data-id="r28"><span class="st-tag">▶</span><code>⑥ Set TR Deq 完成：游标落地，urb 以 -EPIPE 给回——类驱动这才看见 stall</code></div>
+<div class="st-crow hw" data-id="r29"><span class="st-tag">xHC/设备</span><code>命令环回执：Command Completion（Set TR Deq ✓）——硬件游标落到新 TD 首 TRB</code></div>
+<div class="st-crow ln" data-id="r30" style="padding-left:0.4em"><code>		if (xhci_trb_virt_to_dma(ep-&gt;queued_deq_seg,
+					 ep-&gt;queued_deq_ptr) == deq) {
+			/* Update the ring&#x27;s dequeue segment and dequeue pointer
+			 * to reflect the new position.
+			 */
+			ep_ring-&gt;deq_seg = ep-&gt;queued_deq_seg;
+			ep_ring-&gt;dequeue = ep-&gt;queued_deq_ptr;</code></div>
+<div class="st-crow ln" data-id="r31" style="padding-left:0.4em"><code>	list_for_each_entry_safe(td, tmp_td, &amp;ep-&gt;cancelled_td_list,
+				 cancelled_td_list) {
+		ep_ring = xhci_urb_to_transfer_ring(xhci, td-&gt;urb);
+		if (td-&gt;cancel_status == TD_CLEARING_CACHE) {
+			td-&gt;cancel_status = TD_CLEARED;
+			xhci_dbg(xhci, &quot;%s: Giveback cancelled URB %p TD\n&quot;,
+				 __func__, td-&gt;urb);
+			xhci_td_cleanup(xhci, td, ep_ring, td-&gt;status);
+		} else {
+			xhci_dbg(xhci, &quot;%s: Keep cancelled URB %p TD as cancel_status is %d\n&quot;,
+				 __func__, td-&gt;urb, td-&gt;cancel_status);
+		}</code></div>
+<div class="st-crow ln" data-id="r32" style="padding-left:0.4em"><code>	ep-&gt;ep_state &amp;= ~SET_DEQ_PENDING;</code></div>
+<div class="st-crow ph" data-id="r33"><span class="st-tag">▶</span><code>⑦ usb_clear_halt：清设备侧 stall，消费最后一枚状态位（usbcore＋xhci.c）</code></div>
+<div class="st-crow ctx" data-id="r34"><span class="st-tag">usbcore</span><code>类驱动对 -EPIPE 的标准回应：usb_clear_halt()（drivers/usb/core/message.c）</code></div>
+<div class="st-crow ln" data-id="r35" style="padding-left:0.4em"><code>	result = usb_control_msg_send(dev, 0,
+				      USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT,
+				      USB_ENDPOINT_HALT, endp, NULL, 0,
+				      USB_CTRL_SET_TIMEOUT, GFP_NOIO);
+</code></div>
+<div class="st-crow ln" data-id="r36" style="padding-left:0.4em"><code>	usb_reset_endpoint(dev, endp);</code></div>
+<div class="st-crow ln" data-id="r37" style="padding-left:0.4em"><code>	if (ep-&gt;ep_state &amp; EP_HARD_CLEAR_TOGGLE) {
+		ep-&gt;ep_state &amp;= ~EP_HARD_CLEAR_TOGGLE;
+		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);
+		return;
+	}</code></div>
+<div class="st-crow ctx" data-id="r38"><span class="st-tag">usbcore</span><code>收官：新 URB 入队 → 门铃放行 → 传输恢复（EP ctx STOPPED→RUNNING）</code></div>
+      </div>
+      <div class="st-world">
+<div class="stw-ring"><div class="stw-rhead"><b>命令环（驱动→xHC 命令）</b><span class="stw-own">驱动生产 · xHC 消费</span></div><div class="stw-cells"><div class="stw-cell st-empty"><b>槽0</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>槽1</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>槽2</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div></div></div><div class="stw-ring"><div class="stw-rhead"><b>事件环（xHC→驱动 事件）</b><span class="stw-own">xHC 生产 · 驱动消费</span></div><div class="stw-cells"><div class="stw-cell st-empty"><b>槽0</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>槽1</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div><div class="stw-cell st-empty"><b>槽2</b><span class="stw-t">空</span><span class="stw-cyc">cyc=1</span></div></div></div><div class="stw-box"><b>软件 ep_state（struct xhci_virt_ep 位图）</b><table><tr><th>位图</th><td>全 0（此前无故障）</td></tr><tr><th>端点门铃</th><td>放行</td></tr><tr><th>当前</th><td>bulk IN 传输在飞</td></tr></table></div><div class="stw-box"><b>硬件 EP ctx 与 urb 账本</b><table><tr><th>EP ctx 态</th><td>RUNNING</td></tr><tr><th>urb</th><td>未给回</td></tr><tr><th>TD 去向</th><td>在传输环上</td></tr></table></div>
       </div>
     </div>
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 2 帧</span><span>finish_td 裁决：halt 成立 → 置状态位 + Reset Endpoint 命令上环</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>软件 ep_state</b><span style="color:#a00000;font-weight:600">EP_HALTED｜EP_HARD_CLEAR_TOGGLE</span></div>
-          <div class="u"><b>硬件 EP ctx</b>HALTED</div>
-          <div class="u"><b>命令环</b><span style="color:#1a5fb4;font-weight:600">Reset Endpoint（硬，TSP=0）</span></div>
-          <div class="u"><b>TD 去向</b>挂入 cancelled_td_list（TD_HALTED，:1004-1007）</div>
-          <div class="u"><b>urb</b>仍未给回</div>
-        </div>
-        finish_td 判 xhci_halted_host_endpoint=true（:2267）；本例非 TT 设备跳过清 TT；xhci_handle_halted_endpoint：<strong>TD 转入取消链表</strong>、置两枚状态位、Reset EP 命令入命令环、敲命令铃（:982-1025）。此后这个端点处于 halted 清理流程中，新敲的门铃都会被忽略——排队的新 URB 静静等着。
-      </div>
-    </div>
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 3 帧</span><span>Reset EP 完成事件：清 EP_HALTED，但发现 hw_deq 停在取消的 TD 上 → Set TR Dequeue</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>软件 ep_state</b><span style="color:#a00000;font-weight:600">EP_HARD_CLEAR_TOGGLE｜SET_DEQ_PENDING</span>（EP_HALTED 已清）</div>
-          <div class="u"><b>硬件 EP ctx</b>STOPPED</div>
-          <div class="u"><b>命令环</b><span style="color:#1a5fb4;font-weight:600">Set TR Dequeue Pointer（:689）</span></div>
-          <div class="u"><b>环手术</b>cancelled TD 的 TRB 改写成 No-Op（td_to_noop :783）</div>
-          <div class="u"><b>urb</b>仍未给回</div>
-        </div>
-        handle_cmd_reset_ep（:1564）：先 invalidate_cancelled_tds——硬件游标（hw_deq）还压在取消的 TD 里，xHC 缓存的 TRB 必须作废：<strong>TRB 改 No-Op + Set TR Dequeue 命令把游标搬到下一个 TD/入队点</strong>（:1036-1143），SET_DEQ_PENDING 置位（:766）；然后才清 EP_HALTED（:1589）。§4.6.8/§4.6.10 两条命令在这里接力。
-      </div>
-    </div>
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 4 帧</span><span>Set TR Deq 完成：游标落地、urb 以 -EPIPE 给回——类驱动这才"看见" stall</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>软件 ep_state</b><span style="color:#a00000;font-weight:600">EP_HARD_CLEAR_TOGGLE</span>（SET_DEQ_PENDING 已清）</div>
-          <div class="u"><b>硬件 EP ctx</b>STOPPED</div>
-          <div class="u"><b>命令环</b>—</div>
-          <div class="u"><b>事件环</b>Command Completion：Set TR Deq ✓</div>
-          <div class="u"><b>urb</b><span style="color:#a00000;font-weight:600">给回：status=-EPIPE</span></div>
-        </div>
-        handle_cmd_set_deq（:1424）：软件侧 ring 游标对齐硬件（:1516-1522）、TD_CLEARING_CACHE→TD_CLEARED→xhci_td_cleanup 给回 urb（:1530-1542）、清 SET_DEQ_PENDING（:1544）。<strong>从 STALL 事件到 urb 给回横跨两条命令</strong>——这就是 urb_complete 回调延迟的微观来源，也是驱动里大量 ep_state 判空检查存在的原因。
-      </div>
-    </div>
-    <div class="frame">
-      <div class="ftitle"><span class="no">第 5 帧</span><span>类驱动 usb_clear_halt：消费硬清状态位，端点回 RUNNING——软硬双机复位</span></div>
-      <div class="fbody">
-        <div class="mfr">
-          <div class="u"><b>软件 ep_state</b>全 0（HARD_CLEAR_TOGGLE 被消费）</div>
-          <div class="u"><b>硬件 EP ctx</b>STOPPED → RUNNING（新 URB 敲铃后）</div>
-          <div class="u"><b>控制 ep0</b><span style="color:#1a5fb4;font-weight:600">CLEAR_FEATURE(ENDPOINT_HALT) 传输</span></div>
-          <div class="u"><b>hcd</b>xhci_endpoint_reset：检得 EP_HARD_CLEAR_TOGGLE → 直接 return（:3361-3365）</div>
-          <div class="u"><b>后续</b>新 URB 入队 → 门铃放行 → 传输恢复</div>
-        </div>
-        类驱动对 -EPIPE 的标准回应是发 CLEAR_FEATURE(ENDPOINT_HALT)（清<strong>设备侧</strong> stall），usb core 随后调 hcd 的 endpoint_reset——内核发现 toggle 已被第 2 帧的 Reset EP 硬清过（状态位在案），免去 Configure Endpoint D+A 重清。此刻软硬两台状态机同回零位。<strong>十个状态位的公共语义一句话：端点不在可运行态，就不催硬件、不收新活、按部就班走命令环</strong>。
-      </div>
-    </div>
+    <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
+    <div class="st-refs"><details><summary>📎 §4.10.2.1 Stall Error（线上形态）（p195）</summary><p class="st-msrc">xHCI 1.2（2019） · p195</p><blockquote>A STALL PID (USB2) or STALL LMP (USB3) may be returned by a USB function in response to an IN token or after the data phase of an OUT or in response to a PING transaction. The STALL PID indicates that a function is unable to transmit or receive data, or that a control pipe request is not supported.</blockquote><p class="st-mnote">功能性 stall 的判据在设备侧：收不了/发不了，或控制请求不支持——与协议 stall（ep0 专用）区分。</p></details><details><summary>📎 §4.10.2 Errors（错误必停环）（p195）</summary><p class="st-msrc">xHCI 1.2（2019） · p195</p><blockquote>All Transfer Ring error conditions force the state of the associated endpoint to Halted and require system software intervention to recover.</blockquote><p class="st-mnote">为什么 STALL 之后 urb 不能直接给回：端点已被强制 Halted，必须系统软件（本步进器③-⑥站）出面恢复。</p></details><details><summary>📎 §4.6.8 Reset Endpoint（p128）</summary><p class="st-msrc">xHCI 1.2（2019） · p128</p><blockquote>The Reset Endpoint Command is issued by software to recover from a halted condition on an endpoint.</blockquote><p class="st-mnote">③站上环的那颗命令；同页前文：环停时端点被移出调度表、管道门铃被禁、后续包静默丢弃——即②站「必须有人来救」的规范依据。</p></details><details><summary>📎 §4.6.10 Set TR Dequeue Pointer（冲缓存）（p141）</summary><p class="st-msrc">xHCI 1.2（2019） · p141</p><blockquote>Invalidate any xHC TDs that may be cached, forcing xHC to fetch Transfer TRBs from memory when the pipe transitions from the Stopped to the Running state.</blockquote><p class="st-mnote">④⑤站的规范出处：作废 xHC 缓存 TD、强制重新取指；同节另立规矩——此命令只许在 Error/Stopped 态执行（⑤站压门铃的原因）。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"STALL 恢复链：一次功能性 stall 的软硬双机代码走查","intro":"左列＝恢复链真实走过的内核代码（xhci-ring.c 主线；⑦站进 usbcore message.c 与 xhci.c 收尾——绿行=xHC/设备侧动作）。右列＝两台状态机的同步记账：软件 ep_state 位图、硬件 EP ctx、命令环/事件环、urb 账本。逐语句步进：①判决书→②halt 裁决→③Reset Endpoint 上环→④完成与缓存作废→⑤Set TR Dequeue→⑥urb 给回→⑦usb_clear_halt 回零。","baseline":"代码基线 master@62f4c998b297（与全课一致）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"① 判决书到达：Transfer Event(CC=6)——错误不是终点"},{"id":"r1","kind":"hw","depth":0,"text":"bulk IN 传输中，设备对 IN 令牌回 STALL 握手 → xHC 生成 Transfer Event：CC=Stall Error"},{"id":"r2","kind":"ln","depth":0,"text":"\tcase COMP_STALL_ERROR:\n\t\txhci_dbg(xhci, \"Stalled endpoint for slot %u ep %u\\n\", slot_id,\n\t\t\t ep_index);\n\t\tstatus = -EPIPE;\n\t\tbreak;","file":"xhci-ring.c","a":2705,"b":2709},{"id":"r3","kind":"ph","depth":0,"text":"② finish_td 裁决：halt 成立 → 转入硬复位恢复链"},{"id":"r4","kind":"ln","depth":0,"text":"\tif (xhci_halted_host_endpoint(xhci, ep_ctx, trb_comp_code)) {","file":"xhci-ring.c","a":2267,"b":2267},{"id":"r5","kind":"ln","depth":0,"text":"\t\tif (!(ep->ep_index == 0 && trb_comp_code == COMP_STALL_ERROR))\n\t\t\txhci_clear_hub_tt_buffer(xhci, td, ep);","file":"xhci-ring.c","a":2278,"b":2279},{"id":"r6","kind":"ln","depth":0,"text":"\t\txhci_handle_halted_endpoint(xhci, ep, td, EP_HARD_RESET);\n\n\t\treturn; /* xhci_handle_halted_endpoint marked td cancelled */","file":"xhci-ring.c","a":2281,"b":2283},{"id":"r7","kind":"ph","depth":0,"text":"③ xhci_handle_halted_endpoint：置两枚状态位、TD 转入取消链表、Reset Endpoint 上环"},{"id":"r8","kind":"fn","depth":0,"text":"static int xhci_handle_halted_endpoint(struct xhci_hcd *xhci,\n\t\t\t\tstruct xhci_virt_ep *ep,\n\t\t\t\tstruct xhci_td *td,\n\t\t\t\tenum xhci_ep_reset_type reset_type)\n{","file":"xhci-ring.c","a":982,"b":986},{"id":"r9","kind":"ln","depth":0,"text":"\tif (rhub_port->link_inactive || !rhub_port->connected) {\n\t\tep->ep_state |= EP_DROP_PENDING;\n\t\treturn -ENODEV;\n\t}","file":"xhci-ring.c","a":996,"b":999},{"id":"r10","kind":"ln","depth":0,"text":"\t/* add td to cancelled list and let reset ep handler take care of it */\n\tif (reset_type == EP_HARD_RESET) {\n\t\tep->ep_state |= EP_HARD_CLEAR_TOGGLE;\n\t\tif (td && list_empty(&td->cancelled_td_list)) {\n\t\t\tlist_add_tail(&td->cancelled_td_list, &ep->cancelled_td_list);\n\t\t\ttd->cancel_status = TD_HALTED;\n\t\t}\n\t}","file":"xhci-ring.c","a":1001,"b":1008},{"id":"r11","kind":"ln","depth":0,"text":"\tif (ep->ep_state & EP_HALTED) {\n\t\txhci_dbg(xhci, \"Reset ep command for ep_index %d already pending\\n\",\n\t\t\t ep->ep_index);\n\t\treturn 0;\n\t}","file":"xhci-ring.c","a":1010,"b":1014},{"id":"r12","kind":"ln","depth":0,"text":"\terr = xhci_reset_halted_ep(xhci, slot_id, ep->ep_index, reset_type);\n\tif (err)","file":"xhci-ring.c","a":1016,"b":1017},{"id":"r13","kind":"ln","depth":0,"text":"\tep->ep_state |= EP_HALTED;\n\n\txhci_ring_cmd_db(xhci);","file":"xhci-ring.c","a":1020,"b":1022},{"id":"r14","kind":"ph","depth":0,"text":"④ Reset EP 完成事件：清 EP_HALTED，顺手作废 xHC 缓存的取消 TD"},{"id":"r15","kind":"hw","depth":0,"text":"命令环回执：Command Completion（Reset Endpoint ✓）——硬件 EP ctx Halted→Stopped"},{"id":"r16","kind":"ln","depth":0,"text":"\txhci_invalidate_cancelled_tds(xhci, ep);","file":"xhci-ring.c","a":1586,"b":1586},{"id":"r17","kind":"ln","depth":0,"text":"\t\t/*\n\t\t * If a ring stopped on the TD we need to cancel then we have to\n\t\t * move the xHC endpoint ring dequeue pointer past this TD.\n\t\t * Rings halted due to STALL may show hw_deq is past the stalled\n\t\t * TD, but still require a set TR Deq command to flush xHC cache.\n\t\t */","file":"xhci-ring.c","a":1072,"b":1077},{"id":"r18","kind":"ln","depth":0,"text":"\t\tif (td->cancel_status == TD_HALTED || trb_in_td(td, hw_deq)) {","file":"xhci-ring.c","a":1082,"b":1082},{"id":"r19","kind":"ln","depth":0,"text":"\t\t\t\ttd_to_noop(xhci, ep, td, false);\n\t\t\t\ttd->cancel_status = TD_CLEARING_CACHE;\n\t\t\t\tcached_td = td;","file":"xhci-ring.c","a":1108,"b":1110},{"id":"r20","kind":"ln","depth":0,"text":"\tif (!cached_td)\n\t\treturn 0;\n\n\terr = xhci_move_deq_to_next_td(xhci, ep, cached_td->urb->stream_id);","file":"xhci-ring.c","a":1120,"b":1123},{"id":"r21","kind":"ln","depth":0,"text":"\tep->ep_state &= ~EP_HALTED;","file":"xhci-ring.c","a":1589,"b":1589},{"id":"r22","kind":"ph","depth":0,"text":"⑤ xhci_move_deq_to_next_td：算新游标，Set TR Dequeue 命令上环"},{"id":"r23","kind":"fn","depth":0,"text":"static int xhci_move_deq_to_next_td(struct xhci_hcd *xhci,\n\t\t\t\t    struct xhci_virt_ep *ep,\n\t\t\t\t    unsigned int stream_id)\n{","file":"xhci-ring.c","a":689,"b":692},{"id":"r24","kind":"ln","depth":0,"text":"\tif ((ep->ep_state & SET_DEQ_PENDING)) {\n\t\txhci_warn(xhci, \"Set TR Deq already pending\\n\");\n\t\treturn -EBUSY;\n\t}","file":"xhci-ring.c","a":708,"b":711},{"id":"r25","kind":"ln","depth":0,"text":"\t} else {\n\t\ttd = list_first_entry(&ring->td_list, struct xhci_td, td_list);\n\t\tep->queued_deq_seg = td->start_seg;\n\t\tep->queued_deq_ptr = td->start_trb;\n\t\tnew_cycle = le32_to_cpu(td->start_trb->generic.field[3]) & TRB_CYCLE;\n\t}","file":"xhci-ring.c","a":733,"b":738},{"id":"r26","kind":"ln","depth":0,"text":"\tret = queue_command(xhci, cmd,\n\t\tlower_32_bits(addr) | trb_sct | new_cycle,\n\t\tupper_32_bits(addr),\n\t\tSTREAM_ID_FOR_TRB(stream_id), SLOT_ID_FOR_TRB(ep->vdev->slot_id) |\n\t\tEP_INDEX_FOR_TRB(ep->ep_index) | TRB_TYPE(TRB_SET_DEQ), false);","file":"xhci-ring.c","a":750,"b":754},{"id":"r27","kind":"ln","depth":0,"text":"\t * Stop the TD queueing code from ringing the doorbell until this\n\t * command completes. The HC won't set the dequeue pointer if the ring\n\t * is running, and ringing the doorbell starts the ring.\n\t */\n\tep->ep_state |= SET_DEQ_PENDING;\n\txhci_ring_cmd_db(xhci);","file":"xhci-ring.c","a":762,"b":767},{"id":"r28","kind":"ph","depth":0,"text":"⑥ Set TR Deq 完成：游标落地，urb 以 -EPIPE 给回——类驱动这才看见 stall"},{"id":"r29","kind":"hw","depth":0,"text":"命令环回执：Command Completion（Set TR Deq ✓）——硬件游标落到新 TD 首 TRB"},{"id":"r30","kind":"ln","depth":0,"text":"\t\tif (xhci_trb_virt_to_dma(ep->queued_deq_seg,\n\t\t\t\t\t ep->queued_deq_ptr) == deq) {\n\t\t\t/* Update the ring's dequeue segment and dequeue pointer\n\t\t\t * to reflect the new position.\n\t\t\t */\n\t\t\tep_ring->deq_seg = ep->queued_deq_seg;\n\t\t\tep_ring->dequeue = ep->queued_deq_ptr;","file":"xhci-ring.c","a":1516,"b":1522},{"id":"r31","kind":"ln","depth":0,"text":"\tlist_for_each_entry_safe(td, tmp_td, &ep->cancelled_td_list,\n\t\t\t\t cancelled_td_list) {\n\t\tep_ring = xhci_urb_to_transfer_ring(xhci, td->urb);\n\t\tif (td->cancel_status == TD_CLEARING_CACHE) {\n\t\t\ttd->cancel_status = TD_CLEARED;\n\t\t\txhci_dbg(xhci, \"%s: Giveback cancelled URB %p TD\\n\",\n\t\t\t\t __func__, td->urb);\n\t\t\txhci_td_cleanup(xhci, td, ep_ring, td->status);\n\t\t} else {\n\t\t\txhci_dbg(xhci, \"%s: Keep cancelled URB %p TD as cancel_status is %d\\n\",\n\t\t\t\t __func__, td->urb, td->cancel_status);\n\t\t}","file":"xhci-ring.c","a":1530,"b":1541},{"id":"r32","kind":"ln","depth":0,"text":"\tep->ep_state &= ~SET_DEQ_PENDING;","file":"xhci-ring.c","a":1544,"b":1544},{"id":"r33","kind":"ph","depth":0,"text":"⑦ usb_clear_halt：清设备侧 stall，消费最后一枚状态位（usbcore＋xhci.c）"},{"id":"r34","kind":"ctx","depth":0,"text":"类驱动对 -EPIPE 的标准回应：usb_clear_halt()（drivers/usb/core/message.c）"},{"id":"r35","kind":"ln","depth":0,"text":"\tresult = usb_control_msg_send(dev, 0,\n\t\t\t\t      USB_REQ_CLEAR_FEATURE, USB_RECIP_ENDPOINT,\n\t\t\t\t      USB_ENDPOINT_HALT, endp, NULL, 0,\n\t\t\t\t      USB_CTRL_SET_TIMEOUT, GFP_NOIO);\n","file":"message.c","a":1279,"b":1283},{"id":"r36","kind":"ln","depth":0,"text":"\tusb_reset_endpoint(dev, endp);","file":"message.c","a":1296,"b":1296},{"id":"r37","kind":"ln","depth":0,"text":"\tif (ep->ep_state & EP_HARD_CLEAR_TOGGLE) {\n\t\tep->ep_state &= ~EP_HARD_CLEAR_TOGGLE;\n\t\tspin_unlock_irqrestore(&xhci->lock, flags);\n\t\treturn;\n\t}","file":"xhci.c","a":3361,"b":3365},{"id":"r38","kind":"ctx","depth":0,"text":"收官：新 URB 入队 → 门铃放行 → 传输恢复（EP ctx STOPPED→RUNNING）"}],"frames":[{"c":"r0","note":"xHCI 的错误报告永远走事件环；STALL 只是把「 urb 结不了账」这个事实通知驱动。","ph":"① 判决书到达：Transfer Event(CC=6)——错误不是终点"},{"c":"r1","note":"功能性 stall＝设备说「我没法收发」。§4.10.2：所有传输环错误都强制把关联端点打成 Halted，等软件来救——所以这颗事件到达时，urb 已经注定不能就此给回。","refs":["r_stall","r_halt"],"ev":[{"op":"cell","ring":"evt","i":0,"set":{"t":"Transfer Event","f":"CC=6 Stall Error（bulk IN）","st":"written"}},{"op":"ptr","ring":"evt","enq":1},{"op":"td","set":{"EP ctx 态":"HALTED（xHC 已自行停环）"}}]},{"c":"r2","note":"handle_tx_event 的判决记账：case 只打日志＋td->status=-EPIPE——到此为止只是记账；错误处理第一分岔（会不会 halt）把 STALL 送进 finish_td。","ev":[{"op":"dev","set":{"当前":"-EPIPE 已记账，等恢复链"}}]},{"c":"r3","note":"收尾函数里的一段「改道」：halt 类错误不走正常收尾，转交恢复链。","ph":"② finish_td 裁决：halt 成立 → 转入硬复位恢复链"},{"c":"r4","note":"判据：这个错误码会不会把 xHC 侧端点打进 halt？STALL 会。注释预告整条恢复链——reset endpoint 命令＋set dequeue 命令，正是本步进器③-⑥站。","refs":["r_halt"]},{"c":"r5","note":"TT 旁路：经 TT 的 FS/LS 非 interrupt 传输要先异步清 TT 缓冲（置 EP_CLEARING_TT，回 0004/0005 课）；本例 bulk 设备直挂 root hub，条件不成立跳过。ep0 的协议 stall 也不清 TT。"},{"c":"r6","note":"进入硬复位（EP_HARD_RESET：data toggle 交给 Reset EP 命令顺带硬清）并 return——注释原话「marked td cancelled」：TD 的命运从此改道，正常收尾（xhci_dequeue_td）不走。","ev":[{"op":"dev","set":{"当前":"TD 已标记 cancelled，转入恢复链"}}]},{"c":"r7","note":"恢复链主体的全部软件簿记都在这一个函数里：谁复位、TD 去哪、状态位置哪些、命令怎么发。","ph":"③ xhci_handle_halted_endpoint：置两枚状态位、TD 转入取消链表、Reset Endpoint 上环"},{"c":"r8","note":"恢复链主体函数头（reset_type=EP_HARD_RESET）。"},{"c":"r9","note":"断连/链路失活守卫：那种情况改挂 EP_DROP_PENDING（整端点弃疗路径，取消的 TD 直接判 TD_CLEARED），本例设备在线不走。"},{"c":"r10","note":""},{"c":"r11","note":"幂等守卫：EP_HALTED 已在案说明恢复已在进行，不重发命令（本例此前无故障，首次进入、直落下一步）。"},{"c":"r12","note":"发命令：xhci_reset_halted_ep 构造 Reset Endpoint TRB（硬复位不带 TSP 位）排上命令环——xHC 收到后才会把 EP ctx 从 Halted 拨回 Stopped。","refs":["r_resetep"],"ev":[{"op":"cell","ring":"cmd","i":0,"set":{"t":"Reset Endpoint","f":"硬复位（不带 TSP）","st":"written"}},{"op":"ptr","ring":"cmd","enq":1}]},{"c":"r13","note":"置 EP_HALTED（软件侧记「恢复中」——敲门铃守卫 :560-568 从此压住这个端点，排队的新 URB 静静等着）＋敲命令铃——xHC 这才开始执行命令。","ev":[{"op":"dev","set":{"位图":"EP_HALTED | EP_HARD_CLEAR_TOGGLE","端点门铃":"压住（EP_HALTED）"}}]},{"c":"r14","note":"命令的「执行」在硬件里；驱动收到完成事件后做的两件事：清状态位、把取消 TD 从 xHC 缓存里作废。","ph":"④ Reset EP 完成事件：清 EP_HALTED，顺手作废 xHC 缓存的取消 TD"},{"c":"r15","note":"端点回 Stopped、该管道门铃重新使能；但软件簿记还没清完，新 URB 依旧不敲门。","ev":[{"op":"cell","ring":"evt","i":1,"set":{"t":"Command Completion","f":"Reset Endpoint ✓","st":"written"}},{"op":"ptr","ring":"evt","enq":2},{"op":"td","set":{"EP ctx 态":"STOPPED"}}]},{"c":"r16","note":"handle_cmd_reset_ep：端点已停，先收拾取消 TD——注释「May queue a Set TR Deq cmd」即⑤站的入口。"},{"c":"r17","note":"进 xhci_invalidate_cancelled_tds：注释点名 STALL 场景——即便硬件游标已越过 stall TD，也要 Set TR Deq 冲掉 xHC 缓存的旧 TRB（缓存里的旧 TRB 不作废，xHC 还会按旧地址取指）。"},{"c":"r18","note":"判据命中：cancel_status==TD_HALTED（STALL 路径必进）或硬件游标还压在 TD 里——两条路殊途同归进同一个 case。"},{"c":"r19","note":"三连：td_to_noop 把 TD 的 TRB 改写成 No-Op（对 xHC 缓存做手术）→ 记 TD_CLEARING_CACHE（等 Set TR Deq 完成才能结清）→ cached_td 记账（决定要不要动游标）。","ev":[{"op":"td","set":{"TRB 手术":"取消 TD 改写为 No-Op"}}]},{"c":"r20","note":"有 cached TD → xhci_move_deq_to_next_td：给 xHC 一个新游标（下一站）；没有 cached TD 则到此为止（无需动游标）。"},{"c":"r21","note":"EP_HALTED 清——软件侧第一枚状态位功成身退。软复位（带 TSP）才会在这里当场重启环；本例硬复位继续等 Set TR Deq。","ev":[{"op":"dev","set":{"位图":"EP_HARD_CLEAR_TOGGLE（EP_HALTED 已清）","端点门铃":"仍压（等⑤置 SET_DEQ_PENDING）"}}]},{"c":"r22","note":"游标搬运工：新游标＝「下一个该执行的 TRB」的地址，连同轮次一起写进命令 TRB。","ph":"⑤ xhci_move_deq_to_next_td：算新游标，Set TR Dequeue 命令上环"},{"c":"r23","note":"函数头：把端点游标搬到下一个 TD（或环空时的入队点）。"},{"c":"r24","note":"幂等守卫：同一端点同时只允许一条 Set TR Deq 在飞（SET_DEQ_PENDING 在案即拒）。"},{"c":"r25","note":""},{"c":"r26","note":"Set TR Dequeue 命令 TRB 上环：新游标的 DMA 地址＋该槽轮次一起写进 TRB 字段。","refs":["r_setdeq"],"ev":[{"op":"cell","ring":"cmd","i":1,"set":{"t":"Set TR Dequeue","f":"新游标地址＋轮次","st":"written"}},{"op":"ptr","ring":"cmd","enq":2}]},{"c":"r27","note":""},{"c":"r28","note":"两颗命令（Reset EP→Set TR Deq）接力完成；从 STALL 事件到 urb 给回的全程延迟就横跨这两条命令。","ph":"⑥ Set TR Deq 完成：游标落地，urb 以 -EPIPE 给回——类驱动这才看见 stall"},{"c":"r29","note":"xHC 缓存冲净、游标就位；被改写成 No-Op 的旧 TRB 从此不会被取指。","ev":[{"op":"cell","ring":"evt","i":2,"set":{"t":"Command Completion","f":"Set TR Deq ✓","st":"written"}},{"op":"ptr","ring":"evt","enq":3}]},{"c":"r30","note":"软件游标对账：ring 的 deq_seg/dequeue 对齐刚批准的地址——软件、硬件两本游标从此一致。"},{"c":"r31","note":"取消链表清算：TD_CLEARING_CACHE→TD_CLEARED→xhci_td_cleanup——urb 以①站记下的 td->status=-EPIPE 给回类驱动（对 bulk IN 这就是 stall 的「当事人可见」时刻）。","ev":[{"op":"td","set":{"urb":"给回：status=-EPIPE","TD 去向":"TD_CLEARED（已结清）"}},{"op":"dev","set":{"当前":"urb 已给回类驱动"}}]},{"c":"r32","note":"清 SET_DEQ_PENDING——门铃守卫解除；EP_HARD_CLEAR_TOGGLE 仍在案，它是留给⑦站消费的最后一枚。","ev":[{"op":"dev","set":{"位图":"EP_HARD_CLEAR_TOGGLE（最后一枚）","端点门铃":"放行"}}]},{"c":"r33","note":"xHC 侧已恢复，设备侧的 stall 还挂着——轮到 usbcore 的标准收尾。","ph":"⑦ usb_clear_halt：清设备侧 stall，消费最后一枚状态位（usbcore＋xhci.c）"},{"c":"r34","note":"拿到 -EPIPE 的类驱动第一件事：请求主机发 CLEAR_FEATURE(ENDPOINT_HALT) 清设备侧 stall。"},{"c":"r35","note":"CLEAR_FEATURE(ENDPOINT_HALT) 控制传输发往设备——清的是设备那台状态机（同步控制传输，1000ms 超时档）。"},{"c":"r36","note":"成功后 usb_reset_endpoint → hcd 的 endpoint_reset 回调（xhci 驱动侧=xhci_endpoint_reset）——usbcore 的 toggle 簿记入场。"},{"c":"r37","note":"xhci_endpoint_reset：检得 EP_HARD_CLEAR_TOGGLE → 清位直接 return——toggle 已被③站的 Reset EP 硬清过，免发 Configure Endpoint(D+A) 重清一遍。③的簿记在这里被消费：软硬两台状态机同回零位。","ev":[{"op":"dev","set":{"位图":"全 0（回零）","端点门铃":"放行","当前":"恢复完成"}}]},{"c":"r38","note":"十个状态位的公共语义一句话：端点不在可运行态，就不催硬件、不收新活、按部就班走命令环——本链五枚状态位（EP_HALTED/EP_HARD_CLEAR_TOGGLE/SET_DEQ_PENDING…）的置与清就是这本账的记法。","ev":[{"op":"td","set":{"EP ctx 态":"RUNNING（新 URB 敲铃后）"}}]}],"refs":[{"id":"r_stall","label":"§4.10.2.1","src":"xHCI 1.2（2019）","p":"p195","title":"Stall Error（线上形态）","quote":"A STALL PID (USB2) or STALL LMP (USB3) may be returned by a USB function in response to an IN token or after the data phase of an OUT or in response to a PING transaction. The STALL PID indicates that a function is unable to transmit or receive data, or that a control pipe request is not supported.","note":"功能性 stall 的判据在设备侧：收不了/发不了，或控制请求不支持——与协议 stall（ep0 专用）区分。"},{"id":"r_halt","label":"§4.10.2","src":"xHCI 1.2（2019）","p":"p195","title":"Errors（错误必停环）","quote":"All Transfer Ring error conditions force the state of the associated endpoint to Halted and require system software intervention to recover.","note":"为什么 STALL 之后 urb 不能直接给回：端点已被强制 Halted，必须系统软件（本步进器③-⑥站）出面恢复。"},{"id":"r_resetep","label":"§4.6.8","src":"xHCI 1.2（2019）","p":"p128","title":"Reset Endpoint","quote":"The Reset Endpoint Command is issued by software to recover from a halted condition on an endpoint.","note":"③站上环的那颗命令；同页前文：环停时端点被移出调度表、管道门铃被禁、后续包静默丢弃——即②站「必须有人来救」的规范依据。"},{"id":"r_setdeq","label":"§4.6.10","src":"xHCI 1.2（2019）","p":"p141","title":"Set TR Dequeue Pointer（冲缓存）","quote":"Invalidate any xHC TDs that may be cached, forcing xHC to fetch Transfer TRBs from memory when the pipe transitions from the Stopped to the Running state.","note":"④⑤站的规范出处：作废 xHC 缓存 TD、强制重新取指；同节另立规矩——此命令只许在 Error/Stopped 态执行（⑤站压门铃的原因）。"}],"world0":{"rings":{"cmd":{"label":"命令环（驱动→xHC 命令）","own":"驱动生产 · xHC 消费","cells":[{"a":"槽0","t":"","f":"","cyc":"1","st":"empty"},{"a":"槽1","t":"","f":"","cyc":"1","st":"empty"},{"a":"槽2","t":"","f":"","cyc":"1","st":"empty"}]},"evt":{"label":"事件环（xHC→驱动 事件）","own":"xHC 生产 · 驱动消费","cells":[{"a":"槽0","t":"","f":"","cyc":"1","st":"empty"},{"a":"槽1","t":"","f":"","cyc":"1","st":"empty"},{"a":"槽2","t":"","f":"","cyc":"1","st":"empty"}]}},"dev":{"title":"软件 ep_state（struct xhci_virt_ep 位图）","位图":"全 0（此前无故障）","端点门铃":"放行","当前":"bulk IN 传输在飞"},"td":{"title":"硬件 EP ctx 与 urb 账本","EP ctx 态":"RUNNING","urb":"未给回","TD 去向":"在传输环上"}}}</script>
   </div>
+<!--STEPPER:0008B:END-->
   <div class="note">小结：xHCI 里"端点的状态"有两份——<strong>硬件 EP ctx 五态（§4.8.3）是 xHC 自己的状态机，软件 ep_state 十个状态位（xhci.h:672-685）是驱动的簿记</strong>；两者通过命令环上的 Reset/Stop/Set TR Dequeue 与事件环上的 Transfer/Command Completion 对话。urb_dequeue（:1849-1860）那张"三态让路、两态秒断"的分派表，就是这套簿记的消费端——读懂它，cancel/超时/halt 交织的并发路径就不再神秘。</div>
 
   <h2>回到整体（xHC 线三课收官的地图钉）</h2>
@@ -1153,82 +1234,9 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
 
 </script>
 <script>
-/* player.js — 分帧放映机（课程族共享，配 course.css 的 .player 段）
- * 静态优先：无 JS 时所有帧默认 CSS 全部可见（一帧一张定格）；
- * 本脚本 init 首行给 .player 加 'js' 类后才进入播放模式（只显当前帧）。
- * 托管页面上全部放映机：上一帧/播放(2.6s 自动)/下一帧/重置/展开全部帧
- * + 圆点导航 + "第 N/M 帧"计数；到尾帧自动停播；手翻即停播。 */
-(function () {
-  'use strict';
-  document.querySelectorAll('.player').forEach(function (pl) {
-    pl.classList.add('js');
-    var frames = Array.prototype.slice.call(pl.querySelectorAll('.frame'));
-    if (!frames.length) return;
-    var idx = 0, timer = null;
-
-    var ctl = document.createElement('div');
-    ctl.className = 'pctl';
-    ctl.innerHTML =
-      '<button type="button" data-a="prev">上一帧</button>' +
-      '<button type="button" data-a="play">播放</button>' +
-      '<button type="button" data-a="next">下一帧</button>' +
-      '<button type="button" data-a="reset">重置</button>' +
-      '<button type="button" data-a="all">展开全部帧</button>' +
-      '<span class="pcount"></span><span class="pdots"></span>';
-    pl.appendChild(ctl);
-    var count = ctl.querySelector('.pcount');
-    var playBtn = ctl.querySelector('[data-a="play"]');
-    var dotsBox = ctl.querySelector('.pdots');
-    frames.forEach(function (f, i) {
-      var d = document.createElement('i');
-      d.title = '第 ' + (i + 1) + ' 帧';
-      d.addEventListener('click', function () { manual(i); });
-      dotsBox.appendChild(d);
-    });
-    var dots = Array.prototype.slice.call(dotsBox.children);
-
-    function stop() {
-      if (timer) { clearInterval(timer); timer = null; }
-      playBtn.textContent = '播放';
-    }
-    function go(i) {
-      idx = (i + frames.length) % frames.length;
-      frames.forEach(function (f, k) { f.classList.toggle('cur', k === idx); });
-      dots.forEach(function (d, k) { d.classList.toggle('on', k === idx); });
-      count.textContent = '第 ' + (idx + 1) + '/' + frames.length + ' 帧';
-      if (idx === frames.length - 1) stop();
-    }
-    /* 手动导航才退出"展开全部帧"；预置的 static（打印/静态验收态）不被 init 翻掉 */
-    function manual(i) {
-      stop();
-      pl.classList.remove('static');
-      go(i);
-    }
-    ctl.addEventListener('click', function (e) {
-      var a = e.target.getAttribute && e.target.getAttribute('data-a');
-      if (!a) return;
-      if (a === 'prev') { manual(idx - 1); }
-      else if (a === 'next') { manual(idx + 1); }
-      else if (a === 'reset') { manual(0); }
-      else if (a === 'all') { stop(); pl.classList.toggle('static'); }
-      else if (a === 'play') {
-        if (timer) { stop(); return; }
-        playBtn.textContent = '暂停';
-        pl.classList.remove('static');
-        if (idx === frames.length - 1) go(0);
-        timer = setInterval(function () {
-          if (idx === frames.length - 1) { stop(); return; }
-          go(idx + 1);
-        }, 2600);
-      }
-    });
-    go(0);
-  });
-})();
-
-</script>
-<script>
 /* marginnotes.js — 右缘批注组件（课程族共享，配 course.css 的 .mn 段）
+ * v2（2026-10-21 用户裁定）：滑动抽屉——默认收起，鼠标滑到屏幕右缘热区或点右缘
+ * 竖标签弹出；📌 钉住后离开不收；编辑器在场不自动收。
  * 读者在阅读途中随时把问题记在右缘（锚定最近的 h2/h3 节）；读完课把批注交给 LLM：
  *   ① Chrome/Edge："关联本课文件" 后每次编辑自动写回 .html 内嵌块（File System Access
  *      API；file:// 与 https:// 均为 secure context）——真正的"及时编辑"，课后直接
@@ -1281,11 +1289,15 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
     return h ? h.textContent.trim().slice(0, 60) : '（开头）';
   }
 
-  /* ---- 右缘栏 + 行内 ✎ ---- */
+  /* ---- 右缘栏（v2 滑动抽屉）+ 行内 ✎ ----
+   * 默认收起；鼠标滑到右缘热区或点竖标签弹出；✕ 收起、📌 钉住（钉住=离开不收）；
+   * 编辑器在场/聚焦时不自动收——打字打到一半抽屉消失是最糟的体验。 */
   document.body.classList.add('mn-on');
   var rail = document.createElement('aside');
   rail.className = 'mn-rail';
-  rail.innerHTML = '<div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+  rail.innerHTML = '<div class="mn-headrow"><div class="mn-head">📝 边读边记<span class="mn-cnt"></span></div>' +
+    '<button type="button" class="mn-pin">📌 钉住</button>' +
+    '<button type="button" class="mn-shut">✕</button></div>' +
     '<button type="button" class="mn-add">＋ 记一笔（锚定当前读到的节）</button>' +
     '<div class="mn-list"></div>' +
     '<div class="mn-actions">' +
@@ -1294,10 +1306,57 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
     '<button type="button" class="mn-cp">📋 复制全部批注</button></div>' +
     '<div class="mn-tip">读完后告诉老师：读这节课文件里的批注并逐条回答。</div>';
   document.body.appendChild(rail);
+  var zone = document.createElement('div');
+  zone.className = 'mn-zone';
+  document.body.appendChild(zone);
+  var tab = document.createElement('button');
+  tab.type = 'button'; tab.className = 'mn-tab'; tab.textContent = '📝 边读边记';
+  tab.title = '点开批注栏（或把鼠标滑到屏幕右缘）';
+  document.body.appendChild(tab);
   var listEl = rail.querySelector('.mn-list'), cntEl = rail.querySelector('.mn-cnt');
+  var pinBtn = rail.querySelector('.mn-pin'), shutBtn = rail.querySelector('.mn-shut');
+  var pinned = false, closeTimer = null;
+  function editorAlive() { return !!rail.querySelector('.mn-editor'); }
+  function setPin(v) {
+    pinned = v;
+    rail.classList.toggle('pinned', v);
+    pinBtn.textContent = v ? '📌 已钉住' : '📌 钉住';
+  }
+  function openRail(pin) {
+    if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+    rail.classList.add('open');
+    if (pin) setPin(true);
+  }
+  function closeRail() {
+    if (editorAlive()) return; /* 编辑器在场不收 */
+    setPin(false);
+    rail.classList.remove('open');
+  }
+  function scheduleClose() {
+    if (pinned || editorAlive()) return;
+    if (closeTimer) clearTimeout(closeTimer);
+    closeTimer = setTimeout(function () { if (!rail.matches(':hover')) closeRail(); }, 400);
+  }
+  zone.addEventListener('mouseenter', function () { openRail(false); });
+  tab.addEventListener('mouseenter', function () { openRail(false); }); /* 标签叠在热区中段（z 更高）：hover 也弹出，整条右缘统一响应；点击才钉住 */
+  tab.addEventListener('click', function () { openRail(true); });
+  pinBtn.addEventListener('click', function () { setPin(!pinned); });
+  shutBtn.addEventListener('click', closeRail);
+  rail.addEventListener('mouseenter', function () { if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; } });
+  rail.addEventListener('mouseleave', scheduleClose);
+  /* 看门狗：鼠标从未进过抽屉就往左走时，rail 的 mouseleave 不会触发——
+   * document 级 mousemove 兜底：开着、未钉、无编辑器、光标已远离右缘 → 排程收起。 */
+  document.addEventListener('mousemove', function (e) {
+    if (!rail.classList.contains('open') || pinned || editorAlive()) return;
+    if (e.clientX < innerWidth - 290) scheduleClose();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && rail.classList.contains('open')) closeRail();
+  });
 
   var editId = null;
   function openEditor(prefill) {
+    openRail(true); /* 从行内 ✎ 进入时抽屉必须在场 */
     var id = editId;
     var box = document.createElement('div');
     box.className = 'mn-editor';
@@ -1326,6 +1385,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
   }
   function render() {
     cntEl.textContent = notes.length ? '（' + notes.length + '）' : '';
+    tab.textContent = '📝 边读边记' + (notes.length ? ' · ' + notes.length : '');
     listEl.innerHTML = notes.length ? '' : '<div class="mn-empty">还没有批注。读到有疑问处，点节标题旁的 ✎ 或"记一笔"。</div>';
     notes.slice().sort(function (a, b) { return a.ts - b.ts; }).forEach(function (n) {
       var d = document.createElement('div');
@@ -1428,7 +1488,8 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
  * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
  * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
  * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
- * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 账本。 */
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 账本。
+ * v3（2026-10-21）：init 后量最宽代码行给 .st-code/.stepper 设定紧致像素宽（宽度自适应）。 */
 (function () {
   'use strict';
 
@@ -1535,6 +1596,7 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
     var worldBox = root.querySelector('.st-world');
     var noteBox = root.querySelector('.st-note');
     var refsBox = root.querySelector('.st-refs');
+    var gridBox = root.querySelector('.st-grid');
     if (!codeBox || !worldBox || !noteBox) return;
 
     /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
@@ -1632,7 +1694,51 @@ static bool xhci_halted_host_endpoint(struct xhci_hcd *xhci, struct xhci_ep_ctx 
       if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
       else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
     });
+
+    /* 宽度自适应（v3 2026-10-21 用户裁定"窗口太大"）：代码窗宽度=实际最宽代码行
+     * （ln/fn）的渲染宽度；prose 行与文字段落不驱动宽度。整台 .stepper 随之紧致，
+     * 上限仍 96vw/1720px（超宽代码回落横向滚动），窄窗堆叠布局下不启用。 */
+    function fitWidth() {
+      if (innerWidth <= 1100) {
+        root.style.width = ''; gridBox.style.gridTemplateColumns = ''; codeBox.style.width = '';
+        return;
+      }
+      var maxW = 0;
+      Array.prototype.forEach.call(root.querySelectorAll('.st-crow.ln, .st-crow.fn'), function (el) {
+        var cs = getComputedStyle(el), cw = 0;
+        var code = el.querySelector('code');
+        if (code) cw = Math.max(cw, code.getBoundingClientRect().width);
+        var file = el.querySelector('.st-file');
+        if (file) { /* 徽标是 block（填满行宽），量文字须用 Range */
+          var rg = document.createRange();
+          rg.selectNodeContents(file);
+          var fr = rg.getBoundingClientRect();
+          if (fr.width) cw = Math.max(cw, fr.width);
+        }
+        var rowW = cw + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + 2;
+        if (rowW > maxW) maxW = rowW;
+      });
+      if (!maxW) return;
+      var csR = getComputedStyle(root);
+      var chrome = (parseFloat(csR.paddingLeft) || 0) + (parseFloat(csR.paddingRight) || 0) + 2; /* 容器内边距+边框 */
+      var worldW = worldBox.getBoundingClientRect().width || 400;
+      var gap = parseFloat(getComputedStyle(gridBox).columnGap) || 14;
+      var cap = Math.min(document.documentElement.clientWidth * 0.96, 1720);
+      var codeW = Math.min(Math.ceil(maxW) + 18, cap - chrome - gap - 320); /* 18=滚动条与舍入余量 */
+      if (codeW < 320) codeW = 320;
+      codeBox.style.width = codeW + 'px';
+      gridBox.style.gridTemplateColumns = codeW + 'px minmax(300px, 1fr)';
+      var total = codeW + worldW + gap + chrome;
+      root.style.width = Math.max(Math.min(total, cap), Math.min(720, cap)) + 'px';
+    }
+    var fitTimer = null;
+    window.addEventListener('resize', function () {
+      if (fitTimer) clearTimeout(fitTimer);
+      fitTimer = setTimeout(fitWidth, 150);
+    });
+
     go(0);
+    fitWidth();
   }
 
   document.querySelectorAll('.stepper').forEach(function (el) {
@@ -1673,7 +1779,7 @@ Quiz.render(document.getElementById('quiz'), [
     prompt: 'bulk 端点 STALL 后到该 urb 以 -EPIPE 给回，命令环上依次发生什么？',
     options: ['Stop Endpoint → Reset Endpoint → 给回', 'Configure Endpoint(D+A) → Reset Endpoint → 给回', 'Disable Slot → Enable Slot → 给回', 'Reset Endpoint → Set TR Dequeue Pointer → 给回'],
     answer: 3,
-    explain: 'D 对（本课专题二五帧动画）：STALL 事件→finish_td 判 halt→EP_HALTED＋Reset Endpoint（硬）；Reset EP 完成处理器发现 hw_deq 压在取消 TD 上→td_to_noop＋Set TR Dequeue Pointer（SET_DEQ_PENDING）；Set TR Deq 完成才 td_cleanup 给回 -EPIPE。A 的 Stop Endpoint 属于 URB 取消/停机路径（EP_STOP_CMD_PENDING）；B 的 D+A 属于之后的 usb_clear_halt 阶段（且被 EP_HARD_CLEAR_TOGGLE 消费跳过，:3361-3365）；C 是设备级操作，粒度完全不对。' }
+    explain: 'D 对（本课专题二代码步进器）：STALL 事件→finish_td 判 halt→EP_HALTED＋Reset Endpoint（硬）；Reset EP 完成处理器发现 hw_deq 压在取消 TD 上→td_to_noop＋Set TR Dequeue Pointer（SET_DEQ_PENDING）；Set TR Deq 完成才 td_cleanup 给回 -EPIPE。A 的 Stop Endpoint 属于 URB 取消/停机路径（EP_STOP_CMD_PENDING）；B 的 D+A 属于之后的 usb_clear_halt 阶段（且被 EP_HARD_CLEAR_TOGGLE 消费跳过，:3361-3365）；C 是设备级操作，粒度完全不对。' }
 ]);
 </script>
 </body>
