@@ -117,7 +117,9 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
    渲染宽度后给 .st-code 与整台 .stepper 设定紧致像素宽（prose 行不驱动宽度）；
    无 JS 静态态回落 min(96vw,1720px)。
    v3.1（2026-10-21 用户裁定"动画窗口太短需全部显示"）：废 36rem 内滚窗——代码列
-   全高显示；世界面板 sticky 跟视口、控件条 sticky 置顶、当步解说 sticky 置底。 */
+   全高显示；世界面板 sticky 跟视口、控件条 sticky 置顶、当步解说 sticky 置底。
+   v3.2（2026-10-21 用户裁定"动画窗口不能有滑动条"）：世界面板废 sticky+max-height
+   内滚——自然全高无上限，与代码列等高（grid stretch）；控件条/当步解说保持钉住。 */
 .stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
 .stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
 .stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
@@ -131,7 +133,8 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
 .stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
 @media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
-/* v3.1：代码列全高（无 max-height 内滚）；横向 overflow 留作超宽回落 */
+/* v3.1：代码列全高（无 max-height 内滚）；横向 overflow 留作超宽回落
+   v3.2：世界面板同权全高——去 max-height 内滚与 sticky，两列 grid stretch 等高 */
 .stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; overflow-x: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
 /* scrollIntoView 跟随时给钉住的顶条/底条让位 */
 .stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; scroll-margin-top: 3.4rem; scroll-margin-bottom: 5.2rem; }
@@ -150,7 +153,9 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
 .stepper.js .st-crow.done { opacity: .66; }
 /* v3.1：世界面板钉在视口内随长代码滚动（粘滞行程=格棚列内） */
-.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; position: sticky; top: .8rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+/* v3.2：动画窗口（世界面板）无滑动条——自然全高不设限，随内容撑开；
+   align-self 默认 stretch ⇒ 与代码列（也是全高）等高，整台无内部滚动。 */
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; }
 .stepper .stw-ring { margin: .35rem 0 .6rem; }
 .stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
 .stepper .stw-rhead b { font-size: .84rem; }
@@ -274,7 +279,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       <rect x="205" y="200" width="270" height="26" fill="#fdeaea"/>
       <text x="340" y="217" font-size="12" fill="#c62828" text-anchor="middle">若单缓冲：SSPLIT#2 只能被 NAK，空转一个微帧</text>
     </svg>
-    <figcaption>SSPLIT#1 进缓冲后，FS 事务在后台真跑几十微秒；期间 SSPLIT#2 照常到达——<strong>两个缓冲恰好一个"在飞"、一个"接新"</strong>。这就是 §11.17.4 "at least two transactions of non-periodic buffering" 的全部动机。</figcaption>
+    <figcaption>SSPLIT#1 进缓冲后，FS 事务在后台真跑几十微秒；期间 SSPLIT#2 照常到达——<strong>两个缓冲恰好一个"在执行"、一个"接新"</strong>。这就是 §11.17.4 "at least two transactions of non-periodic buffering" 的全部动机。</figcaption>
   </figure>
 
   <h2>规则一 · 缓冲（Q2）：双缓冲乒乓与四种握手语义</h2>
@@ -286,11 +291,11 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <tr><td>CSPLIT 到但事务还没跑完</td><td><strong>NYET</strong>（下个微帧再来）</td><td>不增</td></tr>
     <tr><td>CSPLIT 到但找不到匹配缓冲</td><td><strong>STALL</strong>（协议违例）</td><td>按错误处理</td></tr>
   </table>
-  <p>另外每端点任一时刻只允许 <strong>1 个缓冲结果</strong>（Compare_buffs 规则，§11.17.1）——双缓冲是"在飞＋接新"，不是"堆两个结果"。</p>
+  <p>另外每端点任一时刻只允许 <strong>1 个缓冲结果</strong>（Compare_buffs 规则，§11.17.1）——双缓冲是"在执行＋接新"，不是"堆两个结果"。</p>
   <p>规范为什么定"至少 2 个"？只有 1 个会怎样？逐帧推演（无 JS 时全部帧定格可读）：</p>
   <div class="player">
     <div class="frame">
-      <div class="ftitle"><span class="no">第 1 帧</span><span>正常流水：SSPLIT#1 入缓冲 A，FS 事务在飞</span></div>
+      <div class="ftitle"><span class="no">第 1 帧</span><span>正常流水：SSPLIT#1 入缓冲 A，FS 事务在执行</span></div>
       <div class="fbody">
         <div class="mfr">
           <div class="u"><b>微帧 Y0</b><span class="chSS">SSPLIT#1 ▸</span></div>
@@ -299,7 +304,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
           <div class="u"><b>Y3</b>（…）</div>
         </div>
         <div class="buftt">
-          <div class="slot busy">缓冲 A｜事务#1 在飞：TT 正对下游发 FS 事务</div>
+          <div class="slot busy">缓冲 A｜事务#1 在执行：TT 正对下游发 FS 事务</div>
           <div class="slot free">缓冲 B｜空</div>
         </div>
         主机在 Y0 用 SSPLIT 把 bulk 事务高速递进 TT（HS 域里一眨眼）；TT 收下后立刻在下游 FS 总线开跑——64 字节数据光传输就 ≈43 µs，<strong>而起点已在本微帧中段（SSPLIT 交付之后），常跨出这个微帧；且无论跨不跨，主机都不在本微帧内问结果——CSPLIT 最早 M+1，这笔活对主机必然落到后续微帧</strong>。
@@ -332,9 +337,9 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         </div>
         <div class="buftt">
           <div class="slot free">缓冲 A｜已回收——可接 SSPLIT#3</div>
-          <div class="slot busy">缓冲 B｜事务#2：在飞</div>
+          <div class="slot busy">缓冲 B｜事务#2：在执行</div>
         </div>
-        CSPLIT 在 Y2 把结果取走，A 马上回到可用状态，正好接下一趟活。两级轮换（乒乓），<strong>上游微帧节奏与下游帧节奏互不阻塞</strong>——这就是"一个在飞、一个接新"。
+        CSPLIT 在 Y2 把结果取走，A 马上回到可用状态，正好接下一趟活。两级轮换（乒乓），<strong>上游微帧节奏与下游帧节奏互不阻塞</strong>——这就是"一个在执行、一个接新"。
       </div>
     </div>
     <div class="frame">
@@ -347,7 +352,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
           <div class="u"><b>Y3</b>（若仍对撞 → 再 NAK）</div>
         </div>
         <div class="buftt">
-          <div class="slot busy">缓冲 A｜事务#1 在飞——#2 没有地方放</div>
+          <div class="slot busy">缓冲 A｜事务#1 在执行——#2 没有地方放</div>
           <div class="slot none">（第二个缓冲不存在）</div>
         </div>
         TT 无空间只能回 <strong>NAK</strong>（不罚但空转，§11.17.1）：SSPLIT#2 空跑一趟、下个微帧重发——<strong>HS 上游带宽被空转吞掉，下游设备却闲着等活</strong>。负载一重，交付时刻反复撞上回收时刻 → 持续 NAK，吞吐塌进"自阻塞"。
@@ -359,7 +364,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <table>
           <tr><th>缓冲数</th><th>后果</th></tr>
           <tr><td>1</td><td class="bad">请求与应答应同时驻留做不到 → 第 4 帧的空转/自阻塞</td></tr>
-          <tr><td><strong>≥2（规范下限，§11.17.4）</strong></td><td>恰好覆盖"一个在飞＋一个接新"的异步两层</td></tr>
+          <tr><td><strong>≥2（规范下限，§11.17.4）</strong></td><td>恰好覆盖"一个在执行＋一个接新"的异步两层</td></tr>
           <tr><td>更多</td><td>厂商可选的性能余量（§11.19 只给空间公式不强制）——只影响成本，不影响正确性</td></tr>
         </table>
         闸门仍在：每端点任一时刻只许 <strong>1 个结果缓冲</strong>（Compare_buffs，§11.17.1）——双缓冲是<strong>流水位</strong>，不是备份位。一句小结：<strong>双缓冲是流水线的最小深度，不是冗余备份</strong>。
@@ -444,7 +449,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       </div>
     </div>
   </div>
-  <div class="note"><strong>两道错题的小结</strong>：Q2——解耦需要排队，双缓冲=一个在飞一个接新；Q3——重试决策权跟着调度权走：非周期事务错误归 TT（3 次封顶），握手结果与全部 periodic 归主机——interrupt＝主机按服务节奏再试，iso＝永不重试、当期放弃（§5.6.5）。</div>
+  <div class="note"><strong>两道错题的小结</strong>：Q2——解耦需要排队，双缓冲=一个在执行一个接新；Q3——重试决策权跟着调度权走：非周期事务错误归 TT（3 次封顶），握手结果与全部 periodic 归主机——interrupt＝主机按服务节奏再试，iso＝永不重试、当期放弃（§5.6.5）。</div>
 
   <h2>检索练习 · 4 题（新角度回测）</h2>
   <div id="quiz"></div>
@@ -894,7 +899,7 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'C 对。§11.17.1：TT 无空间回 NAK、不增 err_count（空转但不罚）；"已有 pending/ready 回 ACK 但忽略数据"；"CSPLIT 未完成回 NYET"；"CSPLIT 无匹配缓冲回 STALL（协议违例）"。四个语义各司其职，评测 TT 补丁时逐条核对。' },
   { tag: '重试权属',
     prompt: 'bulk 事务在 FS 域遭遇传输错误，TT 的 FS handler 怎么处置？',
-    options: ['立即上报主机等裁决', '本地重试，3 次后以 stall 回报', '本地无限重试直到成功', '丢弃数据等待主机轮询'],
+    options: ['立即上报主机等决定', '本地重试，3 次后以 stall 回报', '本地无限重试直到成功', '丢弃数据等待主机轮询'],
     answer: 1,
     explain: 'B 对。§11.17.2：非周期的事务错误（bit 错/超时）允许 TT 本地重试，3 次后以 stall 状态结果回报；但对 ACK/NAK/STALL 等握手结果不得本地重试。对照：interrupt 是"完全不本地重试"（§11.20）——非周期与 periodic 的分界。' },
   { tag: '重试权属',
