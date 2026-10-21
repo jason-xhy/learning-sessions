@@ -148,7 +148,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper .st-crow.ctx, .stepper .st-crow.hw, .stepper .st-crow.ph { white-space: normal; }
 .stepper .st-crow code { font: inherit; }
 .stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
-.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: var(--muted); font-size: .74rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: #666; font-size: .74rem; }
 .stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
 .stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
 .stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
@@ -162,6 +162,10 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
    留在浅底上看不清；cur 的当前行信号改由金色内描边表达（底仍墨、字仍白）。 */
 .stepper.js .st-crow.ph:hover { background: #3a3a30; }
 .stepper.js .st-crow.ph.cur { background: var(--ink); color: #fff; box-shadow: inset 0 0 0 2px #f0c94a; }
+/* v3.4b：ph 行内联 code 芯片——全局 code 浅底 #f4f4ee 落在墨底行上把继承的白字
+   盖住（≈1.1:1 看不清，0009 相标行整段标题在 code 内，用户二报实锤）；改墨底上的
+   半透明微亮衬底+白字（≈10:1）。 */
+.stepper .st-crow.ph code { background: rgba(255, 255, 255, .16); color: #fff; }
 /* v3.1：世界面板钉在视口内随长代码滚动（粘滞行程=格棚列内） */
 /* v3.2（已废止）：全高无内滚——与 v3.3"变化点须与当前代码行齐平"冲突，等高契约随之退役。
    v3.3：动画窗口（世界面板）钉视口右列：top 让位钉住的控件条、height 约一屏（底部
