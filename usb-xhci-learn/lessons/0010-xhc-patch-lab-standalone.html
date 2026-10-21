@@ -115,20 +115,26 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
    普通行无行号）；语句/调用级帧；双栏加大加高。
    v3（2026-10-21 用户裁定"窗口太大"）：宽度不再一刀切 96vw——JS 量出最长代码行实际
    渲染宽度后给 .st-code 与整台 .stepper 设定紧致像素宽（prose 行不驱动宽度）；
-   无 JS 静态态回落 min(96vw,1720px)；面板高度 44rem→36rem。 */
+   无 JS 静态态回落 min(96vw,1720px)。
+   v3.1（2026-10-21 用户裁定"动画窗口太短需全部显示"）：废 36rem 内滚窗——代码列
+   全高显示；世界面板 sticky 跟视口、控件条 sticky 置顶、当步解说 sticky 置底。 */
 .stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
 .stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
 .stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
 .stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
 .stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+/* 长代码全高显示后控件条钉在视口顶（仅 JS 态有控件条；钉住时不透底遮行） */
+.stepper.js .st-ctl { position: sticky; top: .45rem; z-index: 6; background: #fff; border-radius: 4px; padding: .25rem .4rem; margin-left: -.4rem; margin-right: -.4rem; box-shadow: 0 1px 6px rgba(30,28,18,.08); }
 .stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
 .stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
 .stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
 .stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
 .stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
 @media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
-.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; max-height: 36rem; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
-.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; }
+/* v3.1：代码列全高（无 max-height 内滚）；横向 overflow 留作超宽回落 */
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; overflow-x: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+/* scrollIntoView 跟随时给钉住的顶条/底条让位 */
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; scroll-margin-top: 3.4rem; scroll-margin-bottom: 5.2rem; }
 /* prose 行（相标/上下文/硬件旁白）可折行，不参与代码宽度测量 */
 .stepper .st-crow.ctx, .stepper .st-crow.hw, .stepper .st-crow.ph { white-space: normal; }
 .stepper .st-crow code { font: inherit; }
@@ -143,7 +149,8 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper.js .st-crow:hover { background: #f4f4ee; }
 .stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
 .stepper.js .st-crow.done { opacity: .66; }
-.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; max-height: 36rem; overflow-y: auto; }
+/* v3.1：世界面板钉在视口内随长代码滚动（粘滞行程=格棚列内） */
+.stepper .st-world { border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; align-self: start; position: sticky; top: .8rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
 .stepper .stw-ring { margin: .35rem 0 .6rem; }
 .stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
 .stepper .stw-rhead b { font-size: .84rem; }
@@ -165,6 +172,8 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
 .stepper .stw-box th { width: 6em; background: #fbfbf6; }
 .stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+/* v3.1：当步解说钉在视口底（JS 态滚动走查时常驻；含活跃引用 chips 可点） */
+.stepper.js .st-note { position: sticky; bottom: 0; z-index: 5; box-shadow: 0 -2px 10px rgba(30,28,18,.07); border-radius: 0 0 4px 4px; }
 .stepper .st-note .st-mut { color: var(--muted); }
 .stepper .st-refs { margin-top: .55rem; }
 .stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
@@ -222,6 +231,8 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   .stepper .st-grid { grid-template-columns: 1fr; }
   .stepper .st-ctl { display: none; }
   .stepper .st-code { width: auto !important; max-height: none; }
+  /* v3.1 全高显示的打印面：钉住的面板全部回常规流、高度不封顶 */
+  .stepper .st-world, .stepper.js .st-note { position: static; max-height: none; box-shadow: none; }
   .st-modal { display: none !important; }
 }
 
