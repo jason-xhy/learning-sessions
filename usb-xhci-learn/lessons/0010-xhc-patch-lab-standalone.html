@@ -122,7 +122,11 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
    内滚——自然全高无上限，与代码列等高（grid stretch）；控件条/当步解说保持钉住。
    v3.3（2026-10-21 用户裁定"高亮行居中+变化点齐平"）：世界面板回到钉视口（约一屏高、
    滚动条隐藏的内滚——内容全量在 DOM，视觉无滑动条）；当前代码行滚到视口垂直居中，
-   帧变化元素（.st-chg 脉冲）由 JS 滚到与当前代码行齐平（见 codestepper.js v3.3 注）。 */
+   帧变化元素（.st-chg 脉冲）由 JS 滚到与当前代码行齐平（见 codestepper.js v3.3 注）。
+   v3.4（2026-10-21 用户报"配色看不清+前几行导航条要追着点"）：ph 行 hover/cur
+   保持深底浅字（通用 hover/cur 的浅底会把白字留在浅底上，对比度≈1:1）；步进居中
+   滚动加"钉住地板"夹紧（codestepper.js v3.4）——前几行纯居中会把页面滚得让控件条
+   sticky 不咬合，此后每步"下一行"按钮随内容上移，用户被迫追着鼠标点。 */
 .stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
 .stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
 .stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
@@ -154,6 +158,10 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper.js .st-crow:hover { background: #f4f4ee; }
 .stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
 .stepper.js .st-crow.done { opacity: .66; }
+/* v3.4：ph 行（墨底白字相标行）hover/cur 不换浅底——通用 hover/cur 的浅底会把白字
+   留在浅底上看不清；cur 的当前行信号改由金色内描边表达（底仍墨、字仍白）。 */
+.stepper.js .st-crow.ph:hover { background: #3a3a30; }
+.stepper.js .st-crow.ph.cur { background: var(--ink); color: #fff; box-shadow: inset 0 0 0 2px #f0c94a; }
 /* v3.1：世界面板钉在视口内随长代码滚动（粘滞行程=格棚列内） */
 /* v3.2（已废止）：全高无内滚——与 v3.3"变化点须与当前代码行齐平"冲突，等高契约随之退役。
    v3.3：动画窗口（世界面板）钉视口右列：top 让位钉住的控件条、height 约一屏（底部
@@ -1340,7 +1348,12 @@ void usb_kill_urb(struct urb *urb)
  * v3.2（2026-10-21）：世界面板全高无内滚、与代码列等高（纯 CSS 改动，见 course.css v3.2 注）。
  * v3.3（2026-10-21 用户裁定）：步进跟随对齐——当前代码行滚到视口垂直居中；世界面板钉
  *   视口右列、约一屏高、滚动条隐藏（内滚仍在，内容全量在 DOM），每帧把发生变化的
- *   元素标 .st-chg 脉冲并自动滚到与当前代码行齐平（alignWorld）。 */
+ *   元素标 .st-chg 脉冲并自动滚到与当前代码行齐平（alignWorld）。
+ * v3.4（2026-10-21 用户报"前几行高亮时导航条要追着点"）：居中滚动加"钉住地板"夹紧
+ *   （stepScroll）——前几行纯居中会把页面滚得让控件条/世界面板的 sticky 不咬合
+ *   （自然位落进视口中带），此后每步"下一行"页面下滚一行高、按钮随内容上移一格格，
+ *   用户被迫追着鼠标向上移。地板=让两件钉住位咬合的最小 scrollY（ctl 自然位以
+ *   零高静止锚点 .st-pinref 量取——sticky 咬合后 ctl 自身 rect 是钉住位，不可用）。 */
 (function () {
   'use strict';
 
@@ -1466,6 +1479,11 @@ void usb_kill_urb(struct urb *urb)
       '<span class="st-count"></span><span class="st-ph"></span>' +
       '<span class="st-hint">←/→ 键也可步进</span>';
     root.insertBefore(ctl, root.querySelector('.st-grid'));
+    /* v3.4：ctl 前的零高静止锚点——量 ctl 自然文档位用（见头部 v3.4 注） */
+    var pinRef = document.createElement('div');
+    pinRef.className = 'st-pinref';
+    pinRef.style.height = '0';
+    root.insertBefore(pinRef, ctl);
     var countEl = ctl.querySelector('.st-count'), phEl = ctl.querySelector('.st-ph');
     var playBtn = ctl.querySelector('[data-a="play"]');
 
@@ -1482,6 +1500,19 @@ void usb_kill_urb(struct urb *urb)
     if (refsBox) { refsBox.innerHTML = ''; refsBox.appendChild(chips); }
 
     function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = '播放'; }
+    /* v3.4 钉住地板（见头部注）：行尽量滚到视口居中，但不低于"控件条与世界面板
+     * 都咬合在钉住位"的最小 scrollY——否则前几行阶段按钮随内容上移、要追着点。 */
+    var ctlStickTop = parseFloat(getComputedStyle(ctl).top) || 0;
+    var worldStickTop = parseFloat(getComputedStyle(worldBox).top) || 0;
+    function stepScroll(cur) {
+      var sy = window.scrollY || window.pageYOffset || 0;
+      var rowR = cur.getBoundingClientRect();
+      var center = sy + rowR.top + rowR.height / 2 - innerHeight / 2;
+      var floor = Math.max(sy + pinRef.getBoundingClientRect().top - ctlStickTop,
+                           sy + gridBox.getBoundingClientRect().top - worldStickTop);
+      var maxS = document.documentElement.scrollHeight - innerHeight;
+      window.scrollTo(0, Math.max(0, Math.min(maxS, Math.max(center, floor))));
+    }
     /* v3.3 齐平对位：本帧事件命中的世界元素标 .st-chg，并把它们整体滚到与当前代码行
      * 同一水平线（中线对齐）。无事件帧不动世界（代码行照常居中）。对位夹在
      * [0, scrollHeight-clientHeight] 内：变化元素贴世界顶/底时贴边即止。 */
@@ -1515,7 +1546,10 @@ void usb_kill_urb(struct urb *urb)
        * go(0) 会连环拽页（最后一台赢，v3.2 起即有的加载跳页），只在用户步进时接管） */
       Object.keys(rowEls).forEach(function (id) { rowEls[id].classList.remove('cur', 'done'); });
       var cur = rowEls[fr.c];
-      if (cur) { cur.classList.add('cur'); if (!noScroll) cur.scrollIntoView({ block: 'center' }); }
+      if (cur) {
+        cur.classList.add('cur');
+        if (!noScroll) stepScroll(cur);
+      }
       /* 已执行过的同段行打 done（当前行之前出现过的行） */
       var seen = {};
       for (var k = 0; k <= idx; k++) seen[D.frames[k].c] = true;

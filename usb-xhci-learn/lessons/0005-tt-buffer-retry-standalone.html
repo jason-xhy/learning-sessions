@@ -122,7 +122,11 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
    内滚——自然全高无上限，与代码列等高（grid stretch）；控件条/当步解说保持钉住。
    v3.3（2026-10-21 用户裁定"高亮行居中+变化点齐平"）：世界面板回到钉视口（约一屏高、
    滚动条隐藏的内滚——内容全量在 DOM，视觉无滑动条）；当前代码行滚到视口垂直居中，
-   帧变化元素（.st-chg 脉冲）由 JS 滚到与当前代码行齐平（见 codestepper.js v3.3 注）。 */
+   帧变化元素（.st-chg 脉冲）由 JS 滚到与当前代码行齐平（见 codestepper.js v3.3 注）。
+   v3.4（2026-10-21 用户报"配色看不清+前几行导航条要追着点"）：ph 行 hover/cur
+   保持深底浅字（通用 hover/cur 的浅底会把白字留在浅底上，对比度≈1:1）；步进居中
+   滚动加"钉住地板"夹紧（codestepper.js v3.4）——前几行纯居中会把页面滚得让控件条
+   sticky 不咬合，此后每步"下一行"按钮随内容上移，用户被迫追着鼠标点。 */
 .stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
 .stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
 .stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
@@ -154,6 +158,10 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 .stepper.js .st-crow:hover { background: #f4f4ee; }
 .stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
 .stepper.js .st-crow.done { opacity: .66; }
+/* v3.4：ph 行（墨底白字相标行）hover/cur 不换浅底——通用 hover/cur 的浅底会把白字
+   留在浅底上看不清；cur 的当前行信号改由金色内描边表达（底仍墨、字仍白）。 */
+.stepper.js .st-crow.ph:hover { background: #3a3a30; }
+.stepper.js .st-crow.ph.cur { background: var(--ink); color: #fff; box-shadow: inset 0 0 0 2px #f0c94a; }
 /* v3.1：世界面板钉在视口内随长代码滚动（粘滞行程=格棚列内） */
 /* v3.2（已废止）：全高无内滚——与 v3.3"变化点须与当前代码行齐平"冲突，等高契约随之退役。
    v3.3：动画窗口（世界面板）钉视口右列：top 让位钉住的控件条、height 约一屏（底部
