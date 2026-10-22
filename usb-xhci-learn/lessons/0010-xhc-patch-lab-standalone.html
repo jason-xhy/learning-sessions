@@ -433,7 +433,7 @@ is not updated in a new cycle until Set TR Dequeue overwrites it:
 
 	} while (!cycle_found || !td_last_trb_found);</pre>
   <h3>③ 根因（用 0007 的模型走一遍）</h3>
-  <p>0007 立过铁律：硬件取指只认 <strong>TRB 自己带的 cycle 位</strong>（§4.9.2：cycle 匹配才取）。Endpoint Context 里的 DCS（Dequeue Cycle State）是给软件看的<strong>副本</strong>——xHC 本应在端点停下的时刻更新它。VL805 未更新：halt 时副本不动。这段代码出场的时机恰是 0008 讲的 STALL 之后：驱动要取消滞留 TD，用 <code>Set TR Dequeue</code> 命令把硬件 dequeue 挪到安全位置，命令里必须报出挪到之处的新 cycle 值。旧代码拿 <code>hw_dequeue & 0x1</code>——正是 EP Context 副本的最低位——当新 cycle 的起点。副本陈旧时，算出的新 cycle 一半概率是反的：写进环里的 TRB 全部"cycle 不匹配"，xHC 一颗都不取，端点当场哑掉。走查循环里的 <code>new_cycle ^= 1</code> 是 0007 的回绕点规则：沿途每跨过一颗会翻转 cycle 的 Link TRB 就翻一次——起点错了，沿途翻得再准也全错。</p>
+  <p>0007 立过铁律：硬件取指只认 <strong>TRB 自己带的 cycle 位</strong>（§4.9.2：cycle 匹配才取）。Endpoint Context 里的 DCS（Dequeue Cycle State）是给软件看的<strong>副本</strong>——xHC 本应在端点停下的时刻更新它。VL805 未更新：halt 时副本不动。这段代码用上的时机恰是 0008 讲的 STALL 之后：驱动要取消滞留 TD，用 <code>Set TR Dequeue</code> 命令把硬件 dequeue 挪到安全位置，命令里必须报出挪到之处的新 cycle 值。旧代码拿 <code>hw_dequeue & 0x1</code>——正是 EP Context 副本的最低位——当新 cycle 的起点。副本陈旧时，算出的新 cycle 一半概率是反的：写进环里的 TRB 全部"cycle 不匹配"，xHC 一颗都不取，端点当场哑掉。走查循环里的 <code>new_cycle ^= 1</code> 是 0007 的回绕点规则：沿途每跨过一颗会翻转 cycle 的 Link TRB 就翻一次——起点错了，沿途翻得再准也全错。</p>
   <h3>④ 修复</h3>
   <pre class="pdiff" data-commit="6328bdc988d2" data-file="drivers/usb/host/xhci-ring.c">/* diff:drivers/usb/host/xhci-ring.c @6328bdc988d2（修复 diff——新 cycle 改从 td->end_trb（环上已知好 TRB）取，回绕改在找到 end_trb 之后计）*/
 @@ -715,25 +715,24 @@ static int xhci_move_dequeue_past_td(struct xhci_hcd *xhci,
@@ -798,7 +798,7 @@ void usb_kill_urb(struct urb *urb)
 
 	atomic_dec(&amp;urb-&gt;reject);
 }</pre>
-  <p>0009 教 giveback 时停在了"交还 usbcore"；usbcore 接下来怎么管理 urb 的余生（kill/poison/unlink、anchor、引用计数）是后续 usbcore 深读课的用武之地。这枚补丁是那门课的先导：届时的主线（<code>urb-&gt;reject</code>、<code>use_count</code>、<code>usb_kill_urb_queue</code>）今天已经全部出场。</p>
+  <p>0009 教 giveback 时停在了"交还 usbcore"；usbcore 接下来怎么管理 urb 的余生（kill/poison/unlink、anchor、引用计数）是后续 usbcore 深读课的用武之地。这枚补丁是那门课的先导：届时的主线（<code>urb-&gt;reject</code>、<code>use_count</code>、<code>usb_kill_urb_queue</code>）今天已经全部出现。</p>
 
   <p>五章走完，把五枚补丁留在<strong>今天基线</strong>上的现场用真实代码连起来巡一遍（步⑤会跨出 xhci 走进 usbcore——补丁史自带的桥）：</p>
   <!--STEPPER:0010:BEGIN-->
