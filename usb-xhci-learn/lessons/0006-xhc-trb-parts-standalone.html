@@ -491,7 +491,7 @@ struct xhci_transfer_event {
     <tr><td>bit0</td><td><strong>cycle</strong>——全类型通用：所有权标记（轮次匹配＝消费者可取；0007 第 1 章的主线）</td></tr>
     <tr><td>bit1</td><td>数据 TRB＝<strong>ENT</strong>（Evaluate Next TRB，:1047）；Link TRB＝<strong>TC</strong>（Toggle Cycle，xhci.h:958）——同一 bit 两个身份</td></tr>
     <tr><td>bit2 / bit3 / bit4 / bit5 / bit6</td><td>ISP（短包即中断）/ NS（PCIe no snoop）/ <strong>chain</strong>（捆 TD）/ IOC（完成即事件）/ <strong>IDT</strong>（指针字段装立即数据）——:1049-1057</td></tr>
-    <tr><td>bit9</td><td>等时 TRB＝BEI（Block Event Interrupt，:1062）；Address Device 命令＝<strong>BSR</strong>（:972，0008 实测样本两段式的主线）——又一处同位双身份</td></tr>
+    <tr><td>bit9</td><td>等时 TRB＝BEI（Block Event Interrupt，:1062）；Address Device 命令＝<strong>BSR</strong>（:972，0008 实测样本里的两段式）——又一处同位双身份</td></tr>
     <tr><td>bit10-15</td><td><strong>TRB Type</strong>——全类型通用：单据种类（Normal/Setup/Data/Status/Link/Event…）</td></tr>
     <tr><td>bit16 区</td><td>Data TRB＝DIR（TRB_DIR_IN :1065）；Setup TRB＝TRT（TRB_TX_TYPE&lt;&lt;16，2=OUT / 3=IN，:1066-1068——预告数据阶段方向）；事件 TRB 归入 EP ID 字段</td></tr>
     <tr><td>bit20-16 ＋ bit24-31</td><td><strong>事件 TRB 的"事件通知自带收件人"</strong>：EP ID（TRB_TO_EP_ID :821）/ Slot ID（TRB_TO_SLOT_ID :816）；命令 TRB 用 Slot ID 指定目标设备（SLOT_ID_FOR_TRB :819）</td></tr>
