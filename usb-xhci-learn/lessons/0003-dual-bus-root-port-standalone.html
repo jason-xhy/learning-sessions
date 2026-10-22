@@ -279,7 +279,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 
   <h2>一图小结</h2>
   <div class="flow">
-    <div class="fnode"><b>同一连接器，两套总线并存</b>：USB2 数据对（D+/D-）＋ SuperSpeed 收发对（SSTX/SSRX，Gen2x2 再翻倍）＋共享 VBUS。USB3.x 从未"替换掉"USB2 电气形态，而是把它包进了同一根线。</div>
+    <div class="fnode"><b>同一连接器，两套总线并存</b>：USB2 数据对（D+/D-）＋ 超速（SuperSpeed）收发对（SSTX/SSRX，Gen2x2 再翻倍）＋共享 VBUS。USB3.x 从未"替换掉"USB2 电气形态，而是把它包进了同一根线。</div>
     <div class="farrow">↓ 兼容性的物理基础</div>
     <div class="fnode"><b>SS/HS 设备在 USB2 对上始终保持 FS 形态</b>：D+ 经 1.5 kΩ 上拉到 3.0–3.6 V（0→VIH ≤2.5 µs）；<strong>HS 设备初始也以 FS 附着</strong>（§7.1.5、§7.1.5.2）。所以插进任何口，USB2 侧的连接检测永远在场。</div>
     <div class="fbranch">
@@ -289,7 +289,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <div class="farrow">↓ 关键分界：xHC 把 USB3 自己的①②层"吸收"进硬件</div>
     <div class="fnode"><b>链路训练、Hot/Warm Reset 全在控制器硬件里完成，软件只见结果</b>。两代复位形态天差地别——USB2 是 SE0（根口 ≥50 ms），USB3 是 LFPS 长 burst（Warm Reset 80–120 ms → Rx.Detect 重训练，§6.9.3/§7.4.2）——但对软件都收敛成"端口状态寄存器里的一位"。内核原话："USB-3 connections are initialized automatically by the hostcontroller hardware"（hub.c:5677）。</div>
     <div class="farrow">↓ 硬件向上暴露的接口</div>
-    <div class="fnode"><b>PORTSC 统一端口模型 = USB2 ch11 端口语义 ＋ SS 扩展位</b>（PLS 链路状态、WPR warm reset 等）。xHCI 用 <strong>§3.5 Root Hub Management</strong> 把根集线器伪装成标准 hub；§5.4 操作寄存器里 PORTSC（§5.4.8）的状态/变化位（CSC/PRC/PEC…）与 USB2 §11 的 C_PORT_CONNECTION 家族同构。</div>
+    <div class="fnode"><b>PORTSC 统一端口模型 = USB2 ch11 端口语义 ＋ SS 扩展位</b>（PLS 链路状态、WPR warm reset 等）。xHCI 用 <strong>§3.5 Root Hub Management</strong> 把根 hub（集线器）伪装成标准 hub；§5.4 操作寄存器里 PORTSC（§5.4.8）的状态/变化位（CSC/PRC/PEC…）与 USB2 §11 的 C_PORT_CONNECTION 家族同构。</div>
     <div class="farrow">↓ 软件侧落点</div>
     <div class="fnode"><b>内核里一个 xHC 生成两套根 hub</b>：<code>usb2_rhub</code>（xhci.c:5379）与 <code>usb3_rhub</code>（xhci.c:372），共享物理根口。于是 <strong>同一个 hub.c、同一个 hub_event 循环、同一套 ch9 设备框架服务两代</strong>——这就是课 0002 七步链路两代通用的根因。</div>
   </div>
@@ -297,7 +297,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <div class="note"><strong>动手验证（1 分钟）</strong>：在装了 xHCI 的机器上 <code>ls /sys/bus/usb/devices/</code>——根 hub 成对出现（如 usb1 与 usb2），分别挂在 USB2 总线与 SS 总线上；<code>lsusb -t</code> 能看到两代总线树。这就是"两套根 hub"的现场。</div>
 
   <h2>为什么规范要这样设计</h2>
-  <p>USB 3.x 在 <strong>③协议层以上（ch8 协议、ch9 设备框架）刻意沿用 USB2</strong>（课 0001 Q2/Q12 的"哪些层共享"接缝）。"描述符、标准请求、hub 模型一次编写、两代通用"是 USB3 对操作系统的兼容承诺；xHC 是这个承诺的主机侧落点——<strong>把新形态挡在硬件里，把旧形态留给软件</strong>。评审视角：凡 xHCI/usbcore 补丁里出现"USB3 特有状态位"，它一定对应某个被硬件吸收的链路层事件（PLS↔LTSSM 状态、WPR↔Warm Reset、PRC↔复位完成），核对时两边都要查。</p>
+  <p>USB 3.x 在 <strong>③协议层以上（ch8 协议、ch9 设备框架）刻意沿用 USB2</strong>（课 0001 Q2/Q12 的"哪些层共享"衔接处）。"描述符、标准请求、hub 模型一次编写、两代通用"是 USB3 对操作系统的兼容承诺；xHC 是这个承诺的主机侧落点——<strong>把新形态挡在硬件里，把旧形态留给软件</strong>。评审视角：凡 xHCI/usbcore 补丁里出现"USB3 特有状态位"，它一定对应某个被硬件吸收的链路层事件（PLS↔LTSSM 状态、WPR↔Warm Reset、PRC↔复位完成），核对时两边都要查。</p>
 
   <h2>检索练习 · 3 题</h2>
   <div id="quiz"></div>
@@ -662,7 +662,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
 <script>
 Quiz.render(document.getElementById('quiz'), [
   { tag: '双总线',
-    prompt: 'SuperSpeed 设备插到 USB2-only 口上为什么也能正常枚举？',
+    prompt: '超速设备插到 USB2-only 口上为什么也能正常枚举？',
     options: ['SS 设备自动降级重写固件', '线缆含 USB2 对，SS 设备在其上保持 FS 形态', 'USB2 口会模拟 SS 握手应答', 'VBUS 升压后进入兼容模式'],
     answer: 1,
     explain: 'B 对。USB3.x 连接器里 USB2 数据对（D+/D-）与 SS 收发对并存，SS/HS 设备在 USB2 对上始终保持 FS 形态（D+ 经 1.5 kΩ 上拉，§7.1.5；HS 设备初始也以 FS 附着，§7.1.5.2）。插 USB2-only 口时 SS 侧完全沉默，USB2 形态直接完成枚举。' },

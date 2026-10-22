@@ -276,7 +276,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75，2026-09-23）——规范锚点：USB2 §11.17/§11.18/§11.20/§5.3.2</p>
 
   <h2>整体定位（先挂图）</h2>
-  <p>本课钻进 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0004-tt-split-standalone.html">课 0004</a> ⑥层 TT 的内部，两个高频错点：<strong>缓冲为什么要两个</strong>（Q2）与<strong>重试权属在谁</strong>（Q3）。两题同源：split 把一次搬运拆成时间上解耦的两段，规则全是围绕这个解耦设计的。</p>
+  <p>本课钻进 <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0004-tt-split-standalone.html">课 0004</a> ⑥层 TT 的内部，两个高频错点：<strong>缓冲为什么要两个</strong>（Q2）与<strong>重试决策权在谁</strong>（Q3）。两题同源：split 把一次搬运拆成时间上解耦的两段，规则全是围绕这个解耦设计的。</p>
 
   <h2>时间解耦：SSPLIT 和 CSPLIT 之间隔着一个真实事务</h2>
   <p>HS 微帧 125 µs；FS 侧一次满载 64 字节 bulk 事务，光 DATA 字段就要 64×8÷12Mb/s ≈ <strong>43 µs</strong>，——整笔再添 token、CRC16、握手与包间隙后约 50–60 µs，单看时长仍装得进一个微帧，但装得进 ≠ 能同微帧闭环：FS 事务的起点是 SSPLIT 在本微帧内交付完的时刻（bulk 的 SSPLIT 吃微帧剩余带宽，位置不保证靠前），完成时刻主机在 HS 侧既看不见也算不准。规范因此要求两者解耦：CSPLIT 绝不与 SSPLIT 同微帧（非周期最早 M+1、共 M+1..M+3 三次机会，附录 A——同微帧 CSPLIT 即错误案例 "CS too early"；周期 interrupt 定死预算微帧之后，§11.18.4③）——于是 SSPLIT（交付）与 CSPLIT（取结果）必然是<strong>两个不同微帧里的独立事务</strong>——中间夹着 hub ↔ FS 设备的真实异步执行：</p>
@@ -383,7 +383,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
       </div>
     </div>
     <div class="frame">
-      <div class="ftitle"><span class="no">第 5 帧</span><span>为什么恰好 ≥2：下限管"不塌方"，上限交成本</span></div>
+      <div class="ftitle"><span class="no">第 5 帧</span><span>为什么恰好 ≥2：下限保"驻留不塌"，上限交给成本</span></div>
       <div class="fbody">
         <table>
           <tr><th>缓冲数</th><th>后果</th></tr>
@@ -396,7 +396,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     </div>
   </div>
 
-  <h2>规则二 · 重试权属（Q3）：三层对照，按职责边界分工</h2>
+  <h2>规则二 · 重试决策权（Q3）：三层对照，按职责边界分工</h2>
   <div class="flow">
     <div class="fnode"><b>TT 本地（FS handler）——只限非周期的事务错误</b>：bulk/control 在 FS 域遭遇传输错误（bit 错/超时）可本地重试，<strong>3 次后以 stall 状态回报</strong>；但对 ACK/NAK/STALL 等握手结果<strong>不得重试</strong>（§11.17.2）。
 <pre>/* 摘要库 §11.17.2 引文 */
@@ -412,10 +412,10 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
     <div class="farrow">↓</div>
     <div class="fnode"><b>periodic（interrupt/iso）——TT 完全不本地重试</b>：§11.20.1（interrupt）与 §11.21（iso）明文。因为 interrupt 活在主机的微帧管道里（§11.18.4：SSPLIT/CSPLIT 在哪个微帧都排得死死的），NAK 不是错误而是"没就绪"的合法状态（§5.3.2），hub 若自作主张重试会（a）吃掉 187.5 字节/微帧的 FS 预算（b）打乱主机按 bInterval 的服务记录（c）重复执行风险。<strong>结果如实经 CSPLIT 回报（iso OUT 例外：根本没有 CSPLIT，§11.21），处置权在主机且语义分岔——interrupt 按服务节奏重新轮询；iso 无握手无重试（§5.6.5），坏周期直接放弃、下一周期传新数据</strong>；periodic 的 CSPLIT 遇传输错误也是主机侧"立即重试"（§11.18.4⑥），不是 TT 的活。</div>
   </div>
-  <p>重试权属的规范依据，同样逐帧推演——先看契约，再推演"假如 TT 自作主张重试"会闯什么祸（§11.17.2/§11.20）：</p>
+  <p>重试决策权的规范依据，同样逐帧推演——先看约定，再推演"假如 TT 自作主张重试"会闯什么祸（§11.17.2/§11.20）：</p>
   <div class="player">
     <div class="frame">
-      <div class="ftitle"><span class="no">第 1 帧</span><span>契约：排班权在主机，TT 只是执行者</span></div>
+      <div class="ftitle"><span class="no">第 1 帧</span><span>约定：排班权在主机，TT 只是执行者</span></div>
       <div class="fbody">
         <div class="mfr">
           <div class="u"><b>主机排的周期预算</b>端点X interrupt</div>
@@ -469,7 +469,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
           <tr><td>吃的带宽</td><td>剩余带宽（best-effort），不占排班预算</td><td>预算管道里的每一笔都占用其他端点的预算</td></tr>
           <tr><td>TT 重试</td><td class="good">允许，3 次封顶后以 stall 如实回报（§11.17.2）</td><td class="bad">一个都不许（§11.20.1/§11.21）</td></tr>
         </table>
-        非周期允许 TT 吸收 FS 域的瞬时 bit 错，是因为重试<strong>不破坏任何人的契约</strong>（要么成功要么 stall，结果如实上报）；periodic 不允许，是因为每次重试都在花别人的预算。一句话：<strong>重试决策权跟着调度权走</strong>。
+        非周期允许 TT 吸收 FS 域的瞬时 bit 错，是因为重试<strong>不破坏任何一方的约定</strong>（要么成功要么 stall，结果如实上报）；periodic 不允许，是因为每次重试都在花别人的预算。一句话：<strong>重试决策权跟着调度权走</strong>。
       </div>
     </div>
   </div>
@@ -922,16 +922,16 @@ Quiz.render(document.getElementById('quiz'), [
     options: ['NYET，err_count 加 1', 'ACK，err_count 加 1', 'NAK，err_count 不增', 'STALL，err_count 不增'],
     answer: 2,
     explain: 'C 对。§11.17.1：TT 无空间回 NAK、不增 err_count（空转但不罚）；"已有 pending/ready 回 ACK 但忽略数据"；"CSPLIT 未完成回 NYET"；"CSPLIT 无匹配缓冲回 STALL（协议违例）"。四个语义各司其职，评测 TT 补丁时逐条核对。' },
-  { tag: '重试权属',
+  { tag: '重试决策权',
     prompt: 'bulk 事务在 FS 域遭遇传输错误，TT 的 FS handler 怎么处置？',
     options: ['立即上报主机等决定', '本地重试，3 次后以 stall 回报', '本地无限重试直到成功', '丢弃数据等待主机轮询'],
     answer: 1,
     explain: 'B 对。§11.17.2：非周期的事务错误（bit 错/超时）允许 TT 本地重试，3 次后以 stall 状态结果回报；但对 ACK/NAK/STALL 等握手结果不得本地重试。对照：interrupt 是"完全不本地重试"（§11.20）——非周期与 periodic 的分界。' },
-  { tag: '重试权属',
+  { tag: '重试决策权',
     prompt: 'CSPLIT 时发现 FS 设备当初 NAK 了（interrupt IN），谁决定何时再试、按什么节奏？',
     options: ['TT 按 187.5 字节预算重试', 'hub 立即本地重发 IN', 'TT 与主机协商后重试', '主机按端点 bInterval 节奏重新调度'],
     answer: 3,
-    explain: 'D 对。NAK 是"没就绪"的合法状态（§5.3.2），不是错误；hub 经 CSPLIT 如实回报，重试决策在主机——与 interrupt 端点的 bInterval 服务节奏、微帧管道调度（§11.18.4）和带宽记录保持一致。TT 本地重试会破坏这套契约（§11.20 禁止）。' }
+    explain: 'D 对。NAK 是"没就绪"的合法状态（§5.3.2），不是错误；hub 经 CSPLIT 如实回报，重试决策在主机——与 interrupt 端点的 bInterval 服务节奏、微帧管道调度（§11.18.4）和带宽记录保持一致。TT 本地重试会破坏这套约定（§11.20 禁止）。' }
 ]);
 </script>
 <!--QUIZ:0005:END-->

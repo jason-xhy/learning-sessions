@@ -276,15 +276,15 @@ pre.pmsg { border-left: 3px solid #707070; background: #faf8f2; }
 </head>
 <body>
 <main>
-  <div class="kicker">LESSON 0010 · xHC 线第 5 课·实验课（前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 三视角传输剧</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a>）</div>
+  <div class="kicker">LESSON 0010 · xHC 线第 5 课·实验课（前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006 先认零件</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007 环的运转</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009 三视角传输走查</a> ＋ <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 实战与错误路径</a>）</div>
   <h1>补丁解析实验课<br>五枚真补丁 × 修复逻辑走查 × 双份标注代码块</h1>
   <p style="font-size:.85rem;color:#707070">单文件分享版 · 完整课程（更多课时/自学指南/陪学配置）：<a href="https://github.com/jason-xhy/learning-sessions">github.com/jason-xhy/learning-sessions</a></p>
 
   <p style="font-size:.85rem;color:var(--muted)">代码基线：<code>/Volumes/KernelSrc/linux</code> · master@62f4c998b297（v7.3-rc4-75）；补丁清单：每块代码头自带 <code>@commit</code> 标记，逐字对各自 commit 机检——五枚补丁：576667bad341（2021）· 6328bdc988d2（2025）· f1ec7ae6c9f8（2020）· 45ba2154d12f（2015）· 26fbe9772b8c（2022），全部来自 <code>drivers/usb/host/xhci*</code> 与 <code>drivers/usb/core/</code> 的社区真实修复</p>
 
-  <h2>整体定位（机制图学完了，放到真补丁的显微镜下）</h2>
-  <p>xHC 线四课攒了四张图：0006 的<strong>零件图</strong>（TRB 字段、环与段）、0007 的<strong>运转图</strong>（cycle 合同、回绕点、四个控制位）、0009 的<strong>传输剧</strong>（六站旅程、事件环消费、两套口径）、0008 的<strong>命运面</strong>（错误路径、ep_state 状态位）。但四张图画的都是"今天的代码长什么样"——今天的代码是二十多年补丁堆出来的，每一处看起来理所当然的写法，背后往往站着一枚修过真实事故的补丁。</p>
-  <p>读补丁是检验机制理解最有效的方式：每个补丁都在回答"哪条约定被谁违反了"——提出这些问题的是真实的硬件缺陷与并发竞态，答案是主线内核合入的修复。本课是 xHC 线的<strong>实验课</strong>：五枚补丁，每枚对应一课的机制面，走同一套<strong>五步法</strong>：① 症状（谁在什么场景炸了，读 commit message 原文）→ ② 案发现场（修复前的代码）→ ③ 用课程模型走根因 → ④ 修复本体（diff）→ ⑤ 回望（基线今天的代码 + 这枚补丁给课程概念留下的印证）。</p>
+  <h2>整体定位（机制图学完了，放到真补丁下逐行审视）</h2>
+  <p>xHC 线四课攒了四张图：0006 的<strong>零件图</strong>（TRB 字段、环与段）、0007 的<strong>运转图</strong>（cycle 约定、回绕点、四个控制位）、0009 的<strong>传输走查</strong>（六步主线、事件环消费、两套口径）、0008 的<strong>错误路径面</strong>（错误路径、ep_state 状态位）。但四张图画的都是"今天的代码长什么样"——今天的代码是二十多年补丁堆出来的，每一处看起来理所当然的写法，背后往往站着一枚修过真实事故的补丁。</p>
+  <p>读补丁是检验机制理解最有效的方式：每个补丁都在回答"哪条约定被谁违反了"——提出这些问题的是真实的硬件缺陷与并发竞态，答案是主线内核合入的修复。本课是 xHC 线的<strong>实验课</strong>：五枚补丁，每枚对应一课的机制面，走同一套<strong>五步法</strong>：① 症状（谁在什么场景炸了，读 commit message 原文）→ ② 故障现场（修复前的代码）→ ③ 用课程模型走根因 → ④ 修复本体（diff）→ ⑤ 回望（基线今天的代码 + 这枚补丁给课程概念留下的印证）。</p>
   <p><strong>"补丁解析"从此是本课程的长驻功能</strong>：后续每门新课的机制学到手后，都配一枚同主题的社区补丁走一遍五步法。配套工具链已入库：<code>scripts/assemble_lesson_blocks.py</code>（代码块装配器——本课全部代码块由 git 原文切片装配，零誊抄）＋ <code>scripts/check_lesson_patches.py</code>（补丁块逐字机检器，--selftest 已过）。</p>
   <div class="note"><b>双份标注代码块（本课约定，后续补丁课沿用）</b>：同一份源码在本课以三种身份出现，靠代码块头与左条颜色区分——<b>裸块</b>（灰底）＝基线 62f4c998b297 逐字摘录（check_lesson_excerpts.py 机检）；<b>@commit 块</b>（紫条）＝补丁前/后某 commit 的文件状态（check_lesson_patches.py 机检）；<b>diff 块</b>（红条）＝补丁本身的逐字切片；灰条 = commit message 原文。usbcore 侧（urb.c/hcd.c）的基线块也走 @62f4c998 口径——摘录机检器的候选文件表目前只覆盖 xhci 与 core/hub.c。所有行号都对各自口径成立，跨口径行号不可互比。</div>
 
@@ -308,7 +308,7 @@ to bogus values. This was seen as error messages:
 
 Solution is to add a write memory barrier before writing the cycle bit.</pre>
   <p>压力测试里连挂多台设备反复取消 URB，两颗 <code>Set TR Dequeue Pointer</code> 命令背靠背入队，第二颗只写了一半就被 xHC 取走解析，命令环指针被设成垃圾值。</p>
-  <h3>② 案发现场（补丁前）</h3>
+  <h3>② 故障现场（补丁前）</h3>
   <pre class="pstate" data-commit="576667bad341~1" data-file="drivers/usb/host/xhci-ring.c">/* drivers/usb/host/xhci-ring.c:2924-2939 @576667bad341（修复前的 queue_trb——四次普通 store，无任何顺序保证）*/
 static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
 		bool more_trbs_coming,
@@ -327,7 +327,7 @@ static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
 	inc_enq(xhci, ring, more_trbs_coming);
 }</pre>
   <h3>③ 根因（用 0006/0007 的模型走一遍）</h3>
-  <p>0006 教过：一颗 TRB＝16 字节＝4 个 32 位字段（DW0-DW3），<strong>cycle 位在 DW3</strong>。0007 立过生产者合同：<strong>先落数据、再翻 cycle</strong>——xHC 只取 cycle 位匹配的 TRB，所以只要 cycle 位最后写，半成品 TRB 对硬件就不可见。<code>queue_trb</code> 确实把 <code>field[3]</code>（含 cycle）排在最后——但那是 <strong>C 源码的书写顺序</strong>。CPU 与编译器只保证"单线程自己看"的顺序：四个普通 store 之间可以乱序、合并、延迟可见。一旦门铃敲响（0006 的写门铃＝写 doorbell 寄存器），xHC 作为另一个独立设备立刻从主存取指——它完全可能看见 field[3] 已落、前三字段还在路上的窗口。合同说"先落数据再翻 cycle"，代码却没给这条顺序任何硬件保证。</p>
+  <p>0006 教过：一颗 TRB＝16 字节＝4 个 32 位字段（DW0-DW3），<strong>cycle 位在 DW3</strong>。0007 立过生产者约定：<strong>先落数据、再翻 cycle</strong>——xHC 只取 cycle 位匹配的 TRB，所以只要 cycle 位最后写，半成品 TRB 对硬件就不可见。<code>queue_trb</code> 确实把 <code>field[3]</code>（含 cycle）排在最后——但那是 <strong>C 源码的书写顺序</strong>。CPU 与编译器只保证"单线程自己看"的顺序：四个普通 store 之间可以乱序、合并、延迟可见。一旦写门铃（0006 的写门铃＝写 doorbell 寄存器），xHC 作为另一个独立设备立刻从主存取指——它完全可能看见 field[3] 已落、前三字段还在路上的窗口。约定说"先落数据再翻 cycle"，代码却没给这条顺序任何硬件保证。</p>
   <h3>④ 修复</h3>
   <pre class="pdiff" data-commit="576667bad341" data-file="drivers/usb/host/xhci-ring.c">/* diff:drivers/usb/host/xhci-ring.c @576667bad341（修复 diff 全文——在 cycle 位之前插入写屏障）*/
 diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
@@ -343,7 +343,7 @@ index 5677b81c0915..cf0c93a90200 100644
  	trb-&gt;field[3] = cpu_to_le32(field4);
  
  	trace_xhci_queue_trb(ring, trb);</pre>
-  <p><code>wmb()</code>（write memory barrier）一句话：屏障之前的 store 必须先于屏障之后的 store 对其他观察者可见。插在 <code>field[3]</code> 之前，"先落数据、再翻 cycle"就从口头合同变成了 CPU 级强制。</p>
+  <p><code>wmb()</code>（write memory barrier）一句话：屏障之前的 store 必须先于屏障之后的 store 对其他观察者可见。插在 <code>field[3]</code> 之前，"先落数据、再翻 cycle"就从口头约定变成了 CPU 级强制。</p>
   <h3>⑤ 回望（基线在场）</h3>
   <pre>/* xhci-ring.c:3244-3256（基线今天的 queue_trb——wmb 已常驻，就是这枚补丁留下的）*/
 static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
@@ -359,9 +359,9 @@ static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
 	/* make sure TRB is fully written before giving it to the controller */
 	wmb();
 	trb-&gt;field[3] = cpu_to_le32(field4);</pre>
-  <p>这条"发布"合同在驱动里有不止一处落实点：0009 第 4 章贴过的 <code>giveback_first_trb</code>（xhci-ring.c:3441-3451，"先 wmb、再翻 cycle、后写门铃"）是 <strong>Set TR Dequeue 之后重启环</strong>的发布点；本枚补丁修的 <code>queue_trb</code> 是<strong>正常入队</strong>的发布点。两处 wmb、同一份合同——你在 0009 读到那行 wmb 时它已经"理所当然"了十一年。</p>
+  <p>这条"发布"约定在驱动里有不止一处落实点：0009 第 4 章贴过的 <code>giveback_first_trb</code>（xhci-ring.c:3441-3451，"先 wmb、再翻 cycle、后写门铃"）是 <strong>Set TR Dequeue 之后重启环</strong>的发布点；本枚补丁修的 <code>queue_trb</code> 是<strong>正常入队</strong>的发布点。两处 wmb、同一份约定——你在 0009 读到那行 wmb 时它已经"理所当然"了十一年。</p>
 
-  <h2>第 2 章 · 对应 0007 运转课：cycle 的权威记录在 TRB 上，不在口径抄本上</h2>
+  <h2>第 2 章 · 对应 0007 运转课：cycle 的权威记录在 TRB 上，不在口径副本上</h2>
   <p><b>补丁</b>：6328bdc988d2「usb: xhci: Don't trust the EP Context cycle bit when moving HW dequeue」（Michal Pecio，2025-05）。</p>
   <h3>① 症状</h3>
   <pre class="pmsg">/* commit message 原文——VIA VL805 的毛病与修法纲要 */
@@ -395,8 +395,8 @@ is not updated in a new cycle until Set TR Dequeue overwrites it:
 [  +0,066087] cycle bits: TRB 0 EP Ctx 1
 [  +0,063636] cycle bits: TRB 0 EP Ctx 0
 [  +0,066360] cycle bits: TRB 0 EP Ctx 0</pre>
-  <p>TRB 的 cycle 位正常翻转（1→0→1，跟着环轮转），而 EP Context 抄的那份永远慢半拍、甚至长期不动。这份日志就是"口径抄本会陈旧"的直接证据。</p>
-  <h3>② 案发现场（补丁前）</h3>
+  <p>TRB 的 cycle 位正常翻转（1→0→1，跟着环轮转），而 EP Context 抄的那份永远慢半拍、甚至长期不动。这份日志就是"口径副本会陈旧"的直接证据。</p>
+  <h3>② 故障现场（补丁前）</h3>
   <pre class="pstate" data-commit="6328bdc988d2~1" data-file="drivers/usb/host/xhci-ring.c">/* drivers/usb/host/xhci-ring.c:715-748 @6328bdc988d2（修复前的 xhci_move_dequeue_past_td——new_cycle 取自 hw_dequeue（EP Context 的 DCS））*/
 	hw_dequeue = xhci_get_hw_deq(xhci, dev, ep_index, stream_id);
 	new_seg = ep_ring-&gt;deq_seg;
@@ -433,7 +433,7 @@ is not updated in a new cycle until Set TR Dequeue overwrites it:
 
 	} while (!cycle_found || !td_last_trb_found);</pre>
   <h3>③ 根因（用 0007 的模型走一遍）</h3>
-  <p>0007 立过铁律：硬件取指只认 <strong>TRB 自己带的 cycle 位</strong>（§4.9.2：cycle 匹配才取）。Endpoint Context 里的 DCS（Dequeue Cycle State）是给软件看的<strong>抄本</strong>——xHC 本应在端点停下的时刻更新它。VL805 未更新：halt 时抄本不动。这段代码出场的时机恰是 0008 讲的 STALL 之后：驱动要取消滞留 TD，用 <code>Set TR Dequeue</code> 命令把硬件 dequeue 挪到安全位置，命令里必须报出挪到之处的新 cycle 值。旧代码拿 <code>hw_dequeue & 0x1</code>——正是 EP Context 抄本的最低位——当新 cycle 的起点。抄本陈旧时，算出的新 cycle 一半概率是反的：写进环里的 TRB 全部"cycle 不匹配"，xHC 一颗都不取，端点当场哑掉。走查循环里的 <code>new_cycle ^= 1</code> 是 0007 的回绕点规则：沿途每跨过一颗会翻转 cycle 的 Link TRB 就翻一次——起点错了，沿途翻得再准也全错。</p>
+  <p>0007 立过铁律：硬件取指只认 <strong>TRB 自己带的 cycle 位</strong>（§4.9.2：cycle 匹配才取）。Endpoint Context 里的 DCS（Dequeue Cycle State）是给软件看的<strong>副本</strong>——xHC 本应在端点停下的时刻更新它。VL805 未更新：halt 时副本不动。这段代码出场的时机恰是 0008 讲的 STALL 之后：驱动要取消滞留 TD，用 <code>Set TR Dequeue</code> 命令把硬件 dequeue 挪到安全位置，命令里必须报出挪到之处的新 cycle 值。旧代码拿 <code>hw_dequeue & 0x1</code>——正是 EP Context 副本的最低位——当新 cycle 的起点。副本陈旧时，算出的新 cycle 一半概率是反的：写进环里的 TRB 全部"cycle 不匹配"，xHC 一颗都不取，端点当场哑掉。走查循环里的 <code>new_cycle ^= 1</code> 是 0007 的回绕点规则：沿途每跨过一颗会翻转 cycle 的 Link TRB 就翻一次——起点错了，沿途翻得再准也全错。</p>
   <h3>④ 修复</h3>
   <pre class="pdiff" data-commit="6328bdc988d2" data-file="drivers/usb/host/xhci-ring.c">/* diff:drivers/usb/host/xhci-ring.c @6328bdc988d2（修复 diff——新 cycle 改从 td->end_trb（环上已知好 TRB）取，回绕改在找到 end_trb 之后计）*/
 @@ -715,25 +715,24 @@ static int xhci_move_dequeue_past_td(struct xhci_hcd *xhci,
@@ -468,7 +468,7 @@ is not updated in a new cycle until Set TR Dequeue overwrites it:
 +		if (td_last_trb_found &amp;&amp; trb_is_link(new_deq) &amp;&amp;
  		    link_trb_toggles_cycle(new_deq))
  			new_cycle ^= 0x1;</pre>
-  <p>修法一句话：<strong>别信抄本，信环上真实存在的 TRB</strong>。<code>td->end_trb</code> 是软件自己排的 TD 的末颗 TRB，它身上的 cycle 位是软件亲手写的、当下必然正确——从它出发，再沿途处理回绕翻转。</p>
+  <p>修法一句话：<strong>别信副本，信环上真实存在的 TRB</strong>。<code>td->end_trb</code> 是软件自己排的 TD 的末颗 TRB，它身上的 cycle 位是软件亲手写的、当下必然正确——从它出发，再沿途处理回绕翻转。</p>
   <h3>⑤ 回望（基线在场，修复也还会被再修）</h3>
   <pre>/* xhci-ring.c:727-738（基线今天的同一段——函数已被 7c0c31c66a7f（2026-08）再度重写为"挪到下一颗有效 TD"，cycle 取 start_trb 或 ring->cycle_state）*/
 	if (list_empty(&amp;ring-&gt;td_list)) {
@@ -483,9 +483,9 @@ is not updated in a new cycle until Set TR Dequeue overwrites it:
 		ep-&gt;queued_deq_ptr = td-&gt;start_trb;
 		new_cycle = le32_to_cpu(td-&gt;start_trb-&gt;generic.field[3]) &amp; TRB_CYCLE;
 	}</pre>
-  <p>基线上这段代码已经又进化了一轮（函数改名 <code>xhci_move_deq_to_next_td</code>，逻辑重写），但判决标准一毫米没动：<strong>cycle 的权威记录永远在环上的 TRB 里</strong>，上下文抄本只能当参考。修复本身也会被修复——不变的是判据。这正是读补丁史的价值：判据在一次次修复里越发牢固。</p>
+  <p>基线上这段代码已经又进化了一轮（函数改名 <code>xhci_move_deq_to_next_td</code>，逻辑重写），但判据一毫米没动：<strong>cycle 的权威记录永远在环上的 TRB 里</strong>，上下文副本只能当参考。修复本身也会被修复——不变的是判据。这正是读补丁史的价值：判据在一次次修复里越发牢固。</p>
 
-  <h2>第 3 章 · 对应 0008 命运课：ep_state 状态位的出口纪律</h2>
+  <h2>第 3 章 · 对应 0008 错误路径课：ep_state 状态位的出口纪律</h2>
   <p><b>补丁</b>：f1ec7ae6c9f8「xhci: Always restore EP_SOFT_CLEAR_TOGGLE even if ep reset failed」（Ding Hui，2020-08）。</p>
   <h3>① 症状</h3>
   <pre class="pmsg">/* commit message 原文——clear_halt 撞上非空队列，状态位卡死的完整传导链 */
@@ -508,7 +508,7 @@ warn log:
 
 We need to clear ep_state EP_SOFT_CLEAR_TOGGLE bit after
 xhci_endpoint_reset, even if it failed.</pre>
-  <h3>② 案发现场（补丁前）</h3>
+  <h3>② 故障现场（补丁前）</h3>
   <pre class="pstate" data-commit="f1ec7ae6c9f8~1" data-file="drivers/usb/host/xhci.c">/* drivers/usb/host/xhci.c:3234-3243 @f1ec7ae6c9f8（修复前的 xhci_endpoint_reset 收尾——清位只挂在成功路径，cleanup 出口只释放命令）*/
 	xhci_ring_cmd_db(xhci);
 	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);
@@ -561,7 +561,7 @@ cleanup:
 }</pre>
   <p>把三段基线代码连起来读，就是一个状态位的完整生命周期：置位（3388）→ 拒绝（1690）→ 出口清位（3453-3454）。0008 的十个状态位表里每一行，背后都是这样一组必须配对的变迁——表上查得到名字，补丁史里查得到它为什么长这样。</p>
 
-  <h2>第 4 章 · 对应 0009 传输剧：EV1/EV2 两颗事件之间的记录覆盖</h2>
+  <h2>第 4 章 · 对应 0009 传输走查：EV1/EV2 两颗事件之间的记录覆盖</h2>
   <p><b>补丁</b>：45ba2154d12f「xhci: fix reporting of 0-sized URBs in control endpoint」（Aleksander Morgado，2015-03）。</p>
   <h3>① 症状</h3>
   <pre class="pmsg">/* commit message 原文——两颗事件的记录规则与坏判据 */
@@ -583,8 +583,8 @@ updated at that stage.</pre>
 This fixes a bug which affected the HSO plugin, which relies on URBs with
 urb-&gt;actual_length == 0 to halt re-submitting the RX URB in the control
 endpoint.</pre>
-  <h3>② 案发现场（补丁前）</h3>
-  <pre class="pstate" data-commit="45ba2154d12f~1" data-file="drivers/usb/host/xhci-ring.c">/* drivers/usb/host/xhci-ring.c:1946-1974 @45ba2154d12f（修复前的 process_ctrl_td 记录区——EV2 靠 actual_length!=0 猜"记过没有"）*/
+  <h3>② 故障现场（补丁前）</h3>
+  <pre class="pstate" data-commit="45ba2154d12f~1" data-file="drivers/usb/host/xhci-ring.c">/* drivers/usb/host/xhci-ring.c:1946-1974 @45ba2154d12f（修复前的 process_ctrl_td 记录区——EV2 靠 actual_length!=0 猜"是否已记录"）*/
 	if (event_trb != ep_ring-&gt;dequeue) {
 		/* The event was for the status stage */
 		if (event_trb == td-&gt;last_trb) {
@@ -615,10 +615,10 @@ endpoint.</pre>
 	return finish_td(xhci, td, event_trb, event, ep, status, false);
 }</pre>
   <h3>③ 根因（用 0009 的模型走一遍）</h3>
-  <p>0009 专题六刚教过这场戏：控制传输撞上短包时，一次中断送来两颗事件——<strong>EV1</strong>（Short Packet，报数据段实际短收）与 <strong>EV2</strong>（Success，Status 阶段收尾）。驱动在 <code>process_ctrl_td</code> 里的分工是：<strong>EV1 记录不放行</strong>（把 <code>urb-&gt;actual_length</code> 记成实际收到的字节数，return 等下一颗），<strong>EV2 核对事件收尾</strong>（补齐终值、转 <code>finish_td</code> 走 giveback）。</p>
-  <p>EV2 收尾前必须回答一个问题："数据段记过了吗？"——记过就不能再动。旧代码的判据是看<strong>记录值本身</strong>：<code>actual_length != 0</code> 当作"记过"。这个判据把两种状态撞在一起了：<strong>没记录</strong>与<strong>记录结果是 0</strong>（短包短到一颗字节都没收到——EVENT_TRB_LEN 恰好等于申请长度）在记录上无法区分。于是 0 字节短收的传输，EV2 会把记录覆盖成"满额成功"：<code>actual_length = transfer_buffer_length</code>，还顺手跳过了本应上报的 <code>-EREMOTEIO</code>。依赖 <code>actual_length == 0</code> 停转的 HSO 驱动就此卡死在重提交循环里。</p>
+  <p>0009 专题六刚教过这个案例：控制传输撞上短包时，一次中断送来两颗事件——<strong>EV1</strong>（Short Packet，报数据段实际收短）与 <strong>EV2</strong>（Success，Status 阶段收尾）。驱动在 <code>process_ctrl_td</code> 里的分工是：<strong>EV1 记录不放行</strong>（把 <code>urb-&gt;actual_length</code> 记成实际收到的字节数，return 等下一颗），<strong>EV2 核对事件收尾</strong>（补齐终值、转 <code>finish_td</code> 走 giveback）。</p>
+  <p>EV2 收尾前必须回答一个问题："数据段已经记录了吗？"——已记录就不能再动。旧代码的判据是看<strong>记录值本身</strong>：<code>actual_length != 0</code> 当作"已记录"。这个判据把两种状态撞在一起了：<strong>没记录</strong>与<strong>记录结果是 0</strong>（短包短到一颗字节都没收到——EVENT_TRB_LEN 恰好等于申请长度）在记录上无法区分。于是 0 字节收短的传输，EV2 会把记录覆盖成"满额成功"：<code>actual_length = transfer_buffer_length</code>，还顺手跳过了本应上报的 <code>-EREMOTEIO</code>。依赖 <code>actual_length == 0</code> 停转的 HSO 驱动就此卡死在重提交循环里。</p>
   <h3>④ 修复</h3>
-  <p>修法是做一笔记录的通用纪律：<strong>把"记过没有"（事实）与"记录值是多少"（数值）分开存</strong>——给 TD 加一比特状态位：</p>
+  <p>修法是做一笔记录的通用纪律：<strong>把"是否已记录"（事实）与"记录值是多少"（数值）分开存</strong>——给 TD 加一比特状态位：</p>
   <pre class="pdiff" data-commit="45ba2154d12f" data-file="drivers/usb/host/xhci-ring.c">/* diff:drivers/usb/host/xhci-ring.c @45ba2154d12f（修复 diff 上半——EV2 判据从记录值换成状态位）*/
 @@ -1946,7 +1946,7 @@ static int process_ctrl_td(struct xhci_hcd *xhci, struct xhci_td *td,
  	if (event_trb != ep_ring-&gt;dequeue) {
@@ -675,10 +675,10 @@ endpoint.</pre>
 		else if (!td-&gt;urb_length_set)
 			td-&gt;urb-&gt;actual_length = 0;
 		goto finish_td;</pre>
-  <p>0009 第 6 章你们在 :2382-2395 读过的 <code>urb_length_set</code>，出生证明就是这枚 2015 年的补丁。今天它守的不止 EV2 收尾：连 STALL 分岔（:2364-2371）都要先问它一句"记过没有"再决定要不要把 actual_length 清零。顺带挑明一对粒度：<code>urb-&gt;actual_length</code> 是 <strong>URB 级</strong>的汇总值（usbcore 回调读的是它），<code>td-&gt;urb_length_set</code> 是 <strong>TD 级</strong>的过程状态位（xhci 驱动内部记录用）——同指一笔传输、两级口径，别互比。</p>
+  <p>0009 第 6 章你们在 :2382-2395 读过的 <code>urb_length_set</code>，产生条件就是这枚 2015 年的补丁。今天它守的不止 EV2 收尾：连 STALL 分岔（:2364-2371）都要先问它一句"是否已记录"再决定要不要把 actual_length 清零。顺带挑明一对粒度：<code>urb-&gt;actual_length</code> 是 <strong>URB 级</strong>的汇总值（usbcore 回调读的是它），<code>td-&gt;urb_length_set</code> 是 <strong>TD 级</strong>的过程状态位（xhci 驱动内部记录用）——同指一笔传输、两级口径，别互比。</p>
 
-  <h2>第 5 章 · 桥向 usbcore：kill 与 giveback 的双 CPU 赛跑</h2>
-  <p><b>补丁</b>：26fbe9772b8c「USB: core: Fix hang in usb_kill_urb by adding memory barriers」（Alan Stern，2022-01，drivers/usb/core/）。这枚不在 xhci 驱动里——它守住的是 0009 ⑥站 giveback 的 usbcore 侧，也是后续 usbcore 深读课的预告片。</p>
+  <h2>第 5 章 · 桥向 usbcore：kill 与 giveback 的双 CPU 竞态</h2>
+  <p><b>补丁</b>：26fbe9772b8c「USB: core: Fix hang in usb_kill_urb by adding memory barriers」（Alan Stern，2022-01，drivers/usb/core/）。这枚不在 xhci 驱动里——它守住的是 0009 ⑥步 giveback 的 usbcore 侧，也是后续 usbcore 深读课的先导。</p>
   <h3>① 症状</h3>
   <pre class="pmsg">/* commit message 原文——syzbot 报告 usb_kill_urb 挂死 */
 The syzbot fuzzer has identified a bug in which processes hang waiting
@@ -711,7 +711,7 @@ whereas the overall pattern of accesses on CPU 1 is:
 
 	write urb-&gt;use_count, then read urb-&gt;reject.</pre>
   <h3>③ 根因（用 0009 的模型走一遍）</h3>
-  <p>0009 ⑥站给过结论：giveback 之后 urb 交还 usbcore，驱动回调 <code>urb-&gt;complete</code>。这枚补丁把镜头拉近到 giveback 收尾与 <code>usb_kill_urb</code> 的<strong>并发交汇点</strong>：kill 侧 <code>atomic_inc(reject)</code> 后等 <code>use_count == 0</code>；giveback 侧 <code>atomic_dec(use_count)</code> 后看见 <code>reject != 0</code> 就叫醒等待者。注意两边的访问次序——<strong>CPU0 先写 reject 再读 use_count，CPU1 先写 use_count 再读 reject</strong>，即内存模型里经典的 SB（Store Buffering）模式：双方各自"写自己的变量、读对方的变量"。第 1 章刚讲过：无屏障时 store 对其他 CPU 的可见顺序不受保证，读可以越过自己的写先执行——于是两边可能同时读到旧值：kill 看见 use_count 还是 1（继续睡），giveback 看见 reject 还是 0（不叫醒）。<strong>没人错的逻辑，挂死的系统</strong>——每个原子操作自身都是原子的，坏的是两个原子操作之间的次序。修法：四个对称位置各插一道 <code>smp_mb__after_atomic()</code> 全屏障（基线在场：urb.c:714、:761；hcd.c:1558、:1667），并把配对关系写进注释。</p>
+  <p>0009 ⑥步给过结论：giveback 之后 urb 交还 usbcore，驱动回调 <code>urb-&gt;complete</code>。这枚补丁把镜头拉近到 giveback 收尾与 <code>usb_kill_urb</code> 的<strong>并发交汇点</strong>：kill 侧 <code>atomic_inc(reject)</code> 后等 <code>use_count == 0</code>；giveback 侧 <code>atomic_dec(use_count)</code> 后看见 <code>reject != 0</code> 就唤醒等待者。注意两边的访问次序——<strong>CPU0 先写 reject 再读 use_count，CPU1 先写 use_count 再读 reject</strong>，即内存模型里经典的 SB（Store Buffering）模式：双方各自"写自己的变量、读对方的变量"。第 1 章刚讲过：无屏障时 store 对其他 CPU 的可见顺序不受保证，读可以越过自己的写先执行——于是两边可能同时读到旧值：kill 看见 use_count 还是 1（继续睡），giveback 看见 reject 还是 0（不唤醒）。<strong>没人错的逻辑，挂死的系统</strong>——每个原子操作自身都是原子的，坏的是两个原子操作之间的次序。修法：四个对称位置各插一道 <code>smp_mb__after_atomic()</code> 全屏障（基线在场：urb.c:714、:761；hcd.c:1558、:1667），并把配对关系写进注释。</p>
   <figure>
   <svg viewBox="0 0 880 360" role="img" aria-label="SB 模式：无屏障时双方读到旧值互相等待" style="width:100%;background:#fff;border:1px solid #e3e3da">
     <g font-size="12.5" fill="#1a2b4a">
@@ -729,9 +729,9 @@ whereas the overall pattern of accesses on CPU 1 is:
       <text x="220" y="178" text-anchor="middle" font-size="11" fill="#c62828">读到旧值 1 → 继续 wait_event</text>
       <rect x="530" y="140" width="260" height="56" fill="#fff" stroke="#a5a596" rx="4"/>
       <text x="660" y="162" text-anchor="middle">④ 读 reject</text>
-      <text x="660" y="178" text-anchor="middle" font-size="11" fill="#c62828">读到旧值 0 → 不叫醒</text>
+      <text x="660" y="178" text-anchor="middle" font-size="11" fill="#c62828">读到旧值 0 → 不唤醒</text>
       <rect x="150" y="228" width="580" height="40" fill="#fdeaea" stroke="#c62828" rx="4"/>
-      <text x="440" y="253" text-anchor="middle" fill="#c62828" font-weight="600">结果：一方永睡、一方不叫醒 → usb_kill_urb 挂死</text>
+      <text x="440" y="253" text-anchor="middle" fill="#c62828" font-weight="600">结果：一方永远睡眠、一方不唤醒 → usb_kill_urb 挂死</text>
       <rect x="90" y="292" width="700" height="44" fill="#e9f7ee" stroke="#1a7f37" rx="4"/>
       <text x="440" y="311" text-anchor="middle" fill="#1a7f37">修复：两侧在"写后读前"各插 smp_mb__after_atomic()——写必先于自己的读可见</text>
       <text x="440" y="328" text-anchor="middle" font-size="11" fill="#1a7f37">③ 必见 use_count=0 退出等待；④ 必见 reject!=0 执行 wake_up（基线 urb.c:714/:761、hcd.c:1558/:1667）</text>
@@ -798,15 +798,15 @@ void usb_kill_urb(struct urb *urb)
 
 	atomic_dec(&amp;urb-&gt;reject);
 }</pre>
-  <p>0009 教 giveback 时停在了"交还 usbcore"；usbcore 接下来怎么管理 urb 的余生（kill/poison/unlink、anchor、引用计数）是后续 usbcore 深读课的主场。这枚补丁是那门课的预告片：届时的主角（<code>urb-&gt;reject</code>、<code>use_count</code>、<code>usb_kill_urb_queue</code>）今天已经全部出场。</p>
+  <p>0009 教 giveback 时停在了"交还 usbcore"；usbcore 接下来怎么管理 urb 的余生（kill/poison/unlink、anchor、引用计数）是后续 usbcore 深读课的用武之地。这枚补丁是那门课的先导：届时的主线（<code>urb-&gt;reject</code>、<code>use_count</code>、<code>usb_kill_urb_queue</code>）今天已经全部出场。</p>
 
-  <p>五章走完，把五枚补丁留在<strong>今天基线</strong>上的现场用真实代码连起来巡一遍（站⑤会跨出 xhci 走进 usbcore——补丁史自带的桥）：</p>
+  <p>五章走完，把五枚补丁留在<strong>今天基线</strong>上的现场用真实代码连起来巡一遍（步⑤会跨出 xhci 走进 usbcore——补丁史自带的桥）：</p>
   <!--STEPPER:0010:BEGIN-->
   <div class="stepper">
-    <div class="st-intro"><h4>▶ 五枚补丁的今天：基线五站巡礼（五步法第⑤步「回望」的代码全景）</h4><p>左侧＝基线 62f4c998b297 上五枚补丁留下的现场代码（站⑤走进 usbcore 的 urb.c——补丁史自带跨模块的桥）。右侧＝五枚补丁清单（巡礼进度）与本站判据。用下方按钮或 ←/→ 键逐语句步进：每站=一章的⑤回望段，注释行常常就是判据原文。各章的①-④（症状/案发现场/根因/修复）在下方正文，步进器只走「今天的基线」。</p><p class="st-base">代码基线 master@62f4c998b297（与全课一致）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-intro"><h4>▶ 五枚补丁的今天：基线五步逐枚回看（五步法第⑤步「回望」的代码全景）</h4><p>左侧＝基线 62f4c998b297 上五枚补丁留下的现场代码（步⑤走进 usbcore 的 urb.c——补丁史自带跨模块的桥）。右侧＝五枚补丁清单（回看进度）与本步判据。用下方按钮或 ←/→ 键逐语句步进：每步=一章的⑤回望段，注释行常常就是判据原文。各章的①-④（症状/故障现场/根因/修复）在下方正文，步进器只走「今天的基线」。</p><p class="st-base">代码基线 master@62f4c998b297（与全课一致）；无 JS 时代码全列与初态快照静态可读</p></div>
     <div class="st-grid">
       <div class="st-code">
-<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>站① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）</code></div>
+<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>步① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）</code></div>
 <div class="st-crow fn" data-id="r1" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 3244-3246</span><code>static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,
 		bool more_trbs_coming,
 		u32 field1, u32 field2, u32 field3, u32 field4)</code></div>
@@ -819,7 +819,7 @@ void usb_kill_urb(struct urb *urb)
 <div class="st-crow ln" data-id="r3" style="padding-left:1.5em"><code>	/* make sure TRB is fully written before giving it to the controller */
 	wmb();
 	trb-&gt;field[3] = cpu_to_le32(field4);</code></div>
-<div class="st-crow ph" data-id="r4"><span class="st-tag">▶</span><code>站② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）</code></div>
+<div class="st-crow ph" data-id="r4"><span class="st-tag">▶</span><code>步② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）</code></div>
 <div class="st-crow fn" data-id="r5" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 689-692</span><code>static int xhci_move_deq_to_next_td(struct xhci_hcd *xhci,
 				    struct xhci_virt_ep *ep,
 				    unsigned int stream_id)
@@ -836,7 +836,7 @@ void usb_kill_urb(struct urb *urb)
 		ep-&gt;queued_deq_ptr = td-&gt;start_trb;
 		new_cycle = le32_to_cpu(td-&gt;start_trb-&gt;generic.field[3]) &amp; TRB_CYCLE;
 	}</code></div>
-<div class="st-crow ph" data-id="r8"><span class="st-tag">▶</span><code>站③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）</code></div>
+<div class="st-crow ph" data-id="r8"><span class="st-tag">▶</span><code>步③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）</code></div>
 <div class="st-crow ln" data-id="r9" style="padding-left:0.4em"><code>	/* block queuing new trbs and ringing ep doorbell */
 	ep-&gt;ep_state |= EP_SOFT_CLEAR_TOGGLE;</code></div>
 <div class="st-crow ln" data-id="r10" style="padding-left:0.4em"><code>	if (*ep_state &amp; EP_SOFT_CLEAR_TOGGLE) {
@@ -850,7 +850,7 @@ void usb_kill_urb(struct urb *urb)
 		ep-&gt;ep_state &amp;= ~EP_SOFT_CLEAR_TOGGLE;
 	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);
 }</code></div>
-<div class="st-crow ph" data-id="r12"><span class="st-tag">▶</span><code>站④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章已细讲）</code></div>
+<div class="st-crow ph" data-id="r12"><span class="st-tag">▶</span><code>步④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章已细讲）</code></div>
 <div class="st-crow fn" data-id="r13" style="padding-left:0.4em"><span class="st-file">▸ xhci.h : 1306-1309</span><code>	int			status;
 	enum xhci_cancelled_td_status	cancel_status;
 	struct urb		*urb;
@@ -867,7 +867,7 @@ void usb_kill_urb(struct urb *urb)
 		else if (!td-&gt;urb_length_set)
 			td-&gt;urb-&gt;actual_length = 0;
 		goto finish_td;</code></div>
-<div class="st-crow ph" data-id="r16"><span class="st-tag">▶</span><code>站⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的预告片）</code></div>
+<div class="st-crow ph" data-id="r16"><span class="st-tag">▶</span><code>步⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的先导）</code></div>
 <div class="st-crow fn" data-id="r17" style="padding-left:0.4em"><span class="st-file">▸ urb.c : 703-705</span><code>void usb_kill_urb(struct urb *urb)
 {
 	might_sleep();</code></div>
@@ -886,21 +886,21 @@ void usb_kill_urb(struct urb *urb)
 
 	atomic_dec(&amp;urb-&gt;reject);
 }</code></div>
-<div class="st-crow ctx" data-id="r21"><span class="st-tag">usbcore</span><code>五站巡礼完：判据在一次次修复里越发牢固</code></div>
+<div class="st-crow ctx" data-id="r21"><span class="st-tag">usbcore</span><code>五步回看完：判据在一次次修复里越发牢固</code></div>
       </div>
       <div class="st-world">
-<div class="stw-box"><b>五枚补丁清单（第⑤步「回望」巡礼进度）</b><table><tr><th>① 2021 wmb</th><td>576667bad341——待巡</td></tr><tr><th>② 2025 cycle</th><td>6328bdc988d2——待巡</td></tr><tr><th>③ ep_state</th><td>EP_SOFT_CLEAR_TOGGLE 三点——待巡</td></tr><tr><th>④ 2015 一比特</th><td>urb_length_set——待巡</td></tr><tr><th>⑤ usbcore</th><td>usb_kill_urb 屏障——待巡</td></tr></table></div><div class="stw-box"><b>本站判据（判据在一次次修复里越发牢固）</b><table><tr><th>五步法</th><td>症状→案发现场→根因→修复→回望</td></tr><tr><th>当前站</th><td>（未开局）</td></tr><tr><th>一句话判决</th><td>—</td></tr></table></div>
+<div class="stw-box"><b>五枚补丁清单（第⑤步「回望」回看进度）</b><table><tr><th>① 2021 wmb</th><td>576667bad341——待看</td></tr><tr><th>② 2025 cycle</th><td>6328bdc988d2——待看</td></tr><tr><th>③ ep_state</th><td>EP_SOFT_CLEAR_TOGGLE 三点——待看</td></tr><tr><th>④ 2015 一比特</th><td>urb_length_set——待看</td></tr><tr><th>⑤ usbcore</th><td>usb_kill_urb 屏障——待看</td></tr></table></div><div class="stw-box"><b>本步判据（判据在一次次修复里越发牢固）</b><table><tr><th>五步法</th><td>症状→故障现场→根因→修复→回望</td></tr><tr><th>当前步</th><td>（未开局）</td></tr><tr><th>一句话结论</th><td>—</td></tr></table></div>
       </div>
     </div>
     <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
-    <div class="st-refs"><details><summary>📎 p67 环约定 完全成型才许拨 cycle（发布闸门）（p67）</summary><p class="st-msrc">xHCI 1.2（2019） · p67</p><blockquote>Software shall never update the Enqueue Pointer (that is, toggle the Cycle bit of a TRB) until all TRBs between the previous and the new Enqueue Pointer location are fully formed.</blockquote><p class="st-mnote">站① wmb 兑现的规范条款——补丁只是给「完全成型」补上了硬件级顺序保证。</p></details><details><summary>📎 §4.9.2.1 cycle 合同本体（权威在环）（p175）</summary><p class="st-msrc">xHCI 1.2（2019） · p175</p><blockquote>The Cycle bit shall be written by the producer with the current value of the PCS bit. The Cycle bit shall be treated as Read-Only by the consumer.</blockquote><p class="st-mnote">站② 的判据底座：合同挂在每颗 TRB 的 cycle 位上——抄本（EP Context）不是合同方。</p></details></div>
-    <script type="application/json" class="stepper-data">{"title":"五枚补丁的今天：基线五站巡礼（五步法第⑤步「回望」的代码全景）","intro":"左侧＝基线 62f4c998b297 上五枚补丁留下的现场代码（站⑤走进 usbcore 的 urb.c——补丁史自带跨模块的桥）。右侧＝五枚补丁清单（巡礼进度）与本站判据。用下方按钮或 ←/→ 键逐语句步进：每站=一章的⑤回望段，注释行常常就是判据原文。各章的①-④（症状/案发现场/根因/修复）在下方正文，步进器只走「今天的基线」。","baseline":"代码基线 master@62f4c998b297（与全课一致）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"站① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）"},{"id":"r1","kind":"fn","depth":0,"text":"static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,\n\t\tbool more_trbs_coming,\n\t\tu32 field1, u32 field2, u32 field3, u32 field4)","file":"xhci-ring.c","a":3244,"b":3246},{"id":"r2","kind":"ln","depth":1,"text":"\tstruct xhci_generic_trb *trb;\n\n\ttrb = &ring->enqueue->generic;\n\ttrb->field[0] = cpu_to_le32(field1);\n\ttrb->field[1] = cpu_to_le32(field2);\n\ttrb->field[2] = cpu_to_le32(field3);","file":"xhci-ring.c","a":3248,"b":3253},{"id":"r3","kind":"ln","depth":1,"text":"\t/* make sure TRB is fully written before giving it to the controller */\n\twmb();\n\ttrb->field[3] = cpu_to_le32(field4);","file":"xhci-ring.c","a":3254,"b":3256},{"id":"r4","kind":"ph","depth":0,"text":"站② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）"},{"id":"r5","kind":"fn","depth":0,"text":"static int xhci_move_deq_to_next_td(struct xhci_hcd *xhci,\n\t\t\t\t    struct xhci_virt_ep *ep,\n\t\t\t\t    unsigned int stream_id)\n{","file":"xhci-ring.c","a":689,"b":692},{"id":"r6","kind":"ln","depth":1,"text":"\tif (list_empty(&ring->td_list)) {\n\t\tif (trb_is_link(ring->enqueue))\n\t\t\tinc_enq_past_link(xhci, ring, 0);\n\t\tep->queued_deq_seg = ring->enq_seg;\n\t\tep->queued_deq_ptr = ring->enqueue;\n\t\tnew_cycle = ring->cycle_state;","file":"xhci-ring.c","a":727,"b":732},{"id":"r7","kind":"ln","depth":1,"text":"\t} else {\n\t\ttd = list_first_entry(&ring->td_list, struct xhci_td, td_list);\n\t\tep->queued_deq_seg = td->start_seg;\n\t\tep->queued_deq_ptr = td->start_trb;\n\t\tnew_cycle = le32_to_cpu(td->start_trb->generic.field[3]) & TRB_CYCLE;\n\t}","file":"xhci-ring.c","a":733,"b":738},{"id":"r8","kind":"ph","depth":0,"text":"站③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）"},{"id":"r9","kind":"ln","depth":0,"text":"\t/* block queuing new trbs and ringing ep doorbell */\n\tep->ep_state |= EP_SOFT_CLEAR_TOGGLE;","file":"xhci.c","a":3387,"b":3388},{"id":"r10","kind":"ln","depth":0,"text":"\tif (*ep_state & EP_SOFT_CLEAR_TOGGLE) {\n\t\txhci_warn(xhci, \"Can't enqueue URB while manually clearing toggle\\n\");\n\t\tret = -EINVAL;\n\t\tgoto free_priv;","file":"xhci.c","a":1689,"b":1692},{"id":"r11","kind":"ln","depth":0,"text":"cleanup:\n\txhci_free_command(xhci, stop_cmd);\n\tspin_lock_irqsave(&xhci->lock, flags);\n\tif (ep->ep_state & EP_SOFT_CLEAR_TOGGLE)\n\t\tep->ep_state &= ~EP_SOFT_CLEAR_TOGGLE;\n\tspin_unlock_irqrestore(&xhci->lock, flags);\n}","file":"xhci.c","a":3450,"b":3456},{"id":"r12","kind":"ph","depth":0,"text":"站④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章已细讲）"},{"id":"r13","kind":"fn","depth":0,"text":"\tint\t\t\tstatus;\n\tenum xhci_cancelled_td_status\tcancel_status;\n\tstruct urb\t\t*urb;\n\tstruct xhci_segment\t*start_seg;","file":"xhci.h","a":1306,"b":1309},{"id":"r14","kind":"ln","depth":1,"text":"\tstruct xhci_segment\t*bounce_seg;\n\t/* actual_length of the URB has already been set */\n\tbool\t\t\turb_length_set;\n\tbool\t\t\terror_mid_td;","file":"xhci.h","a":1313,"b":1316},{"id":"r15","kind":"ln","depth":0,"text":"\t\tfallthrough;\n\tcase COMP_STALL_ERROR:\n\t\t/* Did we transfer part of the data (middle) phase? */\n\t\tif (trb_type == TRB_DATA || trb_type == TRB_NORMAL)\n\t\t\ttd->urb->actual_length = requested - remaining;\n\t\telse if (!td->urb_length_set)\n\t\t\ttd->urb->actual_length = 0;\n\t\tgoto finish_td;","file":"xhci-ring.c","a":2364,"b":2371},{"id":"r16","kind":"ph","depth":0,"text":"站⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的预告片）"},{"id":"r17","kind":"fn","depth":0,"text":"void usb_kill_urb(struct urb *urb)\n{\n\tmight_sleep();","file":"urb.c","a":703,"b":705},{"id":"r18","kind":"ln","depth":1,"text":"\tif (!(urb && urb->dev && urb->ep))\n\t\treturn;\n\tatomic_inc(&urb->reject);","file":"urb.c","a":706,"b":708},{"id":"r19","kind":"ln","depth":1,"text":"\t/*\n\t * Order the write of urb->reject above before the read\n\t * of urb->use_count below.  Pairs with the barriers in\n\t * __usb_hcd_giveback_urb() and usb_hcd_submit_urb().\n\t */\n\tsmp_mb__after_atomic();\n","file":"urb.c","a":709,"b":715},{"id":"r20","kind":"ln","depth":1,"text":"\tusb_hcd_unlink_urb(urb, -ENOENT);\n\twait_event(usb_kill_urb_queue, atomic_read(&urb->use_count) == 0);\n\n\tatomic_dec(&urb->reject);\n}","file":"urb.c","a":716,"b":720},{"id":"r21","kind":"ctx","depth":0,"text":"五站巡礼完：判据在一次次修复里越发牢固"}],"frames":[{"c":"r0","note":"案发：两颗 Set TR Dequeue 命令背靠背入队，第二颗只写一半就被 xHC 取走——命令环指针成垃圾值。今天这行注释+wmb 就是那枚补丁的全文。","ph":"站① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）"},{"c":"r1","note":"基线今天的 queue_trb。"},{"c":"r2","note":"取槽、前三写（DW0-2）——修复前与修复后一模一样；出事的从来不是这几行，是它们与第四写之间没有顺序保证。"},{"c":"r3","note":"★补丁全文=这两行：wmb() 插在 cycle 位所在的 DW3 之前——「先落数据、再翻 cycle」从口头合同变成 CPU 级强制。","refs":["r_gate"],"ev":[{"op":"dev","set":{"① 2021 wmb":"576667bad341——已巡（wmb 常驻）"}},{"op":"td","set":{"当前站":"① queue_trb wmb","一句话判决":"发布的开关必须是屏障之后的最后一步"}}]},{"c":"r4","note":"案发：VL805 端点 halt 后不更新 EP Context 的 cycle 位——信抄本的固件被现场打脸。判据：上下文抄本只能当参考，环上的 TRB 才是权威。","ph":"站② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）"},{"c":"r5","note":"把 dequeue 挪到下一个 TD（基线已再进化一轮，判决标准一毫米没动）。"},{"c":"r6","note":"环空分支：新 deq 取环指针，new_cycle 直接用环的 cycle_state——环空时抄本与现场一致，无争议。","ev":[{"op":"dev","set":{"② 2025 cycle":"6328bdc988d2——巡访中"}}]},{"c":"r7","note":"★有 TD 分支：new_cycle 从 TD 首颗 TRB 的 field[3] 现场读（& TRB_CYCLE）——不信 EP Context 抄本，只信环上的权威记录。","refs":["r_contract"],"ev":[{"op":"dev","set":{"② 2025 cycle":"6328bdc988d2——已巡（权威=环上 TRB）"}},{"op":"td","set":{"当前站":"② cycle 权威","一句话判决":"cycle 的权威记录在 TRB 上，不在口径抄本上"}}]},{"c":"r8","note":"状态位不是打上去就完事的标志——置位、拒绝、清位三点必须配对成完整的生命周期，缺一个出口就是泄漏。","ph":"站③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）"},{"c":"r9","note":"置位点：清 data toggle 前先挡门——「block queuing new trbs and ringing ep doorbell」。","ev":[{"op":"dev","set":{"③ ep_state":"置位 ✓（3388）——巡访中"}}]},{"c":"r10","note":"拒绝点：入队总口见位即拒（-EINVAL）——0008 第①相走过的 ep_state 检查就是这类门的日常形态。"},{"c":"r11","note":"★清位点：cleanup 标签汇合两条出口后，锁内查位清位——「if 条件下的清位在出口汇合后运行」正是这枚补丁的形态。","ev":[{"op":"dev","set":{"③ ep_state":"EP_SOFT_CLEAR_TOGGLE 三点——已巡（置位→拒绝→清位）"}},{"op":"td","set":{"当前站":"③ ep_state 出口纪律","一句话判决":"状态位必须配对清——置位/拒绝/清位三点连线"}}]},{"c":"r12","note":"出生证明是一枚 2015 年的补丁：EV1 记过账、EV2 到来时不得覆盖。今天连 STALL 错误分岔都要先问它一句。","ph":"站④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章已细讲）"},{"c":"r13","note":"struct xhci_td 的成员区（状态位长住在 end_trb 旁边）。"},{"c":"r14","note":"★注释原话就是判据：「actual_length of the URB has already been set」——一个 bool 过程位，URB 级汇总值与 TD 级过程状态的分工。","ev":[{"op":"dev","set":{"④ 2015 一比特":"urb_length_set——巡访中"}}]},{"c":"r15","note":"★STALL 分岔也要先问它（:2369）：数据段中途记过账就不清零——十一年间消费者越变越多，这一比特守的门口越来越多。","ev":[{"op":"dev","set":{"④ 2015 一比特":"urb_length_set——已巡（EV1/EV2/STALL 三处消费）"}},{"op":"td","set":{"当前站":"④ urb_length_set","一句话判决":"先记下不放行、后到者不得覆盖——两颗事件间的记录合同"}}]},{"c":"r16","note":"kill 与 giveback 是两个 CPU 上的赛跑：reject 计数的写必须先于 use_count 的读可见——屏障配对写在注释里。","ph":"站⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的预告片）"},{"c":"r17","note":"usbcore 的 urb.c（本步进器唯一走出 xhci 的站——补丁史自带桥）。"},{"c":"r18","note":"先加拒绝计数：此后新提交会被拒之门外。"},{"c":"r19","note":"★屏障配对：注释点名对端——与 __usb_hcd_giveback_urb() / usb_hcd_submit_urb() 里的屏障成对成立（站① wmb 的跨模块同款思想：合同要两侧同时成立）。","ev":[{"op":"dev","set":{"⑤ usbcore":"usb_kill_urb 屏障——巡访中"}}]},{"c":"r20","note":"unlink 后睡等 use_count==0（尚未完成的 urb 由 giveback 侧唤醒）——醒后撤拒绝计数，生命周期闭环。","ev":[{"op":"dev","set":{"⑤ usbcore":"usb_kill_urb 屏障——已巡（配对常驻）"}},{"op":"td","set":{"当前站":"⑤ usb_kill_urb","一句话判决":"屏障合同必须两侧配对——reject 先写可见、use_count 后读"}}]},{"c":"r21","note":"同一份基线上五枚补丁的现场：①发布的开关在屏障之后 ②cycle 权威在环上 ③状态位三点配对 ④过程位防覆盖 ⑤屏障两侧配对。修复本身还会被再修（站②已被 7c0c31c66a7f 重写）——不变的是判据。这也是读补丁史的方法论回声：先认判据，再看代码。","ev":[{"op":"td","set":{"当前站":"（收官）","一句话判决":"五枚补丁、五条判据——修复会老，判据长存"}}]}],"refs":[{"id":"r_gate","label":"p67 环约定","src":"xHCI 1.2（2019）","p":"p67","title":"完全成型才许拨 cycle（发布闸门）","quote":"Software shall never update the Enqueue Pointer (that is, toggle the Cycle bit of a TRB) until all TRBs between the previous and the new Enqueue Pointer location are fully formed.","note":"站① wmb 兑现的规范条款——补丁只是给「完全成型」补上了硬件级顺序保证。"},{"id":"r_contract","label":"§4.9.2.1","src":"xHCI 1.2（2019）","p":"p175","title":"cycle 合同本体（权威在环）","quote":"The Cycle bit shall be written by the producer with the current value of the PCS bit. The Cycle bit shall be treated as Read-Only by the consumer.","note":"站② 的判据底座：合同挂在每颗 TRB 的 cycle 位上——抄本（EP Context）不是合同方。"}],"world0":{"rings":{},"dev":{"title":"五枚补丁清单（第⑤步「回望」巡礼进度）","① 2021 wmb":"576667bad341——待巡","② 2025 cycle":"6328bdc988d2——待巡","③ ep_state":"EP_SOFT_CLEAR_TOGGLE 三点——待巡","④ 2015 一比特":"urb_length_set——待巡","⑤ usbcore":"usb_kill_urb 屏障——待巡"},"td":{"title":"本站判据（判据在一次次修复里越发牢固）","五步法":"症状→案发现场→根因→修复→回望","当前站":"（未开局）","一句话判决":"—"}}}</script>
+    <div class="st-refs"><details><summary>📎 p67 环约定 完全成型才许拨 cycle（发布闸门）（p67）</summary><p class="st-msrc">xHCI 1.2（2019） · p67</p><blockquote>Software shall never update the Enqueue Pointer (that is, toggle the Cycle bit of a TRB) until all TRBs between the previous and the new Enqueue Pointer location are fully formed.</blockquote><p class="st-mnote">步① wmb 落实的规范条款——补丁只是给「完全成型」补上了硬件级顺序保证。</p></details><details><summary>📎 §4.9.2.1 cycle 约定本体（权威在环）（p175）</summary><p class="st-msrc">xHCI 1.2（2019） · p175</p><blockquote>The Cycle bit shall be written by the producer with the current value of the PCS bit. The Cycle bit shall be treated as Read-Only by the consumer.</blockquote><p class="st-mnote">步② 的判据底座：约定挂在每颗 TRB 的 cycle 位上——副本（EP Context）不是约定方。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"五枚补丁的今天：基线五步逐枚回看（五步法第⑤步「回望」的代码全景）","intro":"左侧＝基线 62f4c998b297 上五枚补丁留下的现场代码（步⑤走进 usbcore 的 urb.c——补丁史自带跨模块的桥）。右侧＝五枚补丁清单（回看进度）与本步判据。用下方按钮或 ←/→ 键逐语句步进：每步=一章的⑤回望段，注释行常常就是判据原文。各章的①-④（症状/故障现场/根因/修复）在下方正文，步进器只走「今天的基线」。","baseline":"代码基线 master@62f4c998b297（与全课一致）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"步① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）"},{"id":"r1","kind":"fn","depth":0,"text":"static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,\n\t\tbool more_trbs_coming,\n\t\tu32 field1, u32 field2, u32 field3, u32 field4)","file":"xhci-ring.c","a":3244,"b":3246},{"id":"r2","kind":"ln","depth":1,"text":"\tstruct xhci_generic_trb *trb;\n\n\ttrb = &ring->enqueue->generic;\n\ttrb->field[0] = cpu_to_le32(field1);\n\ttrb->field[1] = cpu_to_le32(field2);\n\ttrb->field[2] = cpu_to_le32(field3);","file":"xhci-ring.c","a":3248,"b":3253},{"id":"r3","kind":"ln","depth":1,"text":"\t/* make sure TRB is fully written before giving it to the controller */\n\twmb();\n\ttrb->field[3] = cpu_to_le32(field4);","file":"xhci-ring.c","a":3254,"b":3256},{"id":"r4","kind":"ph","depth":0,"text":"步② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）"},{"id":"r5","kind":"fn","depth":0,"text":"static int xhci_move_deq_to_next_td(struct xhci_hcd *xhci,\n\t\t\t\t    struct xhci_virt_ep *ep,\n\t\t\t\t    unsigned int stream_id)\n{","file":"xhci-ring.c","a":689,"b":692},{"id":"r6","kind":"ln","depth":1,"text":"\tif (list_empty(&ring->td_list)) {\n\t\tif (trb_is_link(ring->enqueue))\n\t\t\tinc_enq_past_link(xhci, ring, 0);\n\t\tep->queued_deq_seg = ring->enq_seg;\n\t\tep->queued_deq_ptr = ring->enqueue;\n\t\tnew_cycle = ring->cycle_state;","file":"xhci-ring.c","a":727,"b":732},{"id":"r7","kind":"ln","depth":1,"text":"\t} else {\n\t\ttd = list_first_entry(&ring->td_list, struct xhci_td, td_list);\n\t\tep->queued_deq_seg = td->start_seg;\n\t\tep->queued_deq_ptr = td->start_trb;\n\t\tnew_cycle = le32_to_cpu(td->start_trb->generic.field[3]) & TRB_CYCLE;\n\t}","file":"xhci-ring.c","a":733,"b":738},{"id":"r8","kind":"ph","depth":0,"text":"步③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）"},{"id":"r9","kind":"ln","depth":0,"text":"\t/* block queuing new trbs and ringing ep doorbell */\n\tep->ep_state |= EP_SOFT_CLEAR_TOGGLE;","file":"xhci.c","a":3387,"b":3388},{"id":"r10","kind":"ln","depth":0,"text":"\tif (*ep_state & EP_SOFT_CLEAR_TOGGLE) {\n\t\txhci_warn(xhci, \"Can't enqueue URB while manually clearing toggle\\n\");\n\t\tret = -EINVAL;\n\t\tgoto free_priv;","file":"xhci.c","a":1689,"b":1692},{"id":"r11","kind":"ln","depth":0,"text":"cleanup:\n\txhci_free_command(xhci, stop_cmd);\n\tspin_lock_irqsave(&xhci->lock, flags);\n\tif (ep->ep_state & EP_SOFT_CLEAR_TOGGLE)\n\t\tep->ep_state &= ~EP_SOFT_CLEAR_TOGGLE;\n\tspin_unlock_irqrestore(&xhci->lock, flags);\n}","file":"xhci.c","a":3450,"b":3456},{"id":"r12","kind":"ph","depth":0,"text":"步④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章已细讲）"},{"id":"r13","kind":"fn","depth":0,"text":"\tint\t\t\tstatus;\n\tenum xhci_cancelled_td_status\tcancel_status;\n\tstruct urb\t\t*urb;\n\tstruct xhci_segment\t*start_seg;","file":"xhci.h","a":1306,"b":1309},{"id":"r14","kind":"ln","depth":1,"text":"\tstruct xhci_segment\t*bounce_seg;\n\t/* actual_length of the URB has already been set */\n\tbool\t\t\turb_length_set;\n\tbool\t\t\terror_mid_td;","file":"xhci.h","a":1313,"b":1316},{"id":"r15","kind":"ln","depth":0,"text":"\t\tfallthrough;\n\tcase COMP_STALL_ERROR:\n\t\t/* Did we transfer part of the data (middle) phase? */\n\t\tif (trb_type == TRB_DATA || trb_type == TRB_NORMAL)\n\t\t\ttd->urb->actual_length = requested - remaining;\n\t\telse if (!td->urb_length_set)\n\t\t\ttd->urb->actual_length = 0;\n\t\tgoto finish_td;","file":"xhci-ring.c","a":2364,"b":2371},{"id":"r16","kind":"ph","depth":0,"text":"步⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的先导）"},{"id":"r17","kind":"fn","depth":0,"text":"void usb_kill_urb(struct urb *urb)\n{\n\tmight_sleep();","file":"urb.c","a":703,"b":705},{"id":"r18","kind":"ln","depth":1,"text":"\tif (!(urb && urb->dev && urb->ep))\n\t\treturn;\n\tatomic_inc(&urb->reject);","file":"urb.c","a":706,"b":708},{"id":"r19","kind":"ln","depth":1,"text":"\t/*\n\t * Order the write of urb->reject above before the read\n\t * of urb->use_count below.  Pairs with the barriers in\n\t * __usb_hcd_giveback_urb() and usb_hcd_submit_urb().\n\t */\n\tsmp_mb__after_atomic();\n","file":"urb.c","a":709,"b":715},{"id":"r20","kind":"ln","depth":1,"text":"\tusb_hcd_unlink_urb(urb, -ENOENT);\n\twait_event(usb_kill_urb_queue, atomic_read(&urb->use_count) == 0);\n\n\tatomic_dec(&urb->reject);\n}","file":"urb.c","a":716,"b":720},{"id":"r21","kind":"ctx","depth":0,"text":"五步回看完：判据在一次次修复里越发牢固"}],"frames":[{"c":"r0","note":"出错场景：两颗 Set TR Dequeue 命令背靠背入队，第二颗只写一半就被 xHC 取走——命令环指针成垃圾值。今天这行注释+wmb 就是那枚补丁的全文。","ph":"步① 2021·queue_trb 的 wmb 常驻（补丁 576667bad341，+2 行）"},{"c":"r1","note":"基线今天的 queue_trb。"},{"c":"r2","note":"取槽、前三写（DW0-2）——修复前与修复后一模一样；出事的从来不是这几行，是它们与第四写之间没有顺序保证。"},{"c":"r3","note":"★补丁全文=这两行：wmb() 插在 cycle 位所在的 DW3 之前——「先落数据、再翻 cycle」从口头约定变成 CPU 级强制。","refs":["r_gate"],"ev":[{"op":"dev","set":{"① 2021 wmb":"576667bad341——已看（wmb 常驻）"}},{"op":"td","set":{"当前步":"① queue_trb wmb","一句话结论":"发布的开关必须是屏障之后的最后一步"}}]},{"c":"r4","note":"出错场景：VL805 端点 halt 后不更新 EP Context 的 cycle 位——信副本的固件被现场打脸。判据：上下文副本只能当参考，环上的 TRB 才是权威。","ph":"步② 2025·cycle 的权威记录在 TRB 上（补丁 6328bdc988d2·VIA VL805）"},{"c":"r5","note":"把 dequeue 挪到下一个 TD（基线已再进化一轮，判据一毫米没动）。"},{"c":"r6","note":"环空分支：新 deq 取环指针，new_cycle 直接用环的 cycle_state——环空时副本与现场一致，无争议。","ev":[{"op":"dev","set":{"② 2025 cycle":"6328bdc988d2——逐枚查看中"}}]},{"c":"r7","note":"★有 TD 分支：new_cycle 从 TD 首颗 TRB 的 field[3] 现场读（& TRB_CYCLE）——不信 EP Context 副本，只信环上的权威记录。","refs":["r_contract"],"ev":[{"op":"dev","set":{"② 2025 cycle":"6328bdc988d2——已看（权威=环上 TRB）"}},{"op":"td","set":{"当前步":"② cycle 权威","一句话结论":"cycle 的权威记录在 TRB 上，不在口径副本上"}}]},{"c":"r8","note":"状态位不是打上去就完事的标志——置位、拒绝、清位三点必须配对成完整的生命周期，缺一个出口就是泄漏。","ph":"步③ ep_state 状态位的出口纪律（EP_SOFT_CLEAR_TOGGLE 三点连线）"},{"c":"r9","note":"置位点：清 data toggle 前先挡门——「block queuing new trbs and ringing ep doorbell」。","ev":[{"op":"dev","set":{"③ ep_state":"置位 ✓（3388）——逐枚查看中"}}]},{"c":"r10","note":"拒绝点：入队总口见位即拒（-EINVAL）——0008 第①相走过的 ep_state 检查就是这类门的日常形态。"},{"c":"r11","note":"★清位点：cleanup 标签汇合两条出口后，锁内查位清位——「if 条件下的清位在出口汇合后运行」正是这枚补丁的形态。","ev":[{"op":"dev","set":{"③ ep_state":"EP_SOFT_CLEAR_TOGGLE 三点——已看（置位→拒绝→清位）"}},{"op":"td","set":{"当前步":"③ ep_state 出口纪律","一句话结论":"状态位必须配对清——置位/拒绝/清位三点连线"}}]},{"c":"r12","note":"产生条件是一枚 2015 年的补丁：EV1 已记录、EV2 到来时不得覆盖。今天连 STALL 错误分岔都要先问它一句。","ph":"步④ 2015·urb_length_set 一比特跑了十一年（0009 第 6 章已细讲）"},{"c":"r13","note":"struct xhci_td 的成员区（状态位长住在 end_trb 旁边）。"},{"c":"r14","note":"★注释原话就是判据：「actual_length of the URB has already been set」——一个 bool 过程位，URB 级汇总值与 TD 级过程状态的分工。","ev":[{"op":"dev","set":{"④ 2015 一比特":"urb_length_set——逐枚查看中"}}]},{"c":"r15","note":"★STALL 分岔也要先问它（:2369）：数据段中途已记录就不清零——十一年间消费者越变越多，这一比特守的门口越来越多。","ev":[{"op":"dev","set":{"④ 2015 一比特":"urb_length_set——已看（EV1/EV2/STALL 三处消费）"}},{"op":"td","set":{"当前步":"④ urb_length_set","一句话结论":"先记下不放行、后到者不得覆盖——两颗事件间的记录约定"}}]},{"c":"r16","note":"kill 与 giveback 是两个 CPU 上的竞态：reject 计数的写必须先于 use_count 的读可见——屏障配对写在注释里。","ph":"步⑤ usbcore·usb_kill_urb 的屏障配对（桥向 usbcore 的先导）"},{"c":"r17","note":"usbcore 的 urb.c（本步进器唯一走出 xhci 的一步——补丁史自带桥）。"},{"c":"r18","note":"先加拒绝计数：此后新提交会被拒之门外。"},{"c":"r19","note":"★屏障配对：注释点名对端——与 __usb_hcd_giveback_urb() / usb_hcd_submit_urb() 里的屏障成对成立（步① wmb 的跨模块同款思想：约定要两侧同时成立）。","ev":[{"op":"dev","set":{"⑤ usbcore":"usb_kill_urb 屏障——逐枚查看中"}}]},{"c":"r20","note":"unlink 后睡等 use_count==0（尚未完成的 urb 由 giveback 侧唤醒）——醒后撤拒绝计数，生命周期闭环。","ev":[{"op":"dev","set":{"⑤ usbcore":"usb_kill_urb 屏障——已看（配对常驻）"}},{"op":"td","set":{"当前步":"⑤ usb_kill_urb","一句话结论":"屏障约定必须两侧配对——reject 先写可见、use_count 后读"}}]},{"c":"r21","note":"同一份基线上五枚补丁的现场：①发布的开关在屏障之后 ②cycle 权威在环上 ③状态位三点配对 ④过程位防覆盖 ⑤屏障两侧配对。修复本身还会被再修（步②已被 7c0c31c66a7f 重写）——不变的是判据。这也是读补丁史的方法论呼应：先认判据，再看代码。","ev":[{"op":"td","set":{"当前步":"（收官）","一句话结论":"五枚补丁、五条判据——修复会老，判据长存"}}]}],"refs":[{"id":"r_gate","label":"p67 环约定","src":"xHCI 1.2（2019）","p":"p67","title":"完全成型才许拨 cycle（发布闸门）","quote":"Software shall never update the Enqueue Pointer (that is, toggle the Cycle bit of a TRB) until all TRBs between the previous and the new Enqueue Pointer location are fully formed.","note":"步① wmb 落实的规范条款——补丁只是给「完全成型」补上了硬件级顺序保证。"},{"id":"r_contract","label":"§4.9.2.1","src":"xHCI 1.2（2019）","p":"p175","title":"cycle 约定本体（权威在环）","quote":"The Cycle bit shall be written by the producer with the current value of the PCS bit. The Cycle bit shall be treated as Read-Only by the consumer.","note":"步② 的判据底座：约定挂在每颗 TRB 的 cycle 位上——副本（EP Context）不是约定方。"}],"world0":{"rings":{},"dev":{"title":"五枚补丁清单（第⑤步「回望」回看进度）","① 2021 wmb":"576667bad341——待看","② 2025 cycle":"6328bdc988d2——待看","③ ep_state":"EP_SOFT_CLEAR_TOGGLE 三点——待看","④ 2015 一比特":"urb_length_set——待看","⑤ usbcore":"usb_kill_urb 屏障——待看"},"td":{"title":"本步判据（判据在一次次修复里越发牢固）","五步法":"症状→故障现场→根因→修复→回望","当前步":"（未开局）","一句话结论":"—"}}}</script>
   </div>
 <!--STEPPER:0010:END-->
 
   <h2>五枚补丁落在课程地图的哪里</h2>
   <figure>
-  <svg viewBox="0 0 880 350" role="img" aria-label="五枚补丁在六站全景图上的落点" style="width:100%;background:#fff;border:1px solid #e3e3da">
+  <svg viewBox="0 0 880 350" role="img" aria-label="五枚补丁在六步全景图上的落点" style="width:100%;background:#fff;border:1px solid #e3e3da">
     <g font-size="12.5" fill="#1a2b4a">
       <rect x="18" y="60" width="150" height="230" rx="6" fill="#f6f6f1" stroke="#c9c9bd"/>
       <text x="93" y="48" text-anchor="middle" font-weight="600">usbcore</text>
@@ -912,7 +912,7 @@ void usb_kill_urb(struct urb *urb)
       <text x="93" y="183" text-anchor="middle" font-size="11">giveback 侧屏障</text>
       <text x="93" y="256" text-anchor="middle" font-size="11" fill="#707070">⑤ 26fbe9772b8c：</text>
       <text x="93" y="271" text-anchor="middle" font-size="11" fill="#707070">kill 与 giveback 的</text>
-      <text x="93" y="286" text-anchor="middle" font-size="11" fill="#707070">双 CPU 赛跑（hcd.c/urb.c）</text>
+      <text x="93" y="286" text-anchor="middle" font-size="11" fill="#707070">双 CPU 竞态（hcd.c/urb.c）</text>
 
       <rect x="218" y="60" width="170" height="230" rx="6" fill="#eef3fa" stroke="#1a5fb4"/>
       <text x="303" y="48" text-anchor="middle" font-weight="600">xhci-hcd 驱动</text>
@@ -945,7 +945,7 @@ void usb_kill_urb(struct urb *urb)
       <text x="763" y="113" text-anchor="middle" font-size="11">cycle 匹配才取（§4.9.2）</text>
       <rect x="682" y="150" width="162" height="46" fill="#fff" stroke="#1a7f37" rx="4"/>
       <text x="763" y="168" text-anchor="middle">halt：EP Context DCS</text>
-      <text x="763" y="183" text-anchor="middle" font-size="11">抄本可能不更新（VL805）</text>
+      <text x="763" y="183" text-anchor="middle" font-size="11">副本可能不更新（VL805）</text>
       <text x="440" y="318" text-anchor="middle" font-size="11" fill="#707070">五枚补丁全是同一主题：一份记录同时被两方读写时，写入方与读取方对不上号的时刻</text>
 
       <g stroke="#707070" stroke-width="1.6" fill="#707070">
@@ -969,9 +969,9 @@ void usb_kill_urb(struct urb *urb)
     </g>
     <defs><marker id="ah10b" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#707070"/></marker></defs>
   </svg>
-  <figcaption style="font-size:.85rem;color:var(--muted)">图 2 · 补丁落点：①＝576667bad341（写环＋wmb，对应 0006/0007 发布合同）；②＝6328bdc988d2（Set TR Dequeue 的新 cycle 取环上 TRB，对应 0007 cycle 合同＋0008 停表后清理）；③＝f1ec7ae6c9f8（ep_state 置位/清位配对，对应 0008 十个状态位）；④＝45ba2154d12f（EV1/EV2 记录状态位，对应 0009 两套口径）；⑤＝26fbe9772b8c（usbcore 侧 kill/giveback 屏障，giveback 的下一站）。</figcaption>
+  <figcaption style="font-size:.85rem;color:var(--muted)">图 2 · 补丁落点：①＝576667bad341（写环＋wmb，对应 0006/0007 发布约定）；②＝6328bdc988d2（Set TR Dequeue 的新 cycle 取环上 TRB，对应 0007 cycle 约定＋0008 停机后清理）；③＝f1ec7ae6c9f8（ep_state 置位/清位配对，对应 0008 十个状态位）；④＝45ba2154d12f（EV1/EV2 记录状态位，对应 0009 两套口径）；⑤＝26fbe9772b8c（usbcore 侧 kill/giveback 屏障，giveback 的下一步）。</figcaption>
   </figure>
-  <p>五枚补丁横跨十一年、分属两个子系统，修的却是同一类事故：<strong>一份记录同时被两方读写时，写入方与读取方对"记录处于什么状态"对不上号</strong>——TRB 四字段与 cycle 位之间（①）、EP Context 抄本与环上真实 TRB 之间（②）、状态位置位与清位两条出口之间（③）、两颗事件的两笔记录之间（④）、两个 CPU 的写读次序之间（⑤）。这也是本课把五步法立为长驻功能的原因：机制图回答"它现在怎么工作"，补丁史回答"它为什么必须这样工作"。</p>
+  <p>五枚补丁横跨十一年、分属两个子系统，修的却是同一类事故：<strong>一份记录同时被两方读写时，写入方与读取方对"记录处于什么状态"对不上号</strong>——TRB 四字段与 cycle 位之间（①）、EP Context 副本与环上真实 TRB 之间（②）、状态位置位与清位两条出口之间（③）、两颗事件的两笔记录之间（④）、两个 CPU 的写读次序之间（⑤）。这也是本课把五步法立为长驻功能的原因：机制图回答"它现在怎么工作"，补丁史回答"它为什么必须这样工作"。</p>
 
   <h2>怎么自己找一枚对应课题的补丁（方法沉淀）</h2>
   <p>后续每课的补丁解析章都从这套检索起手（全部本地可做，无需联网）：</p>
@@ -984,13 +984,13 @@ void usb_kill_urb(struct urb *urb)
     <tr><td>判断修复的分量</td><td><code>Cc: stable</code> 标记＝值得回移植到长期维护分支的事故修复；<code>Fixes:</code> 标记指认被修的原始 commit</td></tr>
   </table>
 
-  <h2>回到整体（实验课收官的路标）</h2>
-  <p>四课机制图＋本课五枚补丁，合成一张更完整的地图：0006 的零件有写入顺序合同（①）、0007 的 cycle 有权威记录位（②）、0008 的状态位有出口纪律（③）、0009 的记录有事实与数值之分（④）、六站旅程的尽头还有 usbcore 的余生（⑤）。每个"理所当然"都值得追问一次是哪枚补丁把它列成理所当然的——这个追问动作本身，就是本课程从今天起的长驻功能。</p>
+  <h2>回到整体（实验课收官的指引）</h2>
+  <p>四课机制图＋本课五枚补丁，合成一张更完整的地图：0006 的零件有写入顺序约定（①）、0007 的 cycle 有权威记录位（②）、0008 的状态位有出口纪律（③）、0009 的记录有事实与数值之分（④）、六步主线的尽头还有 usbcore 的余生（⑤）。每个"理所当然"都值得追问一次是哪枚补丁把它列成理所当然的——这个追问动作本身，就是本课程从今天起的长驻功能。</p>
   <p>有读不懂的补丁、想深挖的函数，随时把 commit hash 丢给 agent 一起走五步法。</p>
 
   <div id="quiz"></div>
 
-  <footer>课 0010 · 2026-10-14（补丁解析实验课首发——功能立项：后续课程每课配一枚同主题社区补丁走五步法）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）＋补丁清单各自 @commit（块头自标，机检分两把尺：check_lesson_excerpts.py / check_lesson_patches.py）｜ 五枚补丁：576667bad341 · 6328bdc988d2 · f1ec7ae6c9f8 · 45ba2154d12f · 26fbe9772b8c ｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 旅程实战与命运</a> ｜ 前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 框架课</a></footer>
+  <footer>课 0010 · 2026-10-14（补丁解析实验课首发——功能立项：后续课程每课配一枚同主题社区补丁走五步法）｜ 代码：<code>/Volumes/KernelSrc/linux</code> master@62f4c998b297（v7.3-rc4-75）＋补丁清单各自 @commit（块头自标，机检分两把尺：check_lesson_excerpts.py / check_lesson_patches.py）｜ 五枚补丁：576667bad341 · 6328bdc988d2 · f1ec7ae6c9f8 · 45ba2154d12f · 26fbe9772b8c ｜ 上一课：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0008-xhc-journey-fate-standalone.html">0008 实战与错误路径</a> ｜ 前置：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0006-xhc-trb-parts-standalone.html">0006</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0007-xhc-ring-keys-standalone.html">0007</a> · <a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/lessons/0009-xhc-transfer-drama-standalone.html">0009</a> ｜ 相关：<a href="https://jason-xhy.github.io/learning-sessions/usb-xhci-learn/0001-diagnostic-standalone.html">0001 框架课</a></footer>
 </main>
 <script>
 /* quiz.js — teach workspace 可复用测验引擎。
@@ -1680,19 +1680,19 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'cycle 位是"发布位"：一旦可见，xHC 就可能取走整颗 TRB。所以前三字段必须先行可见，发布位压轴。' },
   { tag: 'cycle·权威',
     prompt: '第 2 章：VL805 的硬件毛病是不更新哪份记录？',
-    options: ['TRB 自带的 cycle 位', '事件环表项的完成码', 'Endpoint Context 里的 DCS（Dequeue Cycle State）抄本', 'Doorbell 寄存器的悬挂位'],
+    options: ['TRB 自带的 cycle 位', '事件环表项的完成码', 'Endpoint Context 里的 DCS（Dequeue Cycle State）副本', 'Doorbell 寄存器的悬挂位'],
     answer: 2,
-    explain: '实测日志显示环上 TRB 的 cycle 位正常翻转、EP Context 的 DCS 抄本长期不动。DCS 只是抄本，VL805 在 halt 时不更新它。' },
+    explain: '实测日志显示环上 TRB 的 cycle 位正常翻转、EP Context 的 DCS 副本长期不动。DCS 只是副本，VL805 在 halt 时不更新它。' },
   { tag: 'cycle·权威',
     prompt: '第 2 章：修复后 new_cycle 的取值来源是？',
     options: ['td->end_trb 身上的 cycle 位——环上软件亲手写的已知好记录', 'hw_dequeue 的最低位——EP Context 的 DCS', 'ring->cycle_state 全局变量', '事件环里最近一颗事件的补齐值'],
     answer: 0,
-    explain: '修法＝别信抄本，信环上真实 TRB：td->end_trb 的 cycle 是软件入队时亲手写的，当下必然正确；回绕翻转从那里起算。（基线上函数后来又重写过，但"信环上 TRB"的判据不变。）' },
+    explain: '修法＝别信副本，信环上真实 TRB：td->end_trb 的 cycle 是软件入队时亲手写的，当下必然正确；回绕翻转从那里起算。（基线上函数后来又重写过，但"信环上 TRB"的判据不变。）' },
   { tag: 'cycle·回绕',
     prompt: '第 2 章：走查循环里 new_cycle ^= 1 什么时候执行？',
     options: ['每走过一颗普通 TRB 就翻一次', '找到 hw_dequeue 的那一刻翻一次', '每次跨段都翻一次，无论 Link TRB 是否翻转 cycle', '每跨过一颗会翻转 cycle 的 Link TRB（回绕点）就翻一次'],
     answer: 3,
-    explain: '0007 回绕点规则：只有带 cycle 翻转语义的 Link TRB 才翻新 cycle（link_trb_toggles_cycle 判断）；起点错则沿途翻得再准也全错——这正是抄本陈旧时整条计算作废的原因。' },
+    explain: '0007 回绕点规则：只有带 cycle 翻转语义的 Link TRB 才翻新 cycle（link_trb_toggles_cycle 判断）；起点错则沿途翻得再准也全错——这正是副本陈旧时整条计算作废的原因。' },
   { tag: 'ep_state·配对',
     prompt: '第 3 章：EP_SOFT_CLEAR_TOGGLE 卡死的病灶是？',
     options: ['置位之后系统里根本没有人负责清位', '清位语句只写在成功出口，cleanup 错误出口漏了', '清位执行得太早，clear_halt 还没完成就被清掉', '置位被并发执行了两次，一次清位抵消不掉'],
@@ -1715,7 +1715,7 @@ Quiz.render(document.getElementById('quiz'), [
     explain: 'struct xhci_td 新增 bool urb_length_set：EV1 记录时置位，EV2 只问状态位不猜数值。一比特跑了十一年，连 STALL 分岔（:2369）都要先问它。' },
   { tag: 'usbcore·屏障',
     prompt: '第 5 章：SB 模式为什么会让 usb_kill_urb 永久挂起？',
-    options: ['自旋锁没释放，等待者永远拿不到锁', '两 CPU 各自"先写自己的变量再读对方的变量"，无屏障时读可越过写——双方同时读到旧值：一方永睡、一方不叫醒', 'use_count 是 64 位，atomic 操作在 32 位机上撕裂', '中断在 tasklet 上下文被吞，wake_up 永远不执行'],
+    options: ['自旋锁没释放，等待者永远拿不到锁', '两 CPU 各自"先写自己的变量再读对方的变量"，无屏障时读可越过写——双方同时读到旧值：一方永远睡眠、一方不唤醒', 'use_count 是 64 位，atomic 操作在 32 位机上撕裂', '中断在 tasklet 上下文被吞，wake_up 永远不执行'],
     answer: 1,
     explain: '每个原子操作自身都正常，坏的是两个原子操作之间的次序：写自身变量的结果可能晚于读对方变量可见。修法＝两侧对称插 smp_mb__after_atomic() 全屏障，并把配对关系写进注释。' },
   { tag: '方法·双份标注',
