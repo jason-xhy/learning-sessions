@@ -312,7 +312,7 @@ footer { margin-top: 3rem; padding-top: .8rem; border-top: 1px solid var(--line)
         <text x="528" y="113" text-anchor="middle" font-size="11">TRB ×N + Link TRB 回绕</text>
         <rect x="452" y="255" width="152" height="46" fill="#fff" stroke="#6a4fc4" rx="4"/>
         <text x="528" y="273" text-anchor="middle">event ring（xHC 写、软件读）</text>
-        <text x="528" y="288" text-anchor="middle" font-size="11">ERST 段表 §6.5</text>
+        <text x="528" y="288" text-anchor="middle" font-size="11">ERST §6.5</text>
 
         <rect x="668" y="60" width="190" height="230" rx="6" fill="#e9f7ee" stroke="#1a7f37"/>
         <text x="763" y="48" text-anchor="middle" font-weight="600">xHC 硬件（MMIO + USB 线上）</text>
@@ -542,7 +542,7 @@ struct xhci_transfer_event {
         <text x="176" y="250" text-anchor="middle" font-size="10.5" fill="#1a7f37">一个 TD＝3 颗 TRB＝占 3 个槽（chain 捆绑＝一次传输）</text>
         <text x="496" y="250" text-anchor="middle" font-size="10.5" fill="#707070">每个槽位＝一个槽＝16B；TD 占槽数随传输定，小到 1 槽大到 N 槽</text>
         <g text-anchor="middle">
-          <rect x="60"  y="272" width="120" height="34" fill="#fff" stroke="#1a2b4a" rx="4"/><text x="120" y="286" font-size="11" font-weight="600">槽＝16B</text><text x="120" y="300" font-size="9.5" fill="#707070">一颗 TRB 的车位</text>
+          <rect x="60"  y="272" width="120" height="34" fill="#fff" stroke="#1a2b4a" rx="4"/><text x="120" y="286" font-size="11" font-weight="600">槽＝16B</text><text x="120" y="300" font-size="9.5" fill="#707070">一颗 TRB 的位置</text>
           <rect x="240" y="272" width="280" height="34" fill="#fff" stroke="#1a2b4a" rx="4"/><text x="380" y="286" font-size="11" font-weight="600">段＝256 槽＝4096B＝一页</text><text x="380" y="300" font-size="9.5" fill="#707070">255 数据＋第 256 槽固定住 Link（xhci.h:1260）</text>
           <rect x="580" y="272" width="240" height="34" fill="#fff" stroke="#1a2b4a" rx="4"/><text x="700" y="286" font-size="11" font-weight="600">环＝段链表（可扩容）</text><text x="700" y="300" font-size="9.5" fill="#707070">每段末槽都是回绕点，都住 Link</text>
           <line x1="182" y1="289" x2="236" y2="289" stroke="#707070" stroke-width="1.5" marker-end="url(#ahA)"/>
@@ -736,11 +736,11 @@ struct xhci_transfer_event {
 	else
 		num_tds = 1;</pre>
   <figure>
-    <svg viewBox="0 0 880 385" role="img" aria-label="urb 到 TD 到 TRB 的三层翻译与事件回程配对" style="width:100%;background:#fff;border:1px solid #e3e3da">
+    <svg viewBox="0 0 880 385" role="img" aria-label="urb 到 TD 到 TRB 的三层装配与事件回报路径配对" style="width:100%;background:#fff;border:1px solid #e3e3da">
       <g font-size="12">
-        <text x="440" y="26" text-anchor="middle" font-size="13" font-weight="600" fill="#1a2b4a">三层翻译：urb（usbcore 合同）→ TD（调度单位）→ TRB（16B 指令）——右侧事件回程反向配对</text>
+        <text x="440" y="26" text-anchor="middle" font-size="13" font-weight="600" fill="#1a2b4a">三层装配：urb（usbcore 约定）→ TD（调度单位）→ TRB（16B 指令）——右侧事件回报反向配对</text>
         <rect x="30" y="46" width="330" height="92" rx="6" fill="#f6f6f1" stroke="#c9c9bd"/>
-        <text x="195" y="66" text-anchor="middle" font-weight="600">urb（usbcore 合同）</text>
+        <text x="195" y="66" text-anchor="middle" font-weight="600">urb（usbcore 约定）</text>
         <rect x="44" y="76" width="145" height="24" fill="#fff" stroke="#a5a596" rx="3"/><text x="116" y="92" text-anchor="middle" font-size="10.5">transfer_dma/sg + len</text>
         <rect x="44" y="104" width="145" height="24" fill="#fff" stroke="#a5a596" rx="3"/><text x="116" y="120" text-anchor="middle" font-size="10.5">complete 回调</text>
         <rect x="199" y="76" width="145" height="24" fill="#fff" stroke="#a5a596" rx="3"/><text x="271" y="92" text-anchor="middle" font-size="10.5">setup_packet 8B（控制）</text>
@@ -778,11 +778,11 @@ struct xhci_transfer_event {
         </g>
         <text x="440" y="330" text-anchor="middle" font-size="11" fill="#707070">TD_SIZE 字段=本 TD 剩余包数（SS 突发编排用，§4.11.2.4；USB2 主控写 0，:3526-3527 旧语义 KB 残量）</text>
         <rect x="660" y="256" width="190" height="52" fill="#fdeaea" stroke="#a00000" rx="4"/>
-        <text x="755" y="276" text-anchor="middle" font-size="11" font-weight="600">Transfer Event 回程：</text>
+        <text x="755" y="276" text-anchor="middle" font-size="11" font-weight="600">Transfer Event 回报：</text>
         <text x="755" y="293" text-anchor="middle" font-size="10.5">TRB 指针 + 残量 → trb_in_td 反查 TD</text>
         <path d="M 658 282 C 600 282, 560 195, 524 170" fill="none" stroke="#a00000" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah5)"/>
         <defs><marker id="ah5" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 z" fill="#a00000"/></marker></defs>
-        <text x="560" y="352" text-anchor="middle" font-size="11" fill="#707070">交还节奏：inc_td_cnt/last_td_in_urb（:906-908）——TD 逐个结清，urb 的最后一个 TD 才触发 usb_hcd_giveback_urb（:824）</text>
+        <text x="560" y="352" text-anchor="middle" font-size="11" fill="#707070">交还节奏：inc_td_cnt/last_td_in_urb（:906-908）——TD 逐个完成，urb 的最后一个 TD 才触发 usb_hcd_giveback_urb（:824）</text>
       </g>
     </svg>
     <figcaption>三层语法一图流：切几个 TD 由传输类型决定（三条规则），TD 内切几个 TRB 由<strong>64K 边界与散列表</strong>决定；完成时事件携带的 TRB DMA 指针反向命中 TD，urb 计数完成后才回调——urb 与 TRB 从未直接见面，全靠 TD 居中翻译。</figcaption>
@@ -865,9 +865,9 @@ struct xhci_transfer_event {
     <div class="frame">
       <div class="ftitle"><span class="no">第 2 帧</span><span>chain＝捆绑标记：尾 TRB 收尾（chain=0）＋完成中断（IOC）</span></div>
       <div class="fbody">
-      <svg viewBox="0 0 880 240" role="img" aria-label="chain 捆成一件 TD 与 chain 全 0 的对照" style="width:100%">
+      <svg viewBox="0 0 880 240" role="img" aria-label="chain 串成一件 TD 与 chain 全 0 的对照" style="width:100%">
       <g font-size="11">
-        <text x="40" y="24" font-weight="600" fill="#1a2b4a">chain=1→1→0：三颗捆成一个 TD</text>
+        <text x="40" y="24" font-weight="600" fill="#1a2b4a">chain=1→1→0：三颗串成一个 TD</text>
         <rect x="40"  y="36" width="170" height="52" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="125" y="56" text-anchor="middle" font-weight="600">TRB·64K</text><text x="125" y="74" text-anchor="middle" font-size="10.5" fill="#1a7f37">chain=1（还有下一颗）</text>
         <rect x="218" y="36" width="170" height="52" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.4"/><text x="303" y="56" text-anchor="middle" font-weight="600">TRB·64K</text><text x="303" y="74" text-anchor="middle" font-size="10.5" fill="#1a7f37">chain=1（还有下一颗）</text>
         <rect x="396" y="36" width="170" height="52" fill="#e9f7ee" stroke="#1a7f37" stroke-width="1.8"/><text x="481" y="56" text-anchor="middle" font-weight="600">TRB·2K（尾）</text><text x="481" y="74" text-anchor="middle" font-size="10.5" fill="#1a7f37">chain=0 · IOC</text>
@@ -902,7 +902,7 @@ struct xhci_transfer_event {
         <rect x="700" y="104" width="150" height="44" rx="5" fill="#fdeaea" stroke="#a00000" stroke-width="1.4"/><text x="775" y="122" text-anchor="middle" font-size="10.5" font-weight="600" fill="#a00000">Transfer Event</text><text x="775" y="138" text-anchor="middle" font-size="10" fill="#a00000">Success·指针＝尾 TRB</text>
         <line x1="44" y1="158" x2="566" y2="158" stroke="#1a5fb4" stroke-width="6" opacity="0.85"/>
         <text x="305" y="176" text-anchor="middle" font-size="10.5" fill="#1a5fb4">整链＝一个 TD：一次门铃，一颗完成事件</text>
-        <text x="40" y="200" font-size="10.5" fill="#707070">回程：事件里的 TRB 指针落尾 TRB，驱动用 trb_in_td 反查整条 TD（:877-919）→ urb 结清</text>
+        <text x="40" y="200" font-size="10.5" fill="#707070">回报：事件里的 TRB 指针落尾 TRB，驱动用 trb_in_td 反查整条 TD（:877-919）→ urb 完成</text>
       </g>
     </svg>
         <p><strong>本帧只看"一口气"</strong>：xHC 校验过链头后，沿 chain 一直走到 chain=0 为止——整条链是<strong>一个调度与完成单位</strong>，事件只发一颗。补充一个预告：TD 中途跨过回绕点时，这个回绕点上的 Link TRB 会被改写 chain 位把链续上（0007 第 3 章联动动画第 5 帧细看那个场景）。</p>
@@ -1006,7 +1006,7 @@ struct xhci_transfer_event {
         <text x="324" y="384" text-anchor="middle" font-size="11" fill="#6a4fc4">新末段 Link 指回 seg0 首槽 + TC——整环恰一个翻转点</text>
         <text x="640" y="290" font-size="11" fill="#707070">虚线框=扩容</text>
         <text x="640" y="307" font-size="11" fill="#707070">新增的段与槽</text>
-        <text x="440" y="414" text-anchor="middle" font-size="11.5" fill="#707070">段号在拼接后重编（:179-180）；流端点每个 stream_id 一条独立环，事件回程用 radix tree 反查（xhci-mem.c:184-213 注释，§4.12）</text>
+        <text x="440" y="414" text-anchor="middle" font-size="11.5" fill="#707070">段号在拼接后重编（:179-180）；流端点每个 stream_id 一条独立环，事件回报用 radix tree 反查（xhci-mem.c:184-213 注释，§4.12）</text>
       </g>
     </svg>
     <figcaption>三种环对"写满"的三种答案在此凑齐：<strong>传输环=动态扩容（本图）、命令环=禁止扩容（:3304-3306）、事件环=ERST 预声明几何</strong>（0007 第 2 章）。扩容期间 cycle_state 不变——新段空槽的 cycle 都还是旧轮次，生产者跨过新末段 Link 时才翻转。</figcaption>
