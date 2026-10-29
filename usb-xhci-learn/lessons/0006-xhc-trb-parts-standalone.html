@@ -1554,7 +1554,14 @@ struct xhci_transfer_event {
  *   （stepScroll）——前几行纯居中会把页面滚得让控件条/世界面板的 sticky 不咬合
  *   （自然位落进视口中带），此后每步"下一行"页面下滚一行高、按钮随内容上移一格格，
  *   用户被迫追着鼠标向上移。地板=让两件钉住位咬合的最小 scrollY（ctl 自然位以
- *   零高静止锚点 .st-pinref 量取——sticky 咬合后 ctl 自身 rect 是钉住位，不可用）。 */
+ *   零高静止锚点 .st-pinref 量取——sticky 咬合后 ctl 自身 rect 是钉住位，不可用）。
+ * v3.5（2026-10-29，0007 世界面板 anatomy 机器）：world0 可选字段 machine:{svg}——
+ *   存在时世界面板渲染该 SVG 机构替代卡片网格（worldHtml 默认路径零变更）。
+ *   状态应用 machineApply，与卡片 op 语义一致：cell→[data-k=ring:i] 组切 st-* 类并
+ *   更新 .st-ma/.st-mt/.st-mf/.st-mcyc；ptr→组内 .st-menq/.st-mdeq 翻 visibility；
+ *   dev/td→[data-k=dev|td] 组内 [data-f=字段] 改 textContent。脉冲样式内嵌在机构
+ *   SVG 里（.st-chg 走 stroke/fill 动画，SVG 无 box-shadow）；alignWorld 复用不变
+ *   （getBoundingClientRect 对 SVG 元素有效）。机构标注约定见本目录 design.md。 */
 (function () {
   'use strict';
 
@@ -1610,6 +1617,43 @@ struct xhci_transfer_event {
     } else if (ev.op === 'dev' || ev.op === 'td') {
       Object.keys(ev.set || {}).forEach(function (k) { W[ev.op][k] = ev.set[k]; });
     }
+  }
+  /* ---------- v3.5 机构面板状态应用（world0.machine.svg 在场时；语义与卡片一致） ---------- */
+  function mSetText(scope, sel, v) {
+    var t = scope.querySelector(sel);
+    if (t) t.textContent = (v == null ? '' : String(v));
+  }
+  function machineApply(W, box) {
+    Object.keys(W.rings || {}).forEach(function (rk) {
+      var r = W.rings[rk];
+      var slots = {};
+      Array.prototype.forEach.call(box.querySelectorAll('[data-ring="' + rk + '"]'), function (el) {
+        var id = el.getAttribute('data-k');
+        if (id != null) slots[id] = el;
+      });
+      (r.cells || []).forEach(function (c, i) {
+        var el = slots[rk + ':' + i];
+        if (!el) return;
+        el.setAttribute('class', (el.getAttribute('data-base') || 'st-mslot') + ' st-' + (c.st || 'empty'));
+        mSetText(el, '.st-ma', c.a);
+        mSetText(el, '.st-mt', c.t ? c.t : '空');
+        mSetText(el, '.st-mf', c.f || '');
+        mSetText(el, '.st-mcyc', 'cyc=' + c.cyc);
+        var enq = el.querySelector('.st-menq'), deq = el.querySelector('.st-mdeq');
+        if (enq) enq.setAttribute('visibility', r.enq === i ? 'visible' : 'hidden');
+        if (deq) deq.setAttribute('visibility', r.deq === i ? 'visible' : 'hidden');
+      });
+    });
+    ['dev', 'td'].forEach(function (k) {
+      var b = W[k];
+      if (!b) return;
+      Array.prototype.forEach.call(box.querySelectorAll('[data-k="' + k + '"]'), function (el) {
+        Object.keys(b).forEach(function (f) {
+          if (f === 'title') return;
+          mSetText(el, '[data-f="' + f + '"]', b[f]);
+        });
+      });
+    });
   }
   function stateAt(D, idx) {
     var W = JSON.parse(JSON.stringify(D.world0));
@@ -1757,7 +1801,12 @@ struct xhci_transfer_event {
       Object.keys(seen).forEach(function (id) { if (rowEls[id] && id !== fr.c) rowEls[id].classList.add('done'); });
       /* 世界面板重放 */
       var W = stateAt(D, idx);
-      worldBox.innerHTML = worldHtml(W);
+      if (D.world0.machine && D.world0.machine.svg) {
+        worldBox.innerHTML = D.world0.machine.svg;
+        machineApply(W, worldBox);
+      } else {
+        worldBox.innerHTML = worldHtml(W);
+      }
       worldBox.classList.add('live');
       lastWorld = W;
       if (!noScroll) alignWorld(fr, cur);
