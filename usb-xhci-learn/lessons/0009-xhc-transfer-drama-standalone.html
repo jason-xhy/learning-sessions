@@ -76,15 +76,17 @@ figure figcaption { color: var(--muted); font-size: .85rem; margin-top: .3rem; }
 .fnode pre { margin: .35rem 0 .1rem; padding: .45rem .6rem; background: #f4f4ee; border-radius: 4px; overflow-x: auto; font-size: .78rem; line-height: 1.45; font-family: "SF Mono", Menlo, Consolas, monospace; }
 .diff { display: inline-block; border: 1px solid var(--bad); color: var(--bad); font-size: .75rem; border-radius: 3px; padding: 0 .35rem; margin-left: .3rem; vertical-align: 1px; white-space: nowrap; }
 
-/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧） */
-.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; }
+/* 分帧放映机（assets/player.js；静态优先：无 JS/打印时全帧定格可见，JS init 后只显当前帧）
+ * 2026-10-30 反馈轮③：控件条（上一帧/播放/下一帧…）上移到动画上方——
+ * .player 转 flex 列、.pctl order:-1 置顶；帧说明（图注）回动画下方自然位。 */
+.player { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .7rem .9rem; margin: 1.2rem 0; display: flex; flex-direction: column; }
 .player .frame { display: block; margin: 14px 0; }
 .player.js:not(.static) .frame { display: none; }
 .player.js:not(.static) .frame.cur { display: block; margin: 0; }
 .player .ftitle { font-weight: 600; font-size: .95rem; margin-bottom: .45rem; }
 .player .ftitle .no { display: inline-block; background: var(--ink); color: #fff; font-size: .72rem; border-radius: 3px; padding: 0 .35rem; margin-right: .5rem; vertical-align: 1px; }
 .player .fbody { font-size: .95rem; line-height: 1.6; }
-.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .65rem; }
+.player .pctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; order: -1; margin-bottom: .65rem; }
 .player .pctl button { font: inherit; font-size: .85rem; padding: .22rem .7rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
 .player .pctl .pcount { color: var(--muted); font-size: .85rem; }
 .player .pdots { display: flex; gap: .3rem; margin-left: auto; }
@@ -3464,9 +3466,21 @@ static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xh
       if (!maxW) return;
       var csR = getComputedStyle(root);
       var chrome = (parseFloat(csR.paddingLeft) || 0) + (parseFloat(csR.paddingRight) || 0) + 2; /* 容器内边距+边框 */
-      var worldW = worldBox.getBoundingClientRect().width || 400;
       var gap = parseFloat(getComputedStyle(gridBox).columnGap) || 14;
       var cap = Math.min(document.documentElement.clientWidth * 0.96, 1720);
+      /* 2026-10-30 用户裁定（反馈轮②）：data-world-w=N 时世界面板目标宽 N px（动画侧优先）——
+       * 代码列在 cap 内让位（下限 400，超出回落横向滚动），世界列富余视口可到 900。缺省 0=旧路径。 */
+      var WT = parseFloat(root.getAttribute('data-world-w')) || 0;
+      if (WT > 0) {
+        var avail2 = cap - chrome - gap;
+        var codeW2 = Math.min(Math.ceil(maxW) + 18, Math.max(400, avail2 - WT));
+        var worldW2 = Math.min(Math.max(avail2 - codeW2, 300), 900);
+        codeBox.style.width = codeW2 + 'px';
+        gridBox.style.gridTemplateColumns = codeW2 + 'px minmax(300px, 1fr)';
+        root.style.width = Math.min(codeW2 + worldW2 + gap + chrome, cap) + 'px';
+        return;
+      }
+      var worldW = worldBox.getBoundingClientRect().width || 400;
       var codeW = Math.min(Math.ceil(maxW) + 18, cap - chrome - gap - 320); /* 18=滚动条与舍入余量 */
       if (codeW < 320) codeW = 320;
       codeBox.style.width = codeW + 'px';
