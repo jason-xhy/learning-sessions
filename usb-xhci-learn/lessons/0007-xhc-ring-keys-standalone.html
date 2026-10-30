@@ -1358,9 +1358,9 @@ function drawLever(side){
     '<circle class="iso-wire-end" cx="' + tip[0].toFixed(1) + '" cy="' + tip[1].toFixed(1) + '" r="1.2"/>';
 }
 function draw(){
-  drawArm(gSw, enqA, { armZ: C.PROD.armZ, armH: C.PROD.armH, tipR: C.PROD.tipR, headBot: C.PROD.headBot, headR: C.PROD.headR, sleeveZ: C.PROD.sleeveZ, bell: false, drum: true });
-  drawArm(gXh, deqA, { armZ: C.CONS.armZ, armH: C.CONS.armH, tipR: C.CONS.tipR, headBot: C.CONS.headBot, headR: C.CONS.headR, sleeveZ: C.CONS.sleeveZ,
-    bell: true, bellZ: bell.z, bellR: C.CONS.bellR, lamp: canConsume() && !held, held: held ? { alpha: held.alpha, z: held.z } : null });
+  drawArm(gSw, enqA, Object.assign({}, C.PROD, { bell: false, drum: true }));
+  drawArm(gXh, deqA, Object.assign({}, C.CONS, { bell: true, bellZ: bell.z,
+    lamp: canConsume() && !held, held: held ? { alpha: held.alpha, z: held.z } : null }));
   for (var i = 0; i < C.N; i++) drawPin(i);
   drawLever("sw"); drawLever("hw");
   if (fly.on) {
