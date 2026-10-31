@@ -1,0 +1,47 @@
+=== Fig2 build log R1 (2026-10-31 13:32) ===
+
+-- node build.mjs --audit (dark) --
+wrote index.html 300 KB 76 items scale 1.476
+clearance: 0 problems
+clearance apart: 0 problems
+terminals: 0 ends not on a mount
+loose ends: 0
+screen folds: 0
+support: 0 unsupported solids · 0 hanging tubes · 0 sunk pairs
+depth order: 0 problems
+through in mid-flight: 0 pairs
+self-overlap: 0 chunks whose outline crosses itself on screen
+wobble: 0 smoothed profiles whose slope turns between its ends
+saddles off their host apart: 0
+stand-in shapes: 0 items whose recorded shape covers too little of what it draws
+crowding: 0 pairs where a bend or end touches another line on screen
+in passing (uniform explode states only, not failing): 2 interlocked pairs, 0 pairs no linear key can order
+  cycle  share 0  rail:5 / consumer   42.44 px²
+  cycle  share 0  consumer / producer   79.19 px²
+audit · 2 tubes · 61 solids · 76 items · 1 depth states · 86 overlaps · 84 order rules · 5.4 s
+audit passed
+
+-- node build.mjs --light --audit (light) --
+wrote index-light.html 300 KB 76 items scale 1.476
+clearance: 0 problems
+clearance apart: 0 problems
+terminals: 0 ends not on a mount
+loose ends: 0
+screen folds: 0
+support: 0 unsupported solids · 0 hanging tubes · 0 sunk pairs
+depth order: 0 problems
+through in mid-flight: 0 pairs
+self-overlap: 0 chunks whose outline crosses itself on screen
+wobble: 0 smoothed profiles whose slope turns between its ends
+saddles off their host apart: 0
+stand-in shapes: 0 items whose recorded shape covers too little of what it draws
+crowding: 0 pairs where a bend or end touches another line on screen
+in passing (uniform explode states only, not failing): 2 interlocked pairs, 0 pairs no linear key can order
+  cycle  share 0  rail:5 / consumer   42.44 px²
+  cycle  share 0  consumer / producer   79.19 px²
+audit · 2 tubes · 61 solids · 76 items · 1 depth states · 86 overlaps · 84 order rules · 5.3 s
+audit passed
+
+-- lines.mjs dark / light --
+line ends: 0 of 229 ends on 48 lines float
+line ends: 0 of 229 ends on 48 lines float

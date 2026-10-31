@@ -1,0 +1,55 @@
+== Fig3 build log · 2026-10-31 12:14:44 ==
+
+-- node build.mjs --audit (dark) --
+wrote index.html 336 KB 81 items scale 1.364
+clearance: 0 problems
+clearance apart: 0 problems
+terminals: 0 ends not on a mount
+loose ends: 0
+screen folds: 0
+support: 0 unsupported solids · 0 hanging tubes · 0 sunk pairs
+depth order: 0 problems
+through in mid-flight: 0 pairs
+self-overlap: 0 chunks whose outline crosses itself on screen
+wobble: 0 smoothed profiles whose slope turns between its ends
+saddles off their host apart: 0
+stand-in shapes: 0 items whose recorded shape covers too little of what it draws
+crowding: 0 pairs where a bend or end touches another line on screen
+in passing (uniform explode states only, not failing): 1 interlocked pairs, 0 pairs no linear key can order
+  cycle  share 0  producer / booth   64.06 px²
+audit · 4 tubes · 65 solids · 81 items · 1 depth states · 88 overlaps · 87 order rules · 4.7 s
+audit passed
+
+-- node build.mjs --audit --light --audit (light audit) --
+(light build ok)
+  cycle  share 0  producer / booth   64.06 px²
+audit · 4 tubes · 65 solids · 81 items · 1 depth states · 88 overlaps · 87 order rules · 4.6 s
+audit passed
+
+-- lines dark --
+line ends: 0 of 508 ends on 61 lines float
+-- lines light --
+line ends: 0 of 508 ends on 61 lines float
+-- lines F3 pose --
+line ends: 0 of 510 ends on 67 lines float
+line ends: 0 of 510 ends on 67 lines float
+-- 源码/规范实勘摘要 --
+kernel HEAD: d9008e0615390e70998ef261a86210b8b74e431d
+spec: /tmp/spec-audit-txt/xhci-1.2b.txt (xHCI 1.2b, 625472)
+
+== R1 重做轮 · 2026-10-31 13:47:05 ==
+-- 评分门缺陷修复：dark 小字可读性（面板 lo 底+hi 墨+字号放大；门铃铭牌改独立立牌）、focus 框（:focus-visible+blur）、全景定格 F1 完成亚态 --
+-- audit dark --
+audit passed
+-- audit light --
+audit passed
+-- lines dark --
+line ends: 0 of 508 ends on 61 lines float
+-- lines light --
+line ends: 0 of 508 ends on 61 lines float
+-- 逐帧/特写重截（blur 防聚焦框；全景定格 F1 完成亚态）--
+/tmp/r1/close2.log:6
+/tmp/r1/run6b.log:6
+/tmp/r1/run0.log:6
+/tmp/r1/run3.log:1
+/tmp/r1/run2.log:1

@@ -1,0 +1,46 @@
+== Fig4 build log ==
+Sat Oct 31 12:47:08 CST 2026
+
+-- node build.mjs --audit (dark) --
+wrote index.html 330 KB 53 items scale 1.989
+clearance: 0 problems
+clearance apart: 0 problems
+terminals: 0 ends not on a mount
+loose ends: 0
+screen folds: 0
+support: 0 unsupported solids · 0 hanging tubes · 0 sunk pairs
+depth order: 0 problems
+through in mid-flight: 0 pairs
+self-overlap: 0 chunks whose outline crosses itself on screen
+wobble: 0 smoothed profiles whose slope turns between its ends
+saddles off their host apart: 0
+stand-in shapes: 0 items whose recorded shape covers too little of what it draws
+crowding: 0 pairs where a bend or end touches another line on screen
+audit · 1 tubes · 66 solids · 53 items · 1 depth states · 239 overlaps · 239 order rules · 5.7 s
+audit passed
+
+-- node build.mjs (dark, shipped) --
+wrote index.html 330 KB 53 items scale 1.989
+
+-- node build.mjs --light --audit -- (light) --
+wrote index-light.html 330 KB 53 items scale 1.989
+
+-- lines dark --
+line ends: 0 of 85 ends on 44 lines float
+-- lines light --
+line ends: 0 of 85 ends on 44 lines float
+
+-- console check (drive 12s) --
+console: clean
+
+== R1 重做轮自检（Sat Oct 31 13:45:14 CST 2026）==
+-- audit dark --
+audit passed
+-- audit light --
+audit passed
+-- lines dark --
+line ends: 0 of 85 ends on 44 lines float
+-- lines light --
+line ends: 0 of 85 ends on 44 lines float
+-- console --
+console: clean

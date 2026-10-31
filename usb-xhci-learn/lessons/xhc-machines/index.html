@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="theme-dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xHCI 四机课 · 一颗 URB 与三个环</title>
+<style>
+  :root {
+    --font-body: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "Times New Roman", serif;
+    --font-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --content-max: 1080px;
+  }
+  html.theme-dark {
+    --bg: #10151d;
+    --panel: #171f2a;
+    --panel-2: #1c2532;
+    --ink: #e8e3d5;
+    --ink-dim: #a8a291;
+    --ink-faint: #7d7867;
+    --line: #2a3444;
+    --brass: #d4a24e;
+    --brass-soft: rgba(212, 162, 78, 0.16);
+    --teal: #63b3ab;
+    --link: #9cc3e0;
+    --shadow: rgba(0, 0, 0, 0.45);
+    --code-bg: #141b25;
+  }
+  html.theme-light {
+    --bg: #f4efe3;
+    --panel: #fbf7ec;
+    --panel-2: #efe8d6;
+    --ink: #2a251b;
+    --ink-dim: #6b6350;
+    --ink-faint: #93896f;
+    --line: #d8cfb8;
+    --brass: #96691c;
+    --brass-soft: rgba(150, 105, 28, 0.12);
+    --teal: #2e7d74;
+    --link: #3d6f9e;
+    --shadow: rgba(90, 76, 45, 0.25);
+    --code-bg: #ece4d0;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: 72px; }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+    .toc a, .gallery img, .theme-toggle, .live-frame { transition: background-color .2s ease, color .2s ease, border-color .2s ease, transform .25s ease, box-shadow .25s ease; }
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+  main, header.hero, nav.toc > .toc-inner, footer > .foot-inner {
+    max-width: var(--content-max);
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  a { color: var(--link); text-decoration-color: rgba(156, 195, 224, 0.45); text-underline-offset: 3px; }
+  a:hover { color: var(--brass); text-decoration-color: var(--brass); }
+  code, .mono {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.08em 0.38em;
+    white-space: nowrap;
+  }
+  /* ---------- header ---------- */
+  header.hero {
+    padding-top: 56px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  header.hero::after {
+    content: "";
+    position: absolute;
+    left: 24px; right: 24px; bottom: 3px;
+    border-bottom: 1px solid var(--line);
+  }
+  .kicker {
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    letter-spacing: 0.32em;
+    color: var(--brass);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: 44px;
+    line-height: 1.25;
+    margin: 0 0 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .subtitle {
+    font-size: 19px;
+    color: var(--ink-dim);
+    margin: 0 0 22px;
+  }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .chip {
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 999px;
+    padding: 4px 12px;
+  }
+  .theme-toggle {
+    position: absolute;
+    right: 24px;
+    top: 56px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 16px;
+    cursor: pointer;
+  }
+  .theme-toggle:hover { border-color: var(--brass); color: var(--brass); }
+  .theme-toggle:focus-visible, a:focus-visible, .live-frame:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 3px;
+  }
+  /* ---------- sticky toc ---------- */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  nav.toc > .toc-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  nav.toc a {
+    font-family: var(--font-ui);
+    font-size: 13.5px;
+    text-decoration: none;
+    color: var(--ink-dim);
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  nav.toc a:hover { color: var(--brass); }
+  nav.toc a.active {
+    color: var(--brass);
+    border-color: var(--brass);
+    background: var(--brass-soft);
+  }
+  /* ---------- sections ---------- */
+  section { padding-top: 64px; }
+  section > .sec-head { margin-bottom: 26px; }
+  .sec-no {
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    letter-spacing: 0.28em;
+    color: var(--teal);
+  }
+  h2 {
+    font-size: 30px;
+    line-height: 1.35;
+    margin: 6px 0 4px;
+    letter-spacing: 0.02em;
+  }
+  h2 .dirname {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--ink-faint);
+    letter-spacing: 0;
+    margin-left: 10px;
+  }
+  .lede {
+    color: var(--ink-dim);
+    font-size: 17px;
+    margin: 4px 0 0;
+    border-left: 3px solid var(--brass);
+    padding-left: 14px;
+  }
+  /* ---------- live embed ---------- */
+  .live { margin: 26px 0 34px; }
+  .live-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin-bottom: 8px;
+  }
+  .live-bar .live-title { letter-spacing: 0.06em; }
+  .live-bar .live-title b { color: var(--teal); font-weight: 600; }
+  .live-frame-wrap {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--panel);
+    box-shadow: 0 10px 32px var(--shadow);
+  }
+  .live-frame {
+    display: block;
+    width: 100%;
+    height: 860px;
+    border: 0;
+    background: var(--panel-2);
+  }
+  .focus-hint {
+    font-family: var(--font-ui);
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin: 8px 2px 0;
+  }
+  /* ---------- gallery ---------- */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 0 0 10px;
+  }
+  .gallery figure { margin: 0; }
+  .gallery a { display: block; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
+  .gallery img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .gallery a:hover img { transform: scale(1.04); }
+    .gallery img { transition: transform .3s ease; }
+  }
+  .gallery a:hover { border-color: var(--brass); box-shadow: 0 6px 20px var(--shadow); }
+  .gallery figcaption {
+    font-family: var(--font-ui);
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .more-shots {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin: 8px 0 0;
+  }
+  /* ---------- prose ---------- */
+  .prose { margin-top: 30px; }
+  .prose p { margin: 0 0 1.35em; }
+  .prose p:last-child { margin-bottom: 0; }
+  /* ---------- compare table ---------- */
+  .tbl-wrap { overflow-x: auto; margin-top: 26px; }
+  table.compare {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    line-height: 1.75;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  table.compare caption {
+    caption-side: top;
+    text-align: left;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    color: var(--ink-faint);
+    padding: 0 2px 10px;
+  }
+  table.compare th, table.compare td {
+    border: 1px solid var(--line);
+    padding: 12px 14px;
+    vertical-align: top;
+    text-align: left;
+  }
+  table.compare thead th {
+    font-family: var(--font-ui);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--teal);
+    background: var(--panel-2);
+    white-space: nowrap;
+  }
+  table.compare tbody th {
+    font-family: var(--font-ui);
+    font-size: 14px;
+    white-space: nowrap;
+    color: var(--brass);
+    background: var(--panel-2);
+  }
+  table.compare tbody tr:hover td, table.compare tbody tr:hover th { background: var(--brass-soft); }
+  /* ---------- footer ---------- */
+  footer {
+    margin-top: 88px;
+    border-top: 1px solid var(--line);
+    padding: 36px 0 64px;
+    font-family: var(--font-ui);
+    font-size: 13.5px;
+    color: var(--ink-dim);
+    line-height: 2;
+  }
+  footer h3 {
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    color: var(--brass);
+    margin: 18px 0 6px;
+    font-weight: 600;
+  }
+  footer ul { margin: 0; padding-left: 1.2em; }
+  footer .foot-links a { margin-right: 14px; }
+  /* ---------- responsive ---------- */
+  @media (max-width: 760px) {
+    body { font-size: 16px; }
+    h1 { font-size: 32px; }
+    h2 { font-size: 24px; }
+    .theme-toggle { position: static; margin-top: 18px; }
+    .live-frame { height: 620px; }
+    section { padding-top: 48px; }
+  }
+  /* ---------- print ---------- */
+  @media print {
+    :root { --bg: #ffffff; --panel: #ffffff; --panel-2: #ffffff; --ink: #111111; --ink-dim: #444444; --ink-faint: #666666; --line: #bbbbbb; --brass: #7a5410; --teal: #1d5f58; --link: #1d4d7a; --shadow: none; --code-bg: #f0f0f0; }
+    html { scroll-behavior: auto; }
+    nav.toc, .theme-toggle, .live, .focus-hint { display: none !important; }
+    body { font-size: 12pt; }
+    section { padding-top: 28px; page-break-inside: auto; }
+    .gallery { grid-template-columns: repeat(2, 1fr); }
+    .gallery figure, table.compare { break-inside: avoid; }
+    a { text-decoration: none; color: inherit; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <p class="kicker">xHCI 教学机器 · 课件装配页</p>
+  <h1>xHCI 四机课</h1>
+  <p class="subtitle">从三方视角看一颗 URB 的装配与三环的往返</p>
+  <div class="hero-meta">
+    <span class="chip">判据：xHCI 1.2b（页标口径）</span>
+    <span class="chip">内核 7.3.0-rc7 d9008e061539 实勘</span>
+    <span class="chip">四机可交互 · 离线单文件</span>
+  </div>
+  <button id="theme-toggle" class="theme-toggle" type="button">切换浅色</button>
+</header>
+
+<nav class="toc" aria-label="章节导航">
+  <div class="toc-inner">
+    <a href="#intro">引言</a>
+    <a href="#fig1">一 · 总装流水线</a>
+    <a href="#fig2">二 · 传输环</a>
+    <a href="#fig3">三 · 事件环</a>
+    <a href="#fig4">四 · 命令环</a>
+    <a href="#compare">三环对照</a>
+  </div>
+</nav>
+
+<main>
+
+<section id="intro">
+  <div class="sec-head">
+    <span class="sec-no">引言</span>
+    <h2>怎么上这堂课</h2>
+  </div>
+  <div class="prose">
+    <p>这堂课把 xHCI 主机控制器拆成四台机器来看，全程挂着三方视角：<b>软件驱动</b>（内核源码里一行行的调用与位域组装）、<b>xHC 控制器</b>（主存里的环、TRB 与寄存器）、<b>USB 设备</b>（线上只认令牌、数据、握手包）。建议按顺序上：Fig1 看一颗 URB 怎么被装配成 TD 并敲铃，Fig2 看装它的那圈轨道（传输环）怎么生产消费，Fig3 看回执怎么回来（事件环），Fig4 看命令怎么下（命令环）。</p>
+    <p>全组的教学锚只有一句：<b>环与 TRB 对设备不可见</b>——三套环都是主机内存里的数据结构，设备从头到尾只知道 USB 包。每章先看可交互的机器（可步进、可巡游），再对照静帧与讲解；所有断言都能在各机的 EVIDENCE.md 里指回规范章节或内核源码行。</p>
+  </div>
+</section>
+
+<section id="fig1">
+  <div class="sec-head">
+    <span class="sec-no">第一机</span>
+    <h2>总装流水线：一颗 URB 的三工位之旅<span class="dirname">fig1-assembly</span></h2>
+    <p class="lede">从 <code>usb_submit_urb</code> 到门铃按下：一颗控制读 URB 在文书台、总装机、终端灯箱三个工位上被拆解、冲压、发布。</p>
+  </div>
+
+  <div class="live">
+    <div class="live-bar">
+      <span class="live-title"><b>live</b> · 可步进 + 自动巡游（画面下方读数与模型同源）</span>
+      <a class="open-link" href="fig1-assembly/index.html" target="_blank" rel="noopener">在独立页打开 ↗</a>
+    </div>
+    <div class="live-frame-wrap">
+      <iframe class="live-frame machine-frame" src="fig1-assembly/index.html"
+        data-dark="fig1-assembly/index.html" data-light="fig1-assembly/index-light.html"
+        loading="lazy" title="Fig1 总装流水线：一颗 URB 的三工位之旅（可交互动画）"></iframe>
+    </div>
+    <p class="focus-hint">提示：点按画面可给予键盘焦点（焦点态有描边），动画内的步进控件接受键盘操作。</p>
+  </div>
+
+  <div class="gallery">
+    <figure>
+      <a href="fig1-assembly/shots/full-dark.png" target="_blank" rel="noopener">
+        <img src="fig1-assembly/shots/full-dark.png" loading="lazy" alt="Fig1 全景：三工位总装流水线（文书台、总装机、终端灯箱）">
+      </a>
+      <figcaption>全景 dark：三工位总装台——文书台 · 总装机 · 终端灯箱</figcaption>
+    </figure>
+    <figure>
+      <a href="fig1-assembly/shots/f3-ring.png" target="_blank" rel="noopener">
+        <img src="fig1-assembly/shots/f3-ring.png" loading="lazy" alt="Fig1 F3 入环与门铃：三夹具入环形轨道，门铃刻牌 DB Target=1">
+      </a>
+      <figcaption>F3 入环 + 门铃：门铃刻牌 DB Target=1（EP0）</figcaption>
+    </figure>
+    <figure>
+      <a href="fig1-assembly/shots/f4-arm.png" target="_blank" rel="noopener">
+        <img src="fig1-assembly/shots/f4-arm.png" loading="lazy" alt="Fig1 F4 取件：xHC 取件臂沿轨道取走 TRB，灯箱包序灯依次点亮">
+      </a>
+      <figcaption>F4 xHC 取件：灯箱包序 SETUP → DATA1 → STATUS</figcaption>
+    </figure>
+    <figure>
+      <a href="fig1-assembly/shots/f2-card.png" target="_blank" rel="noopener">
+        <img src="fig1-assembly/shots/f2-card.png" loading="lazy" alt="Fig1 F2 位域刻度卡特写：Setup/Data/Status 三张卡逐格打号">
+      </a>
+      <figcaption>F2 位域刻度卡特写：Setup / Data / Status 逐格打号</figcaption>
+    </figure>
+  </div>
+  <p class="more-shots">更多截图（dark/light 全景、逐帧特写、390px 手机宽）见 <code>fig1-assembly/shots/</code>（Pages 不提供目录列表，路径供仓库内浏览）。</p>
+
+  <div class="prose">
+    <p>演示样例是一颗控制读：<code>GET_DESCRIPTOR(Config)</code>、<code>wLength=18</code>——描述符比 wLength 长时只回前 18 字节（USB2 §9.4.3，读配置描述符的标准两段式首读）。文书台把 URB 拆成 <b>3 个 Stage TD</b>：Setup TD + Data TD + Status TD（xHCI 1.2b §6.4.1.2 @p429：控制传输恒需 2 或 3 个 TD）；每颗 Stage TD 又恒是单 TRB，所以本例共 <b>3 颗 TRB</b>——内核 <code>xhci_queue_ctrl_tx</code> 里就一行账：<code>num_trbs = 2</code>，wLength&gt;0 再加 1（xhci-ring.c:3812–3820）。调用栈牌按实勘刻字：<code>usb_submit_urb</code>（drivers/usb/core/urb.c:375）→ <code>usb_hcd_submit_urb</code>（drivers/usb/core/hcd.c:1516）→ <code>xhci_urb_enqueue</code>（drivers/usb/host/xhci.c:1620）→ <code>xhci_queue_ctrl_tx</code>（drivers/usb/host/xhci-ring.c:3774），行号全部在 7.3.0-rc7 d9008e061539 树上 grep 勘定。</p>
+    <p>冲压台的三张位域卡值得逐格读。<b>Setup TRB</b>：Type=2（DW3[15:10]）、IDT=1——8 字节 setup 载荷（线上字节 <code>80 06 00 02 00 00 12 00</code>）直接内联进 DW0/DW1 参数域（Table 6-26 @p430）、Transfer Length 恒为 8、TRT=3（IN Data Stage，Table 6-26 @p431）。<b>Data Stage TRB</b> 是 Type=3 而非 Normal（Type=1），DIR=1（IN）、TX Length=18、TD Size=0，且 IOC=0——规范 Note 明说 IOC 只该出现在控制传输的 Status Stage TRB 上（§6.4.1.2 Note @p429）。<b>Status TRB</b>：Type=4、DIR=0（OUT，控制读的状态段方向翻转）、IOC=1。顺带一条对照：IDT 不是 Setup 专属——Normal TRB 同样允许 IDT（内核对 ≤8 字节的小包也走内联，<code>xhci_urb_suitable_for_idt</code>，xhci.h:2027–2038）。</p>
+    <p>三颗夹具入环后，门铃按下：<b>DB Target=1（EP0）</b>。注意双语义：Table 5-43 @p395 里 0 是设备门铃的保留值，但 Doorbell 0 这个寄存器整体专用于命令环——「命令环敲 0」与「EP0 敲 1」并存，第四机会把这两个 0/1 分开刻。灯箱上设备视角只有三盏灯：SETUP（DATA0，8 字节）→ DATA1（18 字节短包）→ 状态段（主机 OUT 零长 DATA1、设备 ACK，USB2 Table 8-7）。控制读数据段首包是 DATA1 不是 DATA0（USB2 §8.6.1：SETUP 事务结束时双方序列位同为 1）。而灯箱底的铭牌就是全组教学锚：<b>环与 TRB 对设备不可见</b>——设备只见令牌、数据、握手包。</p>
+  </div>
+</section>
+
+<section id="fig2">
+  <div class="sec-head">
+    <span class="sec-no">第二机</span>
+    <h2>环形分度轨道：传输环的生产与消费<span class="dirname">fig2-transfer-ring</span></h2>
+    <p class="lede">第一机里装着 URB 的那圈轨道单独上钟表匠的分度台：软件只管往里压，xHC 只管往前吃，Cycle 色带分辨空与满。</p>
+  </div>
+
+  <div class="live">
+    <div class="live-bar">
+      <span class="live-title"><b>live</b> · 7 帧：空环 → 冲压 → 门铃取件 → 续冲 → 回绕 → 满环警报 → 取件解锁·再冲满（真满环）</span>
+      <a class="open-link" href="fig2-transfer-ring/index.html" target="_blank" rel="noopener">在独立页打开 ↗</a>
+    </div>
+    <div class="live-frame-wrap">
+      <iframe class="live-frame machine-frame" src="fig2-transfer-ring/index.html"
+        data-dark="fig2-transfer-ring/index.html" data-light="fig2-transfer-ring/index-light.html"
+        loading="lazy" title="Fig2 环形分度轨道：传输环的生产与消费（可交互动画）"></iframe>
+    </div>
+    <p class="focus-hint">提示：点按画面可给予键盘焦点（焦点态有描边），动画内的步进控件接受键盘操作。</p>
+  </div>
+
+  <div class="gallery">
+    <figure>
+      <a href="fig2-transfer-ring/shots/f1-dark.png" target="_blank" rel="noopener">
+        <img src="fig2-transfer-ring/shots/f1-dark.png" loading="lazy" alt="Fig2 F1 冲压头把三个 TRB 压入 0/1/2 槽，放大镜里是 Normal TRB 位域卡">
+      </a>
+      <figcaption>F1 冲压 3 盘（cycle=1），放大镜：Normal TRB 位域卡</figcaption>
+    </figure>
+    <figure>
+      <a href="fig2-transfer-ring/shots/f4-dark.png" target="_blank" rel="noopener">
+        <img src="fig2-transfer-ring/shots/f4-dark.png" loading="lazy" alt="Fig2 F4 回绕特写：接续导轨 Link TRB 的翻色杆拨动，生产轮色翻转">
+      </a>
+      <figcaption>F4 回绕特写：Link TRB（Type=6、TC=1）翻色</figcaption>
+    </figure>
+    <figure>
+      <a href="fig2-transfer-ring/shots/f6-zoom-dark.png" target="_blank" rel="noopener">
+        <img src="fig2-transfer-ring/shots/f6-zoom-dark.png" loading="lazy" alt="Fig2 终帧真满环：取件后回填至 enqueue=dequeue=5，警示灯亮">
+      </a>
+      <figcaption>取件解锁·再冲满：终帧真满环（enqueue=dequeue=5，警示灯亮）</figcaption>
+    </figure>
+    <figure>
+      <a href="fig2-transfer-ring/shots/phone-light.png" target="_blank" rel="noopener">
+        <img src="fig2-transfer-ring/shots/phone-light.png" loading="lazy" alt="Fig2 浅色主题 390px 手机宽全景：环形分度轨道">
+      </a>
+      <figcaption>light 主题 · 390px 手机宽全景</figcaption>
+    </figure>
+  </div>
+  <p class="more-shots">更多截图（dark/light 逐帧、门铃与位域卡特写、390px 手机宽）见 <code>fig2-transfer-ring/shots/</code>（Pages 不提供目录列表，路径供仓库内浏览）。</p>
+
+  <div class="prose">
+    <p>传输环是一段首尾相接的环形段，所有权方向就刻在两块铭牌上：<b>软件·生产者</b>握 enqueue 指针写入，<b>xHC·消费者</b>握 dequeue 指针取走——两端指针都是各自的私有副本（§4.9.2 @p152-153）。Cycle 规则四条全部出自 §4.9.2.2 @p156-157：环初始化时软件把段内全部 TRB 的 Cycle 位清 0，PCS 与 CCS 都置 1；生产者每写一颗 TRB 就以当前 PCS 值写它的 Cycle 位并推进 enqueue；消费者对 Cycle 位只读，只执行 Cycle 位等于 CCS 的那颗。</p>
+    <p>段末恒是一颗 <b>Link TRB</b>（Type=6、TC=1，§4.9.2.1 @p155「段末恒为 Link TRB」）：生产者的 enqueue 跨过它时，先把 Link 自身的 Cycle 写成当前 PCS，TC=1 命中则把 PCS 翻转，指针跳回段首——新一轮生产色与前一轮相反（§4.9.2.2 @p158）；消费者过 Link 时对称地翻 CCS。空与满不是看色相：<b>空 = dequeue 追平 enqueue 且槽内 Cycle ≠ CCS；满 = enqueue 再前进一步就会撞上 dequeue</b>（前槽 Cycle=CCS，还有未取件；§4.9.2 @p153 / §4.9.2.2 @p156）。满由软件把关——§4.9.2：为防 overrun，软件必须自己判断环满，等 Transfer Events 把 dequeue 推进后再继续。</p>
+    <p>演示样例：同一 bulk OUT 端点（EP1 OUT）连投 3 个 6 KiB（6144 B）URB → 3 个 TD，每 TD 单颗 Normal TRB（Type=1、TX Length=6144、TD Size=0——单 TRB TD 的末颗恒 0（§4.11.2.4 @p197-198）——、IOC=1：每 TD 恰一颗收尾事件）；门铃 <b>DB Target=2（EP1 OUT，Table 5-43）</b>。还有一个容易被画错的细节：消费者取走托盘后<b>并不擦槽</b>——Cycle 位对消费者只读，槽内旧值原样残留，等生产者回绕后覆写失效；「已消费」由 dequeue 指针的位置表达，不由色带表达。</p>
+  </div>
+</section>
+
+<section id="fig3">
+  <div class="sec-head">
+    <span class="sec-no">第三机</span>
+    <h2>回执登记机：事件环的生产与消费<span class="dirname">fig3-event-ring</span></h2>
+    <p class="lede">同一套环物理，指针换边：xHC 盖章投递回执，软件开窗取件签收——ERDP 这根指针反过来握在软件手里。</p>
+  </div>
+
+  <div class="live">
+    <div class="live-bar">
+      <span class="live-title"><b>live</b> · 6 帧：空环 → 投递 → 敲铃 → 取件 → 签收回写 → 静默</span>
+      <a class="open-link" href="fig3-event-ring/index.html" target="_blank" rel="noopener">在独立页打开 ↗</a>
+    </div>
+    <div class="live-frame-wrap">
+      <iframe class="live-frame machine-frame" src="fig3-event-ring/index.html"
+        data-dark="fig3-event-ring/index.html" data-light="fig3-event-ring/index-light.html"
+        loading="lazy" title="Fig3 回执登记机：事件环的生产与消费（可交互动画）"></iframe>
+    </div>
+    <p class="focus-hint">提示：点按画面可给予键盘焦点（焦点态有描边），动画内的步进控件接受键盘操作。</p>
+  </div>
+
+  <div class="gallery">
+    <figure>
+      <a href="fig3-event-ring/shots/f1-deliver.png" target="_blank" rel="noopener">
+        <img src="fig3-event-ring/shots/f1-deliver.png" loading="lazy" alt="Fig3 F1 xHC 盖章投递 Transfer Event 回执入环">
+      </a>
+      <figcaption>F1 xHC 投递：Transfer Event 回执压入环</figcaption>
+    </figure>
+    <figure>
+      <a href="fig3-event-ring/shots/close-register.png" target="_blank" rel="noopener">
+        <img src="fig3-event-ring/shots/close-register.png" loading="lazy" alt="Fig3 ERDP 寄存器面板特写：指针窗、DESI 段号与 EHB 位刻字">
+      </a>
+      <figcaption>ERDP 寄存器面板特写：指针窗 · DESI · EHB=bit3（RW1C）</figcaption>
+    </figure>
+    <figure>
+      <a href="fig3-event-ring/shots/phone-light-390.png" target="_blank" rel="noopener">
+        <img src="fig3-event-ring/shots/phone-light-390.png" loading="lazy" alt="Fig3 浅色主题 390px 手机宽全景：回执登记机">
+      </a>
+      <figcaption>light 主题 · 390px 手机宽全景</figcaption>
+    </figure>
+    <figure>
+      <a href="fig3-event-ring/shots/f4-writeback.png" target="_blank" rel="noopener">
+        <img src="fig3-event-ring/shots/f4-writeback.png" loading="lazy" alt="Fig3 F4 软件把 ERDP 写回寄存器面板，箭头方向软件指向寄存器，EHB 旗放下">
+      </a>
+      <figcaption>F4 签收回写：软件→寄存器，EHB 随写清 0</figcaption>
+    </figure>
+  </div>
+  <p class="more-shots">更多截图（dark/light 全景、回执卡与寄存器面板特写、390px 手机宽）见 <code>fig3-event-ring/shots/</code>（Pages 不提供目录列表，路径供仓库内浏览）。</p>
+
+  <div class="prose">
+    <p>事件环把所有权整个反过来：生产者是 <b>xHC</b>（盖章投递头握 ENQ），消费者是<b>软件</b>（取件窗口，手里拨着 ERDP 牌）——§4.9.4 @p161 一句话：xHC is the producer and system software is the consumer of Event TRBs。回执卡就是 <b>Transfer Event TRB</b>：Type=32（DW3[15:10]）、Completion Code=1（Success，DW2[31:24]，完成码表=Table 6-90 @p465）、EP ID=2（EP1 OUT 的 Device Context Index）、Slot ID=1（演示取首个分配槽的示例值）、Cycle=1（=生产轮色）。投递的触发源是传输侧那颗带 IOC 的收尾 TRB：完成即产事件（§4.11.3.1 @p201）。</p>
+    <p>投递动作连着一只电磁铃：IMAN.IP 置 1 → 发 MSI-X 中断唤软件（Interrupter 与 MSI-X 向量一一对应，§5.5.2 @p389）。软件收铃后逐张收卡：事件的 Cycle 位等于软件手里的 CCS 才收，收一张推一格 ERDP（§4.9.4 @p161）。然后是全环最反直觉的一笔——<b>签收回写</b>：软件把 ERDP 写回寄存器面板（63:4 指针 + DESI 段号，单段恒 0），顺带清 EHB 位——<b>EHB=bit3，RW1C</b>（§5.5.2.3.3 Table 5-42 @p393-394：IP 置 1 时 EHB 升起、软件写 ERDP 时清 0）。箭头方向是软件→寄存器，与传输环正好相反。</p>
+    <p>三个收尾细节。其一，<b>事件环没有 Link TRB</b>——段切换由 ERST（Event Ring Segment Table）表项驱动，回绕翻色直接靠 CCS 翻转（§6.5 @p473、§4.9.4 @p161-162）。其二，与传输环同理，<b>消费不擦除</b>：收走的回执槽残留旧 Cycle 色，「已取」由 ERDP 位置表达，不由色带表达。其三，「整条事件链在同一 hardirq 跑完」这句话不能说——xHCI 驱动注册了 HCD_BH 标志（xhci.c:5608-5611），URB 完成回调被排入下半部工作队列（usb_hcd_giveback_urb，hcd.c:1719-1763），中断里只做事件解析与指针推进。</p>
+  </div>
+</section>
+
+<section id="fig4">
+  <div class="sec-head">
+    <span class="sec-no">第四机</span>
+    <h2>订单柜台：命令环与它的回执<span class="dirname">fig4-command-ring</span></h2>
+    <p class="lede">小柜台、真流程：三条命令逐单投递、逐单办结，办结回执走第三机的登记机，账本（设备上下文）挂进 DCBAA。</p>
+  </div>
+
+  <div class="live">
+    <div class="live-bar">
+      <span class="live-title"><b>live</b> · 5 帧：柜台全景 → Enable Slot → 执行+回执 → Address Device → Configure Endpoint</span>
+      <a class="open-link" href="fig4-command-ring/index.html" target="_blank" rel="noopener">在独立页打开 ↗</a>
+    </div>
+    <div class="live-frame-wrap">
+      <iframe class="live-frame machine-frame" src="fig4-command-ring/index.html"
+        data-dark="fig4-command-ring/index.html" data-light="fig4-command-ring/index-light.html"
+        loading="lazy" title="Fig4 订单柜台：命令环与它的回执（可交互动画）"></iframe>
+    </div>
+    <p class="focus-hint">提示：点按画面可给予键盘焦点（焦点态有描边），动画内的步进控件接受键盘操作。</p>
+  </div>
+
+  <div class="gallery">
+    <figure>
+      <a href="fig4-command-ring/shots/f2.png" target="_blank" rel="noopener">
+        <img src="fig4-command-ring/shots/f2.png" loading="lazy" alt="Fig4 F2 执行与回执：Command Completion Event 从窗口出，DCBAA 挂牌">
+      </a>
+      <figcaption>F2 执行 + 回执：Command Completion（Type=33），DCBAA 挂牌</figcaption>
+    </figure>
+    <figure>
+      <a href="fig4-command-ring/shots/cu-bell-dark.png" target="_blank" rel="noopener">
+        <img src="fig4-command-ring/shots/cu-bell-dark.png" loading="lazy" alt="Fig4 门铃特写：0 号门铃=命令环，设备门铃 Target 0=保留、1=EP0">
+      </a>
+      <figcaption>门铃特写：0 号=命令环（Target 0 合法）· 设备门铃 0=保留 / 1=EP0</figcaption>
+    </figure>
+    <figure>
+      <a href="fig4-command-ring/shots/cu-crcr-dark.png" target="_blank" rel="noopener">
+        <img src="fig4-command-ring/shots/cu-crcr-dark.png" loading="lazy" alt="Fig4 CRCR 铭牌特写：RCS/CS/CA/CRR 位与「CRR=1 写入被忽略」锁牌">
+      </a>
+      <figcaption>CRCR 铭牌特写：RCS · CS · CA · CRR ＋「CRR=1 写入被忽略」锁牌</figcaption>
+    </figure>
+    <figure>
+      <a href="fig4-command-ring/shots/phone-390-light.png" target="_blank" rel="noopener">
+        <img src="fig4-command-ring/shots/phone-390-light.png" loading="lazy" alt="Fig4 浅色主题 390px 手机宽全景：订单柜台">
+      </a>
+      <figcaption>light 主题 · 390px 手机宽全景</figcaption>
+    </figure>
+  </div>
+  <p class="more-shots">更多截图（dark/light 全景、CRCR/DCBAA/申请单夹特写、390px 手机宽）见 <code>fig4-command-ring/shots/</code>（Pages 不提供目录列表，路径供仓库内浏览）。</p>
+
+  <div class="prose">
+    <p>命令环是缩小版柜台（演示 8 槽；真实段 256 TRB，xhci.h:1265），但 CRCR 铭牌一个位都没含糊：<b>RCS=bit0</b>（RW，翻色旋钮，随生产轮翻转）、<b>CS=bit1、CA=bit2</b>（RW1S）、<b>CRR=bit3</b>（RO，运行灯）（Table 5-24，§5.4.5 @p366-367）。锁牌刻的避雷句是：<b>CRR=1 时对 CRCR 的写入被忽略</b>（§5.4.5 @p366——是「运行中忽略」，不是什么 RsvdP 防写）。CRR 灯在整个演示期常亮：环办完全部命令也不会清 CRR（§4.9.3 Note @p161）。7 号槽照例恒为 Link TRB（TC=1）。</p>
+    <p>门铃在这里把两个 0/1 语义分开刻：<b>0 号门铃整个寄存器专用于命令环</b>（Target 0＝命令门铃，合法）；<b>1–255 号是设备门铃</b>（Target 0＝保留、1＝EP0）（Table 5-43，§5.6 @p394-395）。三条命令逐单等回执再推进（§4.3.2 @p75）：Enable Slot（Type=9）→ Address Device（Type=11，BSR=0 时 xHC 生成 USB SET_ADDRESS，§6.4.3.4 @p450）→ Configure Endpoint（Type=12）。申请单夹（Input Context）三格——输入控制上下文、槽上下文、EP 上下文（§6.2.5 Figure 6-5 @p421-422）——Address Device 点亮 A0/A1，Configure Endpoint 点亮 A2/A3（EP1 OUT/IN 的上下文对）。顺带一提：xHCI 1.2b 没有「Initialize Endpoint」这条命令——端点上下文是经 Address Device / Configure Endpoint 投递的。</p>
+    <p>办结回执 = <b>Command Completion Event</b>（Type=33、CC=1 Success、Slot ID=1——演示取首个分配槽的示例值，具体数值由 xHC 实现决定），它不走命令环自己回家：Primary Event Ring 0 接收全部命令完成事件（§6.4.2.2 Note @p440）——也就是第三机那台登记机。柜台后的编号储物柜 <b>DCBAA</b>：0 号格留给 Scratchpad（§3.2.1 Note @p48），1 号格的「设备上下文地址」牌由<b>软件侧</b>挂入（§3.2.1 @p48：system software inserts a pointer to the newly created Device Context…；§4.3.3 step10 @p76：软件装载 DCBAA 表项后才发 Address Device），xHC 只读该柜——柜员不动账本。未分配格保持 0（§6.1 @p404）。</p>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="sec-head">
+    <span class="sec-no">收束</span>
+    <h2>三环对照</h2>
+    <p class="lede">三套环同一套物理（环形段 + Cycle 色 + 双指针），差在生产者/消费者站哪边、可写指针在谁手里、回执走哪条路。</p>
+  </div>
+  <div class="tbl-wrap">
+    <table class="compare">
+      <caption>内容以各机 EVIDENCE.md 为准；门铃 Target 三个值语义分明：命令环=0、EP0=1、EP1 OUT=2。</caption>
+      <thead>
+        <tr>
+          <th scope="col">环</th>
+          <th scope="col">生产者</th>
+          <th scope="col">消费者</th>
+          <th scope="col">谁握可写指针</th>
+          <th scope="col">回执与方向</th>
+          <th scope="col">门铃 Target</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">传输环</th>
+          <td>软件：冲压 TRB 入环（推 ENQ）</td>
+          <td>xHC：取件执行（推 DEQ）</td>
+          <td>ENQ=软件私有副本；DEQ=xHC 私有副本（§4.9.2）</td>
+          <td>带 IOC 的收尾 TRB 完成 → Transfer Event 入<b>事件环</b>（xHC → 软件）</td>
+          <td>设备门铃 1–255：EP0=<b>1</b>、EP1 OUT=<b>2</b>（Target 0＝保留，Table 5-43）</td>
+        </tr>
+        <tr>
+          <th scope="row">事件环</th>
+          <td>xHC：投递 Event TRB（推 ENQ）</td>
+          <td>软件：比对 CCS 收卡（推 ERDP）</td>
+          <td>ENQ=xHC；<b>ERDP=软件，且要写回寄存器</b>（唯一由软件写回的推进指针，§4.9.4）</td>
+          <td>回执即环内容；通知走 MSI-X 中断（IMAN.IP 置 1 唤软件）</td>
+          <td>无门铃——中断唤软件</td>
+        </tr>
+        <tr>
+          <th scope="row">命令环</th>
+          <td>软件：投递命令 TRB（推 ENQ）</td>
+          <td>xHC：取件办结（推 DEQ）</td>
+          <td>ENQ=软件；DEQ=xHC（§4.9.3）</td>
+          <td>Command Completion Event → <b>Primary Event Ring 0</b>（回到事件环，§6.4.2.2 Note）</td>
+          <td>Doorbell 0 专用：<b>0</b>＝命令门铃（合法的 0，与设备门铃 Target 0＝保留分刻）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <h3>判据与版本</h3>
+    <ul>
+      <li>规范断言按 <b>xHCI 1.2b</b>（Document Number 625472, Revision 1.2b；页码均为 595 页 PDF 的页标口径）；USB 侧按 USB 2.0 规范。</li>
+      <li>内核行号在 <b>7.3.0-rc7 d9008e061539</b> 树上 grep -n 现场实勘；时序重建以 specs/actionflow-*.md 为权威。</li>
+      <li>防错说明：本页不复现已判错误的断言（避雷清单见 DESIGN.md §1）——凡 0/1 双语义、TD/TRB 数、EHB 位号、满空判据均已按实勘口径双刻；每条画面与正文断言可回溯至各机 EVIDENCE.md。</li>
+    </ul>
+    <h3>制作分工与日期</h3>
+    <ul>
+      <li>四机动画：动画制作人 ×4（fig1–fig4 分镜、构建与 EVIDENCE 登记）；课件装配：网页组装人；契约：DESIGN.md（含 §5 契约修订）。</li>
+      <li>2026-10-31。</li>
+    </ul>
+    <h3>各机独立页与截图</h3>
+    <p class="foot-links">
+      <a href="fig1-assembly/index.html" target="_blank" rel="noopener">fig1-assembly</a>
+      <a href="fig2-transfer-ring/index.html" target="_blank" rel="noopener">fig2-transfer-ring</a>
+      <a href="fig3-event-ring/index.html" target="_blank" rel="noopener">fig3-event-ring</a>
+      <a href="fig4-command-ring/index.html" target="_blank" rel="noopener">fig4-command-ring</a>
+      （浅色主题各机对应 index-light.html；截图目录：
+      <code>shots/fig1</code>
+      <code>shots/fig2</code>
+      <code>shots/fig3</code>
+      <code>shots/fig4</code>）
+    </p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('theme-toggle');
+
+  function applyTheme(lightMode, reloadFrames) {
+    root.classList.toggle('theme-light', lightMode);
+    root.classList.toggle('theme-dark', !lightMode);
+    btn.textContent = lightMode ? '切换深色' : '切换浅色';
+    document.querySelectorAll('iframe.machine-frame').forEach(function (f) {
+      var want = lightMode ? f.getAttribute('data-light') : f.getAttribute('data-dark');
+      if (reloadFrames) {
+        if (f.getAttribute('src') !== want) { f.setAttribute('src', want); }
+      } else {
+        f.setAttribute('src', want);
+      }
+    });
+    document.querySelectorAll('a.open-link').forEach(function (a) {
+      var want = lightMode ? a.getAttribute('data-light') : a.getAttribute('data-dark');
+      if (want) { a.setAttribute('href', want); }
+    });
+    try { localStorage.setItem('xhc-course-theme', lightMode ? 'light' : 'dark'); } catch (e) {}
+  }
+
+  // 每台机器独立页的浅色文件名（open-link 与 iframe 同步换名）
+  document.querySelectorAll('a.open-link').forEach(function (a) {
+    var href = a.getAttribute('href');
+    a.setAttribute('data-dark', href);
+    a.setAttribute('data-light', href.replace(/index\.html$/, 'index-light.html'));
+  });
+
+  var prefersLight = window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: light)').matches;
+  var stored = null;
+  try { stored = localStorage.getItem('xhc-course-theme'); } catch (e) {}
+  applyTheme(stored ? (stored === 'light') : prefersLight, false);
+
+  btn.addEventListener('click', function () {
+    applyTheme(!root.classList.contains('theme-light'), true);
+  });
+
+  // 章节滚动进入视口时导航高亮
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+  var byId = {};
+  links.forEach(function (a) {
+    var id = a.getAttribute('href').slice(1);
+    byId[id] = a;
+  });
+  var sections = Array.prototype.slice.call(document.querySelectorAll('main section[id]'));
+  function setActive(id) {
+    links.forEach(function (a) { a.classList.remove('active'); });
+    if (byId[id]) { byId[id].classList.add('active'); }
+  }
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { setActive(en.target.id); }
+      });
+    }, { rootMargin: '-25% 0px -65% 0px', threshold: 0 });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+})();
+</script>
+
+</body>
+</html>

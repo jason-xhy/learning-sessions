@@ -1,0 +1,87 @@
+wrote index.html 425 KB 100 items scale 2.093
+clearance: 0 problems
+clearance apart: 0 problems
+terminals: 0 ends not on a mount
+loose ends: 0
+screen folds: 0
+support: 0 unsupported solids · 0 hanging tubes · 0 sunk pairs
+depth order: 0 problems
+through in mid-flight: 0 pairs
+self-overlap: 0 chunks whose outline crosses itself on screen
+wobble: 0 smoothed profiles whose slope turns between its ends
+saddles off their host apart: 0
+stand-in shapes: 0 items whose recorded shape covers too little of what it draws
+crowding: 0 pairs where a bend or end touches another line on screen
+audit · 2 tubes · 88 solids · 100 items · 1 depth states · 219 overlaps · 219 order rules · 5.1 s
+audit passed
+wrote index-light.html 425 KB 100 items scale 2.093
+clearance: 0 problems
+clearance apart: 0 problems
+terminals: 0 ends not on a mount
+loose ends: 0
+screen folds: 0
+support: 0 unsupported solids · 0 hanging tubes · 0 sunk pairs
+depth order: 0 problems
+through in mid-flight: 0 pairs
+self-overlap: 0 chunks whose outline crosses itself on screen
+wobble: 0 smoothed profiles whose slope turns between its ends
+saddles off their host apart: 0
+stand-in shapes: 0 items whose recorded shape covers too little of what it draws
+crowding: 0 pairs where a bend or end touches another line on screen
+audit · 2 tubes · 88 solids · 100 items · 1 depth states · 219 overlaps · 219 order rules · 5.2 s
+audit passed
+line ends: 0 of 1114 ends on 446 lines float
+shot shots/lines-dark.png
+console: clean
+line ends: 0 of 1114 ends on 446 lines float
+shot shots/lines-light.png
+console: clean
+
+=== R2 复评轮门禁记录（仅修两处视觉残余） ===
+R2-1 包序灯 SETUP 不亮：塔身（单件 slab）中心深度恰夹在 lamp0/lamp1 之间，塔身前面漆盖住 SETUP 窗——
+  三盏灯 item 加 bias 10 使绘制序越过塔身；f4 数灯=1、f5 数灯=3（放大图逐盏目检）。
+R2-2 URB 工作单叠影：平躺卡四行文字在 35° 俯视下行距压缩至 ~1px/世界单位必然叠印——
+  改为立插进件槽前唇的竖卡（行距不受压缩），卡加宽 36、anchor 补 middle、
+  亮面专属 token；DW 行标签改 DW0/DW3 端点标注（消除四行连排叠影）；
+  文书台铭牌移至台身前面板大字（消除与 URB 卡的屏面叠影）。
+语义与帧序零改动。
+R2 门禁输出：
+audit · 2 tubes · 88 solids · 100 items · 1 depth states · 219 overlaps · 219 order rules · 5.1 s
+audit passed
+audit · 2 tubes · 88 solids · 100 items · 1 depth states · 219 overlaps · 219 order rules · 5.2 s
+audit passed
+line ends: 0 of 1114 ends on 446 lines float
+line ends: 0 of 1114 ends on 446 lines float
+
+R2 shots/ 清单：
+f0-full.png
+f1-desk-light.png
+f1-desk.png
+f1-full-light.png
+f1-full.png
+f2-card-light.png
+f2-card.png
+f2-full-light.png
+f2-full.png
+f2-press-light.png
+f2-press.png
+f3-full-light.png
+f3-full.png
+f3-ring-light.png
+f3-ring.png
+f4-arm-light.png
+f4-arm.png
+f4-full-light.png
+f4-full.png
+f5-full-light.png
+f5-full.png
+f5-receipt-light.png
+f5-receipt.png
+full-dark.png
+full-light.png
+lines-dark.png
+lines-light.png
+phone-390-dark.png
+reduced-dark.png
+sheet-f2-stamp-light.png
+sheet-f2-stamp.png

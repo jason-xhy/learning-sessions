@@ -1,0 +1,107 @@
+/* Fig1 附加主题令牌与部件配色（全部走 token，双主题各一份） */
+.ac-stage { touch-action: pan-y; }
+.ac-stage:focus-visible { outline: 1px solid var(--anatomy-muted); outline-offset: 6px; }
+@media (max-width: 620px) {
+  .iso-plate { overflow: hidden; }
+  .iso-plate .ac-stage svg { width: 140%; margin-left: -20%; }
+}
+.ac-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.iso {
+  /* R1: dark 机身基色整体提亮（覆盖 kit 暗色 token；light 主题不受影响） */
+  --anatomy-card: #17171b;
+  --anatomy-paper: #232329;
+  --anatomy-face: #2c2c34;
+  --anatomy-top: #32323a;
+  --anatomy-shade-0: #1c1c22;
+  --anatomy-shade-1: #222228;
+  --anatomy-shade-2: #282830;
+  --anatomy-shade-3: #2e2e36;
+  --anatomy-lit-top: #3e3e48;
+  --anatomy-lit-shade: #2c2c34;
+  --anatomy-hi: #d8d8d8;
+  --anatomy-mid: #82828c;
+  --anatomy-lo: #52525c;
+  --anatomy-faint: #3e3e48;
+  /* 黄铜 TD 夹具 */
+  --brass-0: #241b08; --brass-1: #3a2d0e; --brass-2: #51401a; --brass-3: #665224;
+  --brass-top: #7a6430; --brass-edge: #8d773c;
+  /* Cycle 色带：旧轮（灰纸）vs 本轮 C=1（蓝） */
+  --cyc0-top: #2c2c34; --cyc0-0: #1e1e25; --cyc0-1: #24242c; --cyc0-2: #282830; --cyc0-3: #2c2c34;
+  --cyc1-top: #6f9ec4; --cyc1-0: #2c4358; --cyc1-1: #3a5670; --cyc1-2: #476a89; --cyc1-3: #527da2;
+  /* 位域卡与格 */
+  --cell-on: rgba(111, 158, 196, 0.88);
+  --cell-cyc1: rgba(111, 158, 196, 0.95);
+  --cell-off-line: #6a6a74;
+  /* 灯箱 */
+  --ac-void: #101014;
+  --lamp-off: #3a3a44; --lamp-on: #ffd98a;
+  --lamp-on-edge: #ffe9bd;
+}
+.iso[data-theme="light"] {
+  --brass-0: #4d3d16; --brass-1: #5d4b1d; --brass-2: #6f5a25; --brass-3: #80692d;
+  --brass-top: #8e7536; --brass-edge: #5d4b1d;
+  --cyc0-top: #c9c4b6; --cyc0-0: #a9a496; --cyc0-1: #b3aea0; --cyc0-2: #bdb8aa; --cyc0-3: #c4bfb1;
+  --cyc1-top: #5d88ad; --cyc1-0: #33526d; --cyc1-1: #3f6280; --cyc1-2: #4a7093; --cyc1-3: #527ca3;
+  --cell-on: rgba(64, 108, 145, 0.82);
+  --cell-cyc1: rgba(53, 96, 133, 0.92);
+  --cell-off-line: #8a8578;
+  --ac-void: #d9d4c6;
+  --lamp-off: #c9c4b6; --lamp-on: #d98a1f;
+  --lamp-on-edge: #b06e12;
+}
+
+/* TD 夹具：黄铜 */
+.fx-brass .iso-shade[data-shade="0"] { fill: var(--brass-0); }
+.fx-brass .iso-shade[data-shade="1"] { fill: var(--brass-1); }
+.fx-brass .iso-shade[data-shade="2"] { fill: var(--brass-2); }
+.fx-brass .iso-shade[data-shade="3"] { fill: var(--brass-3); }
+.fx-brass .iso-top { fill: var(--brass-top); }
+.fx-brass .iso-edge { stroke: var(--brass-edge); }
+.ac-fixture.ac-lit .iso-edge { stroke: var(--anatomy-lit); }
+.ac-fixture.ac-lit .fx-brass .iso-top { fill: var(--brass-edge); }
+
+/* 所有权色带 */
+.ac-band .iso-top { fill: var(--cyc0-top); transition: fill 500ms var(--anatomy-ease, ease); }
+.ac-band .iso-shade[data-shade="0"] { fill: var(--cyc0-0); }
+.ac-band .iso-shade[data-shade="1"] { fill: var(--cyc0-1); }
+.ac-band .iso-shade[data-shade="2"] { fill: var(--cyc0-2); }
+.ac-band .iso-shade[data-shade="3"] { fill: var(--cyc0-3); }
+.ac-band[data-on="1"] .iso-top { fill: var(--cyc1-top); }
+.ac-band[data-on="1"] .iso-shade[data-shade="0"] { fill: var(--cyc1-0); }
+.ac-band[data-on="1"] .iso-shade[data-shade="1"] { fill: var(--cyc1-1); }
+.ac-band[data-on="1"] .iso-shade[data-shade="2"] { fill: var(--cyc1-2); }
+.ac-band[data-on="1"] .iso-shade[data-shade="3"] { fill: var(--cyc1-3); }
+
+/* 位域刻度卡 */
+.ac-cardtext { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+.ac-cardtext[data-tone="hi"] { fill: var(--anatomy-hi); }
+.ac-cardtext[data-tone="mid"] { fill: var(--anatomy-mid); }
+.ac-cell[data-c="on"] { fill: var(--cell-on); }
+.ac-cell[data-c="off"] { fill: none; stroke: var(--cell-off-line); stroke-width: 0.35; }
+.ac-cell[data-c="cyc"] { fill: none; stroke: var(--cell-off-line); stroke-width: 0.35; }
+.ac-cell[data-c="cyc"][data-on="1"] { fill: var(--cell-cyc1); stroke: none; }
+
+/* 灯箱 */
+.ac-void { fill: var(--ac-void); }
+.ac-lamp .ac-bulb { fill: var(--lamp-off); transition: fill 400ms var(--anatomy-ease, ease); }
+.ac-lamp[data-on="1"] .ac-bulb { fill: var(--lamp-on); }
+
+/* 调用栈牌：未点亮压暗 */
+.ac-plaque { opacity: 0.45; transition: opacity 450ms var(--anatomy-ease, ease); }
+.ac-plaque[data-lit="1"] { opacity: 1; }
+.ac-plaque[data-lit="1"] .iso-top { fill: var(--anatomy-top); }
+
+/* URB 立卡：亮面让白字跳出 */
+.ac-urbcard .iso-fill { fill: var(--urb-face, #3e3e48); }
+.ac-urbcard .iso-top { fill: var(--urb-face-top, #4a4a55); }
+.ac-urbcard .iso-edge { stroke: var(--anatomy-hi); }
+.iso[data-theme="light"] {
+  --urb-face: #ece9e2; --urb-face-top: #f6f4ee;
+}
+
+/* 门铃闪亮 */
+.ac-flash circle { fill: var(--lamp-on); }
+
+/* 动件高亮（ actor 层用） */
+.ac-lit .iso-edge { stroke: var(--anatomy-lit); }
