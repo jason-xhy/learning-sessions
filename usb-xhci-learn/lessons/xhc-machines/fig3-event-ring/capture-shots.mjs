@@ -5,6 +5,7 @@
 // 动作经 --actions 文件传入（含中文/引号，不进命令行 JSON）。
 import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { writeFileSync } from "node:fs";
 
@@ -81,7 +82,8 @@ const GROUPS = [
 let failed = 0;
 for (const g of GROUPS) {
   if (only && g.name !== only) continue;
-  const actionsFile = join(HERE, `shots/.actions-${g.name}.json`);
+  // 动作文件写系统临时目录——交付目录内不得留运行时文件（点文件 Pages 不发布，本地/线上清单即失衡）
+  const actionsFile = join(tmpdir(), `fig3-actions-${g.name}.json`);
   writeFileSync(actionsFile, JSON.stringify(g.actions));
   console.log(`== drive ${g.name} (${g.page} @${g.width}) ==`);
   const r = spawnSync(process.execPath, [DRIVE, join(HERE, g.page), "--actions", actionsFile,
