@@ -53,3 +53,30 @@ line ends: 0 of 508 ends on 61 lines float
 /tmp/r1/run0.log:6
 /tmp/r1/run3.log:1
 /tmp/r1/run2.log:1
+
+== 可读性轮 · 2026-11-01（用户反馈：位域卡/寄存器面板文字桌面 1x 与 390px 手机截图均不可读） ==
+
+-- 改造内容 --
+- 位域刻度卡 148x118 → 232x164；行高/刻度/位号/单元格几何同步放大
+- 全部字牌字号台阶（fb-title 10.5 / fb-off 5.4 / fb-bit 4.8 / fb-cellname 5.2 / fb-val 7.6 / fb-foot 5.8 /
+  fb-sign 7 / fb-eng 7.5 等，约 1.5-1.7x）；铃牌/ERST/旗牌 plate 物理同步放大
+- 寄存器面板 58x46（原 42x34）：官方英文名拆两行、§5.5.2.3.3 升面板右上独立行（消标题撞行）
+- 页宽 850 → 980；新增画面缩放控件（1/1.6/2.4/3.2x；按钮 + 键盘 +/−/0；放大自动居中位域卡）
+- ERST 索引牌南移 [-163.6,18.9]→[-176,8]（让位放大后的寄存器面板）
+
+-- 门（全绿） --
+- audit dark / audit light：passed（零问题）
+- lines dark / light：0 of 508 ends float
+- 全套截图 capture-shots.mjs 31 张重生成（dark→dark / light→light 严格对应）+ 新增 phone-*-390-zoom
+
+-- audit 途中抓到并修复（3 处真几何缺陷） --
+1. 卡架立柱外移出基座边缘 → 悬空连带 4 件 loose（offset 100→74 落回基座）
+2. 寄存器面板放大后近角切入圆台 3.8 深（REG 沿方位外移 8：最近距 97.5 > 台半径 96）
+3. EHB 旗杆与加高面板顶相切 5.63px² 深度歧义（seated+cut 挂进面板实体，旗盒 z 跟随新 pivot）
+
+-- 固化与坑（capture-shots.mjs） --
+- 坑：Page.captureScreenshot 的 captureBeyondViewport 视口重排会复位容器滚动（scrollLeft 735→14）
+  → 截图平移用负 margin（重排动不了 margin），不用 scrollLeft
+- 坑：缩放居中必须每步重算——首按触发时量到的是中间倍率布局，落点偏左
+- 判定：新旧 shots 亮度统计一致（mean 23.7↔24.6 / p50 19↔19 / p90 38↔38）——暗主题呈现无回归；
+  用户侧"浅色卡面"出自其浏览器强制深色渲染（本地无头与线上 HEAD 均为暗卡白字），非页面缺陷

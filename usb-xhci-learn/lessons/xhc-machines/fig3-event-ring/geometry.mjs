@@ -155,8 +155,8 @@ export function makeGeo(k, G, P, L) {
     return parts;
   }
   const PRODUCER_FLAGS = (bearing) => flagParts(bearing, [
-    { radius: 86, top: L.BOOM_Z + 7.4, w: 10, d: 3.9 },
-    { radius: 34, top: L.BOOM_Z + 7.4, w: 10.5, d: 3 },
+    { radius: 86, top: L.BOOM_Z + 7.4, w: 17, d: 5 },
+    { radius: 34, top: L.BOOM_Z + 7.4, w: 20, d: 4.2 },
   ]);
   function tieRod(bearing) {
     const dir = [Math.cos(bearing), Math.sin(bearing)];
@@ -172,19 +172,19 @@ export function makeGeo(k, G, P, L) {
   function flagSvg(bearing, radius, top, label, sub, opts = {}) {
     const dir = [Math.cos(bearing), Math.sin(bearing)];
     const c = [T[0] + radius * dir[0], T[1] + radius * dir[1]];
-    const w = opts.w || 10, d = opts.d || 3.9;
+    const w = opts.w || 17, d = opts.d || 5;
     const plan = { x: -w, y: -d, w: w * 2, d: d * 2, r: 1.2 };
     const th = bearing + Math.PI / 2;
     const rot = ([x, y]) => [c[0] + x * Math.cos(th) - y * Math.sin(th), c[1] + x * Math.sin(th) + y * Math.cos(th)];
     const ring = k.roundedPlan(plan, 3).map(rot);
-    const o = rot([-w + 0.8, -d + 0.9]);
+    const o = rot([-w + 1.2, -d + 1.1]);
     const cls = opts.cls || "fb-sign";
     const svg =
       S(k.extrude(ring, top, 1.2, P, { convex: true, bevel: 0.3 }), { tone: "hi" }) +
       `<g transform="${faceMatrix([o[0], o[1], top + 1.25], [Math.sin(th), -Math.cos(th), 0])}">` +
       `<text class="${cls}" x="0" y="0" text-anchor="start">${label}</text>` +
-      (opts.chip ? `<circle class="fb-chip" data-cyc="${opts.chip}" cx="${(w - 3.2).toFixed(1)}" cy="1.2" r="1.5"/>` : "") +
-      (sub ? `<text class="${cls} fb-sign2" x="0" y="3.9" text-anchor="start">${sub}</text>` : "") +
+      (opts.chip ? `<circle class="fb-chip" data-cyc="${opts.chip}" cx="${(w - 4.2).toFixed(1)}" cy="1.6" r="1.9"/>` : "") +
+      (sub ? `<text class="${cls} fb-sign2" x="0" y="5.2" text-anchor="start">${sub}</text>` : "") +
       `</g>`;
     return svg;
   }
@@ -203,7 +203,7 @@ export function makeGeo(k, G, P, L) {
     return (
       out + arrow +
       flagSvg(bearing, 86, L.BOOM_Z + 7.4, "ENQ · " + (opts.enqLabel != null ? opts.enqLabel : ""), "", { chip: opts.pcs }) +
-      flagSvg(bearing, 34, L.BOOM_Z + 7.4, "xHC · 生产者", "", { w: 10.5, d: 3, cls: "fb-sign-sm" })
+      flagSvg(bearing, 34, L.BOOM_Z + 7.4, "xHC · 生产者", "", { w: 20, d: 4.2, cls: "fb-sign-sm" })
     );
   }
 
@@ -232,8 +232,8 @@ export function makeGeo(k, G, P, L) {
   // 拖板在轨管上方（前），轨下件在轨管下方（后）—— Painter 序可解。
   // zb = 取件头底（38.5 收起 / 35.3 下探）
   const BOOTH_FLAGS = (bearing) => flagParts(bearing, [
-    { radius: 103.5, top: L.RAIL_TOP + 3.2, w: 10, d: 3 },
-    { radius: 114, top: L.RAIL_TOP + 3.2, w: 10.5, d: 3 },
+    { radius: 103.5, top: L.RAIL_TOP + 3.2, w: 17, d: 5 },
+    { radius: 114, top: L.RAIL_TOP + 3.2, w: 22, d: 4.5 },
   ]);
   function boothTopParts(bearing) {
     const dir = dir3Of(bearing);
@@ -286,7 +286,7 @@ export function makeGeo(k, G, P, L) {
     prism(95.8, 2.4, 46, L.RAIL_TOP + 3.4, 3, { tone: "mid" });
     // 窗口小旗：ERDP 牌（软件手里！）、名牌
     out.push(flagSvg(bearing, 103.5, L.RAIL_TOP + 3.2, "ERDP · " + erdp, ""));
-    out.push(flagSvg(bearing, 114, L.RAIL_TOP + 3.2, "软件 · 消费者", "", { w: 10.5, d: 3, cls: "fb-sign-sm" }));
+    out.push(flagSvg(bearing, 114, L.RAIL_TOP + 3.2, "软件 · 消费者", "", { w: 22, d: 4.5, cls: "fb-sign-sm" }));
     return out.join("");
   }
   function boothSvg(bearing, opts = {}) {
@@ -314,9 +314,9 @@ export function makeGeo(k, G, P, L) {
     }
     // 柜台上：CCS 对色小窗（软件侧轮次）
     const cc = [T[0] + 89 * dir[0], T[1] + 89 * dir[1]];
-    out.push(`<g transform="${faceMatrix([cc[0] - 4 * tan[0], cc[1] - 4 * tan[1], 34.72], tan)}">` +
-      `<text class="fb-sign-sm" x="0" y="3.2" text-anchor="start">CCS · ${ccs}</text></g>`);
-    out.push(`<circle class="fb-chip" data-cyc="${ccs}" cx="${at([cc[0] + 4.6 * tan[0], cc[1] + 4.6 * tan[1], 35.2])[0].toFixed(2)}" cy="${at([cc[0] + 4.6 * tan[0], cc[1] + 4.6 * tan[1], 35.2])[1].toFixed(2)}" r="1.5"/>`);
+    out.push(`<g transform="${faceMatrix([cc[0] - 4.4 * tan[0], cc[1] - 4.4 * tan[1], 34.72], tan)}">` +
+      `<text class="fb-sign-sm" style="font-size:4.6px" x="0" y="4" text-anchor="start">CCS · ${ccs}</text></g>`);
+    out.push(`<circle class="fb-chip" data-cyc="${ccs}" cx="${at([cc[0] + 5.8 * tan[0], cc[1] + 5.8 * tan[1], 35.4])[0].toFixed(2)}" cy="${at([cc[0] + 5.8 * tan[0], cc[1] + 5.8 * tan[1], 35.4])[1].toFixed(2)}" r="1.9"/>`);
     // 对色结果灯（取件比对瞬间亮绿）
     const lampP = [T[0] + 94.6 * dir[0] - 3 * tan[0], T[1] + 94.6 * dir[1] - 3 * tan[1], 45.4];
     out.push(`<circle class="fb-cmplamp${opts.compare ? " on" : ""}" cx="${at([lampP[0], lampP[1], lampP[2]])[0].toFixed(2)}" cy="${at([lampP[0], lampP[1], lampP[2]])[1].toFixed(2)}" r="1.1"/>`);
@@ -372,10 +372,10 @@ export function makeGeo(k, G, P, L) {
     const n = [Math.cos(nb), Math.sin(nb), 0];
     const ex = [Math.sin(nb), -Math.cos(nb), 0];
     const Fp = G.frameOf([rx, ry, 0], [0, 0, 1], ex, n);
-    const plinth = [[-23, -8], [23, -8], [23, 8], [-23, 8]];
-    const F = G.frameOf([rx - 1.3 * n[0], ry - 1.3 * n[1], 20], n, ex, [0, 0, -1]);
-    const poly = [[-21, -17], [21, -17], [21, 17], [-21, 17]];
-    const face = [rx + 1.35 * n[0], ry + 1.35 * n[1], 20];
+    const plinth = [[-30, -10], [30, -10], [30, 10], [-30, 10]];
+    const F = G.frameOf([rx - 1.3 * n[0], ry - 1.3 * n[1], 23], n, ex, [0, 0, -1]);
+    const poly = [[-29, -23], [29, -23], [29, 23], [-29, 23]];
+    const face = [rx + 1.35 * n[0], ry + 1.35 * n[1], 23];
     // 进缆口凸座（面板正面下部，回写缆端点落其端面）
     const portF = G.frameAlong([rx + 1.3 * n[0], ry + 1.3 * n[1], 7], n);
     const svg =
@@ -383,16 +383,17 @@ export function makeGeo(k, G, P, L) {
       S(G.prismOf(F, poly, 0, 2.6, P), { tone: "lo" }) +
       S(G.disc(0, 1.3, 1.35, portF, P, { steps: 20 }), { tone: "lo" }) +
       `<g class="fb-plate" data-part="regface" transform="${faceMatrix([face[0], face[1], face[2]], ex)}">` +
-      `<text class="fb-eng" x="-20" y="-13.4" text-anchor="start">ERDP 寄存器</text>` +
-      `<text class="fb-eng2" style="font-size:3.1px" x="0" y="-9.4" text-anchor="middle">Event Ring Dequeue Pointer</text>` +
-      `<text class="fb-off" x="20" y="-13.4" text-anchor="end">§5.5.2.3.3</text>` +
-      `<rect class="fb-cell" x="-20" y="-6.8" width="17.6" height="11" rx="1"/>` +
-      `<text class="fb-off" x="-18.8" y="-3.2" text-anchor="start">63:4 指针</text>` +
-      `<text class="fb-val" data-part="regval" x="-11.2" y="2.8" text-anchor="middle">槽 0</text>` +
-      `<text class="fb-off" x="1.4" y="-3.2" text-anchor="start">DESI 2:0</text>` +
-      `<text class="fb-val" x="10.4" y="2.8" text-anchor="middle">0</text>` +
-      `<text class="fb-off" x="-20" y="7.8" text-anchor="start">bit3 EHB · RW1C</text>` +
-      `<text class="fb-eng2" x="-20" y="14.2" text-anchor="start">写入方向：软件 → 寄存器</text>` +
+      `<text class="fb-off" style="font-size:4.4px" x="27" y="-19.2" text-anchor="end">§5.5.2.3.3</text>` +
+      `<text class="fb-eng" x="-26" y="-13.6" text-anchor="start">ERDP 寄存器</text>` +
+      `<text class="fb-eng2" style="font-size:5px" x="-26.5" y="-8.6" text-anchor="start">Event Ring</text>` +
+      `<text class="fb-eng2" style="font-size:5px" x="-26.5" y="-3.8" text-anchor="start">Dequeue Pointer</text>` +
+      `<rect class="fb-cell" x="-26" y="-0.8" width="26" height="14" rx="1"/>` +
+      `<text class="fb-off" x="-24.6" y="2.6" text-anchor="start">63:4 指针</text>` +
+      `<text class="fb-val" data-part="regval" x="-14" y="10.8" text-anchor="middle">槽 0</text>` +
+      `<text class="fb-off" x="2" y="2.6" text-anchor="start">DESI 2:0</text>` +
+      `<text class="fb-val" x="14" y="10.8" text-anchor="middle">0</text>` +
+      `<text class="fb-off" x="-26" y="16.6" text-anchor="start">bit3 EHB · RW1C</text>` +
+      `<text class="fb-eng2" style="font-size:4.6px" x="-26" y="21" text-anchor="start">写入方向：软件 → 寄存器</text>` +
       `</g>`;
     return { svg, F, poly, Fp, plinth, portF };
   }
@@ -405,7 +406,7 @@ export function makeGeo(k, G, P, L) {
   }
   function ehbPivot() {
     const b = ehbBase();
-    return [b[0], b[1], 38.2];
+    return [b[0], b[1], 47.6];
   }
   function ehbFlagSvg(v) {
     const p = ehbPivot();
@@ -452,26 +453,26 @@ export function makeGeo(k, G, P, L) {
       Dots([at([coilC[0] - 2.2, coilC[1] - 2.2, 21.5]), at([coilC[0] + 2.2, coilC[1] + 2.2, 21.5])], { size: 0.45 });
     return { svg, dome, dF, Fz, coilC };
   }
-  // MSI-X 立牌（独立字牌：lo 底 + hi 墨大字，dark 1x 可读；顶 19.8 不碰碗 20.1）
+  // MSI-X 立牌（独立字牌：lo 底 + hi 墨大字，dark 1x 可读；外移 15 避铃碗轮廓）
   function bellSignStatic() {
     const nb = (L.AZIMUTH + 12) * DEG;
     const n = [Math.cos(nb), Math.sin(nb), 0];
     const ex = [Math.sin(nb), -Math.cos(nb), 0];
-    const sp = [BP[0] + 13 * n[0] - 4 * ex[0], BP[1] + 13 * n[1] - 4 * ex[1]];
+    const sp = [BP[0] + 15 * n[0] - 4 * ex[0], BP[1] + 15 * n[1] - 4 * ex[1]];
     const Fp = G.frameOf([sp[0], sp[1], 0], [0, 0, 1], ex, n);
-    const plinth = [[-17, -6], [17, -6], [17, 6], [-17, 6]];
-    const F = G.frameOf([sp[0] - 1.1 * n[0], sp[1] - 1.1 * n[1], 10.4], n, ex, [0, 0, -1]);
-    const poly = [[-16, -9.4], [16, -9.4], [16, 9.4], [-16, 9.4]];
-    const face = [sp[0] + 1.15 * n[0], sp[1] + 1.15 * n[1], 10.4];
+    const plinth = [[-21, -7.5], [21, -7.5], [21, 7.5], [-21, 7.5]];
+    const F = G.frameOf([sp[0] - 1.1 * n[0], sp[1] - 1.1 * n[1], 12], n, ex, [0, 0, -1]);
+    const poly = [[-21, -12], [21, -12], [21, 12], [-21, 12]];
+    const face = [sp[0] + 1.15 * n[0], sp[1] + 1.15 * n[1], 12];
     const svg =
       S(G.prismOf(Fp, plinth, 0, 2.2, P), { tone: "lo" }) +
       S(G.prismOf(F, poly, 0, 2.2, P), { tone: "lo" }) +
       `<g class="fb-plate" transform="${faceMatrix([face[0], face[1], face[2]], ex)}">` +
-      `<text class="fb-eng" style="font-size:4.2px" x="0" y="-5.2" text-anchor="middle">MSI-X 中断</text>` +
-      `<text class="fb-eng2" style="font-size:3.4px" x="0" y="-1" text-anchor="middle">铃响唤软件</text>` +
-      `<text class="fb-off" style="font-size:2.9px" x="0" y="3" text-anchor="middle">IMAN IP/IE · IP 挂起</text>` +
-      `<text class="fb-off" style="font-size:2.9px" x="0" y="6.5" text-anchor="middle">写回：软件 → ERDP</text>` +
-      `<circle class="fb-iplamp" data-part="iplamp" cx="12.6" cy="-5.2" r="1.6"/>` +
+      `<text class="fb-eng" style="font-size:6.4px" x="0" y="-7" text-anchor="middle">MSI-X 中断</text>` +
+      `<text class="fb-eng2" style="font-size:5px" x="0" y="-1.8" text-anchor="middle">铃响唤软件</text>` +
+      `<text class="fb-off" style="font-size:4.2px" x="0" y="3.4" text-anchor="middle">IMAN IP/IE · IP 挂起</text>` +
+      `<text class="fb-off" style="font-size:4.2px" x="0" y="8.6" text-anchor="middle">写回：软件 → ERDP</text>` +
+      `<circle class="fb-iplamp" data-part="iplamp" cx="17" cy="-7" r="2"/>` +
       `</g>`;
     return { svg, F, poly, Fp, plinth, sp };
   }
@@ -509,51 +510,51 @@ export function makeGeo(k, G, P, L) {
   }
 
   // ---------- 位域刻度卡：Transfer Event TRB（§6.4.2.1 Tables 6-37/38/39） ----------
-  const CARD = { w: 148, h: 118 };
-  const tickX = (b) => -CARD.w / 2 + 14 + (31 - b) * ((CARD.w - 28) / 31);
+  const CARD = { w: 232, h: 164 };
+  const tickX = (b) => -CARD.w / 2 + 20 + (31 - b) * ((CARD.w - 40) / 31);
   function rowTicks(yBottom) {
     const minor = [], major = [];
     for (let b = 0; b <= 31; b++) {
       const x = tickX(b);
-      const top = yBottom - (b % 8 === 0 ? 3.2 : 1.9);
+      const top = yBottom - (b % 8 === 0 ? 4.4 : 2.6);
       const dd = k.pathOf([[x, top], [x, yBottom]]);
       (b % 8 === 0 ? major : minor).push(dd);
     }
     return { minor, major };
   }
-  const cellX = (hi, lo) => [tickX(hi) - 1.2, tickX(lo) + 1.2];
+  const cellX = (hi, lo) => [tickX(hi) - 1.4, tickX(lo) + 1.4];
   function cardSvg(spec) {
     const out = [];
     const m = faceMatrix(L.CARD_O, L.CARD_EX);
     out.push(`<g transform="${m}">`);
     out.push(`<rect class="fb-card" x="${-CARD.w / 2}" y="${-CARD.h / 2}" width="${CARD.w}" height="${CARD.h}" rx="3"/>`);
-    out.push(`<text class="fb-title" x="0" y="${-CARD.h / 2 + 8}" text-anchor="middle">${spec.title}</text>`);
-    out.push(`<text class="fb-sub" x="0" y="${-CARD.h / 2 + 13}" text-anchor="middle">${spec.sub}</text>`);
-    const rowY0 = -CARD.h / 2 + 17;
-    const rowH = 18.6;
+    out.push(`<text class="fb-title" x="0" y="${-CARD.h / 2 + 11}" text-anchor="middle">${spec.title}</text>`);
+    out.push(`<text class="fb-sub" x="0" y="${-CARD.h / 2 + 18}" text-anchor="middle">${spec.sub}</text>`);
+    const rowY0 = -CARD.h / 2 + 23;
+    const rowH = 26.5;
     spec.rows.forEach((row, r) => {
       const y = rowY0 + r * rowH;
-      out.push(`<text class="fb-off" x="${-CARD.w / 2 + 3}" y="${y - 1.2}">${row.offset}</text>`);
-      const cellsTop = y + 8.6;
+      out.push(`<text class="fb-off" x="${-CARD.w / 2 + 5}" y="${y - 1.6}">${row.offset}</text>`);
+      const cellsTop = y + 12;
       const t = rowTicks(cellsTop);
       out.push(Ln(t.minor.join(""), { tone: "lo" }));
       out.push(Ln(t.major.join(""), { tone: "mid" }));
       // 行基线：两端落在 b=31 / b=0 的刻度线上（互相生根）
       out.push(Ln(k.pathOf([[tickX(31), cellsTop], [tickX(0), cellsTop]]), { tone: "lo" }));
-      [31, 23, 15, 7].forEach((b) => out.push(`<text class="fb-bit" x="${tickX(b)}" y="${cellsTop - 4.4}" text-anchor="middle">${b}</text>`));
+      [31, 23, 15, 7].forEach((b) => out.push(`<text class="fb-bit" x="${tickX(b)}" y="${cellsTop - 6.2}" text-anchor="middle">${b}</text>`));
       row.cells.forEach((c) => {
         const [x0, x1] = cellX(c.hi, c.lo);
-        out.push(`<rect class="fb-cell ${c.dim ? "fb-dim" : ""}" x="${x0.toFixed(2)}" y="${cellsTop.toFixed(2)}" width="${(x1 - x0).toFixed(2)}" height="5.8" rx="0.7"/>`);
+        out.push(`<rect class="fb-cell ${c.dim ? "fb-dim" : ""}" x="${x0.toFixed(2)}" y="${cellsTop.toFixed(2)}" width="${(x1 - x0).toFixed(2)}" height="8.2" rx="0.7"/>`);
         const mid = (x0 + x1) / 2;
-        if (c.name && x1 - x0 > 13) out.push(`<text class="fb-cellname" x="${mid.toFixed(2)}" y="${(cellsTop + 4.2).toFixed(2)}" text-anchor="middle">${c.name}</text>`);
-        else if (c.name) out.push(`<text class="fb-cellname fb-tiny" x="${mid.toFixed(2)}" y="${(cellsTop + 4.1).toFixed(2)}" text-anchor="middle">${c.name}</text>`);
-        if (c.val !== undefined) out.push(`<text class="fb-val" x="${mid.toFixed(2)}" y="${(cellsTop + 9.2).toFixed(2)}" text-anchor="middle">${c.val}</text>`);
+        if (c.name && x1 - x0 > 16) out.push(`<text class="fb-cellname" x="${mid.toFixed(2)}" y="${(cellsTop + 6).toFixed(2)}" text-anchor="middle">${c.name}</text>`);
+        else if (c.name) out.push(`<text class="fb-cellname fb-tiny" x="${mid.toFixed(2)}" y="${(cellsTop + 5.8).toFixed(2)}" text-anchor="middle">${c.name}</text>`);
+        if (c.val !== undefined) out.push(`<text class="fb-val" x="${mid.toFixed(2)}" y="${(cellsTop + 13).toFixed(2)}" text-anchor="middle">${c.val}</text>`);
       });
     });
-    const fy = rowY0 + 4 * rowH + 1.4;
+    const fy = rowY0 + 4 * rowH + 2;
     out.push(`<path class="fb-rule" d="M${-CARD.w / 2} ${fy}H${CARD.w / 2}"/>`);
     (spec.footer || []).forEach((line, i) => {
-      out.push(`<text class="fb-foot" x="${-CARD.w / 2 + 3}" y="${fy + 5.6 + i * 5.8}">${line}</text>`);
+      out.push(`<text class="fb-foot" x="${-CARD.w / 2 + 5}" y="${fy + 7.6 + i * 8}">${line}</text>`);
     });
     out.push(`</g>`);
     return out.join("");
@@ -613,18 +614,18 @@ export function makeGeo(k, G, P, L) {
     const n = [Math.cos(nb), Math.sin(nb), 0];
     const ex = [Math.sin(nb), -Math.cos(nb), 0];
     const Fp = G.frameOf([ex0, ey0, 0], [0, 0, 1], ex, n);
-    const plinth = [[-15, -6], [15, -6], [15, 6], [-15, 6]];
-    const F = G.frameOf([ex0 - 1.1 * n[0], ey0 - 1.1 * n[1], 12.7], n, ex, [0, 0, -1]);
-    const poly = [[-13.5, -10.5], [13.5, -10.5], [13.5, 10.5], [-13.5, 10.5]];
-    const face = [ex0 + 1.15 * n[0], ey0 + 1.15 * n[1], 12.7];
+    const plinth = [[-18, -7.2], [18, -7.2], [18, 7.2], [-18, 7.2]];
+    const F = G.frameOf([ex0 - 1.1 * n[0], ey0 - 1.1 * n[1], 13.4], n, ex, [0, 0, -1]);
+    const poly = [[-17, -11.5], [17, -11.5], [17, 11.5], [-17, 11.5]];
+    const face = [ex0 + 1.15 * n[0], ey0 + 1.15 * n[1], 13.4];
     const svg =
       S(G.prismOf(Fp, plinth, 0, 2.2, P), { tone: "lo" }) +
       S(G.prismOf(F, poly, 0, 2.2, P), { tone: "lo" }) +
       `<g class="fb-plate" transform="${faceMatrix([face[0], face[1], face[2]], ex)}">` +
-      `<text class="fb-eng2" style="font-size:3px" x="-12.4" y="-5.6" text-anchor="start">ERST 段表 · 1 项</text>` +
-      `<text class="fb-off" style="font-size:2.9px" x="-12.4" y="-0.6" text-anchor="start">段0 · 64B 对齐 · 大小 16</text>` +
-      `<text class="fb-off" style="font-size:2.9px" x="-12.4" y="4.2" text-anchor="start">事件环无 Link TRB</text>` +
-      `<text class="fb-off" style="font-size:2.9px" x="-12.4" y="8.6" text-anchor="start">回绕=换下一条表项</text>` +
+      `<text class="fb-eng2" style="font-size:3.8px" x="-15.6" y="-7" text-anchor="start">ERST 段表 · 1 项</text>` +
+      `<text class="fb-off" style="font-size:3.5px" x="-15.6" y="-1.8" text-anchor="start">段0 · 64B 对齐 · 大小 16</text>` +
+      `<text class="fb-off" style="font-size:3.5px" x="-15.6" y="3.2" text-anchor="start">事件环无 Link TRB</text>` +
+      `<text class="fb-off" style="font-size:3.5px" x="-15.6" y="8.2" text-anchor="start">回绕=换下一条表项</text>` +
       `</g>`;
     return { svg, F, poly, Fp, plinth };
   }

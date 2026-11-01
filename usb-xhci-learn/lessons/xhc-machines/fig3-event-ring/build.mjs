@@ -41,12 +41,12 @@ const RAIL_R = 90, RAIL_Z = 46, RAIL_TOP = 49.5, RAIL_MID = (RAIL_Z + RAIL_TOP) 
 const POST_B = [130, 185, 245, 315];          // 环轨立柱方位（避开取件窗口工作弧 80–125°）
 const BELL = [-152, 102];                     // 铃柱（Fig2 门铃位）
 const BELL_STRIKE_B = -26;                    // 铃锤方位（指向投递头）
-const REG = [-159.7, 48.4];                   // ERDP 寄存器面板（台外，角不进台面；右半被 F4 亭体遮挡=真实景深，教学行在铃立牌）
+const REG = [-166.6, 52.4];                   // ERDP 寄存器面板（台外；2026-11-01 沿方位外移 8：放大后最近距 97.5 > 台半径 96，角不进台面）
 const REG_N_B = AZIMUTH + 12;                 // 面板法线方位（面向观者）
-const ERST = [-163.6, 18.9];                  // ERST 索引牌
+const ERST = [-176, 8];                       // ERST 索引牌（2026-11-01 南移：给放大后的寄存器面板让位）
 const JUNCTION = [-124, 82];                  // 接线盒
 const CARD_B = 59;                            // 卡面法线方位角
-const CARD_O = [150, 98, 78];
+const CARD_O = [150, 98, 90];
 const CARD_EX = [Math.sin((CARD_B * Math.PI) / 180), -Math.cos((CARD_B * Math.PI) / 180), 0];
 
 const L = { T, PR, TOP, A0, AZIMUTH, ELEVATION, BOOM_Z, HEAD_PARK, WAY_MIN, RAIL_TOP, MAST_TOP, BELL, BELL_STRIKE_B, REG, REG_N_B, ERST, CARD_O, CARD_EX };
@@ -57,10 +57,10 @@ const P = k.fitProjection(
     [T[0] - R_TABLE, T[1] - R_TABLE, TABLE_Z], [T[0] + R_TABLE, T[1] + R_TABLE, TABLE_Z],
     [T[0], T[1], MAST_TOP + 12],
     [T[0] - 114, T[1] - 114, 56], [T[0] + 114, T[1] + 114, 56],
-    [BELL[0] - 11, BELL[1] - 11, 0], [BELL[0] + 11, BELL[1] + 11, 30],
-    [REG[0] - 20, REG[1] - 20, 0], [REG[0] + 20, REG[1] + 20, 50],
-    [CARD_O[0] - 90 * CARD_EX[0], CARD_O[1] - 90 * CARD_EX[1], CARD_O[2] + 66],
-    [CARD_O[0] + 90 * CARD_EX[0], CARD_O[1] + 90 * CARD_EX[1], CARD_O[2] - 66],
+    [BELL[0] - 24, BELL[1] - 24, 0], [BELL[0] + 24, BELL[1] + 24, 34],
+    [REG[0] - 32, REG[1] - 32, 0], [REG[0] + 32, REG[1] + 32, 58],
+    [CARD_O[0] - 120 * CARD_EX[0], CARD_O[1] - 120 * CARD_EX[1], CARD_O[2] + 88],
+    [CARD_O[0] + 120 * CARD_EX[0], CARD_O[1] + 120 * CARD_EX[1], CARD_O[2] - 88],
   ],
   W, H, { pad: 24, azimuth: AZIMUTH, elevation: ELEVATION },
 );
@@ -171,7 +171,7 @@ const SLOT_NUMS = (() => {
   for (const i of [0, 4, 8, 12]) {
     const b = geo.slotBearing(i) + 0.3;
     const p = [T[0] + 87 * Math.cos(b), T[1] + 87 * Math.sin(b)];
-    nums.push(k.faceTextSvg(k.topMatrix(p, TOP + 0.1, P, "x"), String(i), { size: 4.6, tone: "mid", anchor: "middle" }));
+    nums.push(k.faceTextSvg(k.topMatrix(p, TOP + 0.1, P, "x"), String(i), { size: 6.2, tone: "mid", anchor: "middle" }));
   }
   return nums.join("");
 })();
@@ -236,25 +236,26 @@ let COILBOX_SHAPE = null;
 {
   OWNER = "reg";
   const rp = geo.registerPanelStatic();
+  const REG_PANEL_SHAPE = record(A.prism(rp.F, rp.poly, 0, 2.6, { name: "reg.panel" }));
   put("regpanel", [REG[0], REG[1], 20],
     rp.svg,
     [
       record(A.prism(rp.Fp, rp.plinth, 0, 3, { name: "reg.plinth" })),
-      record(A.prism(rp.F, rp.poly, 0, 2.6, { name: "reg.panel" })),
+      REG_PANEL_SHAPE,
       record(A.disc(rp.portF, 0, 1.3, 1.35, { name: "reg.port" })),
     ],
     { bias: 0.4 });
   const piv = geo.ehbPivot();
   const nb = (L.REG_N_B * Math.PI) / 180;
   const n = [Math.cos(nb), Math.sin(nb), 0];
-  // 旗座小凸台（面板顶）
+  // 旗座小凸台（面板顶；seated+cut 挂进面板实体，消相切深度歧义）
   put("ehb.base", piv,
-    S(k.cylinder(piv[0] - 2.2 * n[0], piv[1] - 2.2 * n[1], 1.2, 37, 1.3, P, 16), { tone: "lo" }),
-    [record(A.cylinder(piv[0] - 2.2 * n[0], piv[1] - 2.2 * n[1], 1.2, 37, 1.3, { name: "ehb.post" }))],
+    S(k.cylinder(piv[0] - 2.2 * n[0], piv[1] - 2.2 * n[1], 1.2, 46, 1.6, P, 16), { tone: "lo" }),
+    [record(A.cylinder(piv[0] - 2.2 * n[0], piv[1] - 2.2 * n[1], 1.2, 46, 1.6, { name: "ehb.post", seated: true, cut: [REG_PANEL_SHAPE] }))],
     { bias: 0.3 });
   put("ehb.flag", piv,
     `<g data-part="ehbflag">${geo.ehbFlagSvg(0)}</g>`,
-    [record(A.box([piv[0] - 2.6, piv[1] - 2.6, 38], [piv[0] + 5.4, piv[1] + 5.4, 45.6], { name: "ehb.flagbox" }))],
+    [record(A.box([piv[0] - 2.6, piv[1] - 2.6, 46], [piv[0] + 5.4, piv[1] + 5.4, 54.6], { name: "ehb.flagbox", seated: true, cut: [REG_PANEL_SHAPE] }))],
     { bias: 0.5 });
 }
 
@@ -280,8 +281,8 @@ let COILBOX_SHAPE = null;
   const F = { o: [CARD_O[0] - w2 * CARD_EX[0], CARD_O[1] - w2 * CARD_EX[1], CARD_O[2] + h2], a: [Math.cos((CARD_B * Math.PI) / 180), Math.sin((CARD_B * Math.PI) / 180), 0], u: CARD_EX, v: [0, 0, 1] };
   const poly = [[0, 0], [geo.CARD.w + 4.8, 0], [geo.CARD.w + 4.8, -(geo.CARD.h + 4.8)], [0, -(geo.CARD.h + 4.8)]];
   const CARDPANEL_SHAPE = record(A.prism(F, poly, -2.4, 0, { name: "card.panel" }));
-  const standX = CARD_O[0] - 66 * CARD_EX[0] - 2 * nC[0];
-  const sy = CARD_O[1] - 66 * CARD_EX[1] - 2 * nC[1];
+  const standX = CARD_O[0] - 74 * CARD_EX[0] - 2 * nC[0];
+  const sy = CARD_O[1] - 74 * CARD_EX[1] - 2 * nC[1];
   put("cardstand", [standX, sy, 30],
     S(k.cylinder(standX, sy, 4.6, 0, 3, P, 24), { tone: "lo" }) +
     S(k.cylinder(standX, sy, 2.2, 3, CARD_O[2] + 2, P, 16), { tone: "mid", crease: "none" }),
@@ -480,7 +481,7 @@ const geoScript = `const makeGeoFn = ${geoSource.replace(/^export function makeG
 const LIVE = `
 const D = ${JSON.stringify(DATA)};
 const K = { iso, pathOf, solidSvg, lineSvg, dotsSvg, roundedPlan, insetPlan, extrude, cylinder, knurl, sideArc };
-const L = { T: D.T, PR: 72, TOP: 32, A0: D.A0, AZIMUTH: 45, ELEVATION: 45, BOOM_Z: D.BOOM_Z, HEAD_PARK: D.HEAD_PARK, WAY_MIN: 35, RAIL_TOP: 49.5, BELL: [-152, 102], BELL_STRIKE_B: D.bellStrikeB, REG: [-159.7, 48.4], REG_N_B: 57, ERST: [-163.6, 18.9], CARD_O: D.cardO, CARD_EX: D.cardEx };
+const L = { T: D.T, PR: 72, TOP: 32, A0: D.A0, AZIMUTH: 45, ELEVATION: 45, BOOM_Z: D.BOOM_Z, HEAD_PARK: D.HEAD_PARK, WAY_MIN: 35, RAIL_TOP: 49.5, BELL: [-152, 102], BELL_STRIKE_B: D.bellStrikeB, REG: [-166.6, 52.4], REG_N_B: 57, ERST: [-176, 8], CARD_O: D.cardO, CARD_EX: D.cardEx };
 const geo = makeGeo(K, G, D.P, L);
 const stage = document.querySelector(".iso-stage");
 const svgRoot = stage.querySelector("svg");
@@ -737,8 +738,40 @@ stage.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
   else if (e.key === "Home") { arm(); playTo(0); }
   else if (e.key === "Escape") { touring = false; run(); }
+  else if (e.key === "+" || e.key === "=") { e.preventDefault(); arm(); setZoom(zoomIx + 1); }
+  else if (e.key === "-" || e.key === "_") { e.preventDefault(); arm(); setZoom(zoomIx - 1); }
+  else if (e.key === "0") { e.preventDefault(); arm(); setZoom(0); }
 });
-window.__fig3 = { step, playTo, pause: () => { touring = false; clearTimeout(idleTimer); }, stateOf: () => state, frameOf: () => frame };
+// 画面缩放（2026-11-01 可读性轮）：位域卡/寄存器面板的文字在整机能览比例下达不到印刷下限，
+// 提供台面级放大——默认 1× 布局不变，放大后滚动/双指平移。
+const ZOOMS = [1, 1.6, 2.4, 3.2];
+let zoomIx = 0;
+const zoombar = document.querySelector(".iso-zoombar");
+function applyZoom() {
+  svgRoot.style.width = (ZOOMS[zoomIx] * 100) + "%";
+  svgRoot.style.height = "auto";
+  if (zoombar) zoombar.querySelectorAll("button[data-zoom]").forEach((b, i) => b.setAttribute("aria-pressed", String(i === zoomIx)));
+}
+function centerCard() {
+  const face = document.querySelector('[data-part="cardface"]');
+  if (!face) return;
+  const cr = face.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  const centreX = cr.left - sr.left + stage.scrollLeft + cr.width / 2;
+  stage.scrollLeft = Math.max(0, Math.min(stage.scrollWidth - stage.clientWidth, centreX - stage.clientWidth / 2));
+}
+function setZoom(ix) {
+  const prev = zoomIx;
+  zoomIx = Math.max(0, Math.min(ZOOMS.length - 1, ix));
+  applyZoom();
+  // 放大时自动居中到位域卡（教学热点；每步重居中，末按生效），用户可再拖动
+  if (zoomIx > prev) centerCard();
+}
+if (zoombar) zoombar.addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-zoom]");
+  if (b) { arm(); setZoom(ZOOMS.indexOf(Number(b.dataset.zoom))); }
+});
+applyZoom();
+window.__fig3 = { step, playTo, pause: () => { touring = false; clearTimeout(idleTimer); }, stateOf: () => state, frameOf: () => frame, zoomTo: setZoom, zoomOf: () => ZOOMS[zoomIx] };
 render(state, 0.016);
 `;
 
@@ -767,23 +800,23 @@ const CSS = `
 .fb-regface.fb-litflash text { fill: var(--fb-lamp); }
 .fb-face { fill: var(--fb-face); stroke: var(--anatomy-line-lo); stroke-width: 0.5; }
 .fb-arrow { fill: var(--fb-arrow); }
-.fb-sign { font: 700 4.6px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); letter-spacing: 0.2; }
-.fb-sign2 { font-size: 3.4px; font-weight: 500; }
-.fb-sign-sm { font: 500 3.7px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-sign { font: 700 7px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); letter-spacing: 0.2; }
+.fb-sign2 { font-size: 5.2px; font-weight: 500; }
+.fb-sign-sm { font: 500 5.6px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
 .fb-card { fill: var(--fb-card); stroke: var(--anatomy-line-lo); stroke-width: 0.6; }
 .fb-cell { fill: var(--fb-cell); stroke: var(--anatomy-line-lo); stroke-width: 0.4; }
 .fb-cell.fb-dim { fill: var(--fb-celldim); stroke: var(--anatomy-line-lo); stroke-width: 0.3; }
-.fb-title { font: 600 6.2px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); letter-spacing: 0.3; }
-.fb-sub { font: 500 3.4px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
-.fb-off { font: 500 3.4px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
-.fb-bit { font: 500 2.9px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
-.fb-cellname { font: 500 3.1px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
-.fb-cellname.fb-tiny { font-size: 2.3px; }
-.fb-val { font: 600 4.6px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-title { font: 600 10.5px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); letter-spacing: 0.3; }
+.fb-sub { font: 500 5.2px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-off { font: 500 5.4px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-bit { font: 500 4.8px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-cellname { font: 500 5.2px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-cellname.fb-tiny { font-size: 4px; }
+.fb-val { font: 600 7.6px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
 .fb-rule { stroke: var(--anatomy-line-lo); stroke-width: 0.5; fill: none; }
-.fb-foot { font: 500 3.7px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
-.fb-eng { font: 600 5px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
-.fb-eng2 { font: 500 3.2px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-foot { font: 500 5.8px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-eng { font: 600 7.5px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
+.fb-eng2 { font: 500 5px var(--anatomy-ui, sans-serif); fill: var(--anatomy-line-hi); }
 /* 面板/铭牌作用域：lo 底 + hi 墨（dark 1x 可读基线，同 Fig2 铭牌） */
 .fb-plate text, .fb-plate circle { fill: var(--anatomy-line-hi); }
 .fb-plate .fb-iplamp { stroke: var(--anatomy-line-lo); }
@@ -791,6 +824,18 @@ const CSS = `
 /* 聚焦框只在键盘可达时显示（不进交付截图） */
 .iso-stage:focus { outline: none; }
 .iso-stage:focus-visible { outline: 1px solid var(--anatomy-muted); outline-offset: 6px; }
+/* 画面缩放（2026-11-01 可读性轮）：1× 布局不变，>1× 出滚动平移 */
+.iso-stage { overflow: auto; scrollbar-width: thin; }
+.iso-stage svg { display: block; }
+.iso-zoombar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.iso-zoombar button { font: 500 12px var(--anatomy-mono, monospace); color: var(--anatomy-muted); background: transparent; border: 1px solid var(--anatomy-line-mid); border-radius: 3px; padding: 2px 10px; cursor: pointer; }
+.iso-zoombar button[aria-pressed="true"] { color: var(--anatomy-text); border-color: var(--anatomy-text); }
+.iso-zoomhint { color: var(--anatomy-muted); font-size: 11px; }
+@media print {
+  .iso-zoombar { display: none; }
+  .iso-stage { overflow: visible; }
+  .iso-stage svg { width: 100% !important; height: auto !important; }
+}
 `;
 const pageCss = `
 <style>
@@ -830,7 +875,14 @@ const body =
       { mark: "edge", label: "回执卡=Transfer Event 位域（§6.4.2.1）；电磁铃=MSI-X 中断（IMAN IP/IE §5.5.2.1）；EHB 旗=ERDP bit3 RW1C（§5.5.2.3.3）" },
     ],
     caption: "事件环方向反转：xHC 生产、软件消费；ERDP 这根指针反过来握在软件手里。",
-    body: `<div class="iso-stage" tabindex="0" role="group" aria-label="事件环登记机，六帧：空环、xHC 投递回执、MSI-X 敲铃、软件对色取件、ERDP 签收回写、静默。点击或按空格步进。">${svg}<span role="status" aria-live="polite" data-status></span></div>`,
+    body: `<div class="iso-stage" tabindex="0" role="group" aria-label="事件环登记机，六帧：空环、xHC 投递回执、MSI-X 敲铃、软件对色取件、ERDP 签收回写、静默。点击或按空格步进。">${svg}<span role="status" aria-live="polite" data-status></span></div>` +
+      `<div class="iso-zoombar" role="toolbar" aria-label="画面缩放：放大后可拖动滚动条平移查看细节">` +
+      `<button type="button" data-zoom="1" aria-pressed="true">1×</button>` +
+      `<button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button>` +
+      `<button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button>` +
+      `<button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button>` +
+      `<span class="iso-zoomhint">放大位域卡 / 寄存器面板 · 放大后拖动滚动条平移（触屏双指）· 键盘 + − 0</span>` +
+      `</div>`,
   });
 
 const script =
@@ -841,7 +893,7 @@ const script =
   `window.__G = G;\n` +
   LIVE;
 
-const page = k.pageHtml({ title: "Fig3 回执登记机：事件环的生产与消费", theme: THEME, body, script, width: 850 });
+const page = k.pageHtml({ title: "Fig3 回执登记机：事件环的生产与消费", theme: THEME, body, script, width: 980 });
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);
 console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `${R.items.length} items`, `scale ${KS.toFixed(3)}`);

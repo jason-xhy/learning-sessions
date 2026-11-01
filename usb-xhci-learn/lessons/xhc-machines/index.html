@@ -536,13 +536,19 @@
       <figcaption>light 主题 · 390px 手机宽全景</figcaption>
     </figure>
     <figure>
+      <a href="fig3-event-ring/shots/phone-light-390-zoom.png" target="_blank" rel="noopener">
+        <img src="fig3-event-ring/shots/phone-light-390-zoom.png" loading="lazy" alt="Fig3 手机宽 3.2× 放大：Transfer Event TRB 位域卡全字段可读（页面缩放控件即此视图）">
+      </a>
+      <figcaption>390px · 3.2× 放大 · 位域卡全字段可读</figcaption>
+    </figure>
+    <figure>
       <a href="fig3-event-ring/shots/f4-writeback.png" target="_blank" rel="noopener">
         <img src="fig3-event-ring/shots/f4-writeback.png" loading="lazy" alt="Fig3 F4 软件把 ERDP 写回寄存器面板，箭头方向软件指向寄存器，EHB 旗放下">
       </a>
       <figcaption>F4 签收回写：软件→寄存器，EHB 随写清 0</figcaption>
     </figure>
   </div>
-  <p class="more-shots">更多截图（dark/light 全景、回执卡与寄存器面板特写、390px 手机宽）见 <code>fig3-event-ring/shots/</code>（Pages 不提供目录列表，路径供仓库内浏览）。</p>
+  <p class="more-shots">更多截图（dark/light 全景、回执卡与寄存器面板特写、390px 手机宽与 3.2× 放大）见 <code>fig3-event-ring/shots/</code>（Pages 不提供目录列表，路径供仓库内浏览）。</p>
 
   <div class="prose">
     <p>事件环把所有权整个反过来：生产者是 <b>xHC</b>（盖章投递头握 ENQ），消费者是<b>软件</b>（取件窗口，手里拨着 ERDP 牌）——§4.9.4 @p161 一句话：xHC is the producer and system software is the consumer of Event TRBs。回执卡就是 <b>Transfer Event TRB</b>：Type=32（DW3[15:10]）、Completion Code=1（Success，DW2[31:24]，完成码表=Table 6-90 @p465）、EP ID=2（EP1 OUT 的 Device Context Index）、Slot ID=1（演示取首个分配槽的示例值）、Cycle=1（=生产轮色）。投递的触发源是传输侧那颗带 IOC 的收尾 TRB：完成即产事件（§4.11.3.1 @p201）。</p>
