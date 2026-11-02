@@ -19,6 +19,7 @@
 //  「4 个 TRB」已按 §5 契约修订登记更正为 3）。
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { zoomBarHtml, zoomFsCss, zoomFsScript } from "../shared/zoomfs.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as k from "/Users/jason/.zcode/skills/anatomy/kit/iso-kit.mjs";
@@ -582,7 +583,7 @@ const svg = k.figureSvg({
 });
 
 const body =
-  `<style>${CSS}</style>` +
+  `<style>${CSS}${zoomFsCss()}</style>` +
   k.plateHtml({
     fig: "Fig 1",
     title: "总装流水线 · 一颗 URB 的三工位之旅",
@@ -595,10 +596,10 @@ const body =
       { mark: "dim", label: "双针指示仪：亮针 ENQ · 暗针 DEQ（0/1/2/3 槽位）" },
     ],
     caption: "一颗 URB 被拆成 TD 夹具上的 TRB 托盘：软件冲压，硬件取件，设备只见包。（GET_DESCRIPTOR(Config) wLength=18 → Setup TD + Data TD + Status TD；门铃 DB Target=1 即 EP0；包序 SETUP→DATA1→STATUS 只出现在灯箱。）",
-    body: `<div class="iso-stage ac-stage" tabindex="0" role="group" aria-label="总装流水线动画：空格或右箭头步进一帧，左箭头回退，数字 0 到 5 直选帧。">${svg}<span class="ac-sr" role="status" aria-live="polite" data-status></span></div>`,
+    body: `<div class="iso-stage ac-stage" tabindex="0" role="group" aria-label="总装流水线动画：空格或右箭头步进一帧，左箭头回退，数字 0 到 5 直选帧。">${svg}<span class="ac-sr" role="status" aria-live="polite" data-status></span></div>` + zoomBarHtml(),
   });
 
-const page = k.pageHtml({ title: "Fig 1 · 总装流水线", theme: THEME, body, script: kitScript() + LIVE, width: 1060 });
+const page = k.pageHtml({ title: "Fig 1 · 总装流水线", theme: THEME, body, script: kitScript() + LIVE + zoomFsScript({ focus: ['[data-part="actors-cards"]'] }), width: 1500 });
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);
 console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `${R.items.length} items`, `scale ${KS.toFixed(3)}`);

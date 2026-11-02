@@ -138,3 +138,12 @@
   真几何缺陷（卡架立柱悬空、面板近角切入圆台 3.8、EHB 旗杆相切歧义），全过程记 build-log.txt。
 - 判定：新旧 shots 亮度统计一致（mean 23.7↔24.6 / p50 19↔19 / p90 38↔38），暗主题呈现无回归；
   用户侧"浅色卡面"出自其浏览器强制深色渲染（本地无头与线上 HEAD 均为暗卡白字），非页面缺陷。
+
+## J. 缩放+全屏轮（2026-11-02，机内几何零变更）
+- 页面：页宽 980→1500（fluid）、11-01 内联缩放实现上收为 shared/zoomfs.mjs 单一来源（行为等价+新增
+  全屏按钮 ⛶：Fullscreen API/webkit/fs-pseudo，键盘 F）；§A–I 既有几何断言全部有效；既有 31 张
+  shots 已按新页宽全量重生成（capture-shots.mjs），宽幅另见 zoomfs-* 新证据。
+- 新证据：shots/zoomfs-wide-dark.png、zoomfs-focal-dark.png（位域卡特写）、zoomfs-fs-dark.png
+  （真全屏 api 模式）、zoomfs-wide-light.png、zoomfs-fs-light.png、zoomfs-phone-390-dark.png、
+  zoomfs-phone-390-zoom-dark.png（390 视口 3.2× 下位域卡全字段可读）。
+- 行为门：shared/verify_zoomfs.mjs PASS（8/8 页：4 档缩放/复位/全屏生效且不小于页内 1×/图例隐藏/退出复位/console 净）。

@@ -113,3 +113,12 @@
 - 无语义装饰（刻度带、螺栓、铭牌划线、工艺环）不携带数值；凡刻数处（槽位号 0/4/8/12、门铃牌、卡面字段、读数）均在上表。
 - 「环与 TRB 对设备不可见」锚点属 Fig1（DESIGN.md §2），本片不重复承载。
 - 槽位号 0/4/8/12 为机刻刻度（便于读出 enqueue/dequeue 数值），非规范内容。
+
+## 11. 缩放+全屏轮补充（2026-11-02，机内几何零变更）
+- 页面：页宽 850→1500（fluid）、缩放控件（1×–3.2×）与全屏按钮（⛶ Fullscreen API/webkit/fs-pseudo，
+  键盘 F）接入，实现=shared/zoomfs.mjs 单一来源构建期内联；上表既有断言与截图引用全部有效，
+  桌面取景随页宽变化，宽幅以 zoomfs-* 新证据为准。
+- 新证据：shots/zoomfs-wide-dark.png、zoomfs-focal-dark.png（Normal TRB 位域卡特写，全字段可读）、
+  zoomfs-fs-dark.png（真全屏 api 模式）、zoomfs-wide-light.png、zoomfs-fs-light.png、
+  zoomfs-phone-390-dark.png、zoomfs-phone-390-zoom-dark.png。
+- 行为门：shared/verify_zoomfs.mjs PASS（8/8 页：4 档缩放/复位/全屏生效且不小于页内 1×/图例隐藏/退出复位/console 净）。

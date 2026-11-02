@@ -133,3 +133,12 @@
 2. F3「3 夹具依次**滑入**环形轨道」→ 实现为**上下料龙门依次吊放入槽**（单口入料的通道无法既线性填
    0/1/2 槽又不穿越已占槽；吊放机制下所有权上色、ENQ 推进、首颗 C 翻色等教学语义全部保留）。
 3. F5 读数「TD=1 装配完成」按读数公式呈现为 `TD 装配 3/3 · 门铃 1 · 包序 3/3 · 完成 1`（完成计数 1 件）。
+
+## J. 缩放+全屏轮补充（2026-11-02，机内几何零变更）
+- 页面：页宽 1060→1500（fluid）、缩放控件（1×–3.2×）与全屏按钮（⛶ Fullscreen API/webkit/fs-pseudo，
+  键盘 F）接入，实现=shared/zoomfs.mjs 单一来源构建期内联；A–G 组既有断言与截图引用全部有效，
+  桌面取景随页宽变化，宽幅以 zoomfs-* 新证据为准。
+- 新证据：shots/zoomfs-wide-dark.png、zoomfs-focal-dark.png（actors-cards 特写）、
+  zoomfs-fs-dark.png（真全屏 api 模式）、zoomfs-wide-light.png、zoomfs-fs-light.png、
+  zoomfs-phone-390-dark.png、zoomfs-phone-390-zoom-dark.png。
+- 行为门：shared/verify_zoomfs.mjs PASS（8/8 页：4 档缩放/复位/全屏生效且不小于页内 1×/图例隐藏/退出复位/console 净）。

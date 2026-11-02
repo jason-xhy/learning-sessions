@@ -1,6 +1,7 @@
 // Fig2 环形分度轨道：传输环的生产与消费（Hero）
 // 判据：xHCI 1.2b（625472）+ linux d9008e061539；画面断言逐条见 EVIDENCE.md
 import { readFileSync, writeFileSync } from "node:fs";
+import { zoomBarHtml, zoomFsCss, zoomFsScript } from "../shared/zoomfs.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as k from "/Users/jason/.zcode/skills/anatomy/kit/iso-kit.mjs";
@@ -716,7 +717,7 @@ const CSS = `
 `;
 const pageCss = `
 <style>
-${CSS}
+${CSS}${zoomFsCss()}
 .iso, .iso[data-theme="dark"] {
   --fb-tabletop: #26262a;
   --fb-pocket: color-mix(in srgb, var(--fb-tabletop) 55%, black);
@@ -750,7 +751,7 @@ const body =
       { mark: "edge", label: "位域刻度卡=Normal TRB（§6.4.1.1）；段尾接续导轨=Link TRB，TC=1 翻色（§6.4.4.1）" },
     ],
     caption: "传输环是单向食道：软件只管往里压，xHC 只管往前吃；Cycle 色带分辨『空』与『满』。",
-    body: `<div class="iso-stage" tabindex="0" role="group" aria-label="传输环分度台，七帧：空环、冲压三盘、门铃取件、冲压至段尾、Link 回绕翻色、满环警报、消费解锁。点击或按空格步进。">${svg}<span role="status" aria-live="polite" data-status></span></div>`,
+    body: `<div class="iso-stage" tabindex="0" role="group" aria-label="传输环分度台，七帧：空环、冲压三盘、门铃取件、冲压至段尾、Link 回绕翻色、满环警报、消费解锁。点击或按空格步进。">${svg}<span role="status" aria-live="polite" data-status></span></div>` + zoomBarHtml(),
   });
 
 const script =
@@ -758,9 +759,10 @@ const script =
   latheScript +
   geoScript +
   `window.__G = G;\n` +
-  LIVE.replace("__DOCK_POS__", "null");
+  LIVE.replace("__DOCK_POS__", "null") +
+  zoomFsScript({ focus: ['[data-part="cardface"]'] });
 
-const page = k.pageHtml({ title: "Fig2 环形分度轨道：传输环的生产与消费", theme: THEME, body, script, width: 850 });
+const page = k.pageHtml({ title: "Fig2 环形分度轨道：传输环的生产与消费", theme: THEME, body, script, width: 1500 });
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);
 console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `${R.items.length} items`, `scale ${KS.toFixed(3)}`);

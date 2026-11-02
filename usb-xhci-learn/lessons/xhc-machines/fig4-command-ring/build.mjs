@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { zoomBarHtml, zoomFsCss, zoomFsScript } from "../shared/zoomfs.mjs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as k from "/Users/jason/.zcode/skills/anatomy/kit/iso-kit.mjs";
@@ -613,7 +614,7 @@ const body = k.plateHtml({
     { mark: "dim", label: "DCBAA 储物柜（0 号格＝Scratchpad，未分配格＝0）" },
   ],
   caption: "命令环：软件下单、xHC 办结；办结回执走事件环，账本（设备上下文）挂进 DCBAA。",
-  body: `<style>${CSS}</style><div class="iso-stage fx-wrap" tabindex="0" role="group" aria-label="命令环订单柜台：点击步进帧序，空格巡游，左右箭头切帧。">${svg}<span class="fx-sr" role="status" aria-live="polite" data-status></span></div>`,
+  body: `<style>${CSS}${zoomFsCss()}</style><div class="iso-stage fx-wrap" tabindex="0" role="group" aria-label="命令环订单柜台：点击步进帧序，空格巡游，左右箭头切帧。">${svg}<span class="fx-sr" role="status" aria-live="polite" data-status></span></div>` + zoomBarHtml(),
 });
 
 const latheSource = readFileSync("/Users/jason/.zcode/skills/anatomy/kit/lathe.mjs", "utf8")
@@ -622,7 +623,7 @@ const latheSource = readFileSync("/Users/jason/.zcode/skills/anatomy/kit/lathe.m
 const latheScript = `const G = (() => {${latheSource}\nreturn { viewOf, scaleOf, frameAlong, frameOf, pointOf, disc, sphereOf, prismOf, circleOf, arcOf, dot3, add3, sub3, mul3, unit3, cross3, len3, lightOf, toneOf, radialOf };})();\n`;
 const LIVE = readFileSync(join(HERE, "live.js"), "utf8").replace("__DATA__", JSON.stringify(DATA));
 
-const page = k.pageHtml({ title: "Fig4 订单柜台：命令环与它的回执", theme: THEME, body, script: kitScript() + latheScript + LIVE, width: 760 });
+const page = k.pageHtml({ title: "Fig4 订单柜台：命令环与它的回执", theme: THEME, body, script: kitScript() + latheScript + LIVE + zoomFsScript({ focus: ['[data-part="clippage"]', '[data-part="readercard"]'] }), width: 1500 });
 writeFileSync(join(HERE, THEME === "light" ? "index-light.html" : "index.html"), page);
 console.log("wrote", THEME === "light" ? "index-light.html" : "index.html", `${(page.length / 1024).toFixed(0)} KB`, `${R.items.length} items`, `scale ${KS.toFixed(3)}`);
 A.auditOrExit(R, P, {});

@@ -127,3 +127,12 @@
   即 A3＋A2 的位域位置。字段值与位号未变（A1-A12 原样有效）。
 - 门铃铭牌左移 4、栅栏（wicket）右移 20，消除横梁投影压字；dark 下卡面底色
   #1d1d1d/#262626、次级字 #9a9a9e、字号 fx-lbl 2.15/fx-lbl2 1.8——数值判据零变化。
+
+## M. 缩放+全屏轮补充（2026-11-02，机内几何零变更）
+- 页面：页宽 760→1500（fluid）、缩放控件（1×–3.2×）与全屏按钮（⛶ Fullscreen API/webkit/fs-pseudo，
+  键盘 F）接入，实现=shared/zoomfs.mjs 单一来源构建期内联；A–L 既有断言与截图引用全部有效，
+  桌面取景随页宽变化，宽幅以 zoomfs-* 新证据为准。
+- 新证据：shots/zoomfs-wide-dark.png、zoomfs-focal-dark.png（命令托盘入环特写，托盘=聚焦件；
+  readercard 在早期帧为空组不作焦点）、zoomfs-fs-dark.png（真全屏 api 模式）、zoomfs-wide-light.png、
+  zoomfs-fs-light.png、zoomfs-phone-390-dark.png、zoomfs-phone-390-zoom-dark.png。
+- 行为门：shared/verify_zoomfs.mjs PASS（8/8 页：4 档缩放/复位/全屏生效且不小于页内 1×/图例隐藏/退出复位/console 净）。

@@ -14,6 +14,7 @@ import * as G from "/Users/jason/.zcode/skills/anatomy/kit/lathe.mjs";
 import { tubePieces, tubeSvg } from "/Users/jason/.zcode/skills/anatomy/kit/tube.mjs";
 import * as A from "/Users/jason/.zcode/skills/anatomy/kit/audit.mjs";
 import { kitScript } from "/Users/jason/.zcode/skills/anatomy/scripts/inline-kit.mjs";
+import { zoomBarHtml, zoomFsCss, zoomFsScript } from "../shared/zoomfs.mjs";
 import { makeGeo } from "./geometry.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -738,40 +739,8 @@ stage.addEventListener("keydown", (e) => {
   else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
   else if (e.key === "Home") { arm(); playTo(0); }
   else if (e.key === "Escape") { touring = false; run(); }
-  else if (e.key === "+" || e.key === "=") { e.preventDefault(); arm(); setZoom(zoomIx + 1); }
-  else if (e.key === "-" || e.key === "_") { e.preventDefault(); arm(); setZoom(zoomIx - 1); }
-  else if (e.key === "0") { e.preventDefault(); arm(); setZoom(0); }
 });
-// 画面缩放（2026-11-01 可读性轮）：位域卡/寄存器面板的文字在整机能览比例下达不到印刷下限，
-// 提供台面级放大——默认 1× 布局不变，放大后滚动/双指平移。
-const ZOOMS = [1, 1.6, 2.4, 3.2];
-let zoomIx = 0;
-const zoombar = document.querySelector(".iso-zoombar");
-function applyZoom() {
-  svgRoot.style.width = (ZOOMS[zoomIx] * 100) + "%";
-  svgRoot.style.height = "auto";
-  if (zoombar) zoombar.querySelectorAll("button[data-zoom]").forEach((b, i) => b.setAttribute("aria-pressed", String(i === zoomIx)));
-}
-function centerCard() {
-  const face = document.querySelector('[data-part="cardface"]');
-  if (!face) return;
-  const cr = face.getBoundingClientRect(), sr = stage.getBoundingClientRect();
-  const centreX = cr.left - sr.left + stage.scrollLeft + cr.width / 2;
-  stage.scrollLeft = Math.max(0, Math.min(stage.scrollWidth - stage.clientWidth, centreX - stage.clientWidth / 2));
-}
-function setZoom(ix) {
-  const prev = zoomIx;
-  zoomIx = Math.max(0, Math.min(ZOOMS.length - 1, ix));
-  applyZoom();
-  // 放大时自动居中到位域卡（教学热点；每步重居中，末按生效），用户可再拖动
-  if (zoomIx > prev) centerCard();
-}
-if (zoombar) zoombar.addEventListener("click", (e) => {
-  const b = e.target.closest("button[data-zoom]");
-  if (b) { arm(); setZoom(ZOOMS.indexOf(Number(b.dataset.zoom))); }
-});
-applyZoom();
-window.__fig3 = { step, playTo, pause: () => { touring = false; clearTimeout(idleTimer); }, stateOf: () => state, frameOf: () => frame, zoomTo: setZoom, zoomOf: () => ZOOMS[zoomIx] };
+window.__fig3 = { step, playTo, pause: () => { touring = false; clearTimeout(idleTimer); }, stateOf: () => state, frameOf: () => frame, zoomTo: (i) => window.__zfs.setZoom(i), zoomOf: () => window.__zfs.zoomOf() };
 render(state, 0.016);
 `;
 
@@ -824,22 +793,10 @@ const CSS = `
 /* 聚焦框只在键盘可达时显示（不进交付截图） */
 .iso-stage:focus { outline: none; }
 .iso-stage:focus-visible { outline: 1px solid var(--anatomy-muted); outline-offset: 6px; }
-/* 画面缩放（2026-11-01 可读性轮）：1× 布局不变，>1× 出滚动平移 */
-.iso-stage { overflow: auto; scrollbar-width: thin; }
-.iso-stage svg { display: block; }
-.iso-zoombar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.iso-zoombar button { font: 500 12px var(--anatomy-mono, monospace); color: var(--anatomy-muted); background: transparent; border: 1px solid var(--anatomy-line-mid); border-radius: 3px; padding: 2px 10px; cursor: pointer; }
-.iso-zoombar button[aria-pressed="true"] { color: var(--anatomy-text); border-color: var(--anatomy-text); }
-.iso-zoomhint { color: var(--anatomy-muted); font-size: 11px; }
-@media print {
-  .iso-zoombar { display: none; }
-  .iso-stage { overflow: visible; }
-  .iso-stage svg { width: 100% !important; height: auto !important; }
-}
 `;
 const pageCss = `
 <style>
-${CSS}
+${CSS}${zoomFsCss()}
 .iso, .iso[data-theme="dark"] {
   --fb-tabletop: #26262a;
   --fb-pocket: color-mix(in srgb, var(--fb-tabletop) 55%, black);
@@ -875,14 +832,7 @@ const body =
       { mark: "edge", label: "回执卡=Transfer Event 位域（§6.4.2.1）；电磁铃=MSI-X 中断（IMAN IP/IE §5.5.2.1）；EHB 旗=ERDP bit3 RW1C（§5.5.2.3.3）" },
     ],
     caption: "事件环方向反转：xHC 生产、软件消费；ERDP 这根指针反过来握在软件手里。",
-    body: `<div class="iso-stage" tabindex="0" role="group" aria-label="事件环登记机，六帧：空环、xHC 投递回执、MSI-X 敲铃、软件对色取件、ERDP 签收回写、静默。点击或按空格步进。">${svg}<span role="status" aria-live="polite" data-status></span></div>` +
-      `<div class="iso-zoombar" role="toolbar" aria-label="画面缩放：放大后可拖动滚动条平移查看细节">` +
-      `<button type="button" data-zoom="1" aria-pressed="true">1×</button>` +
-      `<button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button>` +
-      `<button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button>` +
-      `<button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button>` +
-      `<span class="iso-zoomhint">放大位域卡 / 寄存器面板 · 放大后拖动滚动条平移（触屏双指）· 键盘 + − 0</span>` +
-      `</div>`,
+    body: `<div class="iso-stage" tabindex="0" role="group" aria-label="事件环登记机，六帧：空环、xHC 投递回执、MSI-X 敲铃、软件对色取件、ERDP 签收回写、静默。点击或按空格步进。">${svg}<span role="status" aria-live="polite" data-status></span></div>` + zoomBarHtml(),
   });
 
 const script =
@@ -891,9 +841,10 @@ const script =
   tubeScript +
   geoScript +
   `window.__G = G;\n` +
-  LIVE;
+  LIVE +
+  zoomFsScript({ focus: ['[data-part="cardface"]'] });
 
-const page = k.pageHtml({ title: "Fig3 回执登记机：事件环的生产与消费", theme: THEME, body, script, width: 980 });
+const page = k.pageHtml({ title: "Fig3 回执登记机：事件环的生产与消费", theme: THEME, body, script, width: 1500 });
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);
 console.log("wrote", name, `${(page.length / 1024).toFixed(0)} KB`, `${R.items.length} items`, `scale ${KS.toFixed(3)}`);
