@@ -1,0 +1,170 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>§4.24 主机控制器管理 · xHCI 规范对照学习</title><style>
+.iso{
+  --anatomy-page:#0b0b0b;--anatomy-card:#131313;--anatomy-text:#a3a3a3;--anatomy-strong:#e6e6e6;--anatomy-muted:#6e6e6e;
+  --anatomy-paper:#131313;--anatomy-face:#1b1b1b;--anatomy-top:#1c1c1c;
+  --anatomy-shade-0:#0f0f0f;--anatomy-shade-1:#121212;--anatomy-shade-2:#151515;--anatomy-shade-3:#181818;
+  --anatomy-lit-top:#262626;--anatomy-lit-shade:#1d1d1d;
+  --anatomy-hi:#d4d4d4;--anatomy-mid:#6a6a6a;--anatomy-lo:#3e3e3e;--anatomy-faint:#2a2a2a;--anatomy-lit:#ffffff;
+  --anatomy-halo:#050505;--anatomy-halo-opacity:.9;--anatomy-dot:#e6e6e6;
+  --anatomy-red:#ff6b6b;--anatomy-green:#6be0a0;--anatomy-blue:#6b9bff;
+  --anatomy-weight:.6px;--anatomy-ease:cubic-bezier(.32,.72,0,1);
+  --anatomy-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff0a,inset 0 0 0 1px #ffffff06,0 0 0 1px #00000026,0 1px 1px -.5px #00000014,0 3px 3px -1.5px #00000014,0 6px 6px -3px #00000014,0 12px 12px -6px #00000014;
+}
+.iso[data-theme="light"]{
+  --anatomy-page:#f2f2ef;--anatomy-card:#fbfbfa;--anatomy-text:#57575a;--anatomy-strong:#18181a;--anatomy-muted:#8c8c90;
+  --anatomy-paper:#fbfbfa;--anatomy-face:#ffffff;--anatomy-top:#ffffff;
+  --anatomy-shade-0:#dcdcd9;--anatomy-shade-1:#e5e5e2;--anatomy-shade-2:#ededea;--anatomy-shade-3:#f4f4f1;
+  --anatomy-lit-top:#ffffff;--anatomy-lit-shade:#eeeeeb;
+  --anatomy-hi:#26262a;--anatomy-mid:#8a8a8f;--anatomy-lo:#b4b4b8;--anatomy-faint:#d4d4d6;--anatomy-lit:#000000;
+  --anatomy-halo:#8a8a80;--anatomy-halo-opacity:.32;--anatomy-dot:#3a3a3e;
+  --anatomy-red:#e5484d;--anatomy-green:#30a46c;--anatomy-blue:#3e63dd;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff,0 0 0 1px #0000000f,0 1px 1px -.5px #0000000a,0 3px 3px -1.5px #0000000a,0 6px 6px -3px #0000000a,0 12px 12px -6px #0000000a;
+}
+.iso-svg{display:block;width:100%;height:auto;overflow:visible}
+.iso-svg path,.iso-svg circle{vector-effect:non-scaling-stroke}
+.iso-fill{fill:var(--anatomy-paper);stroke:none}
+.iso-solid[data-lit]>.iso-fill{fill:var(--anatomy-face)}
+.iso-shade,.iso-top{stroke:none}
+.iso-shade[data-shade="0"]{fill:var(--anatomy-shade-0)}
+.iso-shade[data-shade="1"]{fill:var(--anatomy-shade-1)}
+.iso-shade[data-shade="2"]{fill:var(--anatomy-shade-2)}
+.iso-shade[data-shade="3"]{fill:var(--anatomy-shade-3)}
+.iso-top{fill:var(--anatomy-top)}
+.iso-solid[data-lit]>.iso-top{fill:var(--anatomy-lit-top)}
+.iso-solid[data-lit]>.iso-shade{fill:var(--anatomy-lit-shade)}
+.iso-solid[data-seamless]>.iso-shade,.iso-solid[data-seamless]>.iso-top{stroke-width:.4;stroke-linejoin:round}
+.iso-solid[data-seamless]>.iso-shade[data-shade="0"]{stroke:var(--anatomy-shade-0)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="1"]{stroke:var(--anatomy-shade-1)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="2"]{stroke:var(--anatomy-shade-2)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="3"]{stroke:var(--anatomy-shade-3)}
+.iso-solid[data-seamless]>.iso-top{stroke:var(--anatomy-top)}
+.iso-solid[data-seamless][data-lit]>.iso-top{stroke:var(--anatomy-lit-top)}
+.iso-solid[data-seamless][data-lit]>.iso-shade{stroke:var(--anatomy-lit-shade)}
+.iso-solid[data-lit]>.iso-edge{stroke:var(--anatomy-lit)}
+.iso-halo{fill:var(--anatomy-halo);stroke:none;filter:blur(9px);opacity:var(--anatomy-halo-opacity);transform:translateY(3px)}
+.iso-line{fill:none;stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight);stroke-linecap:round;stroke-linejoin:round}
+.iso-line[data-tone="hi"]{stroke:var(--anatomy-hi)}
+.iso-line[data-tone="mid"]{stroke:var(--anatomy-mid)}
+.iso-line[data-tone="lo"]{stroke:var(--anatomy-lo)}
+.iso-line[data-tone="faint"]{stroke:var(--anatomy-faint)}
+.iso-line[data-tone="lit"]{stroke:var(--anatomy-lit)}
+.iso-line[data-tone="red"]{stroke:var(--anatomy-red)}
+.iso-line[data-tone="green"]{stroke:var(--anatomy-green)}
+.iso-line[data-tone="blue"]{stroke:var(--anatomy-blue)}
+.iso-line[data-dotted]{stroke-dasharray:.01 3.5;stroke-width:1}
+.iso-line[data-dashed]{stroke-dasharray:3 3}
+.iso-line[data-flow]{stroke-dasharray:2 6}
+.iso-wire-end{fill:var(--anatomy-paper);stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight)}
+.iso-wire[data-tone="hi"] .iso-wire-end{stroke:var(--anatomy-hi)}
+.iso-wire[data-tone="mid"] .iso-wire-end{stroke:var(--anatomy-mid)}
+.iso-wire[data-tone="faint"] .iso-wire-end{stroke:var(--anatomy-faint)}
+.iso-wire[data-tone="lit"] .iso-wire-end{stroke:var(--anatomy-lit)}
+.iso-dots circle{fill:var(--anatomy-dot);stroke:none;opacity:.32}
+.iso-dots[data-tone="hi"] circle{opacity:.85}
+.iso-dots[data-tone="mid"] circle{opacity:.45}
+.iso-dots[data-tone="lo"] circle{opacity:.22}
+.iso-dots[data-tone="faint"] circle{opacity:.12}
+.iso-face-text{fill:var(--anatomy-mid);font-family:var(--anatomy-mono);letter-spacing:.04em}
+.iso-face-text[data-tone="hi"]{fill:var(--anatomy-hi)}
+.iso-face-text[data-tone="lo"]{fill:var(--anatomy-lo)}
+.iso-face-text[data-tone="faint"]{fill:var(--anatomy-faint)}
+.tb-body{fill:var(--anatomy-shade-2);stroke:none}
+.tb-shine{fill:var(--anatomy-top);stroke:none}
+.tb-shade{fill:var(--anatomy-shade-0);stroke:none}
+.tb-ring{fill:none;stroke:var(--anatomy-lo);stroke-width:.45;stroke-linecap:butt;stroke-linejoin:round}
+.tb-ring[data-tone="mid"]{stroke:var(--anatomy-mid)}
+.tb-ring[data-tone="faint"]{stroke:var(--anatomy-faint)}
+.tb-ring[data-tone="hi"]{stroke:var(--anatomy-hi)}
+@keyframes iso-flow{to{stroke-dashoffset:-32}}
+@keyframes iso-pulse{0%,100%{opacity:.18}12%{opacity:1}40%{opacity:.18}}
+.iso-line[data-flow]{animation:iso-flow 1600ms linear infinite}
+.iso-dots circle[data-pulse]{animation:iso-pulse 1600ms steps(1,end) infinite;animation-delay:var(--pulse-at,0ms)}
+.iso-figure{margin:32px 0 36px}
+.iso-plate{position:relative;padding:52px 24px;border-radius:0;background:var(--anatomy-card);box-shadow:0 0 0 1px var(--anatomy-mid);--anatomy-paper:var(--anatomy-card)}
+.iso-plate-corners{position:absolute;inset:18px 20px;pointer-events:none}
+.iso-plate-corner{position:absolute;color:var(--anatomy-muted);font-family:var(--anatomy-mono);font-size:10.5px;line-height:1;letter-spacing:.04em;white-space:nowrap}
+.iso-plate-corner[data-corner="fig"]{top:0;left:0;color:var(--anatomy-text)}
+.iso-plate-corner[data-corner="title"]{top:0;right:0;text-transform:uppercase;letter-spacing:.1em}
+.iso-plate-corner[data-corner="hint"]{bottom:0;left:0;text-transform:uppercase;letter-spacing:.1em}
+.iso-plate-corner[data-corner="readout"]{right:0;bottom:0;color:var(--anatomy-text);font-variant-numeric:tabular-nums}
+.iso-plate .iso-svg{margin:0 auto}
+.iso-legend{display:grid;gap:8px;margin-top:12px;color:var(--anatomy-muted);font-size:13px;line-height:1.55}
+.iso-keys{display:flex;flex-wrap:wrap;gap:6px 18px}
+.iso-key{display:inline-flex;align-items:center;gap:7px}
+.iso-swatch{width:16px;height:10px;flex:none;overflow:visible}
+.iso-swatch path{fill:none;stroke:var(--anatomy-hi);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+.iso-swatch[data-mark="raised"] path,.iso-swatch[data-mark="flat"] path{stroke:var(--anatomy-mid)}
+.iso-swatch[data-mark="lit"] path{stroke:var(--anatomy-lit)}
+.iso-swatch[data-mark="dim"] path{stroke:var(--anatomy-lo)}
+.iso-swatch[data-mark="dotted"] path{stroke-dasharray:.01 3;stroke-width:1.4}
+.iso-swatch[data-mark="dashed"] path{stroke-dasharray:3 2.5}
+.iso-swatch[data-mark="red"] path{stroke:var(--anatomy-red)}
+.iso-swatch[data-mark="green"] path{stroke:var(--anatomy-green)}
+.iso-swatch[data-mark="blue"] path{stroke:var(--anatomy-blue)}
+.iso-swatch-crease{stroke:var(--anatomy-lo)!important}
+@media (max-width:560px){.iso-plate{padding:48px 12px 70px}.iso-plate-corner[data-corner="hint"]{bottom:18px}}
+@media (prefers-reduced-motion:reduce){.iso-line[data-flow],.iso-dots circle[data-pulse]{animation:none}}
+
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body[data-theme="light"]{color-scheme:light}
+body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.iso-page{width:min(1500px,100% - 32px);margin:64px auto 96px}
+</style></head><body class="iso" data-theme="dark"><main class="iso-page"><style>
+:root { --font-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif; --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.xsp-nav { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 4px 0 2px; font-family: var(--font-ui); font-size: 14px; color: var(--anatomy-muted); }
+.xsp-nav .ttl { font-size: 20px; font-weight: 700; color: var(--anatomy-text); }
+.xsp-nav a { color: var(--anatomy-link, #9cc3e0); text-decoration: none; } .xsp-nav a:hover { text-decoration: underline; }
+.xsp-specref { font-family: var(--font-mono); font-size: 12.5px; color: var(--anatomy-muted); margin: 0 0 14px; }
+.xsp-card { background: var(--anatomy-paper, #171f2a); border: 1px solid var(--anatomy-line-mid, #2a3444); border-radius: 8px; padding: 16px 22px; margin: 14px 0; }
+.xsp-card h2 { font-family: var(--font-ui); font-size: 18px; margin: 2px 0 8px; color: var(--anatomy-text); }
+.xsp-card p { margin: 8px 0; line-height: 1.95; color: var(--anatomy-text); font-size: 16.5px; }
+.xsp-card p b { color: var(--anatomy-text); }
+.xsp-card table.xsp-tb { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-family: var(--font-ui); }
+.xsp-card table.xsp-tb th { font-size: 14px; color: var(--anatomy-muted); text-align: left; border-bottom: 1.5px solid var(--anatomy-line-mid, #456); padding: 5px 8px; }
+.xsp-card table.xsp-tb td { font-size: 15px; color: var(--anatomy-text); border-bottom: 1px dashed var(--anatomy-line-lo, #334); padding: 6px 8px; vertical-align: top; }
+.xsp-card table.xsp-tb td.mono { font-family: var(--font-mono); font-size: 13px; }
+.xsp-card li { color: var(--anatomy-text); font-size: 16px; line-height: 1.9; margin: 4px 0 4px 18px; }
+.xsp-q { margin: 12px 0; padding: 10px 16px; border-left: 3px solid var(--anatomy-line-hi, #556); }
+.xsp-q .en { font-family: var(--font-ui); font-style: italic; color: var(--anatomy-muted); font-size: 14.5px; line-height: 1.8; }
+.xsp-q .zh { color: var(--anatomy-text); font-size: 15.5px; margin-top: 4px; }
+.xsp-q .src { font-family: var(--font-mono); font-size: 12px; color: var(--anatomy-muted); }
+.xsp-foot { font-family: var(--font-ui); font-size: 13px; color: var(--anatomy-muted); margin-top: 18px; }
+</style>
+<div class="xsp-nav">
+  <a href="../../index.html">← 规范目录</a>
+  <span class="ttl">§4.24 主机控制器管理</span>
+  
+  
+</div>
+<p class="xsp-specref">xHCI 1.2b §4.24 Host Controller Management · p327–331 · HSE 详见 §4.10.2.6</p><div class="xsp-card"><h2>规范要义</h2>
+<p>主机控制器管理管两件事：<b>内部错误</b>（4.24.1）与<b>端口到连接器的映射</b>（4.24.2）。前者是 xHC 自身故障的处理协议——<b>HCE</b> 置 1 后 xHC 停止一切活动，软件的响应是 HCRST 复位并重新初始化；后者保证「用户插的口」和「软件看到的根集线器端口」之间的对应关系可管理、可描述。</p>
+<p>错误分两路上报：<b>HCE</b> 只报「只影响 xHC 自身」的内部错误（例：访问内部数据结构的 SRAM 奇偶错）；影响整个系统的错误走 <b>HSE</b>（Host System Error，§4.10.2.6）。硬错误会在重新初始化后立刻再次置 HCE——软件要有启发式判断，别让 xHC 永远陷在「错误-复位-初始化」循环里，要报告给用户。</p></div><div class="xsp-card"><h2>原文对照</h2>
+<div class="xsp-q"><div class="en">“When the HCE flag is set to ‘1’ the xHC shall cease all activity. Software response to the assertion of HCE is to reset the xHC (HCRST = ‘1’) and reinitialize it.”</div>
+<div class="zh">HCE=1 即全面停车；软件的处置只有一个：HCRST 复位重来。</div><div class="src">xHCI 1.2b §4.24.1 p327</div></div><div class="xsp-q"><div class="en">“However a hard error shall cause the xHC to reassert HCE immediately after it is reinitialized.”</div>
+<div class="zh">硬错误的判据：重新初始化后 HCE 立刻再亮——这种循环要被软件打断并上报。</div><div class="src">xHCI 1.2b §4.24.1 p327</div></div><div class="xsp-q"><div class="en">“There shall be a 1:1 mapping between xHC Root Hub ports and xHC External Ports, where the Root Hub port 1 shall map to External Port 1, Root Hub port 2 shall map to External Port 2, and so on.”</div>
+<div class="zh">无集成集线器时：根集线器端口与外部端口一一对应，编号从 1 对齐。</div><div class="src">xHCI 1.2b §4.24.2.1 p328</div></div><div class="xsp-q"><div class="en">“External Ports 1 and n+1 shall map to USB connector 1 to form a USB3 compatible port”</div>
+<div class="zh">默认映射：USB2 第 1 口与 USB3 第 1 口合体为 1 号连接器——一只 USB3 口背后是两套协议端口。</div><div class="src">xHCI 1.2b §4.24.2.2 p329</div></div></div><div class="xsp-card"><h2>4.24.1 内部错误：HCE 的处置协议</h2>
+<table class="xsp-tb">
+<tr><th>项</th><th>规范规定</th><th>页</th></tr>
+<tr><td>HCE 置 1 后</td><td>xHC 停止<b>一切</b>活动</td><td class="mono">p327</td></tr>
+<tr><td>软件响应</td><td>HCRST=1 复位 → 重新初始化</td><td class="mono">p327</td></tr>
+<tr><td>排查建议</td><td>xHC 无响应时软件应主动查 HCE 标志</td><td class="mono">p327</td></tr>
+<tr><td>软错误例</td><td>SRAM 奇偶错（复位后可恢复）</td><td class="mono">p327 Note</td></tr>
+<tr><td>硬错误判据</td><td>重初始化后 HCE 立即再亮 → 软件启发式打断「错误-复位-初始化」循环并上报用户</td><td class="mono">p327 Note</td></tr>
+<tr><td>系统级错误</td><td>走 <b>HSE</b>（不是 HCE）——§4.10.2.6</td><td class="mono">p327 Note</td></tr>
+</table></div>
+<div class="xsp-card"><h2>4.24.2 端口到连接器映射：三形态与默认规则</h2>
+<table class="xsp-tb">
+<tr><th>形态</th><th>规则要点</th><th>页</th></tr>
+<tr><td><b>无集成集线器</b><br>（IHI=0）</td><td>根集线器端口 ↔ 外部端口 <b>1:1</b>，编号对齐（引文③）；协议一致（§7.2 Supported Protocol Capabilities）</td><td class="mono">p328</td></tr>
+<tr><td><b>有集成集线器</b><br>（IHI=1，USB2 侧）</td><td>根端口与外部端口间至多<b>一层</b>集成集线器；USB2/Enhanced SS 层级错位只允许「USB2 在 Tier 2、USB3 在 Tier 1」一种；同协议外部端口连续编号（1..n=USB2，n+1..n+m=USB3）；厂商必须提供映射描述（Appendix D 的 ACPI 例）</td><td class="mono">p327–328</td></tr>
+<tr><td><b>嵌入式集线器</b><br>（系统侧）</td><td>外部端口到连接器<b>不允许</b>层级错位；系统必须经 ACPI 等提供五级映射描述（根端口/集成集线器/外部端口/嵌入式集线器/连接器）</td><td class="mono">p329</td></tr>
+<tr><td><b>无描述时的默认映射</b></td><td>外部端口 1 与 n+1 → 连接器 1（USB3 兼容口），2 与 n+2 → 连接器 2……（引文④）；多出的归 USB2 或 USB3 兼容口</td><td class="mono">p329</td></tr>
+</table>
+<p>USB3 集线器=USB2 集线器与 Enhanced SuperSpeed 集线器的逻辑合体，各自独立总线运行（p328）。</p></div>
+<div class="xsp-card"><h2>相关</h2>
+<p><a href="../4.21-pci-express/index.html">§4.21 PCI Express</a>——HCRST 恢复路径的入口场景（跑着清 BME）；<a href="../../index.html">§4.10.2.6 主机控制器错误（待建）</a>——HSE 的上报与系统影响。</p>
+<p><a href="../../index.html">§4.19 根集线器（待建）</a>——端口状态机细节；Appendix D——ACPI 映射描述示例。</p></div>
+<p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.24 p327–331 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main></body></html>

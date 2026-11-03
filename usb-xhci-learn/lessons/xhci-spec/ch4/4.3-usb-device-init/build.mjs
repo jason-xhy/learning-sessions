@@ -20,7 +20,10 @@
 //  门铃钮×2+簧、表格卡字段、读数窗文字、输出上下文卡飞行、描述符卡×2、TRB 小卡、待接垂缆。
 // 判据：xHCI 1.2b §4.3 p71–80（字段值/页码全部现场核对，见 EVIDENCE.md）。
 // 演示样例：FS 设备插 USB2 根端口 1；Slot ID=1 与新地址 1 为示例值（xHC 自选，§4.3.2 p75/§4.6.5 p97）。
+// 走读卡（CODE-STEPPER 步 5，2026-11-04）：render_block 渲染 stepper_43x.json + codestepper/course.css
+//   走读段内联——渲染单一事实源=scripts/stepper_builder.py，行号零誊抄（锚点断言门）。
 
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { zoomBarHtml, zoomFsCss, zoomFsScript } from "../../shared/zoomfs.mjs";
 import { dirname, join } from "node:path";
@@ -32,7 +35,24 @@ import { tubePieces, tubeSvg } from "/Users/jason/.zcode/skills/anatomy/kit/tube
 import { kitScript } from "/Users/jason/.zcode/skills/anatomy/scripts/inline-kit.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const WS = "/Users/jason/ZCodeProject/usb-xhci-study";
 const THEME = process.argv.includes("--light") ? "light" : "dark";
+
+// ---------- 代码走读卡（rings3 四区：命令环/EP0 传输环/事件环/设备端；CODE-STEPPER 步 5） ----------
+const stepperHtml = execFileSync("python3", [
+  join(WS, "scripts/stepper_builder.py"), "render_block",
+  join(WS, "lessons-data/stepper_43x.json"),
+], { encoding: "utf8" });
+const courseCss = readFileSync(join(WS, "assets/course.css"), "utf8");
+const cssSeg = (a, b) => {
+  const i = courseCss.indexOf(a);
+  const j = courseCss.indexOf(b, i);
+  if (i < 0 || j < 0) throw new Error(`course.css 段标记缺失: ${a.slice(0, 30)}`);
+  return courseCss.slice(i, j);
+};
+const stepperCss = cssSeg("/* ===== 代码步进放映机", "/* ===== 右缘批注")
+  .replace(/\/\*[\s\S]*?\*\//g, "");  // 剥段内注释：资产注释不进交付件（载体三分），兼减字节
+const stepperJs = readFileSync(join(WS, "assets/codestepper.js"), "utf8");
 
 const W = 920;
 const H = 640;
@@ -333,7 +353,7 @@ const CONS = { x: -40, y: -50, w: 132, d: 80, r: 4 };
       walls.push({ tone: G.toneOf(normal, P), d: path3([A2, B2, [B2[0], B2[1] - 1.6, B2[2]], [A2[0], A2[1] - 1.6, A2[2]]], true) });
     }
     const cap0 = { tone: G.toneOf([0, 0, 1], P), d: path3([quad[3], quad[2], [quad[2][0], quad[2][1] - 1.6, quad[2][2]], [quad[3][0], quad[3][1] - 1.6, quad[3][2]]], true) };
-    const cap1 = { tone: G.toneOf([0, 0, -1], P), d: path3([quad[0], quad[1], [quad[1][0], quad[1][1] - 1.6, quad[1][2]], [quad[0], quad[1][1] - 1.6, quad[1][2]]], true) };
+    const cap1 = { tone: G.toneOf([0, 0, -1], P), d: path3([quad[0], quad[1], [quad[1][0], quad[1][1] - 1.6, quad[1][2]], [quad[0][0], quad[0][1] - 1.6, quad[0][2]]], true) };
     // 灯窗实体与灯名刻字分拆两件（层序里先全体实体、后全体刻字——斜投影 bbox 不再互盖）
     put(`portsc.${fl}`, [(x0 + x1) / 2, F, (z0 + z1) / 2],
       walls.map((w) => `<path class="iso-shade" data-shade="${w.tone === 4 ? 3 : w.tone}" d="${w.d}"/>`).join("") +
@@ -359,7 +379,7 @@ const CONS = { x: -40, y: -50, w: 132, d: 80, r: 4 };
       walls.push({ tone: G.toneOf(normal, P), d: path3([A2, B2, [B2[0], B2[1] - 1.4, B2[2]], [A2[0], A2[1] - 1.4, A2[2]]], true) });
     }
     const cap0 = { tone: G.toneOf([0, 0, 1], P), d: path3([quad[3], quad[2], [quad[2][0], quad[2][1] - 1.4, quad[2][2]], [quad[3][0], quad[3][1] - 1.4, quad[3][2]]], true) };
-    const cap1 = { tone: G.toneOf([0, 0, -1], P), d: path3([quad[0], quad[1], [quad[1][0], quad[1][1] - 1.4, quad[1][2]], [quad[0], quad[1][1] - 1.4, quad[1][2]]], true) };
+    const cap1 = { tone: G.toneOf([0, 0, -1], P), d: path3([quad[0], quad[1], [quad[1][0], quad[1][1] - 1.4, quad[1][2]], [quad[0][0], quad[0][1] - 1.4, quad[0][2]]], true) };
     put(name, [(x0 + x1) / 2, F, (z0 + z1) / 2],
       walls.map((w) => `<path class="iso-shade" data-shade="${w.tone === 4 ? 3 : w.tone}" d="${w.d}"/>`).join("") +
       `<path class="iso-shade" data-shade="${cap0.tone === 4 ? 3 : cap0.tone}" d="${cap0.d}"/>` +
@@ -833,12 +853,32 @@ const linksHtml = `
 <p><a href="../../../xhc-machines/fig1-assembly/index.html">四机课 Fig1 总装流水线</a>——TRB 装配机器（Setup/Data/Status 三段控制传输的位域卡）；<a href="../../../xhc-machines/fig4-command-ring/index.html">Fig4 命令环机器</a>——命令环与命令完成事件（§4.6.1）；<a href="../../../xhc-machines/fig2-transfer-ring/index.html">Fig2 传输环分度台</a>——EP0 传输环的生产与消费。</p>
 <p><a href="../4.1-command-operation/index.html">§4.1 命令操作</a>——命令模型（命令环 + 门铃 0 + 命令完成事件）；<a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——R/S=1 后端口开始上报连接，本节从此接手；<a href="../../../0009-xhc-transfer-drama.html">0009 传输三视角课</a>——控制传输三段的包序视角。§4.4 设备移除（待建）。</p></div>`;
 
-const machineBody = `<div class="iso-stage xhp-stage" tabindex="0" role="group" aria-label="设备登记流水线动画，十二帧：从端口等待到配置完工。空格或右箭头步进，数字键直选帧。">${machineSvg}<span class="xhp-sr" role="status" aria-live="polite" data-status></span></div>` + zoomBarHtml("放大看 PORTSC 读数板 / 表格卡 / 票据 · 放大后拖动平移（触屏双指）· 全屏后滚轮上下看 · 键盘 + − 0 F");
+const machineCtlHtml = `<div class="fig-ctl" role="toolbar" aria-label="动画控制条">
+  <button type="button" data-act="prev">◀ 上一帧</button>
+  <button type="button" data-act="next">下一帧 ▶</button>
+  <button type="button" data-act="tour" aria-pressed="false">自动巡游</button>
+  <button type="button" data-act="reset">⟲ 复位</button>
+  <span class="fig-ctl-hint">键盘：空格/点击步进 · ← → 换帧 · 0-9 直选 · R 复位 · A 巡游</span>
+</div>`;
+const machineBody = `<div class="iso-stage xhp-stage" tabindex="0" role="group" aria-label="设备登记流水线动画，十二帧：从端口等待到配置完工。空格或右箭头步进，数字键直选帧。">${machineSvg}<span class="xhp-sr" role="status" aria-live="polite" data-status></span></div>` + machineCtlHtml + zoomBarHtml("放大看 PORTSC 读数板 / 表格卡 / 票据 · 放大后拖动平移（触屏双指）· 全屏后滚轮上下看 · 键盘 + − 0 F");
 
 const body =
   `<style>${CSS}${zoomFsCss()}
 .xfp-numbg { fill: var(--anatomy-shade-2); stroke: var(--anatomy-mid); stroke-width: 1.2; }
 .xfp-notebox { fill: var(--xhp-note-bg); stroke: var(--anatomy-mid); stroke-dasharray: 5 4; stroke-width: 1.4; }
+.fig-ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 6px 2px; }
+.fig-ctl button { font: 500 13px var(--anatomy-ui, system-ui, sans-serif); color: var(--anatomy-muted); background: transparent; border: 1px solid var(--anatomy-line-mid, #456); border-radius: 4px; padding: 4px 12px; cursor: pointer; }
+.fig-ctl button[aria-pressed="true"] { color: var(--anatomy-text); border-color: var(--anatomy-text); }
+.fig-ctl button:hover { border-color: var(--anatomy-text); }
+.fig-ctl .fig-ctl-hint { color: var(--anatomy-muted); font: 500 12px var(--anatomy-mono, monospace); }
+@media print { .fig-ctl { display: none; } }
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+${stepperCss}
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--anatomy-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--anatomy-ui, system-ui, sans-serif); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
 </style>` +
   navHtml + proseHtml + quotesHtml + notesHtml +
   k.plateHtml({
@@ -853,7 +893,7 @@ const body =
   k.plateHtml({
     fig: "§4.3 · 动画",
     title: "设备登记流水线 · 一台 FS 设备的三方登记全程",
-    hint: "空格/→ 步进 · ← 回退 · 0-9 直选帧 · Q/W 选 F10/F11 · R 复位 · A 自动",
+    hint: "控制条步进/巡游 · 空格/→ 步进 · ← 回退 · 0-9 直选帧 · Q/W 选 F10/F11 · R 复位 · A 自动",
     readout: "设备 未接 · 槽 — · PLS — · 事件 0",
     keys: [
       { mark: "lit", label: "当前动作部件：命令单 / 票据 / 事件卡 / 门铃钮" },
@@ -863,7 +903,9 @@ const body =
     ],
     caption: "演示样例：FS 设备插入 USB2 根端口 1。Slot ID=1 与新地址 1 为示例值（均由 xHC 自选）；主线 BSR=0；8 字节描述符读取仅 FS 必走；到 Configured 需 Configure Endpoint 与 SET_CONFIGURATION 双操作同成。",
     body: machineBody,
-  }) +
+  }) + `
+<p class="xsp-walknote">同一条编址主线在真实内核代码里的样子——从 USB 核心 hub_set_address 起步，逐语句走进 xhci_setup_device 的输入上下文填格与 Address Device 投递，再到 xHC 执行、SET_ADDRESS 上总线、中断侧消费；右列四区随每帧演进。语义与上方机器 F5（槽初始化）→F6（编址）对表。TD 计数口径：规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记——本链不涉传输 TD，EP0 环唯一的写入是初始化期的 Link TRB；EP0 Max Packet Size 的内核值与规范值差异在帧注记里登记。</p>
+` + stepperHtml +
   linksHtml + `
 <p class="d3-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.3 p71–80 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-03</p>`;
 
@@ -873,7 +915,7 @@ const zfsMach = zoomFsScript({ focus: ['[data-name="portsc.board"]'] })
   .replace('document.querySelector(".iso-stage")', 'document.querySelectorAll(".iso-stage")[1]')
   .replace('document.querySelector(".iso-zoombar")', 'document.querySelectorAll(".iso-zoombar")[1]');
 
-const script = kitScript() + LIVE + zfsFlow + zfsMach;
+const script = kitScript() + stepperJs + LIVE + zfsFlow + zfsMach;
 const page = k.pageHtml({ title: "§4.3 USB 设备初始化 · xHCI 规范对照学习", theme: THEME, body, script, width: 1500 });
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);

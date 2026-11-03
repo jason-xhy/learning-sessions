@@ -1,5 +1,8 @@
-// §4.2 主机控制器初始化——anatomy Figure「启机配电台」+ 整页
+// §4.2 主机控制器初始化——anatomy Figure「启机配电台」+ 整页 + 代码走读卡
 // 判据：xHCI 1.2b（625472）§4.2 p68–70；画面断言逐条见 EVIDENCE.md
+// 走读卡（CODE-STEPPER 步 4 同款，2026-11-04）：render_block 渲染 + codestepper/course.css
+//   走读段内联——渲染单一事实源=scripts/stepper_builder.py，行号零誊抄（锚点断言门）。
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { zoomBarHtml, zoomFsCss, zoomFsScript } from "../../shared/zoomfs.mjs";
 import { dirname, join } from "node:path";
@@ -13,6 +16,23 @@ import { makeLiveGeo } from "./geometry-live.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const THEME = process.argv.includes("--light") ? "light" : "dark";
+
+// ---------- 代码走读卡（rings3 四区：命令环/EP0/事件环/设备端） ----------
+const WS = "/Users/jason/ZCodeProject/usb-xhci-study";
+const stepperHtml = execFileSync("python3", [
+  join(WS, "scripts/stepper_builder.py"), "render_block",
+  join(WS, "lessons-data/stepper_42x.json"),
+], { encoding: "utf8" });
+const courseCss = readFileSync(join(WS, "assets/course.css"), "utf8");
+const cssSeg = (a, b) => {
+  const i = courseCss.indexOf(a);
+  const j = courseCss.indexOf(b, i);
+  if (i < 0 || j < 0) throw new Error(`course.css 段标记缺失: ${a.slice(0, 30)}`);
+  return courseCss.slice(i, j);
+};
+const stepperCss = cssSeg("/* ===== 代码步进放映机", "/* ===== 右缘批注")
+  .replace(/\/\*[\s\S]*?\*\//g, "");  // 剥段内注释：资产注释不进交付件（载体三分），兼减字节
+const stepperJs = readFileSync(join(WS, "assets/codestepper.js"), "utf8");
 
 // ================= camera =================
 const W = 800, H = 560, AZ = 45, EL = 30;
@@ -643,10 +663,18 @@ const laneCard = k.plateHtml({
   body: `<div class="iso-stage" tabindex="0" role="group" aria-label="§4.2 初始化三方泳道流程图，可放大平移。">${laneSvg()}<span role="status" aria-live="polite" data-status></span></div>` + zoomBarHtml("放大看框内文字 · 全屏后滚轮浏览"),
 });
 
+const machineCtlHtml = `<div class="fig-ctl" role="toolbar" aria-label="动画控制条">
+  <button type="button" data-act="prev">◀ 上一帧</button>
+  <button type="button" data-act="next">下一帧 ▶</button>
+  <button type="button" data-act="tour" aria-pressed="false">自动巡游</button>
+  <button type="button" data-act="reset">⟲ 复位</button>
+  <span class="fig-ctl-hint">键盘：空格/点击步进 · ← → 换帧 · Home 回全景 · A 巡游</span>
+</div>`;
+
 const figCard = k.plateHtml({
   fig: "§4.2 动画",
   title: "启机配电台：主机控制器初始化",
-  hint: "点击或空格步进 · ← → 换帧 · Home 回全景 · A 巡游",
+  hint: "控制条步进/巡游 · 点击或空格步进 · ← → 换帧 · Home 回全景 · A 巡游",
   readout: "启动步 0/7 · CNR 0 · R/S 0 · 端口活动 0/4",
   keys: [
     { mark: "lit", label: "滑车吊运的寄存器卡＝驱动写入的配置：DCBAAP/CRCR/事件环段/ERDP/ERSTBA/MSI-X 表（p69–70）" },
@@ -654,14 +682,14 @@ const figCard = k.plateHtml({
     { mark: "edge", label: "R/S 总闸合上＝USBCMD R/S=1：xHC 开始接受门铃，端口灯排苏醒（p70）" },
   ],
   caption: "配电台的铁律：CNR 灯不灭手不动；中间各步顺序自由、终点唯一——R/S 总闸最后合。",
-  body: `<div class="iso-stage" tabindex="0" role="group" aria-label="启机配电台，八帧：全景、等 CNR 清零、配槽与 DCBAA、命令环起点、事件环登记、中断链、合闸、读数巡回。点击或空格步进。">${svg}<span role="status" aria-live="polite" data-status></span></div>` + zoomBarHtml(),
+  body: `<div class="iso-stage" tabindex="0" role="group" aria-label="启机配电台，八帧：全景、等 CNR 清零、配槽与 DCBAA、命令环起点、事件环登记、中断链、合闸、读数巡回。点击或空格步进。">${svg}<span role="status" aria-live="polite" data-status></span></div>` + machineCtlHtml + zoomBarHtml(),
 });
 
 const linksHtml = `
 <section class="spec-block">
   <h2>相关</h2>
   <ul class="links">
-    <li><a href="../../index.html">§4.3 USB 设备初始化</a>——R/S=1 后端口上报连接，设备登记从那里开始（建设中）</li>
+    <li><a href="../4.3-usb-device-init/index.html">§4.3 USB 设备初始化</a>——R/S=1 后端口上报连接，设备登记从那里开始</li>
     <li><a href="../../../xhc-machines/fig3-event-ring/index.html">Fig3 回执登记机</a>——事件环的生产与消费（本节装配的正是它的段表与指针）</li>
     <li><a href="../../../xhc-machines/fig4-command-ring/index.html">Fig4 订单柜台</a>——命令环与它的回执（本节的 CRCR 给它定起点）</li>
     <li><a href="../../index.html">§4.7 门铃</a>——R/S=1 后 xHC 才开始接受的门铃（待建）</li>
@@ -692,9 +720,25 @@ ul.links li { padding: 7px 0; border-bottom: 1px dashed var(--anatomy-line-lo); 
 ul.links a { color: var(--anatomy-text); font-size: 16px; text-decoration: underline; text-underline-offset: 3px; }
 ul.links li { color: var(--anatomy-muted); font-size: 15px; }
 .spec-foot { color: var(--anatomy-muted); font: 500 13px var(--anatomy-mono, monospace); padding: 22px 6px 30px; }
+.fig-ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 6px 2px; }
+.fig-ctl button { font: 500 13px var(--anatomy-ui, system-ui, sans-serif); color: var(--anatomy-muted); background: transparent; border: 1px solid var(--anatomy-line-mid, #456); border-radius: 4px; padding: 4px 12px; cursor: pointer; }
+.fig-ctl button[aria-pressed="true"] { color: var(--anatomy-text); border-color: var(--anatomy-text); }
+.fig-ctl button:hover { border-color: var(--anatomy-text); }
+.fig-ctl .fig-ctl-hint { color: var(--anatomy-muted); font: 500 12px var(--anatomy-mono, monospace); }
+@media print { .fig-ctl { display: none; } }
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+${stepperCss}
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--anatomy-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--anatomy-ui, system-ui, sans-serif); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 6px 0; }
 </style>`;
 
-const body = pageCss + navHtml + proseHtml + quoteHtml + `<div class="lane-wrap">` + laneCard + `</div>` + `<div class="fig-wrap">` + figCard + `</div>` + linksHtml + footerHtml;
+const walkNoteHtml = `
+<p class="xsp-walknote">上面这台启机配电台的每一步，在真实内核代码里是一条怎样的调用链——下面按函数调用逐语句走读（左列代码＝基线 62f4c998b297 原文直读；右列三环全程空环、寄存器窗逐项落值；注记里的 F1–F7 与机器页帧号对表，顺序自由组的代码顺序与机器归组不同属规范允许，见帧注记）：</p>
+`;
+const body = pageCss + navHtml + proseHtml + quoteHtml + `<div class="lane-wrap">` + laneCard + `</div>` + `<div class="fig-wrap">` + figCard + `</div>` + walkNoteHtml + stepperHtml + linksHtml + footerHtml;
 
 // zoomfs：两实例 scoped（第二实例不覆盖 window.__zfs）
 const zoomFor = (ix, focus, winName) => zoomFsScript({ focus })
@@ -709,7 +753,7 @@ const latheSource = readFileSync("/Users/jason/.zcode/skills/anatomy/kit/lathe.m
   .replace(/^export /gm, "");
 const latheScript = `const G = (() => {${latheSource}\nreturn { viewOf, scaleOf, frameAlong, frameOf, pointOf, disc, sphereOf, prismOf, circleOf, arcOf, ribsOf, dot3, add3, sub3, mul3, unit3, cross3, len3 };})();\n`;
 const live = readFileSync(join(HERE, "live.mjs"), "utf8").replace("__DATA__", JSON.stringify(DATA));
-const script = kitScript() + latheScript + geoScript + live
+const script = kitScript() + stepperJs + latheScript + geoScript + live
   + zoomFor(0, ["#grp-free-anchor"], "__zfsLane")
   + zoomFor(1, ['[data-name="cage.rail1"]', '[data-name="panel.face"]'], "__zfs");
 

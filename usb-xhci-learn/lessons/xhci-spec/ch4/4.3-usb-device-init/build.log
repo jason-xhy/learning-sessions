@@ -303,3 +303,141 @@ PASS F11@p0.5
 frames-truth: 18/18 PASS
 --- zoomfs 存活机检 ---
 eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"

@@ -534,8 +534,14 @@ function setFrame(f, pp = 0) {
   draw(computeState(frame, p));
   statusEl.textContent = FRAME_NAMES[frame];
 }
-function next() { setFrame((frame + 1) % 12, 0); mode = still.matches ? "hold" : "play"; arm(); run(); }
-function prev() { setFrame((frame + 11) % 12, 1); mode = "hold"; arm(); run(); }
+function next() { setFrame((frame + 1) % 12, 0); mode = still.matches ? "hold" : "play"; arm(); run(); syncModeBtn(); }
+function prev() { setFrame((frame + 11) % 12, 1); mode = "hold"; arm(); run(); syncModeBtn(); }
+// 控制条状态同步（巡游钮 aria-pressed 跟随 mode；懒查询避开初始化次序）
+function syncModeBtn() {
+  const box = stage.closest(".iso-figure");
+  const btn = box && box.querySelector('.fig-ctl [data-act="tour"]');
+  if (btn) btn.setAttribute("aria-pressed", String(mode === "tour"));
+}
 
 function tick(now) {
   const dt = last ? Math.min((now - last) / 1000, 1 / 30) : 1 / 60;
@@ -544,7 +550,7 @@ function tick(now) {
     p += dt / DUR[frame];
     if (p >= 1) {
       if (mode === "tour") { frame = (frame + 1) % 12; p = 0; statusEl.textContent = FRAME_NAMES[frame]; }
-      else { p = 1; mode = "hold"; }
+      else { p = 1; mode = "hold"; syncModeBtn(); }
     }
   }
   draw(computeState(frame, p));
@@ -560,12 +566,25 @@ stage.addEventListener("pointerdown", () => { next(); });
 stage.addEventListener("keydown", (e) => {
   if (e.key === " " || e.key === "ArrowRight") { e.preventDefault(); next(); }
   else if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
-  else if (/^[0-9]$/.test(e.key)) { setFrame(Number(e.key)); mode = still.matches ? "hold" : "play"; arm(); run(); }
-  else if (e.key === "q" || e.key === "Q") { setFrame(10); mode = "play"; arm(); run(); }
-  else if (e.key === "w" || e.key === "W") { setFrame(11); mode = "play"; arm(); run(); }
-  else if (e.key === "r" || e.key === "R") { setFrame(0); mode = "hold"; arm(); run(); }
-  else if (e.key === "a" || e.key === "A") { mode = still.matches ? "hold" : "tour"; p = 0; run(); }
+  else if (/^[0-9]$/.test(e.key)) { setFrame(Number(e.key)); mode = still.matches ? "hold" : "play"; arm(); run(); syncModeBtn(); }
+  else if (e.key === "q" || e.key === "Q") { setFrame(10); mode = "play"; arm(); run(); syncModeBtn(); }
+  else if (e.key === "w" || e.key === "W") { setFrame(11); mode = "play"; arm(); run(); syncModeBtn(); }
+  else if (e.key === "r" || e.key === "R") { setFrame(0); mode = "hold"; arm(); run(); syncModeBtn(); }
+  else if (e.key === "a" || e.key === "A") { mode = still.matches ? "hold" : "tour"; p = 0; run(); syncModeBtn(); }
 });
+// 控制条（2026-11-03 用户裁定：与 4.1 同等提供步进按钮）——键盘行为全部保留
+const ctlBox = stage.closest(".iso-figure").querySelector(".fig-ctl");
+if (ctlBox) ctlBox.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === "next") next();
+  else if (act === "prev") prev();
+  else if (act === "reset") { setFrame(0); mode = "hold"; arm(); run(); }
+  else if (act === "tour") { mode = (mode === "tour" || still.matches) ? "hold" : "tour"; p = 0; run(); }
+  syncModeBtn();
+});
+syncModeBtn();
 document.addEventListener("visibilitychange", () => { if (!document.hidden) run(); });
 
 window.__fig43 = {

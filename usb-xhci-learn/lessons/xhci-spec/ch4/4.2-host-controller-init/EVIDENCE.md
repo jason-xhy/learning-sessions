@@ -270,3 +270,100 @@ audit passed ×2（111 items 不变，extra markup 不入审计）· line ends 0
 新增工作脚本：steps-playto.json / steps-deskrect.json / steps-linebox.json / steps-lineprobe.json（drive 用例，随目录走）。
 
 
+
+## §12 步进按钮轮（2026-11-03 深夜，用户问题①：机器动画补控制条）
+
+改动面：build.mjs（pageCss +12 行 .fig-ctl 段；figCard body 插 machineCtlHtml + hint 一句）、
+live.mjs（syncTourBtn + 控制条接线 24 行；键盘行为全部保留）、互链卡 §4.3 链接错目标修复
+（../../index.html → ../4.3-usb-device-init/index.html，§4.3 已建成不应指目录页；§4.7 待建仍指目录页）。
+机器几何/SVG/帧序/durs 零改动。
+
+门复跑（重建后）：audit passed ×2（dark/light）；lines.mjs line ends: 0 ×2（注：lines.mjs
+当日升级 unparseable-d 检查版，输出形态 "0 of 0 ends on 0 lines float"，对昨晚已过门件同形=PASS 形态）；
+遮挡探针 OCCLUSION-PASS ×2；checks.py 全 PASS exit=0（自包含/互链/页码 18/18/wiring×5）；
+语言门 total=10 ⊆ 豁免表（柜台1/回执3/泳道6，全部为存量，本轮新增文案零命中）。
+
+新门：scripts/xhci_spec_ctl_probe.py CTL-PROBE-PASS——next 推进/prev 回退/tour aria-pressed
+切换/reset 回 0 帧（帧计数取 __fig42.frameOf() 实测，非 DOM 猜测）。
+shots 新增：ctl-bar-dark/light.png（全页）+ ctl-bar-*-bar.png（控制条特写）。
+
+## §13 代码走读卡轮（2026-11-04，CODE-STEPPER 步 4.2：rings3 逐语句步进卡对表机器八帧）
+
+数据件 `lessons-data/stepper_42x.json`（marker X42，frames=48 rows=48；ev 统计：reg_wr×12，
+ring/db/dev 类 op 全 0——初始化链三环无 TRB 流动，账本 L2 平凡闭合 0=0）。渲染通道
+`stepper_builder.py render_block`（build.mjs 构建期内联，锚点断言 41 条全过）；集成照抄
+4.1 模式：pageCss 追加 course.css 走读段+`.stepper` 纸面垫片，body 走读卡插 figCard 之后
+linksHtml 之前（卡前加 xsp-walknote 导语），script=kitScript+stepperJs+lathe+geo+live+zoom×2
+（codestepper 对焦点在 .iso-stage 时让键，与 live.mjs 键盘绑定无冲突）。
+
+### 13.1 走读函数清单（行号现场核：git -C /Volumes/KernelSrc/linux show 62f4c998b297:<file> | grep -n；渲染器锚点断言逐条复核）
+
+| file:line | 语义 | 机器帧 |
+|---|---|---|
+| hcd.c:2935 | usb_add_hcd 调 hcd->driver->reset（一次性初始化入口） | F1–F5 容器 |
+| xhci.c:5428 | xhci_gen_setup 入口（能力寄存器→四段初始化） | — |
+| xhci.c:5513→182 | xhci_reset()：CMD_RESET 写+两握手 | F1 |
+| xhci.c:203-204 | 写 USBCMD.Reset（reg_wr USBCMD） | F1 |
+| xhci.c:216 | 握手等 Reset 自清 | F1 |
+| xhci.c:229 | 握手等 STS_CNR→0（CNR 等待，p69） | F1 |
+| xhci.c:HW 帧 | xHC 硬件清 CNR（reg_wr USBSTS.CNR，硬件变值非软件写） | F1 就绪灯灭 |
+| xhci-mem.c:2412 | xhci_mem_init()：只分配 DMA 内存不写寄存器 | F2 前奏 |
+| xhci-mem.c:2425-2427 | DCBAA dma_alloc_coherent | F2 前奏 |
+| xhci-mem.c:2488 | 命令环分配（1 段 TYPE_COMMAND） | F3 前奏 |
+| xhci-mem.c:2501→2294 | 中断器 0：事件环段 :2311+ERST 段表 :2318（默认 2 段，xhci.h:1413） | F4 前奏 |
+| xhci.c:534 | xhci_init()：寄存器装载七件事 | F2–F4 |
+| xhci.c:541→474→487 | CONFIG.MaxSlotsEn 写（reg_wr） | F2 前半 |
+| xhci.c:552→490→506 | CRCR 写=命令环首 TRB+Cycle 初值（reg_wr） | F3 |
+| xhci.c:555 | DCBAAP 写=DCBAA 基地址（reg_wr）——代码顺序在 CRCR 后：p69 Note 顺序自由实证 | F2 后半 |
+| xhci.c:558 | DDBA（读 DBOFF）+ 注记带过 :561 DEVNOT | —（机器面板没画） |
+| xhci.c:565→xhci-mem.c:2329 | xhci_add_interrupter(0)：IR Set 0 三写 | F4 |
+| xhci-mem.c:2343 | ERSTSZ=2 写（reg_wr） | F4 |
+| xhci-mem.c:2351 | ERSTBA 写＝启用事件环（p70；reg_wr） | F4 启用灯 |
+| xhci-mem.c:2354→2018→2032 | ERDP 写=首段首空槽，保 EHB（reg_wr） | F4 |
+| xhci-pci.c:170/178（CT 桥帧，不贴码） | pci_alloc_irq_vectors+request_irq(xhci_msi_irq, 向量 0) | F5 MSI-X 表 |
+| hcd.c:2968 | hcd->driver->start＝xhci_pci_run（xhci-pci.c:212） | F5–F6 容器 |
+| xhci.c:627 | xhci_run() 头注自述四前提 | — |
+| xhci.c:651→344→358 | IMOD 写（40000ns→IMODI=160；reg_wr） | F5 Interval |
+| xhci.c:CT | 副 HCD 再进 xhci_run→xhci_run_finished（:641-642/:579） | F5–F6 |
+| xhci.c:594 | USBCMD.INTE=1（CMD_EIE 读改写；reg_wr） | F5 INTE |
+| xhci.c:307→317 | IMAN.IE=1（清 IP；reg_wr） | F5 IE |
+| xhci.c:599→145→154 | USBCMD R/S=1（CMD_RUN 读改写；reg_wr）——合闸 | F6 |
+| xhci.c:HW/CT 帧 | 端口开始上报连接；收尾对表（p70 收尾句+p69 Note） | F6/F7 |
+
+代码顺序与机器帧归组不同（代码 CONFIG→CRCR→DCBAAP vs 机器 F2=MaxSlotsEn+DCBAAP→F3=CRCR）
+已按避雷条款处理：不掩盖，帧注记+refs[r_note] 双处点明「p69 Note 顺序自由，两者都合法」。
+世界面板：三环各 4 空槽（等高带）、cmd 环 🔔0 徽标（本链零门铃写）、ep0 环注记「初始化不
+创建——随首个设备槽（§4.3）」、设备端 Powered 灯亮+无票据（§4.2 设备泳道不参与，机器页
+同款注记）；寄存器窗初值 USBCMD「R/S=0（停机）」/USBSTS.CNR「1（未就绪）」，12 次 reg_wr
+逐项落值（CNR 一格为硬件清 0，帧注记已声明非软件写）。
+
+### 13.2 门输出（2026-11-04 全绿）
+
+| 门 | 结果 |
+|---|---|
+| 三环账本断言器 `check_rings3_ledger.py stepper_42x.json` | LEDGER-PASS（frames=48 evt_enq=0 cmd_deq=0 ep0_deq=0 dev≤Powered） |
+| 布局探针 `st_layout_probe.py index.html 1600` | PROBE-PASS（rings3 四区在场、三环带高 100.03×3 等高、零溢出、字号≥11px；v3.3 对位/v3.4 连点与对比度 PASS） |
+| DOM 行为探针 `xhci_spec_stepper_probe.py index.html` | STEPPER-PROBE-PASS（12/12 reg_wr 帧寄存器窗值变全对） |
+| 语言门 `scan_words.py retired` ×2 主题 | total=10 {柜台1,回执3,泳道6}——与修前存量完全一致，新增文案零命中（首跑曾 +1「ERST 段表」族外命中，见 13.3 坑②已清） |
+| `node build.mjs --audit` ×2 主题 | audit passed ×2（111 items 不变） |
+| `checks.py` | exit=0（自包含×2/互链/页码 18/18/wiring×5） |
+| 遮挡探针 `xhci_spec_occlusion_probe.py --dwell-ms 8000` ×2 主题 | OCCLUSION-PASS ×2 |
+| console | 四张截图全程 error/pageerror 零条（SHOT-PASS console clean） |
+
+### 13.3 施工坑（三轮实测）
+
+1. **锚点断言抓行号误写**：xhci.c:599 初写 key=`xhci_start(xhci);`，实为
+   `if (xhci_start(xhci)) {`——render_block 构建即炸，按设计行为重新 grep 现场订正。
+   锚点门「行号错构建即炸」首次在本数据件上实战生效。
+2. **语言门族外命中**：新增文案用了「ERST 段表」（统一形 guard 退役词，DESIGN §3.1 定名
+   事件环段表（ERST））——首跑 total=11，改写后回 total=10 存量基线。教训： retiring
+   guard 词不进正文，合成词组也要避开。
+3. **element 截图 sticky 拼接伪影**：对 .stepper 整元素截图（captureBeyondViewport）会把
+   sticky 控件条/世界面板画在滚动偏移位，部分代码行被盖——布局门全绿但截图失真。改
+   viewport 截图（真实用户所见）后正常。st_layout_probe 的布局契约不受此影响（活视口测量）。
+
+### 13.4 shots 新增（4 张，viewport 1500×1000，channel=chrome）
+
+- walk-card-dark.png / walk-card-light.png：走读卡初态（行 1/48，寄存器窗两格初值）
+- walk-card-end-dark.png / walk-card-end-light.png：末帧（行 48/48，寄存器窗十格全部落位、
+  USBCMD=R/S=1·INTE=1、设备端仍 Powered）

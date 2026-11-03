@@ -204,3 +204,61 @@ audit passed（118 solids / 126 items）· lines.mjs `line ends: 0` console clea
 ### 8.5 shots 清单（本轮重拍，shots/ 34 件全量覆盖）
 
 full-{dark,light} · machine-{dark,light} · flowchart-{dark,light} · f00..f11 特写 ×双主题（f06-address 挂卡、f09-read-desc 描述符双卡、f10-configure 事件堆叠+四挂卡为重点复核帧）· phone390-machine · phone390-zoom（3.2× 档）。
+
+## §9 步进按钮轮（2026-11-03 深夜，用户问题①：机器动画补控制条）
+
+改动面：build.mjs（body 内联 style +7 行 .fig-ctl 段；machineBody 插 machineCtlHtml + hint 一句）、
+live.js（syncModeBtn + next/prev/tick/键位接线 30 行；键盘行为全部保留）。机器几何/SVG/帧序/durs 零改动。
+
+门复跑（重建后）：audit passed ×2（dark/light）；lines.mjs line ends: 0 ×2（输出形态注记同 4.2 §12）；
+遮挡探针 OCCLUSION-PASS ×2；verify_frames frames-truth 18/18 PASS；pagecheck 48 行全 PASS exit=0；
+zfscheck ZFS alive stages:2 console clean；语言门 total=0。
+
+新门：scripts/xhci_spec_ctl_probe.py CTL-PROBE-PASS（fig43 帧计数取 __fig43.frame 实测）。
+shots 新增：ctl-bar-dark/light.png + ctl-bar-*-bar.png。
+
+## §10 代码走读卡轮（CODE-STEPPER 步 5，2026-11-04；Address Device 链四区全动=方案验收件）
+
+### 10.1 交付面
+
+- 数据件：`lessons-data/stepper_43x.json`（marker **X43**，schema usb-xhci-stepper/1，worldKind=rings3，40 帧 / 8 ev / 7 refs / 47 锚点）。
+- 集成：build.mjs 照抄 4.1 模式——`stepper_builder.py render_block` 构建期 stdout 内联（渲染单一事实源=引擎，行号零誊抄）；course.css 走读段（「代码步进放映机」→「右缘批注」段，剥注释）+ 纸面卡变量垫片追加进 body style；走读卡插机器 plate 之后、互链卡之前，卡前 `p.xsp-walknote` 导语（含 TD 计数口径挑明：规范按传输阶段、内核 struct xhci_td 按 URB——本链不涉传输 TD）；script 拼装 `kitScript()+stepperJs+LIVE+zfsFlow+zfsMach`（codestepper 文档级 keydown 已有 .iso-stage 避让，:414-419）。
+- 语义对表：机器 F5（槽初始化）→F6（编址）。world0 初态＝F4 后状态：设备灯 Default（复位已完成，F3）、DCBAA 1 号格已挂输出上下文（软件装载）、三环全空。
+
+### 10.2 走读函数清单（行号全部现场 `git -C /Volumes/KernelSrc/linux show 62f4c998b297:<file> | grep -n` 核出，锚点断言构建期强制）
+
+| 函数 | file:line | 语义 |
+|---|---|---|
+| hub_set_address | drivers/usb/core/hub.c :4778-4781 | Default 态闸＋address_device 钩子分发（xHCI 走 Address Device 命令） |
+| xhci_setup_device | drivers/usb/host/xhci.c :4318-4319, 4369, 4375, 4391-4392, 4396, 4404-4405, 4412, 4416, 4451, 4487 | 入口/分配命令/绑 in_ctx/首次编址分支/**A0=A1=1（SLOT_FLAG\|EP0_FLAG）**/投递/门铃 0/睡眠/COMP_SUCCESS/读回 devaddr |
+| xhci_setup_addressable_virt_dev | drivers/usb/host/xhci-mem.c :1093, 1111, 1145, 1191, 1194-1195, 1197-1198 | Context Entries=1·Route String=0 / Root Hub Port Number / EP Type=Control / MaxBurst=0·CErr=3·MPS / TR Dequeue=环首·DCS=1 |
+| xhci_alloc_virt_device（前置回放） | drivers/usb/host/xhci-mem.c :1010-1014 | EP0 传输环 Enable Slot 完成回调已建（Link TRB 装配 xhci_set_link_trb :97/:110/:130——环初始化即写） |
+| xhci_queue_address_device | drivers/usb/host/xhci-ring.c :4412-4413, 4415-4418 | TRB 装配：in_ctx 地址进字段 1/2；**BSR 位仅 SETUP_CONTEXT_ONLY 置位（TRB_BSR）——本链 SETUP_CONTEXT_ADDRESS＝BSR=0 主线** |
+| handle_cmd_completion | drivers/usb/host/xhci-ring.c :1803-1804, 1806, 1825, 1870-1871, 1884-1885, 1938, 1940 | 事件消费：Slot ID/CC/分发 case TRB_ADDR_DEV/统一出口/命令环出队指针前移 |
+| xhci_handle_cmd_addr_dev | drivers/usb/host/xhci-ring.c :1662 | 编址结果已由 xHC 写输出上下文（驱动侧仅 trace）——槽 Enabled→Addressed 迁移在 xHC 侧 |
+| xhci_complete_del_and_free_cmd | drivers/usb/host/xhci-ring.c :1704, 1711 | complete() 唤醒睡眠线程 |
+
+### 10.3 帧数与 ev 统计（40 帧）
+
+四区动作：命令环 ring_enq（ADDR 槽 0）→db 0→ring_deq（xHC 取，HW 帧）；EP0 环 ring_enq（LINK 槽 0，环上架回放帧）；事件环 evt_enq（CCE Slot=1·CC=1 槽 0）→evt_deq（ERDP 前移）；设备端 dev_req（SET_ADDRESS OUT）→dev_state（Default→Addressed）。reg_wr 零条——CRCR/DCBAA/ERDP 本链只读不写（DCBAA 1 号格 F4 已挂，初值如实呈现），自洽。
+
+### 10.4 EP0 Max Packet Size：内核值 vs 规范值（差异登记，数值不冲突）
+
+规范 §4.3.3 p76 步 8：Max Packet Size＝端口速度默认（FS=8），机器 F5 刻规范值。内核 62f4c998b297 `xhci_setup_addressable_virt_dev` 对 **FS 写 MAX_PACKET(64)**（xhci-mem.c :1126-1128，注释原文「USB core guesses at a 64-byte max packet first for FS devices」——USB 核心新方案先按 64 字节试探读描述符，hub.c :4844-4847）。走读卡帧注记两侧如实登记（代码值 64＋规范值 8＋口径说明），机器页不动。
+
+### 10.5 顺带修复：机器数码窗/信号灯 cap1 面 NaN（预存在缺陷，非本轮引入）
+
+- 症状：Playwright console 捕获载入期 7 条 `Error: <path> attribute d: Expected number ... NaN`——portsc 五信号灯（CCS/CSC/PR/PRC/PED）与两数码窗（PLS/Speed）各 1 条。
+- 根因：build.mjs FLAGS 循环与 win() 的 cap1 第 4 点误写 `[quad[0], quad[1][1]-X, quad[1][2]]`（数组当标量 → NaN）；同文件 slot.win/box.lamp 处（:410/:485）为正确形态 `[quad[0][0], quad[0][1]-X, quad[0][2]]`。预存在——本轮改动未触及这些行。
+- 修复：:356/:382 两行对齐正确形态，重建后 `grep -c NaN` 双主题 = 0；audit 118 solids/126 items 不变、occlusion/verify_frames/lines 全部复跑 PASS（补上的是灯窗凹槽底面一小片，位于灯泡与凹槽暗区之后被覆盖，无可见视觉变化、无新增遮挡）。
+- **规则洞登记（共享探针盲区）**：anatomy drive.mjs 的「console: clean」只捕 `Runtime.consoleAPICalled`，浏览器内部 SVG 属性解析错误走 `Log.entryAdded` 域——此前各轮 console: clean 判据对这类错误全盲（本轮 Playwright `page.on("console")` 才实锤）。建议 drive.mjs 维护窗补 `Log.enable`+`Log.entryAdded` 监听；本任务边界禁改 scripts/，只登记不改。
+
+### 10.6 门复跑记录（本轮终态，cap1 修复后重建双主题）
+
+- `python3 scripts/check_rings3_ledger.py lessons-data/stepper_43x.json` → `LEDGER-PASS`（frames=40 evt_enq=1 cmd_deq=1 ep0_deq=0 dev≤Addressed）
+- `python3 scripts/st_layout_probe.py <index.html|index-light.html> 1600` → `PROBE-PASS` ×2（三环带等高/无溢出/字号达标）
+- `python3 scripts/xhci_spec_stepper_probe.py index.html` → `STEPPER-PROBE-PASS`（40 帧逐帧 reset 法，ev 签名全对）
+- `python3 scripts/scan_words.py retired <双主题>` → `total=0` ×2（本页无豁免词，走读卡文案同判据）
+- `node build.mjs --audit` ×2 → `audit passed`（118 solids / 126 items）；`node verify_frames.mjs` → `frames-truth: 18/18 PASS`；`python3 -I pagecheck.py` → `47/47 needles PASS`；`node zfscheck.mjs` → alive=true stages=2 console clean；`lines.mjs --select .xhp-stage` ×2 → `line ends: 0` console clean；`xhci_spec_occlusion_probe.py` ×2 → `OCCLUSION-PASS`；`xhci_spec_ctl_probe.py <abs path> fig43` → `CTL-PROBE-PASS` ×2（注意：该探针要求绝对路径参数——相对路径时拼出 `file:///lessons/...` 导航失败）
+- console（Playwright 全程捕获 error 级）：0 条——载入/滚动/走读卡步进三段分桶验证均 0
+- shots 新增：walk-card-{dark,light}.png（行 1/40 初态）+ walk-card-end-{dark,light}.png（行 40/40 终态：CCE 卡 Slot=1·CC=1、Addressed 灯、SET_ADDRESS OUT 票据），均 1500×1000、channel="chrome"

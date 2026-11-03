@@ -160,12 +160,12 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 .xsp-q .zh { color: var(--anatomy-text); font-size: 15.5px; margin-top: 4px; }
 .xsp-q .src { font-family: var(--font-mono); font-size: 12px; color: var(--anatomy-muted); }
 /* 时序图 */
-.xsp-hdr { fill: var(--lane, var(--anatomy-shade2)); stroke: none; }
+.xsp-hdr { fill: var(--lane, var(--anatomy-shade-2)); stroke: none; }
 .xsp-lanehdr.xsp-sw .xsp-hdr { fill: var(--xsp-sw); } .xsp-lanehdr.xsp-hc .xsp-hdr { fill: var(--xsp-hc); } .xsp-lanehdr.xsp-dev .xsp-hdr { fill: var(--xsp-dev); }
 .xsp-hdr-t { font: 700 18px var(--font-ui); fill: var(--xsp-lane-ink); }
 .xsp-hdr-s { font: 400 12.5px var(--font-mono); fill: var(--xsp-lane-ink); opacity: .82; }
 .xsp-life { stroke: var(--anatomy-line-mid, #455); stroke-width: 1.4; stroke-dasharray: 3 6; }
-.xsp-box { fill: var(--anatomy-shade2, #20242c); stroke: var(--lane, #888); stroke-width: 1.8; }
+.xsp-box { fill: var(--anatomy-shade-2, #20242c); stroke: var(--lane, #888); stroke-width: 1.8; }
 .xsp-bx.xsp-sw .xsp-box { stroke: var(--xsp-sw); } .xsp-bx.xsp-hc .xsp-box { stroke: var(--xsp-hc); }
 .xsp-t1 { font: 500 16.5px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
 .xsp-t1:first-of-type { font-weight: 700; }
@@ -175,7 +175,7 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 .xsp-pg { font: 400 12.5px var(--font-mono); fill: var(--anatomy-muted); }
 .iso[data-theme="light"] .xsp-pg { fill: #6b6350; }
 .xsp-notebox { fill: var(--xsp-note-bg); stroke: var(--anatomy-line-mid, #455); stroke-dasharray: 5 4; stroke-width: 1.4; }
-.xsp-act { fill: var(--anatomy-shade2, #20242c); stroke-width: 1.6; }
+.xsp-act { fill: var(--anatomy-shade-2, #20242c); stroke-width: 1.6; }
 .xsp-act-sw { stroke: var(--xsp-sw); } .xsp-act-hc { stroke: var(--xsp-hc); }
 .xsp-note.xsp-dev .xsp-notebox { stroke: var(--xsp-dev); }
 .xsp-ln { stroke-width: 2; } .xsp-ln.xsp-sw { stroke: var(--xsp-sw); } .xsp-ln.xsp-hc { stroke: var(--xsp-hc); }
@@ -184,7 +184,7 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 .xsp-item { transition: opacity .35s ease; }
 .xsp-item.xsp-dim { opacity: .16; }
 .xsp-item.xsp-on .xsp-box { stroke-width: 3.2; filter: drop-shadow(0 0 6px var(--anatomy-line-hi, #fff3)); }
-.xsp-token rect { fill: var(--anatomy-shade2, #20242c); stroke: var(--anatomy-line-hi, #ccc); stroke-width: 1.5; }
+.xsp-token rect { fill: var(--anatomy-shade-2, #20242c); stroke: var(--anatomy-line-hi, #ccc); stroke-width: 1.5; }
 .xsp-token text { font: 700 14px var(--font-ui); fill: var(--anatomy-text); }
 .xsp-token { transition: transform .5s cubic-bezier(.3,.7,.3,1), opacity .3s; }
 .xsp-token.xsp-pulse { animation: xsppl 1.1s ease infinite; }
@@ -194,12 +194,142 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 .xsp-ctl button { font: 500 13px var(--font-ui); color: var(--anatomy-muted); background: transparent; border: 1px solid var(--anatomy-line-mid, #456); border-radius: 4px; padding: 4px 12px; cursor: pointer; }
 .xsp-ctl button[aria-pressed="true"] { color: var(--anatomy-text); border-color: var(--anatomy-text); }
 .xsp-ctl button:hover { border-color: var(--anatomy-text); }
-.xsp-narr { font-family: var(--font-ui); font-size: 15px; color: var(--anatomy-text); background: var(--anatomy-shade2, #20242c); border: 1px solid var(--anatomy-line-mid, #456); border-radius: 6px; padding: 10px 14px; margin: 10px 0 0; min-height: 44px; }
+.xsp-narr { font-family: var(--font-ui); font-size: 15px; color: var(--anatomy-text); background: var(--anatomy-shade-2, #20242c); border: 1px solid var(--anatomy-line-mid, #456); border-radius: 6px; padding: 10px 14px; margin: 10px 0 0; min-height: 44px; }
 .xsp-narr b { color: var(--anatomy-text); }
 .xsp-legend { display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--font-ui); font-size: 13.5px; color: var(--anatomy-muted); margin-top: 10px; }
 .xsp-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .xsp-foot { font-family: var(--font-ui); font-size: 13px; color: var(--anatomy-muted); margin-top: 18px; }
 @media print { .xsp-ctl { display: none; } }
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+
+.stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
+.stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
+.stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
+.stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+
+.stepper.js .st-ctl { position: sticky; top: .45rem; z-index: 6; background: #fff; border-radius: 4px; padding: .25rem .4rem; margin-left: -.4rem; margin-right: -.4rem; box-shadow: 0 1px 6px rgba(30,28,18,.08); }
+.stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
+.stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
+@media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
+
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; overflow-x: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; scroll-margin-top: 3.4rem; scroll-margin-bottom: 3.4rem; }
+
+.stepper .st-crow.ctx, .stepper .st-crow.hw, .stepper .st-crow.ph { white-space: normal; }
+.stepper .st-crow code { font: inherit; }
+.stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: #666; font-size: .74rem; }
+.stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
+.stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
+.stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
+.stepper .st-crow.ph { background: var(--ink); color: #fff; font-weight: 700; margin-top: .5rem; border-radius: 3px; }
+.stepper .st-crow.ph .st-tag { color: #cfcfc5; }
+.stepper.js .st-crow { cursor: pointer; }
+.stepper.js .st-crow:hover { background: #f4f4ee; }
+.stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
+.stepper.js .st-crow.done { opacity: .66; }
+
+.stepper.js .st-crow.ph:hover { background: #3a3a30; }
+.stepper.js .st-crow.ph.cur { background: var(--ink); color: #fff; box-shadow: inset 0 0 0 2px #f0c94a; }
+
+.stepper .st-crow.ph code { background: rgba(255, 255, 255, .16); color: #fff; }
+
+
+.stepper .st-world { position: sticky; top: 3.4rem; align-self: start; border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; height: calc(100vh - 7.6rem); height: calc(100dvh - 7.6rem); overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+.stepper .st-world::-webkit-scrollbar { display: none; }
+
+.stepper .st-world .st-chg { animation: stChgPulse 1.8s ease-out 1; }
+@keyframes stChgPulse {
+  0% { background: #fff3c4; box-shadow: 0 0 0 3px rgba(160, 0, 0, .45); }
+  60% { background: #fff8dd; box-shadow: 0 0 0 3px rgba(160, 0, 0, .18); }
+  100% { box-shadow: 0 0 0 3px rgba(160, 0, 0, 0); }
+}
+.stepper .stw-ring { margin: .35rem 0 .6rem; }
+.stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.stepper .stw-rhead b { font-size: .84rem; }
+.stepper .stw-own { color: var(--muted); font-size: .7rem; }
+.stepper .stw-cells { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .stw-cell { position: relative; border: 1px dashed var(--line); border-radius: 4px; padding: .35rem .45rem .38rem; min-width: 6.8rem; text-align: center; background: #fff; }
+.stepper .stw-cell b { display: block; color: var(--muted); font-size: .64rem; letter-spacing: .04em; }
+.stepper .stw-cell .stw-t { display: block; font-weight: 600; font-size: .78rem; }
+.stepper .stw-cell .stw-f { display: block; color: #4a4a3f; font-size: .67rem; }
+.stepper .stw-cell .stw-cyc { display: block; color: var(--muted); font-size: .64rem; }
+.stepper .stw-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .stw-cell.st-published { border: 1px solid #1a5fb4; background: #e8f0fb; }
+.stepper .stw-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .stw-ptr { position: absolute; top: -0.6rem; font-size: .6rem; font-style: normal; padding: 0 .25rem; border-radius: 3px; color: #fff; }
+.stepper .stw-ptr.pe { left: .2rem; background: #1a5fb4; }
+.stepper .stw-ptr.pd { right: .2rem; background: var(--good); }
+.stepper .stw-box { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .stw-box > b { display: block; background: #f0efe6; padding: .2rem .5rem; font-size: .8rem; }
+.stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
+.stepper .stw-box th { width: 6em; background: #fbfbf6; }
+
+
+.stepper .st-world .r3 { --r3-drv: #2d5fb3; --r3-xhc: #8a5f14; --r3-dev: #2f7a3d; }
+.stepper .st-world .r3-zone { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .st-world .r3-zhead { display: flex; align-items: baseline; gap: .45rem; flex-wrap: wrap; padding: .25rem .5rem; background: #f0efe6; }
+.stepper .st-world .r3-zhead b { font-size: .86rem; }
+.stepper .st-world .r3-ring-cmd .r3-zhead b, .stepper .st-world .r3-ring-ep0 .r3-zhead b { color: var(--r3-drv); }
+.stepper .st-world .r3-ring-evt .r3-zhead b { color: var(--r3-xhc); }
+.stepper .st-world .r3-devzone .r3-zhead b { color: var(--r3-dev); }
+.stepper .st-world .r3-own { color: var(--muted); font-size: .72rem; margin-left: auto; }
+.stepper .st-world .r3-db { font-size: .74rem; padding: 0 .3rem; border: 1px solid var(--line); border-radius: 3px; background: #fff; }
+.stepper .st-world .r3-cells { display: flex; flex-wrap: wrap; gap: .32rem; padding: .58rem .45rem .45rem; }
+.stepper .st-world .r3-cell { position: relative; min-width: 5.6rem; text-align: center; border: 1px dashed var(--line); border-radius: 4px; background: #fff; padding: .5rem .4rem .42rem; }
+.stepper .st-world .r3-cell .r3-a { display: block; font-size: .88rem; font-weight: 700; letter-spacing: .03em; }
+.stepper .st-world .r3-cell .r3-t { display: block; font-size: .74rem; margin-top: .1rem; }
+.stepper .st-world .r3-cell .r3-f { display: block; color: #4a4a3f; font-size: .7rem; }
+.stepper .st-world .r3-cell .r3-cyc { position: absolute; top: .12rem; right: .22rem; font-size: .7rem; color: var(--muted); font-style: normal; }
+.stepper .st-world .r3-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .st-world .r3-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .st-world .r3-cell.st-evt { border: 1px solid var(--r3-xhc); background: #faf3e4; }
+.stepper .st-world .r3-ptr { position: absolute; left: 50%; transform: translateX(-50%); font-style: normal; font-size: .72rem; color: #fff; padding: 0 .22rem; border-radius: 3px; }
+.stepper .st-world .r3-ptr.pe { top: -0.62rem; background: var(--r3-drv); }
+.stepper .st-world .r3-ptr.pd { bottom: -0.62rem; background: var(--r3-xhc); }
+.stepper .st-world .r3-ring-evt .r3-ptr.pe { background: var(--r3-xhc); }
+.stepper .st-world .r3-ring-evt .r3-ptr.pd { background: var(--r3-drv); }
+.stepper .st-world .r3-lamps { display: flex; flex-wrap: wrap; gap: .3rem; padding: .45rem .5rem .1rem; }
+.stepper .st-world .r3-lamp { font-style: normal; font-size: .76rem; border: 1px solid var(--line); border-radius: 999px; padding: .05rem .5rem; color: var(--muted); background: #fbfbf6; }
+.stepper .st-world .r3-lamp.on { border-color: var(--r3-dev); background: #e9f4ea; color: var(--r3-dev); font-weight: 700; }
+.stepper .st-world .r3-tickets { display: flex; flex-wrap: wrap; gap: .3rem; padding: .35rem .5rem .5rem; }
+.stepper .st-world .r3-tk { font-size: .74rem; border: 1px dashed var(--r3-dev); border-radius: 4px; padding: .1rem .4rem; background: #fff; }
+.stepper .st-world .r3-tk em { font-style: normal; color: var(--muted); }
+.stepper .st-world .r3-mut { color: var(--muted); font-size: .72rem; }
+.stepper .st-world .r3-regs { display: flex; flex-wrap: wrap; gap: .3rem .55rem; padding: .4rem .5rem .5rem; }
+.stepper .st-world .r3-reg { font-size: .74rem; border: 1px solid var(--line); border-radius: 3px; padding: .05rem .35rem; background: #fbfbf6; }
+.stepper .st-world .r3-reg em { font-style: normal; font-weight: 700; margin-right: .3rem; }
+.stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+
+.stepper.js .st-note { position: sticky; bottom: 0; z-index: 5; box-shadow: 0 -2px 10px rgba(30,28,18,.07); border-radius: 0 0 4px 4px; }
+.stepper .st-note .st-mut { color: var(--muted); }
+.stepper .st-refs { margin-top: .55rem; }
+.stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .st-chip { font: inherit; font-size: .78rem; padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 10px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-chip.on { border-color: var(--accent); background: #fff3c4; }
+.stepper .st-fref { margin-left: .3rem; }
+.stepper .st-refs details { font-size: .85rem; }
+
+.st-modal { display: none; position: fixed; inset: 0; background: rgba(20,20,15,.45); z-index: 90; padding: 3rem 1rem; }
+.st-modal.show { display: flex; }
+.st-modal .st-mbox { position: relative; margin: auto; max-width: 40rem; max-height: 80vh; overflow-y: auto; background: #fffdf4; border: 1px solid var(--ink); border-radius: 8px; padding: 1rem 1.2rem; }
+.st-modal .st-mclose { position: absolute; top: .5rem; right: .6rem; font: inherit; font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.st-modal .st-mbody h4 { margin: 0 0 .3rem; }
+.st-modal .st-msrc { color: var(--muted); font-size: .85rem; }
+.st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
+.st-modal .st-mnote { font-size: .88rem; }
+
+
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--font-ui); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
 </style>
 <div class="xsp-nav">
   <a href="../../index.html">← 规范目录</a>
@@ -297,6 +427,50 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
   <span><i style="background:var(--xsp-dev)"></i>设备（本流程不参与）</span>
   <span>实线=命令流 · 虚线=事件回执流</span>
 </div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进</span></div></div><figcaption class="iso-legend"><span class="iso-caption">驱动与 xHC 之间的一条管理通道：命令 TRB 写入命令环、写门铃 0、完成事件回事件环；设备全程不在场。</span></figcaption></figure>
+<p class="xsp-walknote">同一个命令模型在真实内核代码里的样子——按函数调用逐语句走读（规范 TD 与内核 xhci_td 的计数口径不同：规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记；本链是命令，不涉传输环）：</p>
+<!--STEPPER:X41:BEGIN-->
+  <div class="stepper">
+    <div class="st-intro"><h4>▶ Enable Slot 全链走读：从 xhci_alloc_dev 到 Command Completion</h4><p>左列＝真实内核调用链逐语句步进（xhci.c 投递 → xhci-ring.c 中断侧消费 → 醒来收执）。右列＝命令环 / EP0 传输环 / 事件环与设备端随每帧演进；EP0 传输环本链不参与（命令不是传输），设备端全程不动——命令对设备不可见。</p><p class="st-base">代码基线 62f4c998b297（本板块代码走读卡专用声明，与机制课 0006–0010 同源）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-grid">
+      <div class="st-code">
+<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>① 驱动投递：xhci_alloc_dev() 把 Enable Slot 放上命令环</code></div>
+<div class="st-crow ctx" data-id="r1"><span class="st-tag">xHCI 驱动</span><code>场景：USB 核心枚举路径为这颗新设备调用 xhci_alloc_dev()——向 xHC 申请一个 Device Slot</code></div>
+<div class="st-crow fn" data-id="r2" style="padding-left:0.4em"><span class="st-file">▸ xhci.c : 4225</span><code>int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)</code></div>
+<div class="st-crow ln" data-id="r3" style="padding-left:0.4em"><code>	command = xhci_alloc_command(xhci, true, GFP_KERNEL);</code></div>
+<div class="st-crow ln" data-id="r4" style="padding-left:0.4em"><code>	ret = xhci_queue_slot_control(xhci, command, TRB_ENABLE_SLOT, 0);</code></div>
+<div class="st-crow ln" data-id="r5" style="padding-left:0.4em"><code>	xhci_ring_cmd_db(xhci);</code></div>
+<div class="st-crow ln" data-id="r6" style="padding-left:0.4em"><code>	wait_for_completion(command-&gt;completion);</code></div>
+<div class="st-crow hw" data-id="r7"><span class="st-tag">xHC 控制器</span><code>门铃 0 响后：xHC 按 CRCR 指针取走 Enable Slot TRB → 执行命令 → 自选 Slot ID＝1（示例值；xHC 自选槽位号，§4.3.2 p75）</code></div>
+<div class="st-crow hw" data-id="r8"><span class="st-tag">xHC 控制器</span><code>Command Completion Event TRB 写入事件环 0 号槽（Slot ID＝1 · CC＝Success），随后按中断器配置发出 MSI-X——中断可选，软件也可轮询事件环（p69 脚注 7）</code></div>
+<div class="st-crow ctx" data-id="r9"><span class="st-tag">xHCI 驱动</span><code>事件送达：MSI-X 中断 → xhci_irq() → xhci_handle_event() → handle_cmd_completion()（xhci-ring.c :1803）</code></div>
+<div class="st-crow fn" data-id="r10" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 1803-1804</span><code>static void handle_cmd_completion(struct xhci_hcd *xhci,
+		struct xhci_event_cmd *event)</code></div>
+<div class="st-crow ln" data-id="r11" style="padding-left:0.4em"><code>	unsigned int slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event-&gt;flags));</code></div>
+<div class="st-crow ln" data-id="r12" style="padding-left:0.4em"><code>	cmd_comp_code = GET_COMP_CODE(le32_to_cpu(event-&gt;status));</code></div>
+<div class="st-crow ln" data-id="r13" style="padding-left:0.4em"><code>	cmd_type = TRB_FIELD_TO_TYPE(le32_to_cpu(cmd_trb-&gt;generic.field[3]));
+	switch (cmd_type) {
+	case TRB_ENABLE_SLOT:
+		xhci_handle_cmd_enable_slot(slot_id, cmd, cmd_comp_code);</code></div>
+<div class="st-crow ln" data-id="r14" style="padding-left:0.4em"><code>	xhci_complete_del_and_free_cmd(cmd, cmd_comp_code, COMP_PARAM(status));</code></div>
+<div class="st-crow fn" data-id="r15" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 1704</span><code>static void xhci_complete_del_and_free_cmd(struct xhci_command *cmd, u32 comp_code, u32 comp_param)</code></div>
+<div class="st-crow ln" data-id="r16" style="padding-left:1.5em"><code>		complete(cmd-&gt;completion);</code></div>
+<div class="st-crow ln" data-id="r17" style="padding-left:0.4em"><code>	inc_deq(xhci, xhci-&gt;cmd_ring);</code></div>
+<div class="st-crow ctx" data-id="r18"><span class="st-tag">xHCI 驱动</span><code>事件环收尾：handle_event 循环推进事件环出队指针 ERDP——本条事件消费完毕</code></div>
+<div class="st-crow ctx" data-id="r19"><span class="st-tag">xHCI 驱动</span><code>回到驱动线程：wait_for_completion 被唤醒，xhci_alloc_dev 从睡眠点继续</code></div>
+<div class="st-crow ln" data-id="r20" style="padding-left:0.4em"><code>	slot_id = command-&gt;slot_id;</code></div>
+<div class="st-crow ln" data-id="r21" style="padding-left:0.4em"><code>	if (!slot_id || command-&gt;status != COMP_SUCCESS) {</code></div>
+<div class="st-crow ln" data-id="r22" style="padding-left:0.4em"><code>	udev-&gt;slot_id = slot_id;</code></div>
+<div class="st-crow hw" data-id="r23"><span class="st-tag">设备</span><code>本链全程：设备端无 USB 请求到达、无状态迁移——命令是软件与 xHC 的管理通道</code></div>
+      </div>
+      <div class="st-world">
+<div class="r3"><div class="r3-zone r3-ring-cmd"><div class="r3-zhead"><b>命令环 CRCR</b><span class="r3-own">驱动生产 · xHC 消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-ring-ep0"><div class="r3-zhead"><b>传输环 EP0</b><span class="r3-own">驱动生产 · xHC 消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-ring-evt"><div class="r3-zhead"><b>事件环 ERST/ERDP</b><span class="r3-own">xHC 生产 · 驱动消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-devzone"><div class="r3-zhead"><b>设备端</b></div><div class="r3-lamps"><i class="r3-lamp on">Powered</i><i class="r3-lamp">Default</i><i class="r3-lamp">Addressed</i><i class="r3-lamp">Configured</i></div><div class="r3-tickets"><span class="r3-mut">（无 USB 请求到达——命令环对设备不可见）</span></div></div><div class="r3-zone r3-regszone"><div class="r3-zhead"><b>寄存器窗</b></div><div class="r3-regs"><span class="r3-reg"><em>CRCR</em>→ 命令环首 TRB</span><span class="r3-reg"><em>ERDP</em>→ 事件环段 0</span></div></div></div>
+      </div>
+    </div>
+    <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
+    <div class="st-refs"><details><summary>📎 §4.1 只有一条命令环（p68）</summary><p class="st-msrc">xHCI 1.2b §4.1 · p68</p><blockquote>There is only one Command Ring that is used for issuing xHCI specific commands or commands related to Device Slots.</blockquote><p class="st-mnote">命令环是全 xHC 单例——xHC 自身命令与设备槽命令共用，本链入队的就是它。</p></details><details><summary>📎 §4.1 命令门铃（p68）</summary><p class="st-msrc">xHCI 1.2b §4.1 · p68</p><blockquote>All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register, that is, writing the Host Controller Command code to the DB Target field of Doorbell register 0</blockquote><p class="st-mnote">投递动作＝写环＋写门铃 0，缺一不可。</p></details><details><summary>📎 §4.1 完成事件（p68）</summary><p class="st-msrc">xHCI 1.2b §4.1 · p68</p><blockquote>All commands result in the generation of a Command Completion Event TRB on the Event Ring.</blockquote><p class="st-mnote">每条命令恰好一条完成事件，走事件环，不回命令环。</p></details><details><summary>📎 p69 脚注7 中断可选（p69）</summary><p class="st-msrc">xHCI 1.2b §4.2 · p69</p><blockquote></blockquote><p class="st-mnote">脚注 7：中断是可选机制——软件也可以轮询事件环的方式取完成事件。本链按 MSI-X 形态讲述。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"Enable Slot 全链走读：从 xhci_alloc_dev 到 Command Completion","intro":"左列＝真实内核调用链逐语句步进（xhci.c 投递 → xhci-ring.c 中断侧消费 → 醒来收执）。右列＝命令环 / EP0 传输环 / 事件环与设备端随每帧演进；EP0 传输环本链不参与（命令不是传输），设备端全程不动——命令对设备不可见。","baseline":"代码基线 62f4c998b297（本板块代码走读卡专用声明，与机制课 0006–0010 同源）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"① 驱动投递：xhci_alloc_dev() 把 Enable Slot 放上命令环"},{"id":"r1","kind":"ctx","depth":0,"text":"场景：USB 核心枚举路径为这颗新设备调用 xhci_alloc_dev()——向 xHC 申请一个 Device Slot","tag":"xHCI 驱动"},{"id":"r2","kind":"fn","depth":0,"text":"int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)","file":"xhci.c","a":4225,"b":4225},{"id":"r3","kind":"ln","depth":0,"text":"\tcommand = xhci_alloc_command(xhci, true, GFP_KERNEL);","file":"xhci.c","a":4234,"b":4234},{"id":"r4","kind":"ln","depth":0,"text":"\tret = xhci_queue_slot_control(xhci, command, TRB_ENABLE_SLOT, 0);","file":"xhci.c","a":4239,"b":4239},{"id":"r5","kind":"ln","depth":0,"text":"\txhci_ring_cmd_db(xhci);","file":"xhci.c","a":4246,"b":4246},{"id":"r6","kind":"ln","depth":0,"text":"\twait_for_completion(command->completion);","file":"xhci.c","a":4249,"b":4249},{"id":"r7","kind":"hw","depth":0,"text":"门铃 0 响后：xHC 按 CRCR 指针取走 Enable Slot TRB → 执行命令 → 自选 Slot ID＝1（示例值；xHC 自选槽位号，§4.3.2 p75）","tag":"xHC 控制器"},{"id":"r8","kind":"hw","depth":0,"text":"Command Completion Event TRB 写入事件环 0 号槽（Slot ID＝1 · CC＝Success），随后按中断器配置发出 MSI-X——中断可选，软件也可轮询事件环（p69 脚注 7）","tag":"xHC 控制器"},{"id":"r9","kind":"ctx","depth":0,"text":"事件送达：MSI-X 中断 → xhci_irq() → xhci_handle_event() → handle_cmd_completion()（xhci-ring.c :1803）","tag":"xHCI 驱动"},{"id":"r10","kind":"fn","depth":0,"text":"static void handle_cmd_completion(struct xhci_hcd *xhci,\n\t\tstruct xhci_event_cmd *event)","file":"xhci-ring.c","a":1803,"b":1804},{"id":"r11","kind":"ln","depth":0,"text":"\tunsigned int slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event->flags));","file":"xhci-ring.c","a":1806,"b":1806},{"id":"r12","kind":"ln","depth":0,"text":"\tcmd_comp_code = GET_COMP_CODE(le32_to_cpu(event->status));","file":"xhci-ring.c","a":1825,"b":1825},{"id":"r13","kind":"ln","depth":0,"text":"\tcmd_type = TRB_FIELD_TO_TYPE(le32_to_cpu(cmd_trb->generic.field[3]));\n\tswitch (cmd_type) {\n\tcase TRB_ENABLE_SLOT:\n\t\txhci_handle_cmd_enable_slot(slot_id, cmd, cmd_comp_code);","file":"xhci-ring.c","a":1870,"b":1873},{"id":"r14","kind":"ln","depth":0,"text":"\txhci_complete_del_and_free_cmd(cmd, cmd_comp_code, COMP_PARAM(status));","file":"xhci-ring.c","a":1938,"b":1938},{"id":"r15","kind":"fn","depth":0,"text":"static void xhci_complete_del_and_free_cmd(struct xhci_command *cmd, u32 comp_code, u32 comp_param)","file":"xhci-ring.c","a":1704,"b":1704},{"id":"r16","kind":"ln","depth":1,"text":"\t\tcomplete(cmd->completion);","file":"xhci-ring.c","a":1711,"b":1711},{"id":"r17","kind":"ln","depth":0,"text":"\tinc_deq(xhci, xhci->cmd_ring);","file":"xhci-ring.c","a":1940,"b":1940},{"id":"r18","kind":"ctx","depth":0,"text":"事件环收尾：handle_event 循环推进事件环出队指针 ERDP——本条事件消费完毕","tag":"xHCI 驱动"},{"id":"r19","kind":"ctx","depth":0,"text":"回到驱动线程：wait_for_completion 被唤醒，xhci_alloc_dev 从睡眠点继续","tag":"xHCI 驱动"},{"id":"r20","kind":"ln","depth":0,"text":"\tslot_id = command->slot_id;","file":"xhci.c","a":4250,"b":4250},{"id":"r21","kind":"ln","depth":0,"text":"\tif (!slot_id || command->status != COMP_SUCCESS) {","file":"xhci.c","a":4252,"b":4252},{"id":"r22","kind":"ln","depth":0,"text":"\tudev->slot_id = slot_id;","file":"xhci.c","a":4287,"b":4287},{"id":"r23","kind":"hw","depth":0,"text":"本链全程：设备端无 USB 请求到达、无状态迁移——命令是软件与 xHC 的管理通道","tag":"设备"}],"frames":[{"c":"r0","note":"本链是 §4.1 命令模型的真实代码形态——每帧一次调用，右列三环与设备端同步演进。","ph":"① 驱动投递：xhci_alloc_dev() 把 Enable Slot 放上命令环"},{"c":"r1","note":"三方视角：命令通道只涉及 xHCI 驱动与 xHC 控制器两方；右下设备区在本链全程保持空白。"},{"c":"r2","note":"函数入口。返回值＝分配到的 Slot ID（0＝失败）——USB 核心拿它填 udev->slot_id。"},{"c":"r3","note":"分配命令结构；第二参数 true＝带 completion 等待对象——驱动线程即将睡在它上面等回执。"},{"c":"r4","note":"命令 TRB（TRB_ENABLE_SLOT）写入命令环 0 号槽，生产指针前移。全规范只有一条命令环（§4.1 p68）。","refs":["r_one"],"ev":[{"op":"ring_enq","ring":"cmd","slot":0,"trb":{"a":"ENSL","t":"Enable Slot","cyc":1}}]},{"c":"r5","note":"写门铃寄存器 0，DB Target＝0（Host Controller Command）——不写门铃，xHC 不看环（§4.1 p68）。","refs":["r_db"],"ev":[{"op":"db","target":0}]},{"c":"r6","note":"睡眠等待：让出 CPU，直到 command->completion 被 complete() 唤醒。"},{"c":"r7","note":"命令环的取侧完全由 xHC 管理——CRCR 是只读的消费指针。","ev":[{"op":"ring_deq","ring":"cmd","slot":0}]},{"c":"r8","note":"每条命令必产生一条完成事件（§4.1 p68）；回执走事件环，不回命令环。","refs":["r_cc","r_poll"],"ev":[{"op":"evt_enq","slot":0,"ev":{"a":"CCE","t":"Command Completion","sid":1,"cc":1}}]},{"c":"r9","note":"消费事件环的是同一位驱动的另一条执行路径（中断上下文）。"},{"c":"r10","note":"事件处理入口：event 就是刚写进事件环的那颗完成事件。"},{"c":"r11","note":"从事件 TRB 的 flags 字段取 Slot ID＝1——回执自带结果，无需再问 xHC。"},{"c":"r12","note":"完成码：GET_COMP_CODE(status)＝Success。"},{"c":"r13","note":"按 cmd_type 分发——本例命中 TRB_ENABLE_SLOT 分支（switch 其余 case 本链不走，只演走到的分支）。"},{"c":"r14","note":"命令处理的收尾调用：完成、摘链、释放命令结构——进入统一出口。"},{"c":"r15","note":"刚被调用的函数：xhci_complete_del_and_free_cmd()（:1938 → 此处）。"},{"c":"r16","note":"complete() 唤醒睡眠中的 xhci_alloc_dev 线程——命令从投递到回收在此闭环。"},{"c":"r17","note":"回到 handle_cmd_completion：命令环出队指针前移——软件副本与 xHC 的消费进度对齐。"},{"c":"r18","note":"事件环回到稳态；消费指针的写回在 handle_event 的循环尾部。","ev":[{"op":"evt_deq","slot":0}]},{"c":"r19","note":"两条执行路径在此汇合：中断侧消费完事件，线程侧拿到结果。"},{"c":"r20","note":"读回执结果：slot_id＝1。"},{"c":"r21","note":"成功判定：Slot ID 非零且完成码为 Success——本链走通过分支。"},{"c":"r22","note":"Slot ID 上交：udev->slot_id＝1；USB 核心后续对这颗设备的操作都带着这个槽位号。"},{"c":"r23","note":"个别命令（如 Address Device）由 xHC 在总线上代发 USB 请求——那是命令的执行效果，设备收到的仍是 USB 请求，不是命令（§4.3）。"}],"refs":[{"id":"r_one","label":"§4.1","title":"只有一条命令环","src":"xHCI 1.2b §4.1","p":"p68","quote":"There is only one Command Ring that is used for issuing xHCI specific commands or commands related to Device Slots.","note":"命令环是全 xHC 单例——xHC 自身命令与设备槽命令共用，本链入队的就是它。"},{"id":"r_db","label":"§4.1","title":"命令门铃","src":"xHCI 1.2b §4.1","p":"p68","quote":"All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register, that is, writing the Host Controller Command code to the DB Target field of Doorbell register 0","note":"投递动作＝写环＋写门铃 0，缺一不可。"},{"id":"r_cc","label":"§4.1","title":"完成事件","src":"xHCI 1.2b §4.1","p":"p68","quote":"All commands result in the generation of a Command Completion Event TRB on the Event Ring.","note":"每条命令恰好一条完成事件，走事件环，不回命令环。"},{"id":"r_poll","label":"p69 脚注7","title":"中断可选","src":"xHCI 1.2b §4.2","p":"p69","quote":"","note":"脚注 7：中断是可选机制——软件也可以轮询事件环的方式取完成事件。本链按 MSI-X 形态讲述。"}],"world0":{"worldKind":"rings3","rings":{"cmd":{"label":"命令环 CRCR","own":"驱动生产 · xHC 消费","db":0,"cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]},"ep0":{"label":"传输环 EP0","own":"驱动生产 · xHC 消费","db":1,"cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]},"evt":{"label":"事件环 ERST/ERDP","own":"xHC 生产 · 驱动消费","cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]}},"dev":{"title":"设备端","state":"Powered","states":["Powered","Default","Addressed","Configured"],"tickets":[]},"regs":{"CRCR":"→ 命令环首 TRB","ERDP":"→ 事件环段 0"}}}</script>
+  </div>
+<!--STEPPER:X41:END-->
 <div class="xsp-card"><h2>互链</h2>
 <p><a href="../../../xhc-machines/fig4-command-ring/index.html">四机课 Fig4 订单柜台</a>——命令环与命令回执的机器动画（§4.6.1 命令环操作）；<a href="../../../xhc-machines/fig3-event-ring/index.html">Fig3 回执登记机</a>——事件环的生产与消费（§4.9.4）。</p>
 <p><a href="../4.3-usb-device-init/index.html">§4.3 USB 设备初始化</a>——命令的执行效果三方全程（Enable Slot / Address Device / Configure Endpoint 各自让设备看见了什么）。</p></div>
@@ -974,6 +1148,494 @@ const ISO_CSS = `
 @media (max-width:560px){.iso-plate{padding:48px 12px 70px}.iso-plate-corner[data-corner="hint"]{bottom:18px}}
 @media (prefers-reduced-motion:reduce){.iso-line[data-flow],.iso-dots circle[data-pulse]{animation:none}}
 `;
+/* codestepper.js — 代码步进放映机（课程族共享，配 course.css 的 .stepper 段）
+ * 数据驱动：宿主 div.stepper 内嵌 <script type="application/json" class="stepper-data">
+ *   { title, intro, baseline, phases[], rows[], frames[], refs[], world0 }
+ * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
+ * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
+ * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 记录。
+ * v3（2026-10-21）：init 后量最宽代码行给 .st-code/.stepper 设定紧致像素宽（宽度自适应）。
+ * v3.2（2026-10-21）：世界面板全高无内滚、与代码列等高（纯 CSS 改动，见 course.css v3.2 注）。
+ * v3.3（2026-10-21 用户裁定）：步进跟随对齐——当前代码行滚到视口垂直居中；世界面板钉
+ *   视口右列、约一屏高、滚动条隐藏（内滚仍在，内容全量在 DOM），每帧把发生变化的
+ *   元素标 .st-chg 脉冲并自动滚到与当前代码行齐平（alignWorld）。
+ * v3.4（2026-10-21 用户报"前几行高亮时导航条要追着点"）：居中滚动加"钉住地板"夹紧
+ *   （stepScroll）——前几行纯居中会把页面滚得让控件条/世界面板的 sticky 不咬合
+ *   （自然位落进视口中带），此后每步"下一行"页面下滚一行高、按钮随内容上移一格格，
+ *   用户被迫追着鼠标向上移。地板=让两件钉住位咬合的最小 scrollY（ctl 自然位以
+ *   零高静止锚点 .st-pinref 量取——sticky 咬合后 ctl 自身 rect 是钉住位，不可用）。
+ * v3.5（2026-10-29，0007 世界面板 anatomy 机器）：world0 可选字段 machine:{svg}——
+ *   存在时世界面板渲染该 SVG 机构替代卡片网格（worldHtml 默认路径零变更）。
+ *   状态应用 machineApply，与卡片 op 语义一致：cell→[data-k=ring:i] 组切 st-* 类并
+ *   更新 .st-ma/.st-mt/.st-mf/.st-mcyc；ptr→组内 .st-menq/.st-mdeq 翻 visibility；
+ *   dev/td→[data-k=dev|td] 组内 [data-f=字段] 改 textContent。脉冲样式内嵌在机构
+ *   SVG 里（.st-chg 走 stroke/fill 动画，SVG 无 box-shadow）；alignWorld 复用不变
+ *   （getBoundingClientRect 对 SVG 元素有效）。机构标注约定见本目录 design.md。
+ * v3.6（2026-11-03，CODE-STEPPER 提案步 1）：world0.worldKind==="rings3" 时世界
+ *   面板渲染「命令环/EP0 传输环/事件环/设备端」四区模板（rings3Html），配套高层
+ *   ev 枚举（ring_enq/ring_deq/ring_link/db/evt_enq/evt_deq/reg_wr/dev_req/dev_state，
+ *   applyEvR3 应用——低级 cell/ptr/dev/td 旧 op 不受影响）。指针着色按生产/消费方
+ *   （cmd/ep0：▲驱动蓝写·▼xHC 金取；evt 反转），槽卡语汇对齐 4.3 机器 TRB 小卡
+ *   （类型缩写+cycle 位角标）。门铃=环头徽标按次数累计亮（闪=当帧 .st-chg 脉冲）。 */
+(function () {
+  'use strict';
+
+  /* ---------- 世界渲染（纯函数：state → HTML 字符串） ---------- */
+  var RING_ORDER = ['xfer', 'cmd', 'evt'];
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function cellHtml(c, ring, i, st) {
+    var cls = 'stw-cell st-' + (c.st || 'empty');
+    var ptr = [];
+    if (st && st.rings[ring].enq === i) ptr.push('<i class="stw-ptr pe">写▸enq</i>');
+    if (st && st.rings[ring].deq === i) ptr.push('<i class="stw-ptr pd">取▸deq</i>');
+    if (ring === 'evt') { /* 事件环指针语义反转，标签在 CSS 里换 */
+    }
+    return '<div class="' + cls + '" data-k="' + ring + ':' + i + '">' + ptr.join('') +
+      '<b>' + esc(c.a) + '</b><span class="stw-t">' + (c.t ? esc(c.t) : '空') + '</span>' +
+      (c.f ? '<span class="stw-f">' + esc(c.f) + '</span>' : '') +
+      '<span class="stw-cyc">cyc=' + esc(c.cyc) + '</span></div>';
+  }
+  function worldHtml(W) {
+    var h = '';
+    RING_ORDER.forEach(function (k) {
+      if (!W.rings[k]) return;
+      var r = W.rings[k];
+      h += '<div class="stw-ring"><div class="stw-rhead"><b>' + esc(r.label) + '</b>' +
+        '<span class="stw-own">' + esc(r.own) + '</span></div><div class="stw-cells">';
+      r.cells.forEach(function (c, i) { h += cellHtml(c, k, i, W); });
+      h += '</div></div>';
+    });
+    ['dev', 'td'].forEach(function (k) {
+      if (!W[k]) return;
+      var b = W[k];
+      h += '<div class="stw-box" data-k="' + k + '"><b>' + esc(b.title) + '</b><table>';
+      Object.keys(b).forEach(function (f) {
+        if (f === 'title') return;
+        h += '<tr><th>' + esc(f) + '</th><td>' + esc(b[f]) + '</td></tr>';
+      });
+      h += '</table></div>';
+    });
+    return h;
+  }
+  function applyEv(W, ev) { /* 就地应用一条事件（深拷贝由调用方保证） */
+    if (!ev) return;
+    if (R3_OPS[ev.op]) return applyEvR3(W, ev); /* v3.6 rings3 高层枚举 */
+    if (ev.op === 'cell') {
+      var c = W.rings[ev.ring].cells[ev.i];
+      Object.keys(ev.set || {}).forEach(function (k) { c[k] = ev.set[k]; });
+    } else if (ev.op === 'ptr') {
+      if (typeof ev.enq === 'number') W.rings[ev.ring].enq = ev.enq;
+      if (typeof ev.deq === 'number') W.rings[ev.ring].deq = ev.deq;
+    } else if (ev.op === 'dev' || ev.op === 'td') {
+      Object.keys(ev.set || {}).forEach(function (k) { W[ev.op][k] = ev.set[k]; });
+    }
+  }
+  /* ---------- v3.5 机构面板状态应用（world0.machine.svg 在场时；语义与卡片一致） ---------- */
+  function mSetText(scope, sel, v) {
+    var t = scope.querySelector(sel);
+    if (t) t.textContent = (v == null ? '' : String(v));
+  }
+  function machineApply(W, box) {
+    Object.keys(W.rings || {}).forEach(function (rk) {
+      var r = W.rings[rk];
+      var slots = {};
+      Array.prototype.forEach.call(box.querySelectorAll('[data-ring="' + rk + '"]'), function (el) {
+        var id = el.getAttribute('data-k');
+        if (id != null) slots[id] = el;
+      });
+      (r.cells || []).forEach(function (c, i) {
+        var el = slots[rk + ':' + i];
+        if (!el) return;
+        el.setAttribute('class', (el.getAttribute('data-base') || 'st-mslot') + ' st-' + (c.st || 'empty'));
+        mSetText(el, '.st-ma', c.a);
+        mSetText(el, '.st-mt', c.t ? c.t : '空');
+        mSetText(el, '.st-mf', c.f || '');
+        mSetText(el, '.st-mcyc', 'cyc=' + c.cyc);
+        var enq = el.querySelector('.st-menq'), deq = el.querySelector('.st-mdeq');
+        if (enq) enq.setAttribute('visibility', r.enq === i ? 'visible' : 'hidden');
+        if (deq) deq.setAttribute('visibility', r.deq === i ? 'visible' : 'hidden');
+      });
+    });
+    ['dev', 'td'].forEach(function (k) {
+      var b = W[k];
+      if (!b) return;
+      Array.prototype.forEach.call(box.querySelectorAll('[data-k="' + k + '"]'), function (el) {
+        Object.keys(b).forEach(function (f) {
+          if (f === 'title') return;
+          mSetText(el, '[data-f="' + f + '"]', b[f]);
+        });
+      });
+    });
+  }
+  /* ---------- v3.6 rings3 四区模板（world0.worldKind==="rings3"；提案 §3.1/§3.2） ----------
+   * world0 形态：{ worldKind, rings:{cmd,ep0,evt}, dev:{title,state,states,tickets}, regs?, dbs? }
+   *   环 cells 元素与卡片面板同构 {st,a,t,f,cyc}；ev 载荷见 applyEvR3 各分支。 */
+  var R3_ORDER = ['cmd', 'ep0', 'evt'];
+  var R3_OPS = { ring_enq: 1, ring_deq: 1, ring_link: 1, db: 1, evt_enq: 1, evt_deq: 1, reg_wr: 1, dev_req: 1, dev_state: 1 };
+  function r3CellHtml(c, ring, i, r) {
+    var ptr = '';
+    if (r.enq === i) ptr += '<i class="r3-ptr pe" title="生产指针 enq">▲</i>';
+    if (r.deq === i) ptr += '<i class="r3-ptr pd" title="消费指针 deq">▼</i>';
+    return '<div class="r3-cell st-' + (c.st || 'empty') + '" data-k="' + ring + ':' + i + '">' + ptr +
+      '<span class="r3-cyc">c' + esc(c.cyc) + '</span>' +
+      '<b class="r3-a">' + esc(c.a || '·') + '</b>' +
+      (c.t ? '<span class="r3-t">' + esc(c.t) + '</span>' : '') +
+      (c.f ? '<span class="r3-f">' + esc(c.f) + '</span>' : '') + '</div>';
+  }
+  function rings3Html(W) {
+    var h = '<div class="r3">';
+    R3_ORDER.forEach(function (k) {
+      var r = W.rings[k];
+      if (!r) return;
+      var dbadge = '';
+      if (typeof r.db === 'number')
+        dbadge = '<span class="r3-db" data-k="db:' + r.db + '" title="门铃 ' + r.db + '">🔔' + r.db +
+          ((W.dbs && W.dbs[r.db]) ? '×' + W.dbs[r.db] : '') + '</span>';
+      h += '<div class="r3-zone r3-ring-' + k + '"><div class="r3-zhead"><b>' + esc(r.label) + '</b>' +
+        dbadge + '<span class="r3-own">' + esc(r.own) + '</span></div>' +
+        '<div class="r3-cells">' +
+        r.cells.map(function (c, i) { return r3CellHtml(c, k, i, r); }).join('') +
+        '</div></div>';
+    });
+    if (W.dev) {
+      var states = W.dev.states || [], cur = W.dev.state || '';
+      h += '<div class="r3-zone r3-devzone"><div class="r3-zhead"><b>' + esc(W.dev.title || '设备端') + '</b></div>' +
+        '<div class="r3-lamps" data-k="dev-state">' +
+        states.map(function (s) { return '<i class="r3-lamp' + (s === cur ? ' on' : '') + '">' + esc(s) + '</i>'; }).join('') +
+        '</div><div class="r3-tickets" data-k="dev-tickets">' +
+        ((W.dev.tickets && W.dev.tickets.length)
+          ? W.dev.tickets.map(function (t) {
+              return '<span class="r3-tk">' + esc(t.req) + (t.dir ? ' <em>' + esc(t.dir) + '</em>' : '') + '</span>';
+            }).join('')
+          : '<span class="r3-mut">（无 USB 请求到达——命令环对设备不可见）</span>') +
+        '</div></div>';
+    }
+    if (W.regs && Object.keys(W.regs).length) {
+      h += '<div class="r3-zone r3-regszone"><div class="r3-zhead"><b>寄存器窗</b></div><div class="r3-regs">' +
+        Object.keys(W.regs).map(function (rk) {
+          return '<span class="r3-reg" data-k="reg:' + esc(rk) + '"><em>' + esc(rk) + '</em>' + esc(W.regs[rk]) + '</span>';
+        }).join('') + '</div></div>';
+    }
+    return h + '</div>';
+  }
+  function applyEvR3(W, ev) { /* rings3 高层事件（提案 §3.2 表）；深拷贝由调用方保证 */
+    var R = W.rings;
+    if (ev.op === 'ring_enq') {
+      var r = R[ev.ring], trb = ev.trb || {}, c = r.cells[ev.slot];
+      c.st = trb.st || 'written'; c.a = trb.a || ''; c.t = trb.t || ''; c.f = trb.f || '';
+      if (trb.cyc != null) c.cyc = trb.cyc;
+      r.enq = (ev.slot + 1) % r.cells.length;
+    } else if (ev.op === 'ring_deq') {
+      R[ev.ring].deq = ev.slot;
+    } else if (ev.op === 'ring_link') { /* 回绕：生产指针回 0 槽 + 首槽 cycle 翻转 */
+      var rl = R[ev.ring];
+      rl.cells[0].cyc = rl.cells[0].cyc ? 0 : 1;
+      rl.enq = 0;
+    } else if (ev.op === 'db') {
+      W.dbs = W.dbs || {};
+      W.dbs[ev.target] = (W.dbs[ev.target] || 0) + 1;
+    } else if (ev.op === 'evt_enq') {
+      var re = R.evt, ec = ev.ev || {}, c2 = re.cells[ev.slot];
+      c2.st = 'evt'; c2.a = ec.a || ''; c2.t = ec.t || '';
+      c2.f = [(ec.sid != null ? 'Slot=' + ec.sid : ''), (ec.cc != null ? 'CC=' + ec.cc : '')]
+        .filter(Boolean).join(' · ');
+      re.enq = (ev.slot + 1) % re.cells.length;
+    } else if (ev.op === 'evt_deq') {
+      R.evt.deq = ev.slot;
+    } else if (ev.op === 'reg_wr') {
+      W.regs = W.regs || {};
+      W.regs[ev.reg] = ev.val;
+    } else if (ev.op === 'dev_req') {
+      W.dev.tickets = W.dev.tickets || [];
+      W.dev.tickets.push({ req: ev.req, dir: ev.dir || '' });
+    } else if (ev.op === 'dev_state') {
+      W.dev.state = ev.to;
+    }
+  }
+  function stateAt(D, idx) {
+    var W = JSON.parse(JSON.stringify(D.world0));
+    for (var i = 0; i <= idx && i < D.frames.length; i++)
+      (D.frames[i].ev || []).forEach(function (e) { applyEv(W, e); });
+    return W;
+  }
+
+  /* ---------- 弹窗（全局单例，多 stepper 共用） ---------- */
+  var modal = null;
+  function ensureModal() {
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'st-modal';
+    modal.innerHTML = '<div class="st-mbox" role="dialog" aria-modal="true">' +
+      '<button type="button" class="st-mclose">✕ 关闭</button><div class="st-mbody"></div></div>';
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || (e.target.getAttribute && e.target.getAttribute('class') === 'st-mclose'))
+        modal.classList.remove('show');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') modal.classList.remove('show');
+    });
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function showRef(ref) {
+    var m = ensureModal();
+    m.querySelector('.st-mbody').innerHTML =
+      '<h4>' + esc(ref.label) + ' · ' + esc(ref.title) + '</h4>' +
+      '<p class="st-msrc">' + esc(ref.src) + (ref.p ? ' · ' + esc(ref.p) : '') + '</p>' +
+      (ref.quote ? '<blockquote>' + esc(ref.quote) + '</blockquote>' : '') +
+      (ref.note ? '<p class="st-mnote">' + esc(ref.note) + '</p>' : '');
+    m.classList.add('show');
+  }
+
+  /* ---------- 每台 stepper 的初始化 ---------- */
+  function initStepper(root) {
+    var dataEl = root.querySelector('script.stepper-data');
+    if (!dataEl) return;
+    var D;
+    try { D = JSON.parse(dataEl.textContent); } catch (e) { return; /* 静态内容保留 */ }
+    var rows = {}, rowEls = {};
+    D.rows.forEach(function (r) { rows[r.id] = r; });
+    Array.prototype.forEach.call(root.querySelectorAll('.st-crow'), function (el) {
+      rowEls[el.getAttribute('data-id')] = el;
+    });
+    var codeBox = root.querySelector('.st-code');
+    var worldBox = root.querySelector('.st-world');
+    var noteBox = root.querySelector('.st-note');
+    var refsBox = root.querySelector('.st-refs');
+    var gridBox = root.querySelector('.st-grid');
+    if (!codeBox || !worldBox || !noteBox) return;
+
+    /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
+    var idx = 0, timer = null, lastWorld = null;
+    var N = D.frames.length;
+    var refMap = {};
+    (D.refs || []).forEach(function (r) { refMap[r.id] = r; });
+
+    /* 控制条 */
+    var ctl = document.createElement('div');
+    ctl.className = 'st-ctl';
+    ctl.innerHTML = '<button type="button" data-a="prev">◀ 上一行</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一行 ▶</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<span class="st-count"></span><span class="st-ph"></span>' +
+      '<span class="st-hint">←/→ 键也可步进</span>';
+    root.insertBefore(ctl, root.querySelector('.st-grid'));
+    /* v3.4：ctl 前的零高静止锚点——量 ctl 自然文档位用（见头部 v3.4 注） */
+    var pinRef = document.createElement('div');
+    pinRef.className = 'st-pinref';
+    pinRef.style.height = '0';
+    root.insertBefore(pinRef, ctl);
+    var countEl = ctl.querySelector('.st-count'), phEl = ctl.querySelector('.st-ph');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+
+    /* 引用条（chips） */
+    var chips = document.createElement('div');
+    chips.className = 'st-chips';
+    (D.refs || []).forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'st-chip'; b.textContent = r.label + ' ' + r.title;
+      b.title = '查看规范原文'; b.setAttribute('data-ref', r.id);
+      b.addEventListener('click', function () { showRef(refMap[r.id]); });
+      chips.appendChild(b);
+    });
+    if (refsBox) { refsBox.innerHTML = ''; refsBox.appendChild(chips); }
+
+    function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = '播放'; }
+    /* v3.4 钉住地板（见头部注）：行尽量滚到视口居中，但不低于"控件条与世界面板
+     * 都咬合在钉住位"的最小 scrollY——否则前几行阶段按钮随内容上移、要追着点。 */
+    var ctlStickTop = parseFloat(getComputedStyle(ctl).top) || 0;
+    var worldStickTop = parseFloat(getComputedStyle(worldBox).top) || 0;
+    function stepScroll(cur) {
+      var sy = window.scrollY || window.pageYOffset || 0;
+      var rowR = cur.getBoundingClientRect();
+      var center = sy + rowR.top + rowR.height / 2 - innerHeight / 2;
+      var floor = Math.max(sy + pinRef.getBoundingClientRect().top - ctlStickTop,
+                           sy + gridBox.getBoundingClientRect().top - worldStickTop);
+      var maxS = document.documentElement.scrollHeight - innerHeight;
+      window.scrollTo(0, Math.max(0, Math.min(maxS, Math.max(center, floor))));
+    }
+    /* v3.3 齐平对位：本帧事件命中的世界元素标 .st-chg，并把它们整体滚到与当前代码行
+     * 同一水平线（中线对齐）。无事件帧不动世界（代码行照常居中）。对位夹在
+     * [0, scrollHeight-clientHeight] 内：变化元素贴世界顶/底时贴边即止。 */
+    function alignWorld(fr, cur) {
+      if (!cur) return;
+      var marks = [];
+      (fr.ev || []).forEach(function (e) {
+        var sel = null;
+        if (e.op === 'cell') sel = '[data-k="' + e.ring + ':' + e.i + '"]';
+        else if (e.op === 'ptr') sel = '[data-k="' + e.ring + ':' + (typeof e.enq === 'number' ? e.enq : e.deq) + '"]';
+        else if (e.op === 'dev' || e.op === 'td') sel = '[data-k="' + e.op + '"]';
+        else if (R3_OPS[e.op]) { /* v3.6 rings3 高层枚举的脉冲定位 */
+          if (e.op === 'ring_enq' || e.op === 'ring_deq' || e.op === 'ring_link') sel = '[data-k="' + e.ring + ':' + e.slot + '"]';
+          else if (e.op === 'db') sel = '[data-k="db:' + e.target + '"]';
+          else if (e.op === 'evt_enq' || e.op === 'evt_deq') sel = '[data-k="evt:' + e.slot + '"]';
+          else if (e.op === 'reg_wr') sel = '[data-k="reg:' + e.reg + '"]';
+          else if (e.op === 'dev_req') sel = '[data-k="dev-tickets"]';
+          else if (e.op === 'dev_state') sel = '[data-k="dev-state"]';
+        }
+        if (!sel) return;
+        var el = worldBox.querySelector(sel);
+        if (el && marks.indexOf(el) < 0) { el.classList.add('st-chg'); marks.push(el); }
+      });
+      if (!marks.length) return;
+      var top = Infinity, bot = -Infinity;
+      marks.forEach(function (el) {
+        var rc = el.getBoundingClientRect();
+        top = Math.min(top, rc.top); bot = Math.max(bot, rc.bottom);
+      });
+      var rowR = cur.getBoundingClientRect();
+      var delta = (top + bot) / 2 - (rowR.top + rowR.height / 2);
+      var maxT = worldBox.scrollHeight - worldBox.clientHeight;
+      worldBox.scrollTop = Math.max(0, Math.min(maxT, worldBox.scrollTop + delta));
+    }
+    function go(i, noScroll) {
+      idx = Math.max(0, Math.min(N - 1, i));
+      var fr = D.frames[idx];
+      /* 当前行高亮 + 滚动跟随（v3.3：居中于视口；初始 go(0) 不滚——多台 stepper 各自
+       * go(0) 会连环拽页（最后一台赢，v3.2 起即有的加载跳页），只在用户步进时接管） */
+      Object.keys(rowEls).forEach(function (id) { rowEls[id].classList.remove('cur', 'done'); });
+      var cur = rowEls[fr.c];
+      if (cur) {
+        cur.classList.add('cur');
+        if (!noScroll) stepScroll(cur);
+      }
+      /* 已执行过的同段行打 done（当前行之前出现过的行） */
+      var seen = {};
+      for (var k = 0; k <= idx; k++) seen[D.frames[k].c] = true;
+      Object.keys(seen).forEach(function (id) { if (rowEls[id] && id !== fr.c) rowEls[id].classList.add('done'); });
+      /* 世界面板重放 */
+      var W = stateAt(D, idx);
+      if (D.world0.worldKind === 'rings3') {
+        worldBox.innerHTML = rings3Html(W);
+      } else if (D.world0.machine && D.world0.machine.svg) {
+        worldBox.innerHTML = D.world0.machine.svg;
+        machineApply(W, worldBox);
+      } else {
+        worldBox.innerHTML = worldHtml(W);
+      }
+      worldBox.classList.add('live');
+      lastWorld = W;
+      if (!noScroll) alignWorld(fr, cur);
+      /* 当行解说 + 活跃引用 */
+      noteBox.innerHTML = (fr.note ? fr.note : '<span class="st-mut">（本行无注记）</span>') +
+        (fr.refs && fr.refs.length
+          ? ' <span class="st-fref">' + fr.refs.map(function (id) {
+              var r = refMap[id]; if (!r) return '';
+              return '<button type="button" class="st-chip on" data-ref="' + id + '">📎 ' + esc(r.label) + '</button>';
+            }).join('') + '</span>'
+          : '');
+      Array.prototype.forEach.call(noteBox.querySelectorAll('[data-ref]'), function (b) {
+        b.addEventListener('click', function () { showRef(refMap[b.getAttribute('data-ref')]); });
+      });
+      countEl.textContent = '行 ' + (idx + 1) + ' / ' + N;
+      phEl.textContent = fr.ph ? '· ' + fr.ph : '';
+      if (idx === N - 1) stop();
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { stop(); go(idx - 1); }
+      else if (a === 'next') { stop(); go(idx + 1); }
+      else if (a === 'reset') { stop(); go(0); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        if (idx === N - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === N - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2000);
+      }
+    });
+    /* 行点击跳帧：该行最近一次出现的帧 */
+    Object.keys(rowEls).forEach(function (id) {
+      rowEls[id].addEventListener('click', function () {
+        stop();
+        for (var k = idx; k < N; k++) if (D.frames[k].c === id) return go(k);
+        for (k = 0; k < N; k++) if (D.frames[k].c === id) return go(k);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      /* 2026-11-03 xhci-spec 板块集成：宿主页面的动画台（.iso-stage， tabindex 可聚焦）
+       * 自己接管方向键/空格——焦点在台上时不抢键，否则一台页面两处同键同驱。 */
+      if (t && t.closest && t.closest('.iso-stage')) return;
+      var r = root.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return; /* 只在视野内接管方向键 */
+      if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
+      else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
+    });
+
+    /* 宽度自适应（v3 2026-10-21 用户裁定"窗口太大"）：代码窗宽度=实际最宽代码行
+     * （ln/fn）的渲染宽度；prose 行与文字段落不驱动宽度。整台 .stepper 随之紧致，
+     * 上限仍 96vw/1720px（超宽代码回落横向滚动），窄窗堆叠布局下不启用。 */
+    function fitWidth() {
+      if (innerWidth <= 1100) {
+        root.style.width = ''; gridBox.style.gridTemplateColumns = ''; codeBox.style.width = '';
+        return;
+      }
+      var maxW = 0;
+      Array.prototype.forEach.call(root.querySelectorAll('.st-crow.ln, .st-crow.fn'), function (el) {
+        var cs = getComputedStyle(el), cw = 0;
+        var code = el.querySelector('code');
+        if (code) cw = Math.max(cw, code.getBoundingClientRect().width);
+        var file = el.querySelector('.st-file');
+        if (file) { /* 徽标是 block（填满行宽），量文字须用 Range */
+          var rg = document.createRange();
+          rg.selectNodeContents(file);
+          var fr = rg.getBoundingClientRect();
+          if (fr.width) cw = Math.max(cw, fr.width);
+        }
+        var rowW = cw + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + 2;
+        if (rowW > maxW) maxW = rowW;
+      });
+      if (!maxW) return;
+      var csR = getComputedStyle(root);
+      var chrome = (parseFloat(csR.paddingLeft) || 0) + (parseFloat(csR.paddingRight) || 0) + 2; /* 容器内边距+边框 */
+      var gap = parseFloat(getComputedStyle(gridBox).columnGap) || 14;
+      var cap = Math.min(document.documentElement.clientWidth * 0.96, 1720);
+      /* 2026-10-30 用户裁定（反馈轮②）：data-world-w=N 时世界面板目标宽 N px（动画侧优先）——
+       * 代码列在 cap 内让位（下限 400，超出回落横向滚动），世界列富余视口可到 900。缺省 0=旧路径。 */
+      var WT = parseFloat(root.getAttribute('data-world-w')) || 0;
+      if (WT > 0) {
+        var avail2 = cap - chrome - gap;
+        var codeW2 = Math.min(Math.ceil(maxW) + 18, Math.max(400, avail2 - WT));
+        var worldW2 = Math.min(Math.max(avail2 - codeW2, 300), 900);
+        codeBox.style.width = codeW2 + 'px';
+        gridBox.style.gridTemplateColumns = codeW2 + 'px minmax(300px, 1fr)';
+        root.style.width = Math.min(codeW2 + worldW2 + gap + chrome, cap) + 'px';
+        return;
+      }
+      var worldW = worldBox.getBoundingClientRect().width || 400;
+      var codeW = Math.min(Math.ceil(maxW) + 18, cap - chrome - gap - 320); /* 18=滚动条与舍入余量 */
+      if (codeW < 320) codeW = 320;
+      codeBox.style.width = codeW + 'px';
+      gridBox.style.gridTemplateColumns = codeW + 'px minmax(300px, 1fr)';
+      var total = codeW + worldW + gap + chrome;
+      root.style.width = Math.max(Math.min(total, cap), Math.min(720, cap)) + 'px';
+    }
+    var fitTimer = null;
+    window.addEventListener('resize', function () {
+      if (fitTimer) clearTimeout(fitTimer);
+      fitTimer = setTimeout(fitWidth, 150);
+    });
+
+    go(0, true);
+    fitWidth();
+  }
+
+  document.querySelectorAll('.stepper').forEach(function (el) {
+    try { el.classList.add('js'); initStepper(el); }
+    catch (e) { /* 静态内容保留，组件自身错误不白屏 */ }
+  });
+})();
 
 (() => {
   const stage = document.querySelector(".iso-stage");

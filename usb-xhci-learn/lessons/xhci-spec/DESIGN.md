@@ -59,6 +59,9 @@ xhci-spec/
      ③ `泳道`——流程图/时序图的图表术语字面用法（机制课退役的是"环视角"隐喻用法，
      本板块是 swimlane 图的本名，区分线=有无字面锚）。
      其余任何 family 命中=FAIL。
+     **子串随豁免（2026-11-04 终扫实锤）**：互链专名（如「传输剧」）自身被豁免时，
+     其单字族（剧）在同一短语内的命中随之豁免——区分线=命中是否落在专名短语内；
+     页面行文单独用「剧」仍=FAIL。
 6. **anatomy 工艺**：按 anatomy SKILL.md 全流程——先概念与零件清单后几何；
    `node build.mjs --audit` 到 `audit passed`；`~/.zcode/skills/anatomy/scripts/lines.mjs`
    到 `line ends: 0`；双主题 dark+light 都构建；390px 宽可读；读数与模型同源为真。
@@ -356,4 +359,9 @@ BSR=1 legacy 分支（先通信后编址，p76–77）；hub/TT 逐层初始化�
 | 2026-11-03 | 主会话（动画优化轮） | §1.8 可读性补强：机器页文字不得被机械部件遮挡（SVG 画家算法：后画实体盖先画标签=遮挡） | 用户新反馈三件（遮挡/帧速/字小）＋逐帧遮挡探针实锤：4.2 铭牌 4 处 overlap=1.0、4.3 去重 57 处（工位铭牌/部件标签被后画不透明面板整盖，actors 动态卡盖静态刻字）——探针=`scripts/xhci_spec_occlusion_probe.py`（text bbox vs DOM 序在后部件 bbox 求交，阈值 overlap>0.15 且遮挡者 opacity≥0.35） | 机器页交付门新增「探针 OCCLUSION-PASS」（两主题全帧）；标签/铭牌类文字组必须在实体之后、actors 之前绘制；帧速/字号台阶由每节 EVIDENCE 修订段登记 |
 | 2026-11-03 | 主会话（动画优化轮） | 新卡型提案（待用户裁定）：代码走读卡＝codestepper 引擎（语句级帧）×「三环+设备」世界面板（rings3 模板，ev 枚举 ring_enq/ring_deq/ring_link/db/evt_enq/evt_deq/reg_wr/dev_req/dev_state） | 用户需求：调用一行代码显示一帧动画，动画显示传输环/事件环/命令环 TRB 变化与设备端变化；codestepper v3.4b 引擎零改动、数据面 lessons-data JSON 先例、4.3 机器环语汇沿用 | 详见 `CODE-STEPPER-设计提案.md`；裁定后登记分镜契约与机检门（三环账本断言），量产节按内容选配 |
 | 2026-11-03 | 主会话 | 上表提案**用户已裁定立项**：①方案 A ✓ ②首发样例=§4.1 Enable Slot 链 ✓ ③代码基线=板块单独声明 ✓ | 用户三项裁定原文「1是，2首发4.1，3单独声明」；提案文档已转实施蓝图（§〇 五步：rings3 模板→基线声明→§4.1 样例→集成门→4.3 验收件） | 走读卡施工按 CODE-STEPPER-设计提案.md §〇 执行；基线值建议 62f4c998b297 同源（归属独立声明）；行号一律 excerpts 检现场核 |
-| 2026-11-03 | 主会话（老问题修复轮） | §1.8 字号「宁小勿溢出不改几何」对历史豁免面解除：用户裁定授权**改几何放大**（铭牌/面板/卡面宿主几何可为可读性改动）；措辞仍冻结（可拆行） | 历史豁免面实锤（4.2 EVIDENCE §9.3/§9.4、4.3 §7.3）：4.2 工位铭牌 6.2/4.0px 板满、飞行卡画线截断；4.3 教学锚句 3.46px、软件装载 2.75px、票据/堆叠/描述符卡 2.55–5.5px | 几何改动仍须过全门（audit/lines/探针/语言门/页码/真值表）＋fit 机检（getComputedTextLength×宿主沿轴）；本轮成果：4.2 铭牌 9/6px×2、飞行卡独立深度组 ray-box 判深；4.3 锚句 7.00px 拆双行立牌、副铭 5.00px、卡 4.5/4.0/6.01px（明细两节 EVIDENCE §10/§8）。**换算更正：em→世界=1:1**（旧 ×1.04 口径系统性低估 1.35×，已回写 anatomy craft.md） |
+| 2026-11-03 | 主会话（步进按钮轮） | §6 机器页交付门新增「控制条」：4.2/4.3 与 4.1 同等提供可视步进按钮（◀ 上一帧 · 下一帧 ▶ · 自动巡游 · ⟲ 复位 + aria-pressed 同步），键盘行为全部保留 | 用户问题①实锤：4.2/4.3 只有键盘与 JS API 无可视按钮；新门 `scripts/xhci_spec_ctl_probe.py`（CTL-PROBE-PASS，帧计数取 __fig42/__fig43 已暴露 API 实测） | 后续机器节（4.10/4.12/4.14/4.15/4.19/4.23 若建机器）控制条随门走；lines.mjs 当日升级 unparseable-d 版，PASS 形态="line ends: 0 of 0 ends on 0 lines float" |
+| 2026-11-03 | 主会话（步进按钮轮） | 互链卡指向已建节的链接不得指目录页 | 4.2 互链卡 §4.3 链接 href=板块 index（错目标，存在性检查抓不到——文件存在但非目标页） | 修为直链 ../4.3-usb-device-init/index.html；check_lesson_links 只验存在性，**目标正确性靠人工/EVIDENCE 登记** |
+| 2026-11-04 | 主会话（CODE-STEPPER 步2-4） | 4.1 页新增「代码走读卡」块（函数调用视角）：集成通道=stepper_builder.py `render_block <json>` 打 stdout → build.mjs 构建期内联（渲染单一事实源=引擎，锚点断言门保留）；卡=course.css 走读段（剥注释）+变量垫片，**纸面卡固定浅色、双主题同形**（读代码场景材质，不做暗色适配） | 用户问题②③（动画缺函数调用视角）+ 提案 §〇 步 2-4；渲染面双实现（JS builder+py 引擎）漂移风险用单源规避 | 数据件=lessons-data/stepper_41x.json（24 帧，行号全部锚点机核）；codestepper.js 新增 .iso-stage 键盘避让（宿主动画台聚焦时不抢方向键）；新门：check_rings3_ledger.py（三环账本三不变量）+xhci_spec_stepper_probe.py（rings3 DOM 行为数据驱动探针）；基线声明=62f4c998b297（卡头 st-base，板块专用声明） |
+| 2026-11-04 | 主会话（泳道量产首件 4.4） | 泳道节生成器立法：`ch4/_gen/lane_page.mjs`（4.1 build.mjs 参数化抽取）——节目录 build.mjs 只写数据（steps/quotes/prose/legend/links）；布局推进量=内容高自适应；箭头激活标记=非 dev 端 UML 窄条贴边；单卡双模式/令牌三候选避让/键盘全保留 | §4.4 量产实测：10 步泳道 + 门全绿（语言门⊆豁免集/console clean/交互冒烟/页码 PAGECHECK）；生成器数据件禁发明新图元——新图元先在 lane_page.mjs 登记过门 | 页码机核固化=scripts/xhci_spec_pagecheck.py（pypdf needle 对，断行用断行后短 needle）；规范文本恢复通道固化=scripts/xhci_spec_extract.py（/tmp 被清后重产）；**机器候选节（4.10/4.12/4.14/4.15/4.19/4.23）本批先出流程骨架页，机器形态留后续会话（分级裁定不变）**——用户过目后可追认或打回 |
+| 2026-11-04 | 4.3 卡子代理（走读卡轮） | console 门双域：anatomy drive.mjs 只捕 Runtime.consoleAPICalled，**SVG 解析错走 Log.entryAdded 域**——旧门把这类错全漏成 "console: clean"（4.3 机器页 cap1 NaN×7 条实锤，历轮门全盲） | 4.3 卡施工期发现并修 cap1 两行（:410/:485 数组下标形态）+ drive.mjs 补 Log.enable+Log.entryAdded 监听（负向 NaN-path 页实测捕获、正向 4.3 clean 双验证） | skill 仓改动按攒批态落盘未 commit；anatomy SKILL.md 不改（工具行为自含） |
+| 2026-11-04 | 量产滚动 | 泳道/表格节门套件（量产节全部适用）：pagecheck（页码）+ scan_words⊆豁免 + lane_smoke/static 冒烟 + 自包含 + 互链存在性 + EVIDENCE 断言表；**语言门量产实锤清零词**：旅程/账本/上环/出场/实收/钥匙（首轮各咬 1-2 处，当轮改定）——文案自查清单=机制课退役词族全表 | 4.4-4.25 十一节实测 | 互链卡指向已建节必须直链（台账前条）；待建节链板块目录页并标「待建」 |

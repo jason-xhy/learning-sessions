@@ -1,4 +1,49 @@
-# CODE-STEPPER-设计提案 —— 逐代码调用分析与三环动画结合（2026-11-03，待用户裁定）
+# CODE-STEPPER-设计提案 —— 逐代码调用分析与三环动画结合
+
+> **用户已裁定（2026-11-03）：①方案 A 立项 ✓ ②首发样例=§4.1 Enable Slot 调用链 ✓ ③代码基线=本板块单独声明 ✓**
+> 本文件自裁定起转为**实施蓝图**（新会话零上下文照此施工）。
+
+## 〇、实施蓝图（2026-11-03 定稿）
+
+### 步 1：rings3 世界面板模板（组件工程，1 会话）——✅ 已完成（2026-11-03）
+
+- 位置：teach 工坊 `assets/codestepper.js` 扩展 `worldKind: "rings3"` 分发（引擎 API 不动，渲染层新增模板）；或独立 `assets/rings3.js` 由 codestepper 按数据 worldKind 引——**实施时读 codestepper.js 现行结构择侵入最小者**。
+  **实施形态（v3.6，走侵入最小路径）**：codestepper.js 内新增 `rings3Html/applyEvR3/r3CellHtml` 函数组+`R3_OPS` 枚举表；`applyEv` 开头 dispatch（旧 4 op 零改动）；`go()` 渲染分发 `worldKind==='rings3'` 分支（先于 v3.5 machine 分支）；`alignWorld` sel 映射扩 9 op；builder（stepper_builder.py）lint 按 worldKind 分支放行高层 op+`render_world0_r3` 静态壳（无 JS 降级可读）；course.css 增 `.r3-*` 样式段（三方配色 CSS 变量 `--r3-drv/--r3-xhc/--r3-dev` 对齐 DESIGN §3.3，dark 集成时覆写变量即可）。
+- 四区布局照本文 §3.1 线框（命令环/EP0 传输环/事件环/设备端纵向四区）；槽卡视觉语汇对齐 4.3 机器 TRB 小卡（类型缩写+cycle 位角标），指针=▲生产/▼消费；data-k 定位+变化脉冲沿用 .st-chg 机制。
+  **落地细节**：槽卡 `{st,a,t,f,cyc}` 与卡片面板同构；门铃=环头徽标按次数累计（`db:0/1` data-k，闪=当帧脉冲）；寄存器窗=可选第五条区（`reg_wr` 驱动，data-k=`reg:<名>`）；指针着色按生产/消费方（cmd/ep0 ▲驱动蓝▼xHC 金，evt 环反转）。
+- ev 枚举照 §3.2 表（ring_enq/ring_deq/ring_link/db/evt_enq/evt_deq/reg_wr/dev_req/dev_state）。
+  **语义定案**：`ring_enq` 填槽+enq=(slot+1)%len（自动摸尾）；`ring_link` 独立教学帧=首槽 cyc 翻转+enq=0；`evt_enq` 载荷 `{t,a?,sid?,cc?}` 槽卡 f 行拼 `Slot=n · CC=n`；`dev_state {from,to}` from↔当前一致性归步 4 断言器管（运行时容错）。
+- 布局契约并入 st_layout_probe：四区等高、槽卡不溢出、字号≥11px（2D 面板无透视压缩，主层直接 13-14px——本方案对"3D 字小"的结构性规避）。
+  **契约机械化**（st_layout_probe v3.6 段，探测课内 stepper-data 的 worldKind 自动生效）：四区在场 / 三环 `.r3-cells` 带高两两差 ≤2px（"四区等高"的可量化形态）/ 槽卡与带容器零横向溢出 / `.r3-zone` 内全部叶文本 computed fontSize ≥11px / 世界面板无横向溢出。另：抽屉契约（mn-rail）条件化——无抽屉的课跳过（fixture/新板块课非违例）。
+- **验收（全绿 2026-11-03）**：fixture 课 `lessons/0099rings3-fixture.html`（数据件 `lessons-data/stepper_99r3demo.json`，九种 op 全走）——st_layout_probe PROBE-PASS（含 rings3 段）+ `scripts/r3_behavior_check.py` R3-BEHAVIOR-PASS（九帧逐帧 DOM 断言：入队卡/指针前移/门铃计数/事件卡 Slot·CC/消费指针/cyc 翻转/传输环/设备灯+票据；**帧对位用 reset 法**——增量步进曾致断言错位假阳性，已修）+ lesson_gates lang 门 total=0 + 0008 旧课回归 PROBE-PASS（组件改动对存量 8 课零影响）。视觉转写与 DOM 对账（帧 5 截图：四区渲染/指针色/事件卡黄底全对）。
+- **遗留登记**：lesson_gates 的 lessons 子门（check_lessons 全目录）在 xhc-machines fig1-4 与 xhci-spec 三节存量上报 14 条「SVG 良构性」✗——两个板块上线时未跑过该门，与本组件无关，待 anatomy 维护窗归因。
+
+### 步 2：基线声明（单独声明，值建议同源）
+
+- 板块独立声明段（课头）：`代码基线：<commit>（本板块代码走读卡专用声明）`。
+- commit 值**建议沿用 62f4c998b297**（与 0006-0010 同值）——理由：读者跨课看到的代码同版本；check_lesson_excerpts.py 直连 git show 无需新基建。**"单独声明"指归属独立（板块自己的声明段与检查参数），非必须换 commit**；实施时若用户另指定则以用户值为准。
+- 内核树 /Volumes/KernelSrc/linux；函数行号一律实施时 `git show <commit>:<file> | grep -n` 现场核对+excerpts 检钉死（禁凭记忆写行号）。
+
+### 步 3：§4.1 首发样例数据（内容工程，半会话）
+
+走读范围（真函数名，行号实施时核）：
+- `xhci_alloc_dev()`（xhci.c）Enable Slot 段：分配 command → `xhci_queue_slot_control(xhci, command, TRB_ENABLE_SLOT, 0)`（命令环入队）→ `xhci_ring_cmd_db(xhci, 0)`（门铃 0）→ 等待完成
+- 桥帧（CM/CTX 帧，无代码行）：xHC 取命令 TRB→执行→选 Slot ID=1→写 Command Completion Event TRB 进事件环→MSI-X（注记：中断可选可轮询，§4.1 避雷）
+- `handle_cmd_completion()`（xhci-ring.c）消费段：事件环取回执→`GET_SLOT_ID(le32_to_cpu(event->status))` 拿 Slot ID→`complete(&cmd->completion)` 交还上层
+- 尾帧注记：设备端四区全程无票据无状态迁移——「命令对设备不可见」（与 §4.1 避雷第 3 条同构）
+
+帧数据：lessons-data 式调用日志 JSON（usb-xhci-stepper/1 schema 扩 worldKind+ev[]），预计 18-26 帧（语句帧+桥帧+尾帧）。
+
+### 步 4：集成与门
+
+- 集成点：4.1 页新增第五块「代码走读卡」（正文块顺序 e 互链卡之前）；卡头立法声明=代码基线 commit+TD 双账本粒度挑明（规范 TD 按阶段 vs xhci_td 按 URB——teach 既有判据首现同框必挑明）。
+- 门：lesson_gates 全家桶（assets/render/excerpts+新 rings3 布局契约）+ 三环账本断言器（新写：每帧后各环 TRB 计数单调、事件环写入数=命令完成数、设备灯迁移合法）+ 语言门（新卡文案过 retired 门）+ 三节联动验收（4.1 页全门复跑）。
+- 装机：rsync → **适配**（板块 index/4.3 双主题 5 处 -standalone 改写会因 rsync --delete 复发，必须重做）→ check_lesson_links → 线上双门。
+
+### 步 5：4.3 四区全动样例（第二个，1 会话）——步 3 验收通过后启动
+
+Address Device 链（命令环+EP0 传输环+事件环+设备端四区全动：SET_ADDRESS 票据+Default→Address 灯迁），作为方案验收件。分镜参照 4.3 机器 F5-F6 语义。
+
 
 用户需求原话拆解（四要素）：
 1. **逐代码调用分析**——按内核真实调用链一行（一条语句/一次调用）走读；

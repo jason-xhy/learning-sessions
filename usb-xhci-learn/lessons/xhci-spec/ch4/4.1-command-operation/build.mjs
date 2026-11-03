@@ -1,7 +1,10 @@
-// §4.1 命令操作 —— 三方时序：总览（流程图）+ 步进（动画）单卡双模式
+// §4.1 命令操作 —— 三方时序：总览（流程图）+ 步进（动画）单卡双模式 + 代码走读卡
 // 判据：xHCI 1.2b §4.1 p68（引文三条逐字，PDF 伪影已剔除）；p69 脚注 7（中断可选）
 // 工艺：anatomy kit pageHtml/plateHtml + shared/zoomfs.mjs（构建期内联，页面自包含）
-import { writeFileSync } from "node:fs";
+// 走读卡（CODE-STEPPER 步 4，2026-11-04）：render_block 渲染 + codestepper/course.css
+//   走读段内联——渲染单一事实源=scripts/stepper_builder.py，行号零誊抄（锚点断言门）。
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as k from "/Users/jason/.zcode/skills/anatomy/kit/iso-kit.mjs";
@@ -9,7 +12,24 @@ import { kitScript } from "/Users/jason/.zcode/skills/anatomy/scripts/inline-kit
 import { zoomBarHtml, zoomFsCss, zoomFsScript } from "../../shared/zoomfs.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const WS = "/Users/jason/ZCodeProject/usb-xhci-study";
 const THEME = process.argv.includes("--light") ? "light" : "dark";
+
+// ---------- 代码走读卡（rings3 四区：命令环/EP0/事件环/设备端） ----------
+const stepperHtml = execFileSync("python3", [
+  join(WS, "scripts/stepper_builder.py"), "render_block",
+  join(WS, "lessons-data/stepper_41x.json"),
+], { encoding: "utf8" });
+const courseCss = readFileSync(join(WS, "assets/course.css"), "utf8");
+const cssSeg = (a, b) => {
+  const i = courseCss.indexOf(a);
+  const j = courseCss.indexOf(b, i);
+  if (i < 0 || j < 0) throw new Error(`course.css 段标记缺失: ${a.slice(0, 30)}`);
+  return courseCss.slice(i, j);
+};
+const stepperCss = cssSeg("/* ===== 代码步进放映机", "/* ===== 右缘批注")
+  .replace(/\/\*[\s\S]*?\*\//g, "");  // 剥段内注释：资产注释不进交付件（载体三分），兼减字节
+const stepperJs = readFileSync(join(WS, "assets/codestepper.js"), "utf8");
 
 // ---------- 时序数据（SVG 与步进动画同源） ----------
 // 演示样例：Enable Slot（示例值——Slot ID 回执见 §4.3.2 p75；命令 TRB 字段细节归 §4.6，本页不刻数值）
@@ -119,12 +139,12 @@ ${zoomFsCss()}
 .xsp-q .zh { color: var(--anatomy-text); font-size: 15.5px; margin-top: 4px; }
 .xsp-q .src { font-family: var(--font-mono); font-size: 12px; color: var(--anatomy-muted); }
 /* 时序图 */
-.xsp-hdr { fill: var(--lane, var(--anatomy-shade2)); stroke: none; }
+.xsp-hdr { fill: var(--lane, var(--anatomy-shade-2)); stroke: none; }
 .xsp-lanehdr.xsp-sw .xsp-hdr { fill: var(--xsp-sw); } .xsp-lanehdr.xsp-hc .xsp-hdr { fill: var(--xsp-hc); } .xsp-lanehdr.xsp-dev .xsp-hdr { fill: var(--xsp-dev); }
 .xsp-hdr-t { font: 700 18px var(--font-ui); fill: var(--xsp-lane-ink); }
 .xsp-hdr-s { font: 400 12.5px var(--font-mono); fill: var(--xsp-lane-ink); opacity: .82; }
 .xsp-life { stroke: var(--anatomy-line-mid, #455); stroke-width: 1.4; stroke-dasharray: 3 6; }
-.xsp-box { fill: var(--anatomy-shade2, #20242c); stroke: var(--lane, #888); stroke-width: 1.8; }
+.xsp-box { fill: var(--anatomy-shade-2, #20242c); stroke: var(--lane, #888); stroke-width: 1.8; }
 .xsp-bx.xsp-sw .xsp-box { stroke: var(--xsp-sw); } .xsp-bx.xsp-hc .xsp-box { stroke: var(--xsp-hc); }
 .xsp-t1 { font: 500 16.5px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
 .xsp-t1:first-of-type { font-weight: 700; }
@@ -134,7 +154,7 @@ ${zoomFsCss()}
 .xsp-pg { font: 400 12.5px var(--font-mono); fill: var(--anatomy-muted); }
 .iso[data-theme="light"] .xsp-pg { fill: #6b6350; }
 .xsp-notebox { fill: var(--xsp-note-bg); stroke: var(--anatomy-line-mid, #455); stroke-dasharray: 5 4; stroke-width: 1.4; }
-.xsp-act { fill: var(--anatomy-shade2, #20242c); stroke-width: 1.6; }
+.xsp-act { fill: var(--anatomy-shade-2, #20242c); stroke-width: 1.6; }
 .xsp-act-sw { stroke: var(--xsp-sw); } .xsp-act-hc { stroke: var(--xsp-hc); }
 .xsp-note.xsp-dev .xsp-notebox { stroke: var(--xsp-dev); }
 .xsp-ln { stroke-width: 2; } .xsp-ln.xsp-sw { stroke: var(--xsp-sw); } .xsp-ln.xsp-hc { stroke: var(--xsp-hc); }
@@ -143,7 +163,7 @@ ${zoomFsCss()}
 .xsp-item { transition: opacity .35s ease; }
 .xsp-item.xsp-dim { opacity: .16; }
 .xsp-item.xsp-on .xsp-box { stroke-width: 3.2; filter: drop-shadow(0 0 6px var(--anatomy-line-hi, #fff3)); }
-.xsp-token rect { fill: var(--anatomy-shade2, #20242c); stroke: var(--anatomy-line-hi, #ccc); stroke-width: 1.5; }
+.xsp-token rect { fill: var(--anatomy-shade-2, #20242c); stroke: var(--anatomy-line-hi, #ccc); stroke-width: 1.5; }
 .xsp-token text { font: 700 14px var(--font-ui); fill: var(--anatomy-text); }
 .xsp-token { transition: transform .5s cubic-bezier(.3,.7,.3,1), opacity .3s; }
 .xsp-token.xsp-pulse { animation: xsppl 1.1s ease infinite; }
@@ -153,12 +173,19 @@ ${zoomFsCss()}
 .xsp-ctl button { font: 500 13px var(--font-ui); color: var(--anatomy-muted); background: transparent; border: 1px solid var(--anatomy-line-mid, #456); border-radius: 4px; padding: 4px 12px; cursor: pointer; }
 .xsp-ctl button[aria-pressed="true"] { color: var(--anatomy-text); border-color: var(--anatomy-text); }
 .xsp-ctl button:hover { border-color: var(--anatomy-text); }
-.xsp-narr { font-family: var(--font-ui); font-size: 15px; color: var(--anatomy-text); background: var(--anatomy-shade2, #20242c); border: 1px solid var(--anatomy-line-mid, #456); border-radius: 6px; padding: 10px 14px; margin: 10px 0 0; min-height: 44px; }
+.xsp-narr { font-family: var(--font-ui); font-size: 15px; color: var(--anatomy-text); background: var(--anatomy-shade-2, #20242c); border: 1px solid var(--anatomy-line-mid, #456); border-radius: 6px; padding: 10px 14px; margin: 10px 0 0; min-height: 44px; }
 .xsp-narr b { color: var(--anatomy-text); }
 .xsp-legend { display: flex; gap: 14px; flex-wrap: wrap; font-family: var(--font-ui); font-size: 13.5px; color: var(--anatomy-muted); margin-top: 10px; }
 .xsp-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .xsp-foot { font-family: var(--font-ui); font-size: 13px; color: var(--anatomy-muted); margin-top: 18px; }
 @media print { .xsp-ctl { display: none; } }
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+${stepperCss}
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--font-ui); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
 </style>`;
 
 const navHtml = `
@@ -219,7 +246,9 @@ const body = pageCss + navHtml + proseHtml + quotesHtml +
     keys: [],
     caption: "驱动与 xHC 之间的一条管理通道：命令 TRB 写入命令环、写门铃 0、完成事件回事件环；设备全程不在场。",
     body: `<div class="iso-stage" tabindex="0" role="group" aria-label="命令操作三方时序图，总览为完整流程图，步进模式逐帧播放八步">${svg}</div>` + ctlHtml + legendHtml + zoomBarHtml("放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进"),
-  }) + linksHtml + `
+  }) + `
+<p class="xsp-walknote">同一个命令模型在真实内核代码里的样子——按函数调用逐语句走读（规范 TD 与内核 xhci_td 的计数口径不同：规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记；本链是命令，不涉传输环）：</p>
+` + stepperHtml + linksHtml + `
 <p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.1 p68、p69 脚注 7 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-03</p>`;
 
 const LIVE = `
@@ -302,7 +331,7 @@ const LIVE = `
   paint();
 })();`;
 
-const script = kitScript() + LIVE + zoomFsScript({ focus: ['[data-step].xsp-on'] });
+const script = kitScript() + stepperJs + LIVE + zoomFsScript({ focus: ['[data-step].xsp-on'] });
 const page = k.pageHtml({ title: "§4.1 命令操作 · xHCI 规范对照学习", theme: THEME, body, script, width: 1500 });
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);

@@ -1,0 +1,379 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>§4.19 根集线器 · xHCI 规范对照学习</title><style>
+.iso{
+  --anatomy-page:#0b0b0b;--anatomy-card:#131313;--anatomy-text:#a3a3a3;--anatomy-strong:#e6e6e6;--anatomy-muted:#6e6e6e;
+  --anatomy-paper:#131313;--anatomy-face:#1b1b1b;--anatomy-top:#1c1c1c;
+  --anatomy-shade-0:#0f0f0f;--anatomy-shade-1:#121212;--anatomy-shade-2:#151515;--anatomy-shade-3:#181818;
+  --anatomy-lit-top:#262626;--anatomy-lit-shade:#1d1d1d;
+  --anatomy-hi:#d4d4d4;--anatomy-mid:#6a6a6a;--anatomy-lo:#3e3e3e;--anatomy-faint:#2a2a2a;--anatomy-lit:#ffffff;
+  --anatomy-halo:#050505;--anatomy-halo-opacity:.9;--anatomy-dot:#e6e6e6;
+  --anatomy-red:#ff6b6b;--anatomy-green:#6be0a0;--anatomy-blue:#6b9bff;
+  --anatomy-weight:.6px;--anatomy-ease:cubic-bezier(.32,.72,0,1);
+  --anatomy-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff0a,inset 0 0 0 1px #ffffff06,0 0 0 1px #00000026,0 1px 1px -.5px #00000014,0 3px 3px -1.5px #00000014,0 6px 6px -3px #00000014,0 12px 12px -6px #00000014;
+}
+.iso[data-theme="light"]{
+  --anatomy-page:#f2f2ef;--anatomy-card:#fbfbfa;--anatomy-text:#57575a;--anatomy-strong:#18181a;--anatomy-muted:#8c8c90;
+  --anatomy-paper:#fbfbfa;--anatomy-face:#ffffff;--anatomy-top:#ffffff;
+  --anatomy-shade-0:#dcdcd9;--anatomy-shade-1:#e5e5e2;--anatomy-shade-2:#ededea;--anatomy-shade-3:#f4f4f1;
+  --anatomy-lit-top:#ffffff;--anatomy-lit-shade:#eeeeeb;
+  --anatomy-hi:#26262a;--anatomy-mid:#8a8a8f;--anatomy-lo:#b4b4b8;--anatomy-faint:#d4d4d6;--anatomy-lit:#000000;
+  --anatomy-halo:#8a8a80;--anatomy-halo-opacity:.32;--anatomy-dot:#3a3a3e;
+  --anatomy-red:#e5484d;--anatomy-green:#30a46c;--anatomy-blue:#3e63dd;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff,0 0 0 1px #0000000f,0 1px 1px -.5px #0000000a,0 3px 3px -1.5px #0000000a,0 6px 6px -3px #0000000a,0 12px 12px -6px #0000000a;
+}
+.iso-svg{display:block;width:100%;height:auto;overflow:visible}
+.iso-svg path,.iso-svg circle{vector-effect:non-scaling-stroke}
+.iso-fill{fill:var(--anatomy-paper);stroke:none}
+.iso-solid[data-lit]>.iso-fill{fill:var(--anatomy-face)}
+.iso-shade,.iso-top{stroke:none}
+.iso-shade[data-shade="0"]{fill:var(--anatomy-shade-0)}
+.iso-shade[data-shade="1"]{fill:var(--anatomy-shade-1)}
+.iso-shade[data-shade="2"]{fill:var(--anatomy-shade-2)}
+.iso-shade[data-shade="3"]{fill:var(--anatomy-shade-3)}
+.iso-top{fill:var(--anatomy-top)}
+.iso-solid[data-lit]>.iso-top{fill:var(--anatomy-lit-top)}
+.iso-solid[data-lit]>.iso-shade{fill:var(--anatomy-lit-shade)}
+.iso-solid[data-seamless]>.iso-shade,.iso-solid[data-seamless]>.iso-top{stroke-width:.4;stroke-linejoin:round}
+.iso-solid[data-seamless]>.iso-shade[data-shade="0"]{stroke:var(--anatomy-shade-0)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="1"]{stroke:var(--anatomy-shade-1)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="2"]{stroke:var(--anatomy-shade-2)}
+.iso-solid[data-seamless]>.iso-shade[data-shade="3"]{stroke:var(--anatomy-shade-3)}
+.iso-solid[data-seamless]>.iso-top{stroke:var(--anatomy-top)}
+.iso-solid[data-seamless][data-lit]>.iso-top{stroke:var(--anatomy-lit-top)}
+.iso-solid[data-seamless][data-lit]>.iso-shade{stroke:var(--anatomy-lit-shade)}
+.iso-solid[data-lit]>.iso-edge{stroke:var(--anatomy-lit)}
+.iso-halo{fill:var(--anatomy-halo);stroke:none;filter:blur(9px);opacity:var(--anatomy-halo-opacity);transform:translateY(3px)}
+.iso-line{fill:none;stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight);stroke-linecap:round;stroke-linejoin:round}
+.iso-line[data-tone="hi"]{stroke:var(--anatomy-hi)}
+.iso-line[data-tone="mid"]{stroke:var(--anatomy-mid)}
+.iso-line[data-tone="lo"]{stroke:var(--anatomy-lo)}
+.iso-line[data-tone="faint"]{stroke:var(--anatomy-faint)}
+.iso-line[data-tone="lit"]{stroke:var(--anatomy-lit)}
+.iso-line[data-tone="red"]{stroke:var(--anatomy-red)}
+.iso-line[data-tone="green"]{stroke:var(--anatomy-green)}
+.iso-line[data-tone="blue"]{stroke:var(--anatomy-blue)}
+.iso-line[data-dotted]{stroke-dasharray:.01 3.5;stroke-width:1}
+.iso-line[data-dashed]{stroke-dasharray:3 3}
+.iso-line[data-flow]{stroke-dasharray:2 6}
+.iso-wire-end{fill:var(--anatomy-paper);stroke:var(--anatomy-lo);stroke-width:var(--anatomy-weight)}
+.iso-wire[data-tone="hi"] .iso-wire-end{stroke:var(--anatomy-hi)}
+.iso-wire[data-tone="mid"] .iso-wire-end{stroke:var(--anatomy-mid)}
+.iso-wire[data-tone="faint"] .iso-wire-end{stroke:var(--anatomy-faint)}
+.iso-wire[data-tone="lit"] .iso-wire-end{stroke:var(--anatomy-lit)}
+.iso-dots circle{fill:var(--anatomy-dot);stroke:none;opacity:.32}
+.iso-dots[data-tone="hi"] circle{opacity:.85}
+.iso-dots[data-tone="mid"] circle{opacity:.45}
+.iso-dots[data-tone="lo"] circle{opacity:.22}
+.iso-dots[data-tone="faint"] circle{opacity:.12}
+.iso-face-text{fill:var(--anatomy-mid);font-family:var(--anatomy-mono);letter-spacing:.04em}
+.iso-face-text[data-tone="hi"]{fill:var(--anatomy-hi)}
+.iso-face-text[data-tone="lo"]{fill:var(--anatomy-lo)}
+.iso-face-text[data-tone="faint"]{fill:var(--anatomy-faint)}
+.tb-body{fill:var(--anatomy-shade-2);stroke:none}
+.tb-shine{fill:var(--anatomy-top);stroke:none}
+.tb-shade{fill:var(--anatomy-shade-0);stroke:none}
+.tb-ring{fill:none;stroke:var(--anatomy-lo);stroke-width:.45;stroke-linecap:butt;stroke-linejoin:round}
+.tb-ring[data-tone="mid"]{stroke:var(--anatomy-mid)}
+.tb-ring[data-tone="faint"]{stroke:var(--anatomy-faint)}
+.tb-ring[data-tone="hi"]{stroke:var(--anatomy-hi)}
+@keyframes iso-flow{to{stroke-dashoffset:-32}}
+@keyframes iso-pulse{0%,100%{opacity:.18}12%{opacity:1}40%{opacity:.18}}
+.iso-line[data-flow]{animation:iso-flow 1600ms linear infinite}
+.iso-dots circle[data-pulse]{animation:iso-pulse 1600ms steps(1,end) infinite;animation-delay:var(--pulse-at,0ms)}
+.iso-figure{margin:32px 0 36px}
+.iso-plate{position:relative;padding:52px 24px;border-radius:0;background:var(--anatomy-card);box-shadow:0 0 0 1px var(--anatomy-mid);--anatomy-paper:var(--anatomy-card)}
+.iso-plate-corners{position:absolute;inset:18px 20px;pointer-events:none}
+.iso-plate-corner{position:absolute;color:var(--anatomy-muted);font-family:var(--anatomy-mono);font-size:10.5px;line-height:1;letter-spacing:.04em;white-space:nowrap}
+.iso-plate-corner[data-corner="fig"]{top:0;left:0;color:var(--anatomy-text)}
+.iso-plate-corner[data-corner="title"]{top:0;right:0;text-transform:uppercase;letter-spacing:.1em}
+.iso-plate-corner[data-corner="hint"]{bottom:0;left:0;text-transform:uppercase;letter-spacing:.1em}
+.iso-plate-corner[data-corner="readout"]{right:0;bottom:0;color:var(--anatomy-text);font-variant-numeric:tabular-nums}
+.iso-plate .iso-svg{margin:0 auto}
+.iso-legend{display:grid;gap:8px;margin-top:12px;color:var(--anatomy-muted);font-size:13px;line-height:1.55}
+.iso-keys{display:flex;flex-wrap:wrap;gap:6px 18px}
+.iso-key{display:inline-flex;align-items:center;gap:7px}
+.iso-swatch{width:16px;height:10px;flex:none;overflow:visible}
+.iso-swatch path{fill:none;stroke:var(--anatomy-hi);stroke-width:1;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+.iso-swatch[data-mark="raised"] path,.iso-swatch[data-mark="flat"] path{stroke:var(--anatomy-mid)}
+.iso-swatch[data-mark="lit"] path{stroke:var(--anatomy-lit)}
+.iso-swatch[data-mark="dim"] path{stroke:var(--anatomy-lo)}
+.iso-swatch[data-mark="dotted"] path{stroke-dasharray:.01 3;stroke-width:1.4}
+.iso-swatch[data-mark="dashed"] path{stroke-dasharray:3 2.5}
+.iso-swatch[data-mark="red"] path{stroke:var(--anatomy-red)}
+.iso-swatch[data-mark="green"] path{stroke:var(--anatomy-green)}
+.iso-swatch[data-mark="blue"] path{stroke:var(--anatomy-blue)}
+.iso-swatch-crease{stroke:var(--anatomy-lo)!important}
+@media (max-width:560px){.iso-plate{padding:48px 12px 70px}.iso-plate-corner[data-corner="hint"]{bottom:18px}}
+@media (prefers-reduced-motion:reduce){.iso-line[data-flow],.iso-dots circle[data-pulse]{animation:none}}
+
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body[data-theme="light"]{color-scheme:light}
+body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.iso-page{width:min(1500px,100% - 32px);margin:64px auto 96px}
+</style></head><body class="iso" data-theme="light"><main class="iso-page"><style>
+:root { --font-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif; --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.xsp-nav { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 4px 0 2px; font-family: var(--font-ui); font-size: 14px; color: var(--anatomy-muted); }
+.xsp-nav .ttl { font-size: 20px; font-weight: 700; color: var(--anatomy-text); }
+.xsp-nav a { color: var(--anatomy-link, #9cc3e0); text-decoration: none; } .xsp-nav a:hover { text-decoration: underline; }
+.xsp-specref { font-family: var(--font-mono); font-size: 12.5px; color: var(--anatomy-muted); margin: 0 0 14px; }
+.xsp-card { background: var(--anatomy-paper, #171f2a); border: 1px solid var(--anatomy-line-mid, #2a3444); border-radius: 8px; padding: 16px 22px; margin: 14px 0; }
+.xsp-card h2 { font-family: var(--font-ui); font-size: 18px; margin: 2px 0 8px; color: var(--anatomy-text); }
+.xsp-card p { margin: 8px 0; line-height: 1.95; color: var(--anatomy-text); font-size: 16.5px; }
+.xsp-card p b { color: var(--anatomy-text); }
+.xsp-card table.xsp-tb { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-family: var(--font-ui); }
+.xsp-card table.xsp-tb th { font-size: 14px; color: var(--anatomy-muted); text-align: left; border-bottom: 1.5px solid var(--anatomy-line-mid, #456); padding: 5px 8px; }
+.xsp-card table.xsp-tb td { font-size: 15px; color: var(--anatomy-text); border-bottom: 1px dashed var(--anatomy-line-lo, #334); padding: 6px 8px; vertical-align: top; }
+.xsp-card table.xsp-tb td.mono { font-family: var(--font-mono); font-size: 13px; }
+.xsp-card li { color: var(--anatomy-text); font-size: 16px; line-height: 1.9; margin: 4px 0 4px 18px; }
+.xsp-q { margin: 12px 0; padding: 10px 16px; border-left: 3px solid var(--anatomy-line-hi, #556); }
+.xsp-q .en { font-family: var(--font-ui); font-style: italic; color: var(--anatomy-muted); font-size: 14.5px; line-height: 1.8; }
+.xsp-q .zh { color: var(--anatomy-text); font-size: 15.5px; margin-top: 4px; }
+.xsp-q .src { font-family: var(--font-mono); font-size: 12px; color: var(--anatomy-muted); }
+.xsp-foot { font-family: var(--font-ui); font-size: 13px; color: var(--anatomy-muted); margin-top: 18px; }
+</style>
+<div class="xsp-nav">
+  <a href="../../index.html">← 规范目录</a>
+  <span class="ttl">§4.19 根集线器</span>
+  <a href="../4.20-scratchpad-buffers/index.html">下一节 §4.20 Scratchpad Buffers →</a>
+  <a href="../4.18-transfer-attributes/index.html">← 上一节 §4.18 传输属性</a>
+</div>
+<p class="xsp-specref">xHCI 1.2b §4.19 Root Hub · p272–303 · 状态机对照 Figure 4-25 p273（USB2）/ Figure 4-27 p278（USB3）· 事件生成 §4.19.2 p291–293</p><div class="xsp-card"><h2>规范要义</h2>
+<p>根集线器（Root Hub）不是一颗真的 hub 芯片：xHC 在内部为「每个物理连接器 × 每种协议」各给一套端口寄存器来模拟 hub 行为——USB2（LS/FS/HS）与 USB3（Enhanced SuperSpeed）两种连接类型的 PORTSC 数量可以不等，由 xHCI Supported Protocol Extended Capability（§7.2）声明归属（§4.19.7 p300）。端口状态机的记法是三行一组：<b>状态名 + Port Link State（PLS）+ 信号态</b>，信号态四元组 = PP, CCS, PED, PR（如 1,1,1,0 表示 PP/CCS/PED=1、PR=0，p272）；进入某态时信号态被强制成该态定义值，所以图上不画改这些位的动作（p272 Note）。规范明确两件事：图只示意进出条件，<b>各态的文字定义才是权威</b>（p273 Note）；状态机只引用 PLC 这一个 change bit，其余六个的置位规则归 §4.19.2（p273）。两台状态机的初始态都是 Disconnected（p273/p278）。以下软件侧按规范原文称 system software（系统软件）。</p>
+<p>同一副骨架，两族语义在三处岔开。<b>Disabled 含义不同</b>：USB2 的 Disabled 是连接已检出、等待复位的态（PLS=Polling · 1,1,0,0），USB3 的 Disabled 是软件写 PED='1' 得到的链路禁用态（PLS=Disabled · 1,0,0,0）——同名两义，读到 PORTSC 值时先看协议族。<b>Enabled 到达方式不同</b>：USB2 只有端口复位一条路（Disabled→Reset→完成自动迁入，PED/PRC='1'，p274）且复位永不失败（p299 Note）；USB3 在 attach 后由链路训练+配置成功<b>自动</b>迁入 Enabled·U0（p279/p281），其复位（PR/WPR/HCRST）反而可能失败退回 Disconnected（p283）。<b>挂起/恢复路径不同</b>：两族都把 U0（活动）与 U3（挂起）作为 Enabled 子态，挂起同写 Wr(PLS=U3+LWS='1')；恢复时 USB2 主机要写两段（先 PLS=Resume、Resume 时长由软件计时，再 PLS=U0），USB3 主机一段写 PLS=U0 走 LFPS 握手，且设备不许拒绝主机的恢复（p290）。电源域是公共底座：Wr(PP='0') 或过流把任一态打进 Powered-off（大泡，p272 原注）。</p>
+<p>事件面是本节的另一半（§4.19.2）：PORTSC 有七个状态变化位——CSC / PEC / WRC / OCC / PRC / PLC / CEC（p291），每口的变化位 OR 在一起、经 HCHalted 门控，形成内部信号 PSCEG；<b>PSCEG 的 0→1 跳变才产生 Port Status Change Event</b>——不是「某位=1 就发事件」（p293），且一口的事件在它的全部变化位清零之前被阻塞（PSCEG 回 0 才再开闸，p293 Note）。软件读 PORTSC 与事件环之间没有一致性保证：读到变化位置位，不代表对应事件已写进事件环（p292 Note）。置位/清零纪律：变化位由硬件或软件条件置位，系统软件写 '1' 清除（写 '0' 无效果），Chip Hardware Reset 或 HCRST 亦可清（p291）。</p>
+<p>形态注记（分级裁定）：§4.19 的 anatomy 机器形态留后续会话——本页为状态机骨架版：状态机概览卡＋九小节导览＋两族差异对照三件事；全图逐态细节（USB2 的 U2Entry/U2/U2Exit/U3Entry/Resume/RExit、USB3 的 U1'/U2'/U3'/Recovery 等）归 §4.19.1 原文与原图 Figure 4-25 至 4-33。</p></div><div class="xsp-card"><h2>原文对照</h2>
+<div class="xsp-q"><div class="en">“Signal State values are: Port Power (PP), Current Connect Status (CCS), Port Enabled/Disabled (PED), and Port Reset (PR)”</div>
+<div class="zh">信号态四元组 = PP, CCS, PED, PR——状态盒第三行四个数的出处。</div><div class="src">xHCI 1.2b §4.19.1 p272</div></div><div class="xsp-q"><div class="en">“When the Reset operation completes (PR = ‘0’), the port shall automatically advance to the Enabled state, setting PED and PRC to ‘1’.”</div>
+<div class="zh">USB2 复位完成自动迁入 Enabled 并置 PED/PRC——USB2 到 Enabled 只此一条路。</div><div class="src">xHCI 1.2b §4.19.1.1.4 p274</div></div><div class="xsp-q"><div class="en">“A write to the PORTSC register with the PED field set to ‘1’ shall transition the port, from any state except Powered-off, to the Disabled state.”</div>
+<div class="zh">USB3 的 Disabled=软件写 PED='1' 可从（除 Powered-off 外）任一态进入——与 USB2 的 Disabled 完全两义。</div><div class="src">xHCI 1.2b §4.19.1.2.1 p279</div></div><div class="xsp-q"><div class="en">“A port shall generate a Port Status Change Event when there is ‘0’ to ‘1’ transition of the PSCEG signal.”</div>
+<div class="zh">PSCEG 0→1 跳变才发端口状态变化事件——变化位置位本身不等于发事件。</div><div class="src">xHCI 1.2b §4.19.2 p293</div></div><div class="xsp-q"><div class="en">“For a USB2 Protocol port, “device presence” is indicated by the PORTSC PLS field transitioning from the RxDetect to the Polling state.”</div>
+<div class="zh">USB2 口「设备在场」= PLS 从 RxDetect 迁到 Polling；软件随后复位端口把它送进 U0。</div><div class="src">xHCI 1.2b §4.19.3 p294</div></div><div class="xsp-q"><div class="en">“For a USB3 Protocol port, “device presence” is indicated by the PORTSC PLS field transitioning from the Polling to the U0 state.”</div>
+<div class="zh">USB3 口「设备在场」= PLS 从 Polling 迁到 U0——训练成功才算在场，与 USB2 判据不同。</div><div class="src">xHCI 1.2b §4.19.3 p294</div></div></div><div class="xsp-card"><h2>§4.19.1 状态机概览（状态图）</h2>
+
+<figure class="iso-figure"><div class="iso-plate"><div class="iso-plate-corners" aria-hidden="true"><span class="iso-plate-corner" data-corner="fig">Fig 4.19</span><span class="iso-plate-corner" data-corner="title">根集线器端口状态机概览：USB2 vs USB3</span><span class="iso-plate-corner" data-corner="hint">骨架版状态图 · 可放大可全屏 · 全图归原图 Figure 4-25/4-27</span><span class="iso-plate-corner" data-corner="readout" data-readout></span></div><div class="iso-stage" tabindex="0" role="group" aria-label="根集线器端口状态机概览：USB2 与 USB3 两栏对比"><svg xmlns="http://www.w3.org/2000/svg" class="iso-svg" viewBox="0 0 1500 596" role="img" aria-label="根集线器端口状态机概览：USB2 / USB3 两栏同构六态骨架与主线迁移（全图细节归 §4.19.1 原图 Figure 4-25 p273 · Figure 4-27 p278）"><defs><marker id="st-mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="st-mk-fill"/></marker></defs><path d="M745,15 L745,525" class="st-div"/><rect x="298" y="294" width="194" height="246" rx="10" class="st-domain"/>
+  <text x="488" y="536" class="st-zh" text-anchor="end">Enabled 子态域</text>
+  <circle cx="36" cy="73" r="4" class="st-dot"/>
+  <path d="M40,73 L50,73" class="st-entry" marker-end="url(#st-mk)"/>
+  <text x="365" y="24" class="st-title" text-anchor="middle">USB2 端口状态机 · Figure 4-25（p273）</text>
+  <g class="st-box st-dis">
+    <rect x="50" y="36" width="170" height="74" rx="10"/>
+    <text x="135" y="62" class="st-name">Disconnected</text>
+    <text x="135" y="83" class="st-zh">PLS=RxDetect</text>
+    <text x="135" y="101" class="st-sig">PP,CCS,PED,PR=1,0,0,0</text>
+  </g>
+  <g class="st-box st-po">
+    <rect x="510" y="36" width="170" height="74" rx="10"/>
+    <text x="595" y="62" class="st-name">Powered-off</text>
+    <text x="595" y="83" class="st-zh">PLS=Disabled</text>
+    <text x="595" y="101" class="st-sig">PP,CCS,PED,PR=0,0,0,0</text>
+  </g>
+  <g class="st-box st-dis2">
+    <rect x="50" y="186" width="170" height="74" rx="10"/>
+    <text x="135" y="212" class="st-name">Disabled</text>
+    <text x="135" y="233" class="st-zh">PLS=Polling</text>
+    <text x="135" y="251" class="st-sig">PP,CCS,PED,PR=1,1,0,0</text>
+  </g>
+  <g class="st-box st-u0 st-u0">
+    <rect x="310" y="306" width="170" height="74" rx="10"/>
+    <text x="395" y="332" class="st-name">U0（活动）</text>
+    <text x="395" y="353" class="st-zh">PLS=U0 · Enabled 子态</text>
+    <text x="395" y="371" class="st-sig">PP,CCS,PED,PR=1,1,1,0</text>
+  </g>
+  <g class="st-box st-u3">
+    <rect x="310" y="446" width="170" height="74" rx="10"/>
+    <text x="395" y="472" class="st-name">U3（挂起）</text>
+    <text x="395" y="493" class="st-zh">PLS=U3 · Enabled 子态</text>
+    <text x="395" y="511" class="st-sig">PP,CCS,PED,PR=1,1,1,0</text>
+  </g><path d="M135,110 L135,186" class="st-edge" marker-end="url(#st-mk)"/><text x="143" y="132" class="st-cond" text-anchor="start">连接检测 CCS='1' · CSC='1'</text><text x="143" y="148" class="st-pg" text-anchor="start">p274</text><path d="M220,223 L395,223 L395,306" class="st-edge" marker-end="url(#st-mk)"/><text x="224" y="188" class="st-cond" text-anchor="start">复位主线 · 经 Reset 态</text><text x="224" y="204" class="st-cond" text-anchor="start">Wr(PR='1') → Reset</text><text x="224" y="218" class="st-cond" text-anchor="start">复位完成自动迁入 · PED/PRC='1'</text><path d="M330,306 L330,260 L220,260" class="st-edge" marker-end="url(#st-mk)"/><text x="322" y="276" class="st-cond" text-anchor="end">Wr(PED='1') / Port_Error</text><text x="322" y="292" class="st-cond" text-anchor="end">USB2 置 PEC='1' · p275</text><path d="M480,343 L540,343 L540,483 L480,483" class="st-edge" marker-end="url(#st-mk)"/><text x="548" y="400" class="st-cond" text-anchor="start">挂起 Wr(PLS=U3+LWS='1')</text><text x="548" y="416" class="st-pg" text-anchor="start">p275–276</text><path d="M310,483 L250,483 L250,343 L310,343" class="st-edge" marker-end="url(#st-mk)"/><text x="242" y="396" class="st-cond" text-anchor="end">主机 Wr(PLS=Resume+LWS)</text><text x="242" y="412" class="st-cond" text-anchor="end">→Resume（软件计时）</text><text x="242" y="428" class="st-cond" text-anchor="end">Wr(PLS=U0+LWS)→RExit→U0</text><text x="242" y="444" class="st-cond" text-anchor="end">设备唤醒→Resume · PLC='1'</text><text x="242" y="460" class="st-pg" text-anchor="end">p277–278</text><path d="M465,306 L465,160 L595,160 L595,110" class="st-edge" stroke-dasharray="7 5" marker-end="url(#st-mk)"/><text x="530" y="138" class="st-cond" text-anchor="middle">任一态（大泡）</text><text x="530" y="154" class="st-cond" text-anchor="middle">PP='0' / OCA='1'</text><path d="M510,73 L220,73" class="st-edge" marker-end="url(#st-mk)"/><text x="365" y="64" class="st-cond" text-anchor="middle">Wr(PP='1')</text><rect x="1038" y="294" width="194" height="246" rx="10" class="st-domain"/>
+  <text x="1228" y="536" class="st-zh" text-anchor="end">Enabled 子态域</text>
+  <circle cx="776" cy="73" r="4" class="st-dot"/>
+  <path d="M780,73 L790,73" class="st-entry" marker-end="url(#st-mk)"/>
+  <text x="1105" y="24" class="st-title" text-anchor="middle">USB3 端口状态机 · Figure 4-27（p278）</text>
+  <g class="st-box st-dis">
+    <rect x="790" y="36" width="170" height="74" rx="10"/>
+    <text x="875" y="62" class="st-name">Disconnected</text>
+    <text x="875" y="83" class="st-zh">PLS=RxDetect</text>
+    <text x="875" y="101" class="st-sig">PP,CCS,PED,PR=1,0,0,0</text>
+  </g>
+  <g class="st-box st-po">
+    <rect x="1250" y="36" width="170" height="74" rx="10"/>
+    <text x="1335" y="62" class="st-name">Powered-off</text>
+    <text x="1335" y="83" class="st-zh">PLS=Disabled/RxDetect</text>
+    <text x="1335" y="101" class="st-sig">PP,CCS,PED,PR=0,0,0,0</text>
+  </g>
+  <g class="st-box st-dis2">
+    <rect x="790" y="186" width="170" height="74" rx="10"/>
+    <text x="875" y="212" class="st-name">Disabled</text>
+    <text x="875" y="233" class="st-zh">PLS=Disabled</text>
+    <text x="875" y="251" class="st-sig">PP,CCS,PED,PR=1,0,0,0</text>
+  </g>
+  <g class="st-box st-u0 st-u0">
+    <rect x="1050" y="306" width="170" height="74" rx="10"/>
+    <text x="1135" y="332" class="st-name">U0（活动）</text>
+    <text x="1135" y="353" class="st-zh">PLS=U0 · Enabled 子态</text>
+    <text x="1135" y="371" class="st-sig">PP,CCS,PED,PR=1,1,1,0</text>
+  </g>
+  <g class="st-box st-u3">
+    <rect x="1050" y="446" width="170" height="74" rx="10"/>
+    <text x="1135" y="472" class="st-name">U3（挂起）</text>
+    <text x="1135" y="493" class="st-zh">PLS=U3 · Enabled 子态</text>
+    <text x="1135" y="511" class="st-sig">PP,CCS,PED,PR=1,1,1,0</text>
+  </g><path d="M950,110 L950,150 L1135,150 L1135,306" class="st-edge" marker-end="url(#st-mk)"/><text x="958" y="126" class="st-cond" text-anchor="start">连接检测→Polling→训练+配置成功→U0</text><text x="958" y="142" class="st-cond" text-anchor="start">训练成功迁入 · CSC='1' · p279</text><path d="M815,186 L815,110" class="st-edge" marker-end="url(#st-mk)"/><text x="823" y="166" class="st-cond" text-anchor="start">Wr(PLS=RxDetect+LWS='1')</text><text x="823" y="182" class="st-cond" text-anchor="start">或 HCRST · p279</text><path d="M1070,306 L1070,260 L960,260" class="st-edge" marker-end="url(#st-mk)"/><text x="1062" y="276" class="st-cond" text-anchor="end">Wr(PED='1')</text><text x="1062" y="292" class="st-cond" text-anchor="end">任一态除 Powered-off · p279</text><path d="M1220,343 L1280,343 L1280,483 L1220,483" class="st-edge" marker-end="url(#st-mk)"/><text x="1288" y="400" class="st-cond" text-anchor="start">挂起 Wr(PLS=U3+LWS='1')</text><text x="1288" y="416" class="st-pg" text-anchor="start">p286</text><path d="M1050,483 L990,483 L990,343 L1050,343" class="st-edge" marker-end="url(#st-mk)"/><text x="982" y="396" class="st-cond" text-anchor="end">主机 Wr(PLS=U0+LWS)→U3Exit</text><text x="982" y="412" class="st-cond" text-anchor="end">（LFPS 握手成功）→U0</text><text x="982" y="428" class="st-cond" text-anchor="end">设备唤醒→Resume→RExit</text><text x="982" y="444" class="st-cond" text-anchor="end">PLC='1' · p289–290</text><path d="M1205,306 L1205,160 L1335,160 L1335,110" class="st-edge" stroke-dasharray="7 5" marker-end="url(#st-mk)"/><text x="1270" y="138" class="st-cond" text-anchor="middle">任一态（大泡）</text><text x="1270" y="154" class="st-cond" text-anchor="middle">PP='0' / OCA='1'</text><path d="M1250,73 L960,73" class="st-edge" marker-end="url(#st-mk)"/><text x="1105" y="64" class="st-cond" text-anchor="middle">Wr(PP='1') 或 HCRST</text><text x="750" y="556" class="st-legend" text-anchor="middle">实线=主线迁移 · 虚线=任一态大泡迁移（→Powered-off） · ●=初始态（Disconnected）</text>
+  <text x="750" y="574" class="st-legend" text-anchor="middle">盒内=PLS + 信号态 PP,CCS,PED,PR · Wr(f=v)=软件写 PORTSC · f=v=字段自动迁移（记法 p272）</text></svg></div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏</span></div></div><figcaption class="iso-legend"><span class="iso-caption">两栏同一六态骨架，语义在 Disabled 含义、Enabled 到达方式与恢复路径三处岔开；大泡=任一态可按条件迁入 Powered-off（p272 原注）。</span></figcaption></figure>
+<p>读图注记（判据逐条对页）：</p>
+<ul>
+<li><b>简版口径</b>：只画主线迁移与大泡；USB2 的 Test Mode 态、USB3 的 Compliance / Error / Loopback / Polling 态、两族的 Enabled 子态机（Figure 4-26 p275 · Figure 4-30 p285）、Polling 的 Training/CfgExcg/DbC 子态（Figure 4-28 p280 · Figure 4-29 p282）与 U1'/U2'/U3' 子态机（Figure 4-31/4-32/4-33 p286/287/289）不在本图——全图进出条件逐态归 §4.19.1 原文（p272–291）。</li>
+<li><b>大泡</b>：虚线代表「任一态」——"Transitions associated with the large bubble may occur from any state defined within the bubble as long as the Conditions match."（p272）；USB2/USB3 到 Powered-off 的条件同为 Wr(PP='0') 或过流 OCA='1'（p274/p279），重上电回 Disconnected（p274/p279）。</li>
+<li><b>Disabled 同名两义（不混写）</b>：USB2 Disabled = 连接检出后的待复位态（PLS=Polling · 1,1,0,0，Figure 4-25 p273）；USB3 Disabled = 软件写 PED='1' 的链路禁用态（PLS=Disabled · 1,0,0,0，Figure 4-27 p278）。USB3 出 Disabled 走 Wr(PLS=RxDetect+LWS) 或 HCRST 回 Disconnected（p279）；USB2 Disabled 出口只有端口复位（p274）。</li>
+<li><b>Enabled 到达两族不同路（不画成同一自动路径）</b>：USB2 仅经端口复位——"When the Reset operation completes (PR = ‘0’), the port shall automatically advance to the Enabled state, setting PED and PRC to ‘1’."（p274）；USB3 attach 后链路训练+配置成功自动迁入 Enabled·U0 且置 CSC='1'（p279 · p281 · p295）。</li>
+<li><b>挂起域</b>：U0/U3 是 Enabled 的子态——进入 U3 两族同写 Wr(PLS=U3+LWS='1')；恢复路径不同：USB2 主机先写 PLS=Resume（Resume 态时长由软件计时）再写 PLS=U0 经 RExit 回 U0（p277–278），USB3 主机直接写 PLS=U0 经 U3Exit 的 LFPS 握手回 U0（p289）；设备唤醒两族都置 PLC='1'（p277/p289）。</li>
+<li><b>记法</b>：Wr(f=v)=软件写 PORTSC；不带 Wr 的 f=v=字段自动迁移；进入态时信号态（PP,CCS,PED,PR）被强制成该态定义值（p272 Note）。</li>
+</ul></div>
+<div class="xsp-card"><h2>§4.19 九小节导览（p272–303）</h2>
+<table class="xsp-tb">
+<tr><th>小节</th><th>一句话要点</th><th>页</th></tr>
+<tr><td><b>4.19.1 Root Hub Port State Machines</b></td><td>USB2 / USB3 两台端口状态机全图与逐态进出条件；记法=状态名+PLS+信号态（PP,CCS,PED,PR）；图只示意、文字定义为权威；只引用 PLC，其余 change bit 归 4.19.2</td><td class="mono">p272–291</td></tr>
+<tr><td><b>4.19.2 Port Status Change Generation</b></td><td>七个变化位（CSC/PEC/WRC/OCC/PRC/PLC/CEC）OR 后经 HCHalted 门控成 PSCEG；0→1 跳变才发 Port Status Change Event；全部位清零前该口事件被阻塞；读 PORTSC 与事件环无一致性保证</td><td class="mono">p291–293</td></tr>
+<tr><td><b>4.19.3 Connect Status Change Reporting</b></td><td>attach 上报三步：CCS='1' → CSC='1' → PSCEG 0→1 时发事件 TRB（Port ID 定位端口）；USB2 在场=PLS RxDetect→Polling（软件随后复位），USB3 在场=PLS Polling→U0</td><td class="mono">p294</td></tr>
+<tr><td><b>4.19.4 Port Power</b></td><td>PPC 声明是否支持电源开关；无论支持与否 Chip Hardware Reset / HCRST 后 VBus 自动上电，初始态=Disconnected；PP='0' 强制 Powered-off；xHC 未运行（HCH='0' 前）端口即可上报连接；4.19.4.1 = U1/U2 Timeout 四组合的 Enabled U0 伪态</td><td class="mono">p294–298</td></tr>
+<tr><td><b>4.19.5 Port Reset</b></td><td>Wr(PR='1')：置 PR 清 PED→发复位信令；成功收场 PLS=U0·PED='1'·PRC='1'·Port Speed=设备速度，失败收场 PLS=RxDetect·Speed=Undefined('0')·CCS='0'（仅 USB3 会失败）；PR 1→0 后设备在 Default 态；4.19.5.1 Warm Reset（WPR/WRC 仅 USB3，USB2 口 RsvdZ）</td><td class="mono">p298–299</td></tr>
+<tr><td><b>4.19.6 Port Test Modes</b></td><td>仅 USB2 口支持五种测试模式（Test_J_State/Test_K_State/Test_Packet/Test_Force_Enable/Test_SE0_NAK），USB3 口无；同一时刻至多一口在测（否则未定义）；测试序列：禁用全部 Device Slot→全口 Disabled(PP='0')→R/S='0' 等 HCH='1'→写 PORTPMSC 的 Port Test Control</td><td class="mono">p299–300</td></tr>
+<tr><td><b>4.19.7 Port Routing and Control</b></td><td>每种连接类型一套 PORTSC（USB2 口=PORTSC+USB2 PORTPMSC，USB3 口=PORTSC+USB3 PORTPMSC+PORTLI）；Supported Protocol Capability 定端口归属；端口编号 1..MaxPorts（HCSPARAMS1）；Figure 4-35 路由例（Offset/Count）；同物理连接器的 PP 引脚 OR 在一起</td><td class="mono">p300–302</td></tr>
+<tr><td><b>4.19.8 Cold Attach Status</b></td><td>USB3 口 CCS 要训练到 U0 才置位——D3 低功耗态时钟停摆时报不了；CAS 代位：远端终端电阻检出+D3 低功耗+LTSSM 非 Error/U3/Disabled 三条件齐才置 '1'，不是通用在场指示；CAS 跳变拉起 CSC；唤醒后对 CAS='1' 的口发 WPR，WPR 清 CAS；USB2 口恒 '0'</td><td class="mono">p302–303</td></tr>
+<tr><td><b>4.19.9 Port Speed</b></td><td>SSP capable hub 对 GetStatus(PORT_SPEED) 恒回 '0'（=5Gb/s）保 legacy 驱动不乱；真实速度走 GetStatus(EXT_PORT_SPEED)；SSP 设备在 SET_ADDRESS 后必须发 Sublink Speed Device Notification TP，让 xHC 知道真实速度</td><td class="mono">p303</td></tr>
+</table>
+<p>（小节页码=各节标题在提取文本中的起始页；4.19.1 内部含 USB2 顶层/子态图与 USB3 顶层/子态图共九张 Figure。）</p></div>
+<div class="xsp-card"><h2>USB2 vs USB3 端口差异对照（避雷三条入表）</h2>
+<table class="xsp-tb">
+<tr><th>维度</th><th>USB2 协议端口</th><th>USB3 协议端口</th><th>判据页</th></tr>
+<tr><td><b>Disabled 态含义</b>（同名两义）</td><td>连接检出后的<b>待复位态</b>：PLS=Polling，信号 1,1,0,0（设备已接、CCS='1'，等软件复位）</td><td><b>链路禁用态</b>：PLS=Disabled，信号 1,0,0,0；软件写 PED='1' 可从除 Powered-off 外任一态进入；出口=Wr(PLS=RxDetect+LWS) 或 HCRST 回 Disconnected</td><td class="mono">p273 · p279</td></tr>
+<tr><td><b>Enabled 到达方式</b></td><td><b>仅经端口复位</b>：Disabled→Reset（Wr(PR='1')）→完成（PR='0'）自动迁入，PED/PRC='1'；Port Speed 随复位检出</td><td><b>attach 自动</b>：连接检测→Polling→训练+配置成功（Downstream Config Successful）自动迁入 Enabled·U0，置 CSC='1'；复位完成同样可到达</td><td class="mono">p274 · p279 · p281 · p295</td></tr>
+<tr><td><b>复位路径与可失败性</b></td><td>仅 PR='1' 一种；<b>永不失败</b>（规范原文：USB2 protocol ports never fail the bus reset sequence）；WPR/WRC 位为 RsvdZ</td><td>PR（Hot）/ WPR（Warm）/ HCRST 三入口；<b>可失败</b>→退 Disconnected：PLS=RxDetect('5')、PR='0'、PRC='1'、Port Speed=Undefined('0')、CCS='0'；Hot 转 Warm 置 WRC；Warm=Hot 全部功能+链路重训（Rx.Detect 起、更耗时）</td><td class="mono">p283 · p298–299</td></tr>
+<tr><td><b>挂起进入（两族同写）</b></td><td>Wr(PLS=U3+LWS='1')→U3Entry（xHC 停总线挂起设备）→U3（Idle）；U3C·U3E='1' 时置 PLC（U3 Entry complete，p275–276）</td><td>Wr(PLS=U3+LWS='1')→U3' 子态机 U3Entry→收到 LAU 进 U3；U3C·U3E='1' 时置 PLC（p286 · p289）</td><td class="mono">p275–276 · p286 · p289</td></tr>
+<tr><td><b>主机恢复</b></td><td>两段写：U3→Resume（Wr(PLS=Resume+LWS)）→<b>Resume 时长由软件计时</b>（按 USB2 规范保证恢复序列完成）→Wr(PLS=U0+LWS)→RExit→U0</td><td>一段写：Wr(PLS=U0+LWS)→U3Exit（LTSSM Recovery，LFPS 握手）→U0；<b>设备不许拒绝主机的恢复</b>（p290 Note）</td><td class="mono">p277–278 · p289–290</td></tr>
+<tr><td><b>设备唤醒</b></td><td>U3→Resume（xHC 发恢复信令）·PLC='1'（Wakeup signaling from a device）</td><td>U3→Resume→RExit·PLC='1'（Wakeup signaling from a device）</td><td class="mono">p277 · p289</td></tr>
+<tr><td><b>连接在场判据</b>（4.19.3）</td><td>PLS 从 RxDetect 迁到 Polling 即「设备在场」；软件随后<b>必须复位端口</b>才到 U0</td><td>PLS 从 Polling 迁到 U0 才「设备在场」（训练成功即在场，无需软件复位）</td><td class="mono">p294</td></tr>
+<tr><td><b>端口级独有</b></td><td>Test Mode 态：五种测试模式（4.19.6）；测试前提=R/S='0' 且 HCH='1'</td><td>Compliance / Error / Loopback 态与 Warm Reset（WPR/WRC）；Polling 子态机（Training/CfgExcg/DbC，DbC 需 Debug Capability 支持）</td><td class="mono">p279–284 · p299–300</td></tr>
+</table>
+<p>（本表逐行对页取自 §4.19.1–4.19.6 原文；「不混写」三行=DESIGN 避雷清单的端口侧落点：Disabled 两义、USB2 复位必经 vs USB3 attach 自动、复位可失败性。）</p></div>
+<div class="xsp-card"><h2>相关</h2>
+<p><a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——端口的上电与上报起点：PP 自动上电、MaxSlotsEn 延迟 PP 特性使端口可在 xHC 运行前就报 CCS/CSC='1'（p294–295）。</p>
+<p><a href="../4.3-usb-device-init/index.html">§4.3 USB 设备初始化</a>——USB2 复位完成（PED/PRC='1'·Port Speed）即枚举主线由此起步；<a href="../4.4-device-detach/index.html">§4.4 设备拔出</a>——disconnect detect（CCS='0'）在状态机里的去向（Disconnected·CSC='1'）。</p>
+<p><a href="../4.17-interrupters/index.html">§4.17 中断器</a>——Port Status Change Event 经事件环与中断送达软件侧的投递通道。</p>
+<p><a href="../../index.html">§4.15 挂起与恢复（待建）</a>——USB2 LPM（U2Entry/U2Exit）与唤醒操作的完整展开（本页只收端口状态机侧；p275–278 引 §4.15.2 / §4.23.5）。</p></div>
+<p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.19 p272–303 · 状态图对照 Figure 4-25 p273 / Figure 4-27 p278 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><style>
+/* 画面缩放+全屏（2026-11-02 可读性二轮）：1× 布局不变，>1× 出滚动平移 */
+.iso-stage { overflow: auto; scrollbar-width: thin; }
+.iso-stage svg { display: block; }
+.iso-zoombar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.iso-zoombar button { font: 500 12px var(--anatomy-mono, monospace); color: var(--anatomy-muted); background: transparent; border: 1px solid var(--anatomy-line-mid); border-radius: 3px; padding: 2px 10px; cursor: pointer; }
+.iso-zoombar button[aria-pressed="true"] { color: var(--anatomy-text); border-color: var(--anatomy-text); }
+.iso-zoomhint { color: var(--anatomy-muted); font-size: 11px; }
+.iso-figure:fullscreen, .iso-figure:-webkit-full-screen, .iso-figure.fs-pseudo {
+  background: var(--anatomy-page); overflow: auto; margin: 0;
+  padding: 12px;
+  display: flex; flex-direction: column;
+}
+.iso-figure.fs-pseudo { position: fixed; inset: 0; z-index: 999; }
+.iso-figure:fullscreen .iso-plate, .iso-figure:-webkit-full-screen .iso-plate, .iso-figure.fs-pseudo .iso-plate {
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+}
+.iso-figure:fullscreen .iso-stage, .iso-figure:-webkit-full-screen .iso-stage, .iso-figure.fs-pseudo .iso-stage {
+  flex: 1 1 auto; min-height: 280px;
+}
+.iso-figure:fullscreen .iso-legend, .iso-figure:-webkit-full-screen .iso-legend, .iso-figure.fs-pseudo .iso-legend { display: none; }
+@media print {
+  .iso-zoombar { display: none; }
+  .iso-stage { overflow: visible; }
+  .iso-stage svg { width: 100% !important; height: auto !important; }
+}
+
+.st-box rect { fill: var(--anatomy-face, #1b1b1b); stroke: var(--anatomy-hi, #556); stroke-width: 1.8; }
+.st-name { font: 700 17px var(--font-ui); fill: var(--anatomy-strong); text-anchor: middle; }
+.st-zh { font: 500 14px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
+.st-sig { font: 400 12.5px var(--font-mono); fill: var(--anatomy-muted); text-anchor: middle; }
+.st-edge { stroke: var(--anatomy-blue, #6b9bff); stroke-width: 2; fill: none; }
+.st-mk-fill { fill: var(--anatomy-blue, #6b9bff); }
+.st-domain { fill: none; stroke: var(--anatomy-hi, #556); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.st-entry { stroke: var(--anatomy-strong); stroke-width: 2; fill: none; }
+.st-dot { fill: var(--anatomy-strong); }
+.st-div { stroke: var(--anatomy-line-mid, #2a3444); stroke-width: 1; stroke-dasharray: 4 6; }
+.st-title { font: 600 15px var(--font-ui); fill: var(--anatomy-strong); }
+.st-cond { font: 500 13.5px var(--font-mono); fill: var(--anatomy-text); }
+.st-pg { font: 400 12.5px var(--font-mono); fill: var(--anatomy-muted); }
+.st-legend { font: 400 12.5px var(--font-ui); fill: var(--anatomy-muted); }
+.iso[data-theme="light"] .st-pg { fill: #6b6350; }
+.iso[data-theme="light"] .st-legend { fill: #6b6350; }
+.iso[data-theme="light"] .st-sig { fill: #6b6350; }
+</style><script>
+// 画面缩放+全屏（shared/zoomfs.mjs 内联）
+(() => {
+  const stage = document.querySelector(".iso-stage");
+  const svgRoot = stage ? stage.querySelector("svg") : null;
+  const figureEl = stage ? stage.closest(".iso-figure") : null;
+  const zoombar = document.querySelector(".iso-zoombar");
+  if (!stage || !svgRoot || !figureEl) return;
+  const ZOOMS = [1, 1.6, 2.4, 3.2];
+  const FOCUS = [".st-u0"];
+  let zoomIx = 0;
+  const stopTour = () => { if (typeof arm === "function") arm(); else if (typeof armTour === "function") armTour(); };
+  const isFs = () => document.fullscreenElement === figureEl || document.webkitFullscreenElement === figureEl || figureEl.classList.contains("fs-pseudo");
+  function centerFocal() {
+    let face = null;
+    for (const s of FOCUS) { face = document.querySelector(s); if (face) break; }
+    const sr = stage.getBoundingClientRect();
+    let cx;
+    if (face) { const cr = face.getBoundingClientRect(); cx = cr.left - sr.left + stage.scrollLeft + cr.width / 2; }
+    else cx = stage.scrollWidth / 2;
+    stage.scrollLeft = Math.max(0, Math.min(stage.scrollWidth - stage.clientWidth, cx - stage.clientWidth / 2));
+  }
+  function applyZoom() {
+    svgRoot.style.width = (ZOOMS[zoomIx] * 100) + "%";
+    svgRoot.style.height = "auto";
+    if (zoombar) {
+      zoombar.querySelectorAll("button[data-zoom]").forEach((b, i) => b.setAttribute("aria-pressed", String(i === zoomIx)));
+      const fb = zoombar.querySelector("button[data-fs]");
+      if (fb) fb.setAttribute("aria-pressed", String(isFs()));
+    }
+  }
+  function setZoom(ix) {
+    const prev = zoomIx;
+    zoomIx = Math.max(0, Math.min(ZOOMS.length - 1, ix));
+    applyZoom();
+    if (zoomIx > prev) centerFocal();
+  }
+  function setPseudo(on) { figureEl.classList.toggle("fs-pseudo", on); applyZoom(); }
+  function toggleFs() {
+    stopTour();
+    if (isFs()) {
+      if (figureEl.classList.contains("fs-pseudo")) return setPseudo(false);
+      if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      return;
+    }
+    if (figureEl.requestFullscreen) figureEl.requestFullscreen().catch(() => setPseudo(true));
+    else if (figureEl.webkitRequestFullscreen) figureEl.webkitRequestFullscreen();
+    else setPseudo(true);
+  }
+  if (zoombar) zoombar.addEventListener("click", (e) => {
+    const zb = e.target.closest("button[data-zoom]");
+    if (zb) { stopTour(); setZoom(ZOOMS.indexOf(Number(zb.dataset.zoom))); return; }
+    if (e.target.closest("button[data-fs]")) toggleFs();
+  });
+  stage.addEventListener("keydown", (e) => {
+    if (e.key === "+" || e.key === "=") { e.preventDefault(); stopTour(); setZoom(zoomIx + 1); }
+    else if (e.key === "-" || e.key === "_") { e.preventDefault(); stopTour(); setZoom(zoomIx - 1); }
+    else if (e.key === "0") { e.preventDefault(); stopTour(); setZoom(0); }
+    else if (e.key === "f" || e.key === "F") { e.preventDefault(); toggleFs(); }
+  });
+  document.addEventListener("fullscreenchange", () => requestAnimationFrame(applyZoom));
+  document.addEventListener("webkitfullscreenchange", () => requestAnimationFrame(applyZoom));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && figureEl.classList.contains("fs-pseudo")) setPseudo(false);
+  });
+  window.addEventListener("resize", () => requestAnimationFrame(applyZoom));
+  applyZoom();
+  window.__zfs = { setZoom, zoomOf: () => ZOOMS[zoomIx], applyZoom, toggleFs, isFs, ZOOMS };
+})();
+</script></body></html>

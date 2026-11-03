@@ -287,7 +287,13 @@ function tick(now) {
   raf = visible && (anim || touring) ? requestAnimationFrame(tick) : 0;
 }
 const run = () => { if (!raf && visible) { last = 0; raf = requestAnimationFrame(tick); } };
-const arm = () => { touring = false; clearTimeout(idleTimer); idleTimer = setTimeout(() => { touring = !still.matches; tourTimer = 0; run(); }, 3600); run(); };
+// 控制条状态同步（懒查询：arm 在接线前也可能执行，避免 TDZ）
+function syncTourBtn() {
+  const box = stage.closest(".iso-figure");
+  const btn = box && box.querySelector('.fig-ctl [data-act="tour"]');
+  if (btn) btn.setAttribute("aria-pressed", String(!!touring));
+}
+const arm = () => { touring = false; clearTimeout(idleTimer); idleTimer = setTimeout(() => { touring = !still.matches; tourTimer = 0; syncTourBtn(); run(); }, 3600); syncTourBtn(); run(); };
 const step = (dir) => { arm(); playTo(frame + dir); };
 new IntersectionObserver((es) => { visible = es[es.length - 1].isIntersecting; if (visible) run(); }, { rootMargin: "120px 0px" }).observe(stage);
 if (still.matches) touring = false;
@@ -296,9 +302,25 @@ stage.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); step(1); }
   else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
   else if (e.key === "Home") { arm(); playTo(0); }
-  else if (e.key === "a" || e.key === "A") { touring = !still.matches; tourTimer = 0; run(); }
-  else if (e.key === "Escape") { touring = false; run(); }
+  else if (e.key === "a" || e.key === "A") { touring = !still.matches; tourTimer = 0; syncTourBtn(); run(); }
+  else if (e.key === "Escape") { touring = false; clearTimeout(idleTimer); syncTourBtn(); run(); }
 });
+// 控制条（2026-11-03 用户裁定：与 4.1 同等提供步进按钮）——键盘已有行为全部保留
+const ctlBox = stage.closest(".iso-figure").querySelector(".fig-ctl");
+if (ctlBox) ctlBox.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === "next") step(1);
+  else if (act === "prev") step(-1);
+  else if (act === "reset") { arm(); playTo(0); }
+  else if (act === "tour") {
+    if (touring) { touring = false; clearTimeout(idleTimer); run(); }
+    else { touring = !still.matches; tourTimer = 0; clearTimeout(idleTimer); run(); }
+    syncTourBtn();
+  }
+});
+syncTourBtn();
 window.__fig42 = { step, playTo, pause: () => { touring = false; clearTimeout(idleTimer); }, stateOf: () => ({ step: state.step, cards: [...state.cards], rs: state.rs }), frameOf: () => frame, armOf: () => ({ x: +state.arm.x.toFixed(1), drop: +state.arm.drop.toFixed(1), push: +state.arm.push.toFixed(1), card: state.arm.card }) };
 render(state, 0.016);
 })();
