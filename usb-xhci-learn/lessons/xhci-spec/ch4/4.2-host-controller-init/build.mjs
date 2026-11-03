@@ -369,10 +369,13 @@ const PF = PANEL.y + PANEL.d;   // -20.2
   // 抽屉线 + 拉手点（2026-11-03 修复轮：前台面被满幅铭牌占据，细节移 +x 侧面，仍两条线迹三拉手点）
   const sx = DESK.x + DESK.w + 0.05;
   faceText(
-    Ln([[sx, DESK.y + 12, 22], [sx, DESK.y + DESK.d - 10, 22]].map((p) => at(p)), { tone: "lo" })
+    Ln(k.pathOf([[sx, DESK.y + 12, 22], [sx, DESK.y + DESK.d - 10, 22]].map((p) => at(p))), { tone: "lo" })
+    + Dots([[sx, DESK.y + 12, 22], [sx, DESK.y + DESK.d - 10, 22]].map((p) => at(p)), { size: 0.45, tone: "lo" })
     + Dots([[sx - 0.15, DESK.y + 24, 18.6], [sx - 0.15, DESK.y + 48, 18.6], [sx - 0.15, DESK.y + 72, 18.6]].map((p) => at(p)), { size: 0.55 }));
-  slab("desk.top", { x: DESK.x - 3, y: DESK.y - 3, w: DESK.w + 6, d: DESK.d + 6, r: 2 }, 32, 3, { tone: "mid" },
-    { steps: 4, bevel: 0.4, extra: Ln(k.planOutline(k.insetPlan({ x: DESK.x - 3, y: DESK.y - 3, w: DESK.w + 6, d: DESK.d + 6 }, 3), 35, P, 4), { tone: "lo" }) });
+  // 台顶内缩刻线（2026-11-03 裁处修复：字面量补 r:2 消 MNaN，内缩 3 后恰描出台身足迹）
+  const topPlan = { x: DESK.x - 3, y: DESK.y - 3, w: DESK.w + 6, d: DESK.d + 6, r: 2 };
+  slab("desk.top", topPlan, 32, 3, { tone: "mid" },
+    { steps: 4, bevel: 0.4, extra: Ln(k.planOutline(k.insetPlan(topPlan, 3), 35, P, 4), { tone: "lo" }) });
   // 台前铭牌：xHCI 驱动（底面贴台身前面 y=-6）——板留实体序，文字入 labels 层（防 gantry.beam/gantry.post0 盖字）
   // 2026-11-03 老问题修复轮：板 56×7→88×20 满脸板，主行 6.2→9、副行 4.0→6；右锚排版——主行避开
   // gantry.post0 屏带（左锚 9 号字压柱 ~2.5 字符），副行左端残留 ~1 字符柱后墨迹与修前同级（EVIDENCE §10）

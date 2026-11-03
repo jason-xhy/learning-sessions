@@ -235,8 +235,36 @@ drive（帧序/过线/final-frame2/zfs）→ console: clean；__zfs/__zfsLane/__
 - ★前后对比帧 1：cross-rs-before.png——同一构建仅禁用 placeFly 的对照页（=修前画序：卡随滑车默认位画在 wire.rs:1..5 之上）在穿越窗抓拍（x=−64.1/drop=12.8，seg 卡）；与 cross-rs.png 对照看线是否被卡截断。
 - 取景说明：本轮本机 4_5v 读图通道持续 400（BUILD-LOG 坑 8 的重编码法亦失效），过线帧目检以「DOM 序实测 + 位姿日志 + 双带深度推导」三证闭环替代像素目检；铭牌以含板 inset 数值验收。后续通道恢复后可补肉眼复核。
 
-### 10.6 新发现存量问题（非本轮引入，报主会话裁处）
+### 10.6 新发现存量问题（非本轮引入，报主会话裁处；§11 已全处置）
 
-1. **静态页两条隐形废 path**（浏览器 SVG 解析层报错；渲染为空、无视觉缺失；CDP Runtime 域门（drive/capture console）与 audit/lines 均不可见）：① desk.top 内 `k.planOutline(k.insetPlan({…字面量缺 r…}, 3), 35, P, 4)` 产 `MNaN NaN…`（BUILD-LOG 坑 2 同族：plan 缺 r，当时只修了 slab 形状未扫 planOutline）；② rs.base svg 内一条逗号格式 d（`407.87,163.2,…`，非合法路径）。两者修复极小但会补出此前一直缺失的刻线（视觉变更），超出本轮授权未动。
+1. **静态页两条隐形废 path**（浏览器 SVG 解析层报错；渲染为空、无视觉缺失；CDP Runtime 域门（drive/capture console）与 audit/lines 均不可见）：① desk.top 内 `k.planOutline(k.insetPlan({…字面量缺 r…}, 3), 35, P, 4)` 产 `MNaN NaN…`（BUILD-LOG 坑 2 同族：plan 缺 r，当时只修了 slab 形状未扫 planOutline）；② ~~rs.base svg 内~~（归属订正见 §11.1：实为 desk 抽屉刻线 faceText 流）一条逗号格式 d（`407.87,163.2,…`，非合法路径）。两者修复极小但会补出此前一直缺失的刻线（视觉变更），超出本轮授权未动。
 2. **live.mjs 脚本驱动时序怪癖**（交互路径不受影响）：`step()` 先 `arm()` 后 `playTo()`——arm 时新 anim 尚未建立；外部脚本直接 `__fig42.playTo(n)` 时若 tick 循环恰处停止窗口（巡游被关且上一动画已收尾），动画不自行启动（`run()` 仅由 arm/Escape/a/pointerdown/observer 触发）。本轮截图管线按「巡游态驱动 + 步间等待」产出（帧读数逐帧核对正确）；后续若做逐帧确定性驱动建议 live 侧给 playTo 补一次自启。
+
+## 11. 裁处修复轮（2026-11-03 晚，用户裁定①②修复、③交人工过目）
+
+用户对 §10.6 三问题的裁处：①②当场修复；③（读图通道 400 → 4.3 shots f06/f09/f10×双主题人工过目）交线上链接由用户审核（4.3 侧零改动）。
+
+### 11.1 修① 两条隐形废 path（含归属订正）
+
+- **实锤史**：learning 仓 git 史 9c7757f（首发版）同含两条废 path（NaN 环同款 + 逗号 d `221.31,142.31,303.93,183.61`）——首发即坏，修复轮只换了坐标；即抽屉刻线**从未真正渲染过**，本轮等价首次定几何。
+- **归属订正**：§10.6-② 原记「rs.base svg 内」不确——逗号 d 在 faceText overlays 流内、紧跟 RS 刻字之后（收集序相邻），来源是 desk 抽屉线 `Ln(...)` 把投影点数组直接当 d 传（`lineSvg` 内 `d="${array}"` → 数组 toString 成逗号串）。修复轮换宿主面（前台面→+x 侧面）只是换了坐标，病灶同源。
+- **修法**：①-1 build.mjs desk.top 的 insetPlan 字面量补 `r:2` 并提 `topPlan` 常量与 slab 本体单源（防再漂移）；内缩 3 后 `r=max(0,2−3)=0`，刻线圈恰描出台身足迹（inset 后 {x:-195,y:-102,w:92,d:96} == DESK 本体）。①-2 抽屉线 `.map(at)` 结果包 `k.pathOf(...)` 成合法 `M…L…`（端点与废 path 逐位一致：407.87,163.24→325.26,204.55）。
+- **lines 门连锁**：线首次真渲染后两端浮空被抓（2.46px from anything）——补两端 0.45 铆点（tone lo，与全机 screwDots 语言一致），线端落点距离 0；拉手 3 点（0.55）原样。`line ends: 0 of 164` ×2。
+- **渲染实证（DOM+像素双证，vision 判读不采）**：两线 computed stroke=rgb(62,62,62)/opacity 1，drawer-line elementFromPoint hit=self；亮主题 closeup 像素级沿线采样抽屉线 21/21 命中（minL 163–181 连续对角线）、内缩环四边 27/44（±1px 标定误差内的淡线）。4_5v vision 对 59KB closeup 仍报「未见」——按既有判例（分辨率+幻觉）以 DOM+像素收案。
+
+### 11.2 修② live.mjs playTo 自启
+
+`playTo()` 末尾补 `run()`（raf 在跑时 no-op；不可见时仍由 IntersectionObserver 回视口拉起）。drive 死窗三段验证：Escape 关巡游+800ms 等循环死透（pre-state frame=0 rs=0）→ 纯 eval `__fig42.playTo(6)` → mid-anim frame=6 → 收尾 frame=6/rs=1/step=6、readout「R/S 1 · 端口活动 4/4」、console clean。steps-playto.json 入库可复跑。交互路径（step/pointerdown/键盘）不受影响（arm 先行语义未动）。
+
+### 11.3 门复跑（全绿）
+
+audit passed ×2（111 items 不变，extra markup 不入审计）· line ends 0 of 164 ×2 · 遮挡探针 OCCLUSION-PASS ×2（--frames 8 --dwell-ms 8000 双主题）· checks.py 全 PASS（自包含 ×2/互链/页码 18/18/wiring 5 项）· 语言门 RETIRED-COUNT total=10 {柜台1,回执3,泳道6} ×2（豁免集精确一致，新增 JS 注释零退役词）· 坏 path 清零（comma-d 0/NaN 0 ×2 主题）。
+
+### 11.4 shots 重拍清单（desk 影响面，console 全 clean）
+
+重拍 17：machine-dark/light、page-dark/light（1440×4105）、z-desktitle-2x(+light)（**新取景：desk 整域 370,190,390,210 @2x=780×420**，旧框未留配方且需盖新刻线；上轮 cabtitle 同有新取景先例）、frame-1..8（读数逐帧正确 F6→R/S 1·端口 4/4）、final-frame2、phone-dark-390、phone-machine-390(+zoom 3.2)、lines(+light)。
+新增 1：playto-selfstart.png（死窗自启证据帧）。
+保留不动：lane-dark/light、z-cabtitle/apron/noteboard/portbar/rsbase ×2、cross-*×5、cross-rs-before（desk 域外或零改动）。
+新增工作脚本：steps-playto.json / steps-deskrect.json / steps-linebox.json / steps-lineprobe.json（drive 用例，随目录走）。
+
 

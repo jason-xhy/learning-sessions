@@ -1,0 +1,5 @@
+[
+  ["wait", 2200],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "var p = document.querySelector('.fig-wrap .iso-plate').getBoundingClientRect(); var ls = [...document.querySelectorAll('.fig-wrap path')]; var dl = ls.find(function(q){return q.getAttribute('d') && q.getAttribute('d').startsWith('M407.9')}); var rg = ls.find(function(q){return q.getAttribute('d') && q.getAttribute('d').startsWith('M421.2')}); var dr = dl.getBoundingClientRect(), rr = rg.getBoundingClientRect(); 'plate=' + p.x.toFixed(1) + ',' + p.y.toFixed(1) + ' ' + p.width.toFixed(1) + 'x' + p.height.toFixed(1) + ' | drawer-rel=' + (dr.x-p.x).toFixed(1) + ',' + (dr.y-p.y).toFixed(1) + ' ' + dr.width.toFixed(1) + 'x' + dr.height.toFixed(1) + ' | ring-rel=' + (rr.x-p.x).toFixed(1) + ',' + (rr.y-p.y).toFixed(1) + ' ' + rr.width.toFixed(1) + 'x' + rr.height.toFixed(1)"]
+]

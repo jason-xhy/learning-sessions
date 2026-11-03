@@ -1,0 +1,5 @@
+[
+  ["wait", 2200],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "var s = document.querySelector('.fig-wrap .iso-stage'); var p = document.querySelector('.fig-wrap .iso-plate').getBoundingClientRect(); var d = document.querySelector('[data-name=\"desk.top\"]').getBoundingClientRect(); var t = document.querySelector('[data-name=\"desk.title\"]').getBoundingClientRect(); 'desk.top x=' + (d.x - p.x).toFixed(1) + ' y=' + (d.y - p.y).toFixed(1) + ' w=' + d.width.toFixed(1) + ' h=' + d.height.toFixed(1) + ' | title x=' + (t.x - p.x).toFixed(1) + ' y=' + (t.y - p.y).toFixed(1) + ' w=' + t.width.toFixed(1) + ' h=' + t.height.toFixed(1)"]
+]

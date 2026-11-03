@@ -1,0 +1,5 @@
+[
+  ["wait", 2200],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "var ls = [...document.querySelectorAll('.fig-wrap path')]; var dl = ls.find(function(p){return p.getAttribute('d') && p.getAttribute('d').startsWith('M407.9')}); var rg = ls.find(function(p){return p.getAttribute('d') && p.getAttribute('d').startsWith('M421.2')}); function info(el, tag){ if(!el) return tag+': NOT FOUND'; var r = el.getBoundingClientRect(); var cs = getComputedStyle(el); var cx = r.x + r.width/2, cy = r.y + r.height/2; var top = document.elementFromPoint(cx, cy); return tag + ' rect=' + r.x.toFixed(0) + ',' + r.y.toFixed(0) + ' ' + r.width.toFixed(0) + 'x' + r.height.toFixed(0) + ' stroke=' + cs.stroke + ' opacity=' + cs.opacity + ' display=' + cs.display + ' hit=' + (top === el ? 'self' : (top ? top.tagName + '.' + top.getAttribute('class') : 'none')); } info(dl, 'drawer-line') + ' || ' + info(rg, 'inset-ring')"]
+]

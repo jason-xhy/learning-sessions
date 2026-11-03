@@ -258,6 +258,10 @@ function playTo(i) {
   anim = { from, to, t0: performance.now(), dur: DUR[frame], cues: cuesFor(from, to) };
   const names = ["全景静止", "上电等就绪", "配置槽位与 DCBAA", "命令环起点", "事件环登记", "中断链", "合闸", "读数巡回"];
   statusEl.textContent = "第 " + (frame + 1) + "/8 帧 · " + names[frame];
+  // 自启（2026-11-03 裁处修复）：外部直接 __fig42.playTo(n) 落在 tick 停止窗
+  // （巡游关+上一动画收尾，raf=0）时，anim 已建但循环无人拉起——此处补一次 run()，
+  // raf 在跑时 no-op；可见性不可用时仍由 IntersectionObserver 回 visible 再拉起。
+  run();
 }
 
 // ---------- 主循环 ----------

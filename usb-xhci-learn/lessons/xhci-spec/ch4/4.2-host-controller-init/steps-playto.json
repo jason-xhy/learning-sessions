@@ -1,0 +1,11 @@
+[
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["key", "Escape", ".fig-wrap .iso-stage"],
+  ["wait", 800],
+  ["eval", "'dead-window pre-state frame=' + window.__fig42.frameOf() + ' rs=' + window.__fig42.stateOf().rs"],
+  ["eval", "window.__fig42.playTo(6); 'playTo(6) invoked from external script'"],
+  ["eval", "'mid-anim frame=' + window.__fig42.frameOf()"],
+  ["wait", 5500],
+  ["eval", "'after-settle frame=' + window.__fig42.frameOf() + ' rs=' + window.__fig42.stateOf().rs + ' step=' + window.__fig42.stateOf().step"],
+  ["shot", "shots/playto-selfstart.png", ".fig-wrap .iso-plate", 2]
+]
