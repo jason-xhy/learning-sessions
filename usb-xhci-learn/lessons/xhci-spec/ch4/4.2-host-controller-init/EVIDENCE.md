@@ -256,9 +256,11 @@ drive（帧序/过线/final-frame2/zfs）→ console: clean；__zfs/__zfsLane/__
 
 `playTo()` 末尾补 `run()`（raf 在跑时 no-op；不可见时仍由 IntersectionObserver 回视口拉起）。drive 死窗三段验证：Escape 关巡游+800ms 等循环死透（pre-state frame=0 rs=0）→ 纯 eval `__fig42.playTo(6)` → mid-anim frame=6 → 收尾 frame=6/rs=1/step=6、readout「R/S 1 · 端口活动 4/4」、console clean。steps-playto.json 入库可复跑。交互路径（step/pointerdown/键盘）不受影响（arm 先行语义未动）。
 
-### 11.3 门复跑（全绿）
+### 11.3 门复跑（全绿）+ 规则洞闭合
 
 audit passed ×2（111 items 不变，extra markup 不入审计）· line ends 0 of 164 ×2 · 遮挡探针 OCCLUSION-PASS ×2（--frames 8 --dwell-ms 8000 双主题）· checks.py 全 PASS（自包含 ×2/互链/页码 18/18/wiring 5 项）· 语言门 RETIRED-COUNT total=10 {柜台1,回执3,泳道6} ×2（豁免集精确一致，新增 JS 注释零退役词）· 坏 path 清零（comma-d 0/NaN 0 ×2 主题）。
+
+**规则洞闭合（哪条规则放行了废 path 存活三轮）**：lines 门只检「合法 d 的线端落点」，不可解析 d 零子路径=零端点=静默 PASS；audit 只看 recorder shapes 不看 markup 字符串——两门结构性盲区。已修 anatomy `scripts/line-ends.mjs`：checked iso-line path 的 d 为空/含 NaN/无命令字母 → 计 problem `unparseable d (renders nothing)`（exit 1）。双控验证：正向本页 0/164 PASS；负向植入 comma-d+NaN-d 两条均点名 exit 1；既有 lines 测试族 21/21。SKILL.md 工具行同步登记。
 
 ### 11.4 shots 重拍清单（desk 影响面，console 全 clean）
 
