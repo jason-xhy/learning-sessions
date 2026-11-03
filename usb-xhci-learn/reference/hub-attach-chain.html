@@ -3,13 +3,28 @@
 <head>
 <meta charset="utf-8">
 <title>速查卡 · Hub 事件链路与端口时序</title>
-<link rel="stylesheet" href="../assets/course.css">
+<style>
+/* 内联自 course.css 速查卡所用段（公开仓无 assets/，standalone 化 2026-11-03） */
+:root{--ink:#1a1a1a;--paper:#fffff8;--accent:#a00000;--muted:#707070;--line:#e3e3da}
+*{box-sizing:border-box}
+body{margin:0;padding:2rem 1rem 4rem;background:var(--paper);color:var(--ink);font-family:Georgia,"Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif;font-size:1.05rem;line-height:1.65}
+a{color:var(--accent)}
+table{border-collapse:collapse;margin:1rem 0;font-size:.95rem}
+th,td{border:1px solid var(--line);padding:.35rem .6rem;text-align:left}
+th{background:#f0efe6}
+main{max-width:46rem;margin:0 auto}
+h1,h2{font-weight:600;line-height:1.3}
+h1{font-size:1.7rem;border-bottom:2px solid var(--ink);padding-bottom:.4rem}
+h2{font-size:1.25rem;margin-top:2.2rem}
+.kicker{color:var(--accent);font-size:.85rem;letter-spacing:.12em;text-transform:uppercase}
+footer{margin-top:3rem;padding-top:.8rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+</style>
 </head>
 <body>
 <main>
   <div class="kicker">REFERENCE · 速查卡</div>
   <h1>Hub 事件链路与端口时序</h1>
-  <p>压缩自 <a href="../lessons/0002-hub-attach-chain.html">课 0002</a>。内核行号基线 v7.3.0，升级内核后需重核。</p>
+  <p>压缩自 <a href="../lessons/0002-hub-attach-chain-standalone.html">课 0002</a>。内核行号基线 v7.3.0，升级内核后需重核。</p>
 
   <h2>链路七步（插入 → 驱动绑定）</h2>
   <table>
@@ -42,7 +57,7 @@
   </table>
 
   <p style="color:var(--muted);font-size:.9rem">评审问法模板：hub 补丁改在哪一环（②-⑦）？动的是哪个计时器？对表规范哪条（Fig 7-29 / §7.1.7.5 / §11.5）？</p>
-  <footer>速查卡 · 2026-09-25 ｜ 出处：<a href="../lessons/0002-hub-attach-chain.html">课 0002</a> ｜ 相关：<a href="../0001-knowledge-map-diagnostic.html">课 0001 整体地图</a> · <a href="../lessons/0003-dual-bus-root-port.html">课 0003 双总线根端口</a></footer>
+  <footer>速查卡 · 2026-09-25 ｜ 出处：<a href="../lessons/0002-hub-attach-chain-standalone.html">课 0002</a> ｜ 相关：<a href="../0001-diagnostic-standalone.html">课 0001 整体地图</a> · <a href="../lessons/0003-dual-bus-root-port-standalone.html">课 0003 双总线根端口</a></footer>
 </main>
 </body>
 </html>
