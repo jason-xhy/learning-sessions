@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="theme-dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xHCI 规范对照学习 · 第4章 运行模型</title>
+<style>
+  :root {
+    --font-body: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "Times New Roman", serif;
+    --font-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --content-max: 1120px;
+    /* 三方视角固定色（DESIGN §3.3） */
+    --lane-sw: #7c9ff0;   /* xHCI 驱动 */
+    --lane-hc: #d9a860;   /* xHC 控制器 */
+    --lane-dev: #86bd7a;  /* 设备 */
+  }
+  html.theme-dark {
+    --bg: #10151d; --panel: #171f2a; --panel-2: #1c2532;
+    --ink: #e8e3d5; --ink-dim: #a8a291; --ink-faint: #7d7867;
+    --line: #2a3444; --brass: #d4a24e; --brass-soft: rgba(212,162,78,.16);
+    --link: #9cc3e0; --ok: #86bd7a; --wip: #d9a860; --todo: #7d7867;
+    --code-bg: #141b25; --shadow: rgba(0,0,0,.45);
+  }
+  html.theme-light {
+    --bg: #f4efe3; --panel: #fbf7ec; --panel-2: #efe8d6;
+    --ink: #2a251b; --ink-dim: #6b6350; --ink-faint: #93896f;
+    --line: #d8cfb8; --brass: #96691c; --brass-soft: rgba(150,105,28,.12);
+    --link: #3d6f9e; --ok: #2f7a3d; --wip: #8a5f14; --todo: #93896f;
+    --code-bg: #ece4d0; --shadow: rgba(90,76,45,.25);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--font-body); font-size: 17px; line-height: 1.9;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: var(--content-max); margin: 0 auto; padding: 28px 20px 64px; }
+  h1 { font-size: 30px; margin: 18px 0 6px; letter-spacing: .5px; }
+  .sub { color: var(--ink-dim); margin: 0 0 22px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 18px 22px; margin: 18px 0; box-shadow: 0 1px 4px var(--shadow);
+  }
+  .card h2 { font-size: 19px; margin: 2px 0 10px; color: var(--brass); font-family: var(--font-ui); }
+  .card p { margin: 8px 0; }
+  .lanes { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .lane {
+    font-family: var(--font-ui); font-size: 14px; padding: 3px 12px;
+    border-radius: 4px; border: 1px solid var(--line); color: var(--ink);
+  }
+  .lane i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+  table.toc { width: 100%; border-collapse: collapse; font-family: var(--font-ui); font-size: 15px; }
+  table.toc th {
+    text-align: left; color: var(--ink-dim); font-weight: 600; font-size: 13px;
+    border-bottom: 1px solid var(--line); padding: 6px 8px; letter-spacing: .4px;
+  }
+  table.toc td { border-bottom: 1px solid var(--line); padding: 7px 8px; vertical-align: top; }
+  table.toc tr:hover td { background: var(--panel-2); }
+  td.sec { font-family: var(--font-mono); white-space: nowrap; color: var(--ink-dim); }
+  td.pg { font-family: var(--font-mono); white-space: nowrap; color: var(--ink-faint); font-size: 13px; }
+  .ttl-cn { color: var(--ink); }
+  .ttl-en { color: var(--ink-faint); font-size: 13px; }
+  .st { white-space: nowrap; font-size: 13px; }
+  .st-ok { color: var(--ok); } .st-wip { color: var(--wip); } .st-todo { color: var(--todo); }
+  .ty { white-space: nowrap; font-size: 13px; color: var(--ink-dim); }
+  details.subs { margin-top: 4px; }
+  details.subs summary { cursor: pointer; color: var(--ink-faint); font-size: 13px; user-select: none; }
+  details.subs summary:hover { color: var(--link); }
+  details.subs div { color: var(--ink-faint); font-size: 13px; line-height: 1.8; padding: 2px 0 4px 10px; }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .note { font-size: 14px; color: var(--ink-dim); }
+  code { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); padding: 1px 6px; border-radius: 3px; }
+  footer { border-top: 1px solid var(--line); margin-top: 34px; padding-top: 14px; color: var(--ink-faint); font-size: 13.5px; font-family: var(--font-ui); }
+  .theme-toggle {
+    position: fixed; top: 14px; right: 16px; z-index: 50; cursor: pointer;
+    font-family: var(--font-ui); font-size: 13px; color: var(--ink-dim);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 12px;
+  }
+  .theme-toggle:hover { color: var(--ink); border-color: var(--brass); }
+  @media (max-width: 720px) {
+    table.toc .hide-m { display: none; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button">☀ 浅色</button>
+<main>
+  <h1>xHCI 规范对照学习</h1>
+  <p class="sub">拿 xHCI 1.2b 规范原文逐节对照：原文短引 ↔ 中文白话解读 ↔ 三方视角流程图与动画。章节结构与规范一致。</p>
+
+  <div class="card">
+    <h2>怎么用</h2>
+    <p>每节一页，页内四块：<b>规范要义</b>（白话）、<b>原文对照</b>（英文短引＋页码，逐条机核）、
+    <b>流程图</b>（三方泳道，可放大可全屏）、<b>动画</b>（核心节为 anatomy 机器，次要节为泳道步进）。</p>
+    <p>流程图与动画统一接缩放（1×–3.2×，键盘 <code>+ − 0</code>）与全屏（<code>F</code>）。</p>
+    <div class="lanes">
+      <span class="lane"><i style="background:var(--lane-sw)"></i>xHCI 驱动</span>
+      <span class="lane"><i style="background:var(--lane-hc)"></i>xHC 控制器</span>
+      <span class="lane"><i style="background:var(--lane-dev)"></i>设备</span>
+    </div>
+    <p class="note">三方视角是固定泳道。流程不涉设备时（如控制器初始化），设备泳道如实标注「本流程不参与」，不删泳道、不硬凑。</p>
+  </div>
+
+  <div class="card">
+    <h2>第 4 章 运行模型（Operational Model · p68 起）</h2>
+    <table class="toc">
+      <tr><th>§</th><th>节</th><th class="hide-m">p</th><th>状态</th><th class="hide-m">呈现</th></tr>
+      <tr><td class="sec">4.1</td>
+        <td><span class="ttl-cn"><a href="ch4/4.1-command-operation/index.html">命令操作</a></span><br><span class="ttl-en">Command Operation</span></td>
+        <td class="pg hide-m">68</td><td class="st st-ok">已建</td><td class="ty hide-m">泳道步进</td></tr>
+      <tr><td class="sec">4.2</td>
+        <td><span class="ttl-cn"><a href="ch4/4.2-host-controller-init/index.html">主机控制器初始化</a></span><br><span class="ttl-en">Host Controller Initialization</span></td>
+        <td class="pg hide-m">68</td><td class="st st-ok">已建</td><td class="ty hide-m">机器 · Figure</td></tr>
+      <tr><td class="sec">4.3</td>
+        <td><span class="ttl-cn"><a href="ch4/4.3-usb-device-init/index.html">USB 设备初始化</a></span><br><span class="ttl-en">USB Device Initialization</span>
+        <details class="subs"><summary>小节 4.3.1–4.3.8</summary><div>4.3.1 根集线器端口复位 · 4.3.2 设备槽分配 · 4.3.3 设备槽初始化 · 4.3.4 地址分配 · 4.3.5 设备配置 · 4.3.6 设置备用接口 · 4.3.7 低速/全速设备支持 · 4.3.8 带宽管理</div></details></td>
+        <td class="pg hide-m">71</td><td class="st st-ok">已建</td><td class="ty hide-m">机器 · Hero</td></tr>
+      <tr><td class="sec">4.4</td>
+        <td><span class="ttl-cn">设备拔出</span><br><span class="ttl-en">Device Detach</span></td>
+        <td class="pg hide-m">81</td><td class="st st-todo">待建</td><td class="ty hide-m">泳道</td></tr>
+      <tr><td class="sec">4.5</td>
+        <td><span class="ttl-cn">设备槽管理</span><br><span class="ttl-en">Device Slot Management</span>
+        <details class="subs"><summary>小节 4.5.1–4.5.4</summary><div>4.5.1 设备上下文索引 · 4.5.2 槽上下文初始化 · 4.5.3 槽状态 · 4.5.4 USB 标准设备请求到 xHCI 命令的映射</div></details></td>
+        <td class="pg hide-m">81</td><td class="st st-todo">待建</td><td class="ty hide-m">状态图＋表格</td></tr>
+      <tr><td class="sec">4.6</td>
+        <td><span class="ttl-cn">命令接口</span><br><span class="ttl-en">Command Interface</span>
+        <details class="subs"><summary>小节 4.6.1–4.6.18</summary><div>4.6.1 命令环操作 · 4.6.2 No Op · 4.6.3 Enable Slot · 4.6.4 Disable Slot · 4.6.5 Address Device · 4.6.6 Configure Endpoint · 4.6.7 Evaluate Context · 4.6.8 Reset Endpoint · 4.6.9 Stop Endpoint · 4.6.10 Set TR Dequeue Pointer · 4.6.11 Reset Device · 4.6.12 Force Event · 4.6.13 Negotiate Bandwidth · 4.6.14 Set LTV · 4.6.15 Get Port Bandwidth · 4.6.16 Force Header · 4.6.17 Get Extended Property · 4.6.18 Set Extended Property</div></details></td>
+        <td class="pg hide-m">90</td><td class="st st-todo">待建</td><td class="ty hide-m">互链 fig4＋逐命令</td></tr>
+      <tr><td class="sec">4.7</td>
+        <td><span class="ttl-cn">门铃</span><br><span class="ttl-en">Doorbells</span></td>
+        <td class="pg hide-m">142</td><td class="st st-todo">待建</td><td class="ty hide-m">泳道</td></tr>
+      <tr><td class="sec">4.8</td>
+        <td><span class="ttl-cn">端点</span><br><span class="ttl-en">Endpoint</span>
+        <details class="subs"><summary>小节 4.8.1–4.8.3</summary><div>4.8.1 端点寻址 · 4.8.2 端点上下文初始化 · 4.8.3 端点上下文状态</div></details></td>
+        <td class="pg hide-m">143</td><td class="st st-todo">待建</td><td class="ty hide-m">状态图＋表格</td></tr>
+      <tr><td class="sec">4.9</td>
+        <td><span class="ttl-cn">TRB 环</span><br><span class="ttl-en">TRB Ring</span>
+        <details class="subs"><summary>小节 4.9.1–4.9.4</summary><div>4.9.1 传输描述符 · 4.9.2 传输环管理 · 4.9.3 命令环管理 · 4.9.4 事件环管理</div></details></td>
+        <td class="pg hide-m">149</td><td class="st st-todo">待建</td><td class="ty hide-m">互链四机 fig2/3/4</td></tr>
+      <tr><td class="sec">4.10</td>
+        <td><span class="ttl-cn">主机控制器 TRB 处理</span><br><span class="ttl-en">Host Controller TRB Handling</span>
+        <details class="subs"><summary>小节 4.10.1–4.10.4</summary><div>4.10.1 传输 TRB · 4.10.2 错误 · 4.10.3 事件 · 4.10.4 IOC 标志</div></details></td>
+        <td class="pg hide-m">170</td><td class="st st-todo">待建</td><td class="ty hide-m">机器候选</td></tr>
+      <tr><td class="sec">4.11</td>
+        <td><span class="ttl-cn">TRB（传输请求块）</span><br><span class="ttl-en">TRBs</span>
+        <details class="subs"><summary>小节 4.11.1–4.11.7</summary><div>4.11.1 TRB 模板 · 4.11.2 传输 TRB · 4.11.3 事件 TRB · 4.11.4 命令 TRB · 4.11.5 其它 TRB · 4.11.6 厂商自定义 TRB · 4.11.7 TD 使用规则</div></details></td>
+        <td class="pg hide-m">188</td><td class="st st-todo">待建</td><td class="ty hide-m">表格（互链 0006 课）</td></tr>
+      <tr><td class="sec">4.12</td>
+        <td><span class="ttl-cn">流</span><br><span class="ttl-en">Streams</span>
+        <details class="subs"><summary>小节 4.12.1–4.12.3</summary><div>4.12.1 xHCI 流协议 · 4.12.2 流 ID 管理 · 4.12.3 Evaluate Next TRB（ENT）</div></details></td>
+        <td class="pg hide-m">218</td><td class="st st-todo">待建</td><td class="ty hide-m">机器候选</td></tr>
+      <tr><td class="sec">4.13</td>
+        <td><span class="ttl-cn">设备通知</span><br><span class="ttl-en">Device Notifications</span>
+        <details class="subs"><summary>小节 4.13.1–4.13.2</summary><div>4.13.1 延迟容忍消息处理 · 4.13.2 Function Wake</div></details></td>
+        <td class="pg hide-m">229</td><td class="st st-todo">待建</td><td class="ty hide-m">泳道</td></tr>
+      <tr><td class="sec">4.14</td>
+        <td><span class="ttl-cn">传输环管理</span><br><span class="ttl-en">Managing Transfer Rings</span>
+        <details class="subs"><summary>小节 4.14.1–4.14.4</summary><div>4.14.1 通用调度模型 · 4.14.2 周期传输环调度 · 4.14.3 中断传输环调度 · 4.14.4 异步传输环调度</div></details></td>
+        <td class="pg hide-m">232</td><td class="st st-todo">待建</td><td class="ty hide-m">机器候选</td></tr>
+      <tr><td class="sec">4.15</td>
+        <td><span class="ttl-cn">挂起与恢复</span><br><span class="ttl-en">Suspend-Resume</span>
+        <details class="subs"><summary>小节 4.15.1–4.15.2</summary><div>4.15.1 端口挂起 · 4.15.2 端口恢复</div></details></td>
+        <td class="pg hide-m">252</td><td class="st st-todo">待建</td><td class="ty hide-m">机器候选</td></tr>
+      <tr><td class="sec">4.16</td>
+        <td><span class="ttl-cn">带宽管理</span><br><span class="ttl-en">Bandwidth Management</span>
+        <details class="subs"><summary>小节 4.16.1–4.16.2</summary><div>4.16.1 带宽协商 · 4.16.2 带宽域</div></details></td>
+        <td class="pg hide-m">258</td><td class="st st-todo">待建</td><td class="ty hide-m">泳道＋表格</td></tr>
+      <tr><td class="sec">4.17</td>
+        <td><span class="ttl-cn">中断器</span><br><span class="ttl-en">Interrupters</span>
+        <details class="subs"><summary>小节 4.17.1–4.17.5</summary><div>4.17.1 中断器映射 · 4.17.2 中断节流 · 4.17.3 中断引脚支持 · 4.17.4 中断器目标识别 · 4.17.5 中断屏蔽</div></details></td>
+        <td class="pg hide-m">261</td><td class="st st-todo">待建</td><td class="ty hide-m">泳道（互链 fig3）</td></tr>
+      <tr><td class="sec">4.18</td>
+        <td><span class="ttl-cn">传输定义与属性</span><br><span class="ttl-en">Transfer Definition and Attributes</span></td>
+        <td class="pg hide-m">270</td><td class="st st-todo">待建</td><td class="ty hide-m">表格</td></tr>
+      <tr><td class="sec">4.19</td>
+        <td><span class="ttl-cn">根集线器</span><br><span class="ttl-en">Root Hub</span>
+        <details class="subs"><summary>小节 4.19.1–4.19.9</summary><div>4.19.1 根集线器端口状态机 · 4.19.2 端口状态变化生成 · 4.19.3 连接状态变化上报 · 4.19.4 端口电源 · 4.19.5 端口复位 · 4.19.6 端口测试模式 · 4.19.7 端口路由与控制 · 4.19.8 冷连接状态 · 4.19.9 端口速度</div></details></td>
+        <td class="pg hide-m">272</td><td class="st st-todo">待建</td><td class="ty hide-m">状态机大图＋机器</td></tr>
+      <tr><td class="sec">4.20</td>
+        <td><span class="ttl-cn">暂存缓冲区</span><br><span class="ttl-en">Scratchpad Buffers</span></td>
+        <td class="pg hide-m">304</td><td class="st st-todo">待建</td><td class="ty hide-m">泳道</td></tr>
+      <tr><td class="sec">4.21</td>
+        <td><span class="ttl-cn">PCI Express</span><br><span class="ttl-en">PCI Express</span></td>
+        <td class="pg hide-m">306</td><td class="st st-todo">待建</td><td class="ty hide-m">表格</td></tr>
+      <tr><td class="sec">4.22</td>
+        <td><span class="ttl-cn">xHCI 扩展能力</span><br><span class="ttl-en">xHCI Extended Capabilities</span>
+        <details class="subs"><summary>小节 4.22.1–4.22.3</summary><div>4.22.1 Pre-OS 到 OS 的交接同步 · 4.22.2 调试能力运行模型 · 4.22.3 虚拟化</div></details></td>
+        <td class="pg hide-m">307</td><td class="st st-todo">待建</td><td class="ty hide-m">泳道</td></tr>
+      <tr><td class="sec">4.23</td>
+        <td><span class="ttl-cn">电源管理</span><br><span class="ttl-en">Power Management</span>
+        <details class="subs"><summary>小节 4.23.1–4.23.5</summary><div>4.23.1 电源井 · 4.23.2 xHCI 电源管理 · 4.23.3 PCI 电源管理 · 4.23.4 USB 电源管理 · 4.23.5 USB 链路电源管理</div></details></td>
+        <td class="pg hide-m">310</td><td class="st st-todo">待建</td><td class="ty hide-m">机器候选</td></tr>
+      <tr><td class="sec">4.24</td>
+        <td><span class="ttl-cn">主机控制器管理</span><br><span class="ttl-en">Host Controller Management</span>
+        <details class="subs"><summary>小节 4.24.1–4.24.2</summary><div>4.24.1 内部错误 · 4.24.2 端口到连接器映射</div></details></td>
+        <td class="pg hide-m">327</td><td class="st st-todo">待建</td><td class="ty hide-m">表格</td></tr>
+      <tr><td class="sec">4.25</td>
+        <td><span class="ttl-cn">基于 USB 虚拟化的可信 IO 管理</span><br><span class="ttl-en">USB Virtualization Based Trusted IO Management (USB VTIO)</span>
+        <details class="subs"><summary>小节 4.25.1–4.25.2</summary><div>4.25.1 VTIO 用法与要求 · 4.25.2 DMA-ID 分配管理</div></details></td>
+        <td class="pg hide-m">331</td><td class="st st-todo">待建</td><td class="ty hide-m">表格</td></tr>
+    </table>
+    <p class="note">第 5 章（寄存器）与第 6 章（数据结构）按同一结构法后续扩展。4.1–4.3 为本批立标（2026-11-03 过全部门与双维评分门）；其余节按同规矩量产。</p>
+  </div>
+
+  <div class="card">
+    <h2>相关板块</h2>
+    <p><a href="../xhc-machines/index.html">xHCI 四机课</a>——一颗 URB 与三个环的机器动画（§4.9 三环机制已由 fig2/3/4 覆盖，本板块 §4.9 节将互链不重造）。</p>
+    <p><a href="../0006-xhc-trb-parts-standalone.html">TRB 提单全解（0006）</a> · <a href="../0007-xhc-ring-keys-standalone.html">环的运转（0007）</a> · <a href="../0009-xhc-transfer-drama-standalone.html">传输剧（0009）</a>——机制课线，与本板块互为对照。</p>
+  </div>
+
+  <footer>
+    判据：xHCI 1.2b（Document Number 625472, Revision 1.2b）· 页码与断言逐条机核，证据见各节 EVIDENCE.md ·
+    制作规则见 <code>DESIGN.md</code> · 2026-11-03
+  </footer>
+</main>
+<script>
+(() => {
+  const btn = document.getElementById("themeToggle");
+  const root = document.documentElement;
+  const saved = localStorage.getItem("xhci-spec-theme");
+  if (saved === "light" || saved === "dark") root.className = "theme-" + saved;
+  const paint = () => { btn.textContent = root.classList.contains("theme-dark") ? "☀ 浅色" : "☾ 深色"; };
+  btn.addEventListener("click", () => {
+    const to = root.classList.contains("theme-dark") ? "light" : "dark";
+    root.className = "theme-" + to; localStorage.setItem("xhci-spec-theme", to); paint();
+  });
+  paint();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+[
+  ["wait", 2200],
+  ["eval", "JSON.stringify({ zfs: typeof window.__zfs, zfsLane: typeof window.__zfsLane, fig: typeof window.__fig42, zoom: window.__zfs ? window.__zfs.zoomOf() : null })"],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["key", " ", ".fig-wrap .iso-stage"],
+  ["wait", 3200],
+  ["shot", "shots/final-frame2.png", ".fig-wrap .iso-plate", 1],
+  ["eval", "document.querySelector('.fig-wrap [data-readout]').textContent"]
+]

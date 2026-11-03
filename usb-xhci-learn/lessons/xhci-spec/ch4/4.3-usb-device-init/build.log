@@ -1,0 +1,192 @@
+=== §4.3 build log（重生成 2026-11-03 12:39:11）===
+--- node build.mjs --audit (dark) ---
+wrote index.html 298 KB 121 items scale 1.965
+clearance: 0 problems
+clearance apart: 0 problems
+terminals: 0 ends not on a mount
+loose ends: 0
+screen folds: 0
+support: 0 unsupported solids · 0 hanging tubes · 0 sunk pairs
+depth order: 0 problems
+through in mid-flight: 0 pairs
+self-overlap: 0 chunks whose outline crosses itself on screen
+wobble: 0 smoothed profiles whose slope turns between its ends
+saddles off their host apart: 0
+stand-in shapes: 0 items whose recorded shape covers too little of what it draws
+crowding: 0 pairs where a bend or end touches another line on screen
+audit · 2 tubes · 113 solids · 121 items · 1 depth states · 267 overlaps · 267 order rules · 6.1 s
+audit passed
+--- node build.mjs --light --audit ---
+audit · 2 tubes · 113 solids · 121 items · 1 depth states · 267 overlaps · 267 order rules · 5.5 s
+audit passed
+--- lines.mjs dark/light (机器台) ---
+line ends: 0 of 150 ends on 36 lines float
+console: clean
+line ends: 0 of 150 ends on 36 lines float
+console: clean
+--- 页码机核 pypdf needle ---
+
+47/47 needles PASS
+--- 语言门（新判据：残留 family ⊆ 豁免表）---
+RETIRED-COUNT index.html: total=0 
+RETIRED-COUNT index-light.html: total=0 
+--- 自包含 ---
+external-src=0 external-link=0 http-ref=0
+--- 互链存在性 ---
+OK ../../index.html
+OK ../4.2-host-controller-init/index.html
+OK ../4.1-command-operation/index.html
+OK ../../../xhc-machines/fig1-assembly/index.html
+OK ../../../xhc-machines/fig4-command-ring/index.html
+OK ../../../xhc-machines/fig2-transfer-ring/index.html
+OK ../../../0009-xhc-transfer-drama.html
+OK EVIDENCE.md
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+
+--- 12 帧状态真值表（DOM 断言）---
+
+frames-truth: 0/0 PASS
+
+--- 12 帧状态真值表（DOM 断言）---
+
+frames-truth: 0/0 PASS
+
+--- 12 帧状态真值表（DOM 断言）---
+
+frames-truth: 0/0 PASS
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+FAIL F3@p0.1 got={\"dev\":\"powered\",\"slot\":\"—\",\"pls\":\"U0\",\"speed\":\"FS\",\"flags\":{\"ccs\":1,\"csc\":1,\"pr\":0,\"prc\":1,\"ped\":1},\"clips\":0,\"evCount\":1,\"trbs\":0} want={\"dev\":\"default\",\"slot\":\"—\",\"pls\":\"U0\",\"speed\":\"FS\",\"flags\":{\"ccs\":1,\"csc\":1,\"pr\":0,\"prc\":1,\"ped\":1},\"clips\":0,\"evCount\":1,\"trbs\":0}
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+FAIL F6@p0.85 got={\"dev\":\"address\",\"slot\":\"Addressed\",\"pls\":\"U0\",\"speed\":\"FS\",\"flags\":{\"ccs\":1,\"csc\":1,\"pr\":0,\"prc\":1,\"ped\":1},\"clips\":1,\"evCount\":3,\"trbs\":0} want={\"dev\":\"address\",\"slot\":\"Addressed\",\"pls\":\"U0\",\"speed\":\"FS\",\"flags\":{},\"clips\":1,\"evCount\":4,\"trbs\":0}
+FAIL F7@p0.5 got={\"dev\":\"address\",\"slot\":\"Addressed\",\"pls\":\"U0\",\"speed\":\"FS\",\"flags\":{\"ccs\":1,\"csc\":1,\"pr\":0,\"prc\":1,\"ped\":1},\"clips\":1,\"evCount\":4,\"trbs\":3} want={\"dev\":\"address\",\"slot\":\"Addressed\",\"pls\":\"U0\",\"speed\":\"FS\",\"flags\":{},\"clips\":2,\"evCount\":4,\"trbs\":3}
+PASS F7@p1
+PASS F8@p1
+FAIL F9@p0.9 got={\"dev\":\"address\",\"slot\":\"Addressed\",\"pls\":\"U0\",\"speed\":\"FS\",\"flags\":{\"ccs\":1,\"csc\":1,\"pr\":0,\"prc\":1,\"ped\":1},\"clips\":3,\"evCount\":6,\"trbs\":0} want={\"dev\":\"address\",\"slot\":\"Addressed\",\"pls\":\"U0\",\"speed\":\"FS\",\"flags\":{},\"clips\":3,\"evCount\":7,\"trbs\":0}
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 12/16 PASS
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+== FINAL GATES 2026-11-03 12:45:29 ==
+1 audit(dark): audit passed
+2 audit(light): audit passed
+3 lines(dark): line ends: 0 
+4 lines(light): line ends: 0 
+5 页码机核: 47/47 needles PASS
+6 语言门(dark): RETIRED-COUNT index.html: total=0 
+7 语言门(light): RETIRED-COUNT index-light.html: total=0 
+8 自包含: script-src=0 link=0
+9 帧真值表: 
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+frames-truth: 18/18 PASS
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+== 返修轮（流程图布局机械检清零）2026-11-03 12:56:37 ==
+1 audit(dark): audit passed
+2 audit(light): audit passed
+3 lines(dark): line ends: 0
+4 lines(light): line ends: 0
+5 帧真值表: 
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+frames-truth: 18/18 PASS
+6 zoomfs: --- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+7 语言门: RETIRED-COUNT index.html: total=0 
+8 语言门(light): RETIRED-COUNT index-light.html: total=0 
+9 流程图布局机械检: svg0 findings=0（overlap 2 / arrow 2 / fit 1 全清；svg1 矩阵文本假阳性按主会话裁定不修）
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"
+--- zoomfs 存活机检（返修轮）---
+ZFS {"alive":true,"zoomOf":1,"isFs":false,"stages":2,"bars":2,"zooms":"1/1.6/2.4/3.2"}
+--- 流程图布局机械检（返修轮复核）---
+check_lesson_svg_layout.py index.html → svg0 findings=0（overlap 2/arrow 2/fit 1 全清，S9 回指箭头方向与触框目检确认；svg1 假阳性不修）
+light 页同检：svg0 findings=0

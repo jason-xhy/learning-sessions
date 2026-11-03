@@ -1,0 +1,10 @@
+[
+  ["wait", 2000],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["wait", 1200],
+  ["shot", "shots/phone-machine-390.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "window.__zfs ? window.__zfs.setZoom(3) : 'no-zfs'"],
+  ["wait", 900],
+  ["shot", "shots/phone-machine-390-zoom.png", ".fig-wrap .iso-stage", 2],
+  ["eval", "window.__zfs ? window.__zfs.zoomOf() : '?'"]
+]

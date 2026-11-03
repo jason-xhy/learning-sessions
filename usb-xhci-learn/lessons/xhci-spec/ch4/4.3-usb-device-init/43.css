@@ -1,0 +1,118 @@
+/* §4.3 附加主题令牌与部件配色（全部走 token，双主题各一份） */
+.xhp-stage { touch-action: pan-y; }
+.xhp-stage:focus-visible { outline: 1px solid var(--anatomy-muted); outline-offset: 6px; }
+@media (max-width: 620px) {
+  .iso-plate { overflow: hidden; }
+  .iso-plate .xhp-stage svg { width: 150%; margin-left: -25%; }
+}
+.xhp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.iso, .iso[data-theme="dark"] {
+  /* 三方配色（DESIGN §3.3，承载文字对比度由配色族保证） */
+  --xhp-sw: #7c9ff0;
+  --xhp-hc: #d9a860;
+  --xhp-dev: #86bd7a;
+  --xhp-lane-ink: #10151d;
+  --xhp-void: #101014;
+  --xhp-lamp-off: #3a3a44;
+  --xhp-lamp-on: #ffd98a;
+  --xhp-lamp-green: #8fd18a;
+  --xhp-ticket: #86bd7a;
+  --xhp-ticket-ink: #0e1a10;
+  --xhp-card: color-mix(in srgb, var(--anatomy-paper, #232329) 84%, #ffffff);
+  --xhp-cell: color-mix(in srgb, var(--anatomy-paper, #232329) 76%, #ffffff);
+  --xhp-note-bg: color-mix(in srgb, var(--anatomy-paper, #171f2a) 94%, #ffffff 6%);
+}
+.iso[data-theme="light"] {
+  --xhp-sw: #2d5fb3;
+  --xhp-hc: #8a5f14;
+  --xhp-dev: #2f7a3d;
+  --xhp-lane-ink: #f4efe3;
+  --xhp-void: #d9d4c6;
+  --xhp-lamp-off: #c9c4b6;
+  --xhp-lamp-on: #d98a1f;
+  --xhp-lamp-green: #2f7a3d;
+  --xhp-ticket: #2f7a3d;
+  --xhp-ticket-ink: #f4f9f0;
+  --xhp-card: color-mix(in srgb, var(--anatomy-paper, #fbf7ec) 88%, #000000 12%);
+  --xhp-cell: color-mix(in srgb, var(--anatomy-paper, #fbf7ec) 80%, #000000 20%);
+  --xhp-note-bg: color-mix(in srgb, var(--anatomy-paper, #fbf7ec) 92%, #000000 8%);
+}
+
+/* 读数板与灯 */
+.xhp-void { fill: var(--xhp-void); }
+.xhp-lamp .xhp-bulb { fill: var(--xhp-lamp-off); transition: fill 320ms var(--anatomy-ease, ease); }
+.xhp-lamp[data-on="1"] .xhp-bulb { fill: var(--xhp-lamp-on); filter: drop-shadow(0 0 3px var(--xhp-lamp-on)); }
+.xhp-lamp[data-grn="1"] .xhp-bulb { fill: var(--xhp-lamp-green); }
+.xhp-lamp[data-on="1"][data-grn="1"] .xhp-bulb { fill: var(--xhp-lamp-green); filter: drop-shadow(0 0 3px var(--xhp-lamp-green)); }
+.xhp-win { fill: var(--anatomy-hi); font-family: var(--anatomy-mono, monospace); letter-spacing: 0.04em; }
+
+/* 表格卡字段 */
+.xu-cell .xu-box { fill: var(--xhp-cell); stroke: var(--anatomy-lo); stroke-width: 0.3; transition: fill 300ms var(--anatomy-ease, ease); }
+.xu-cell text { opacity: 0.28; transition: opacity 300ms var(--anatomy-ease, ease); }
+.xu-cell[data-fill="1"] text { opacity: 1; }
+.xu-cell[data-fill="1"] .xu-box { fill: color-mix(in srgb, var(--xhp-sw) 30%, var(--xhp-cell)); stroke: var(--xhp-sw); }
+.xu-cell[data-hot="1"] .xu-box { fill: color-mix(in srgb, var(--xhp-hc) 42%, var(--xhp-cell)); stroke: var(--xhp-hc); }
+.xu-cell[data-hot="1"] text { opacity: 1; }
+
+/* 动件通用 */
+.xhp-cardtext { font-family: var(--anatomy-mono, monospace); fill: var(--anatomy-hi); }
+.xhp-cardtext[data-tone="mid"] { fill: var(--anatomy-mid); }
+.xhp-cardtext[data-tone="dev"] { fill: var(--xhp-ticket); }
+.xhp-pulse { animation: xhppp 1s ease infinite; }
+@keyframes xhppp { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.xhp-bracket { stroke: var(--anatomy-lit, #fff); stroke-width: 1.2; fill: none; }
+.it[data-name="cons.intake"] path, .it[data-name="cons.intake"] text { transition: none; }
+.it[data-ring="1"] .xhp-intake-frame { stroke: var(--xhp-hc); }
+
+/* ---------- 页面排版（要义/对照/注记/互链） ---------- */
+:root { --font-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif; --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.d3-nav { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 4px 0 2px; font-family: var(--font-ui); font-size: 14px; color: var(--anatomy-muted); }
+.d3-nav .ttl { font-size: 20px; font-weight: 700; color: var(--anatomy-text); }
+.d3-nav a { color: #9cc3e0; text-decoration: none; }
+.d3-nav a:hover { text-decoration: underline; }
+.iso[data-theme="light"] .d3-nav a { color: #2d5fb3; }
+.d3-specref { font-family: var(--font-mono); font-size: 12.5px; color: var(--anatomy-muted); margin: 0 0 14px; }
+.d3-card { background: var(--anatomy-paper); border: 1px solid var(--anatomy-mid); border-radius: 8px; padding: 16px 22px; margin: 14px 0; }
+.d3-card h2 { font-family: var(--font-ui); font-size: 18px; margin: 2px 0 8px; color: var(--anatomy-text); }
+.d3-card p { margin: 8px 0; line-height: 1.95; color: var(--anatomy-text); font-size: 16.5px; }
+.d3-q { margin: 12px 0; padding: 10px 16px; border-left: 3px solid var(--anatomy-hi); }
+.d3-q .en { font-family: var(--font-ui); font-style: italic; color: var(--anatomy-muted); font-size: 14.5px; line-height: 1.8; }
+.d3-q .zh { color: var(--anatomy-text); font-size: 15.5px; margin-top: 4px; }
+.d3-q .src { font-family: var(--font-mono); font-size: 12px; color: var(--anatomy-muted); }
+.d3-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 12px; }
+.d3-note { background: var(--xhp-note-bg); border: 1px dashed var(--anatomy-mid); border-radius: 8px; padding: 12px 16px; }
+.d3-note h3 { font-family: var(--font-ui); font-size: 15.5px; margin: 0 0 6px; color: var(--anatomy-text); }
+.d3-note p { font-family: var(--font-ui); font-size: 14.5px; line-height: 1.85; margin: 0; color: var(--anatomy-text); }
+.d3-note .pg { font-family: var(--font-mono); font-size: 12px; color: var(--anatomy-muted); }
+.d3-foot { font-family: var(--font-ui); font-size: 13px; color: var(--anatomy-muted); margin-top: 18px; }
+.d3-foot a { color: #9cc3e0; }
+.iso[data-theme="light"] .d3-foot a { color: #2d5fb3; }
+
+/* ---------- 三方流程图（静态 SVG） ---------- */
+.xfp-hdr { fill: var(--anatomy-shade-2); stroke: none; }
+.xfp-lanehdr.xfp-sw .xfp-hdr { fill: var(--xhp-sw); }
+.xfp-lanehdr.xfp-hc .xfp-hdr { fill: var(--xhp-hc); }
+.xfp-lanehdr.xfp-dev .xfp-hdr { fill: var(--xhp-dev); }
+.xfp-hdr-t { font: 700 18px var(--font-ui); fill: var(--xhp-lane-ink); }
+.xfp-hdr-s { font: 400 12px var(--font-mono); fill: var(--xhp-lane-ink); opacity: 0.82; }
+.xfp-life { stroke: var(--anatomy-mid); stroke-width: 1.4; stroke-dasharray: 3 6; }
+.xfp-box { fill: var(--anatomy-shade-2); stroke-width: 1.8; }
+.xfp-bx.xfp-sw .xfp-box { stroke: var(--xhp-sw); }
+.xfp-bx.xfp-hc .xfp-box { stroke: var(--xhp-hc); }
+.xfp-bx.xfp-dev .xfp-box { stroke: var(--xhp-dev); }
+.xfp-t1 { font: 500 16px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
+.xfp-t1:first-of-type { font-weight: 700; }
+.xfp-num { font: 700 14px var(--font-mono); fill: var(--anatomy-muted); }
+.xfp-pg { font: 400 12px var(--font-mono); fill: var(--anatomy-muted); }
+.xfp-ln { stroke-width: 2; }
+.xfp-ln.xfp-sw { stroke: var(--xhp-sw); }
+.xfp-ln.xfp-hc { stroke: var(--xhp-hc); }
+.xfp-ln.xfp-dev { stroke: var(--xhp-dev); }
+.xfp-ln.xfp-ev { stroke-dasharray: 7 5; }
+.xfp-t2 { font: 500 15.5px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
+.xfp-t2.xfp-tk { fill: var(--xhp-dev); font-weight: 700; }
+.xfp-fill-sw { fill: var(--xhp-sw); }
+.xfp-fill-hc { fill: var(--xhp-hc); }
+.xfp-fill-dev { fill: var(--xhp-dev); }
+.xfp-fignote { font: 500 15px var(--font-ui); fill: var(--anatomy-muted); }
