@@ -53,6 +53,76 @@ function snapshot(i) {
   };
 }
 
+// ---------- 飞行卡独立深度项（2026-11-03 老问题修复轮） ----------
+// 修前：卡嵌在滑车 svg 内、随滑车 item 的 settle 序绘制——越过前置拉线分段（wire.rs:1-5 /
+// wire.cfg:0-4 在滑车之前）时卡画在线上、线被截断。正解：卡拆独立组，每帧按真实 3D 位置
+// 对拉线分段采样做视线 ray-box 判深（视轴 = depthOf 方向 [0.612,0.612,0.5]）：
+//   线样品 τ 区间整段在样品之后（t1<-0.01）→ 线在卡前 → 卡组移到该分段之前（线盖卡）；
+//   τ 区间整段在样品之前（t0> 0.01）→ 卡在线前 → 卡组移到该分段之后（卡盖线）。
+const flyInner = $('[data-part="flycard"]');
+const flyWrap = flyInner.closest(".it");
+const itemOrder = [...svgRoot.querySelectorAll(".fb-stage .it")].filter((el) => el !== flyWrap);
+const itemByName = new Map(itemOrder.map((el) => [el.getAttribute("data-name"), el]));
+const trolleyRef = itemByName.get("trolley");
+const defaultFlyRef = itemOrder[itemOrder.indexOf(trolleyRef) + 1] || null;
+const VIEW = [Math.SQRT1_2 * Math.cos(Math.PI / 6), Math.SQRT1_2 * Math.cos(Math.PI / 6), 0.5];
+const wireSamples = (D.wires || []).map((w) => {
+  const pts = [];
+  for (let i = 0; i + 1 < w.pts.length; i++) {
+    const [x0, y0, z0] = w.pts[i], [x1, y1, z1] = w.pts[i + 1];
+    const len = Math.hypot(x1 - x0, y1 - y0, z1 - z0), n = Math.max(1, Math.ceil(len / 2.5));
+    for (let j = 0; j < n; j++) pts.push([x0 + (x1 - x0) * j / n, y0 + (y1 - y0) * j / n, z0 + (z1 - z0) * j / n]);
+  }
+  pts.push(w.pts[w.pts.length - 1]);
+  return { name: w.name, pts, idx: itemOrder.indexOf(itemByName.get(w.name)) };
+});
+function slabTau(p, lo, hi) {
+  let t0 = -Infinity, t1 = Infinity;
+  for (let i = 0; i < 3; i++) {
+    const v = VIEW[i];
+    let u0 = (lo[i] - p[i]) / v, u1 = (hi[i] - p[i]) / v;
+    if (u0 > u1) { const t = u0; u0 = u1; u1 = t; }
+    if (u0 > t0) t0 = u0;
+    if (u1 < t1) t1 = u1;
+    if (t0 > t1) return null;
+  }
+  return [t0, t1];
+}
+function placeFly(lo, hi) {
+  let maxBehind = -1, minFront = Infinity;
+  for (const w of wireSamples) {
+    if (w.idx < 0) continue;
+    let wireFront = false, cardFront = false;
+    for (const p of w.pts) {
+      const t = slabTau(p, lo, hi);
+      if (!t) continue;
+      if (t[1] < -0.01) wireFront = true;
+      else cardFront = true;
+      if (wireFront && cardFront) break;
+    }
+    if (wireFront && cardFront) continue; // 同分段双态（贴穿容差）：不动该分段
+    if (wireFront) { if (w.idx < minFront) minFront = w.idx; }
+    else if (cardFront) { if (w.idx > maxBehind) maxBehind = w.idx; }
+  }
+  let ref;
+  if (minFront < Infinity && (maxBehind < 0 || maxBehind + 1 <= minFront)) ref = itemOrder[minFront];
+  else if (maxBehind >= 0 && minFront === Infinity) ref = itemOrder[maxBehind + 1] || null;
+  else if (minFront < Infinity) ref = itemOrder[minFront]; // 冲突兜底：以「线盖卡」优先
+  else ref = defaultFlyRef;
+  const parent = flyWrap.parentNode;
+  if (ref && ref !== flyWrap) parent.insertBefore(flyWrap, ref);
+  else if (!ref) parent.appendChild(flyWrap);
+}
+function renderFly(a) {
+  if (!a.card) { if (flyInner.style.display !== "none") flyInner.style.display = "none"; return; }
+  const def = D.cardDefs.find((c) => c.key === a.card);
+  const pos = geo.flyCardPos(a.x, a.drop, a.push);
+  const html = geo.cardSvg(pos.x, pos.yFace, pos.z, def);
+  if (flyInner.innerHTML !== html) flyInner.innerHTML = html;
+  flyInner.style.display = "";
+  placeFly([pos.x, pos.yFace - D.cardT, pos.z], [pos.x + D.cardW, pos.yFace, pos.z + D.cardH]);
+}
+
 // ---------- 渲染 ----------
 let dispCnr = -1, dispLamp = -1;
 function render(s, dt) {
@@ -63,8 +133,9 @@ function render(s, dt) {
   a.drop += (a.dropT - a.drop) * ease;
   a.push += (a.pushT - a.push) * ease;
   const tr = $('[data-part="trolley"]');
-  const trHtml = geo.trolleySvg(a.x, a.drop, a.card, a.push);
+  const trHtml = geo.trolleySvg(a.x, a.drop, a.push);
   if (tr.innerHTML !== trHtml) tr.innerHTML = trHtml;
+  renderFly(a);
   // 卡库叠层
   const mg = $('[data-part="magstack"]');
   const mgHtml = geo.magStackSvg(magN);
@@ -224,6 +295,6 @@ stage.addEventListener("keydown", (e) => {
   else if (e.key === "a" || e.key === "A") { touring = !still.matches; tourTimer = 0; run(); }
   else if (e.key === "Escape") { touring = false; run(); }
 });
-window.__fig42 = { step, playTo, pause: () => { touring = false; clearTimeout(idleTimer); }, stateOf: () => ({ step: state.step, cards: [...state.cards], rs: state.rs }), frameOf: () => frame };
+window.__fig42 = { step, playTo, pause: () => { touring = false; clearTimeout(idleTimer); }, stateOf: () => ({ step: state.step, cards: [...state.cards], rs: state.rs }), frameOf: () => frame, armOf: () => ({ x: +state.arm.x.toFixed(1), drop: +state.arm.drop.toFixed(1), push: +state.arm.push.toFixed(1), card: state.arm.card }) };
 render(state, 0.016);
 })();

@@ -142,6 +142,7 @@ node shots.mjs dark|light|phone|zoom
 | | 行走票据/命令单/写卡（瞬态） | 2.7–3.5px | 3.9–4.7px | 卡 11–23 世界，飞行中 |
 
 字号豁免清单（放不下且拆行也放不下，保持可达上限如实登记，宁小勿溢出）：教学锚句 3.46px（7px 目标不可达——26.58em×7px=186 世界 > 全机任何单面）；票据夹卡 SET_ADDRESS 3.64px（塔面右段被灯窗列/标签列/轨/票据带占满，23 世界卡内 6.62em 上限）；事件堆叠卡 5.50px（匣 24×18 内 2×2 格）；描述符卡 3.73/2.55px（同匣约束 + Descriptor 6.03em）；五灯名 5.50px（灯距 10.3 世界）；状态灯标签 3.93px（灯窗右缘 128→票据卡左缘 153 共 24 世界，Configured 6.42em 上限——修复前 4.91px 即溢出并压卡）；Device Slot 4.62px、槽位读数 6.29px（窗 34 世界）；命令环·收件口 4.13px（台面西段 34 世界 / 8.17em）；DCBAA 7.66px、EP0 传输环 7.27px、软件装载副铭 2.75px（各自宿主面上限）；表格卡格注 3.34px（格距钉死，与原件持平）；门铃铭 5.90/3.54px。
+（2026-11-03 字号修复轮更正：本表 em→世界换算按「advance×1.04」记账偏悲观——实测正面/顶面矩阵下文字 advance 的 user 数与世界单位 **1:1**（矩阵 x 列基=世界 x 轴屏幕步进，双路校准：bbox 实测 92.8 vs 板 86.1 = 溢出吻合；基矢量 node 复算）。且本轮已按 FIXSPEC 授权改几何，豁免项逐条重做——**新值见 §8**，本表数值仅存档为修复前口径。）
 
 ### 7.4 探针前后对比（scripts/xhci_spec_occlusion_probe.py --frames 12 --dwell-ms 400）
 
@@ -155,3 +156,51 @@ node shots.mjs dark|light|phone|zoom
 ### 7.5 门复跑记录（本轮终态，双主题）
 
 audit passed（118 solids / 126 items）· lines.mjs `line ends: 0` console clean（双主题）· 真值表 18/18 PASS · 语言门 total=0（双主题）· 自包含 0 外链 · zoomfs alive（stages=2，zooms 1/1.6/2.4/3.2）· durs 已核落页 · shots/ 34 件复拍零 console 异常（含 phone390 + 3.2× zoom）。
+
+## 8. 2026-11-03 老问题修复轮（FIXSPEC-42-43 三项字号豁免面；授权改几何，措辞一字不改）
+
+### 8.1 换算基更正（方法论）
+
+§7.3 旧表按「advance_user ≈ 世界×1.04」记账，实测偏悲观 1.35×：正面/顶面文字矩阵的 x 列基=世界 x 轴屏幕步进，**advance 的 user 数 = 世界单位 1:1**；竖直 em 框 = 1×字号世界高、CJK 墨 ≈0.86em、大写拉丁帽 ≈0.72em（探针 rect 含 1em 全框）。双路校准：① 真页面 rect（锚句 92.8 vs 铭板 86.1 = 溢出，与旧表口径一致）；② node 复算 iso 基矢量（x 列 1.0122/0.9663、z 列 0/1.6099）。fit 机检脚本升级：`~/.cache/zcode-tmp/fit43c.py`（getComputedTextLength×宿主沿轴，双主题 FIT-PASS）。
+
+### 8.2 三项改动面（build.mjs + live.js）
+
+1. **教学锚句 → 7.00px 达标（目标 ≥7）**：拆两行（「——」收 L1 尾，拼接逐字==原句，机检 28/28 PASS），立专用面板 `box.nameplate` 106×1.6×17.2 世界 @y44（替换旧 84×1.2×4 贴地板板），内缩框线+四角点，面板顶缘等效塔面 z≈7.6 < 最低灯窗下缘 8.7（面板前移 Δy=24.6 使屏幕投影沉到灯列之下；AABB 与灯窗的角部虚交已用四边形边线数学排除，探针为证）。
+2. **软件装载副铭 → 5.00px 达标（目标 ≥5）**：`dcbaa.sublabel` 自基座前脸（28 世界，5px 需 53.7 世界放不下）迁**基座台板顶面**，topText anchor start @(-114,-1)，西避 desk.top 悬缘(-120) 6 世界、东避 cons 身(-40) 19.7。
+3. **动件卡**（l1=主行/l2=副行）：
+   - 票据夹卡 23×5.2 → **33×6.3**，挂夹 z 13.2+i·6 → **12.4+i·6.5**，带位 x 154..187：**SET_ADDRESS 3.64→4.50px 达标**；
+   - 描述符卡 11.5×8.8 → **27×8.3**，落位由对角双卡位改**匣内两行**（Device 北 -137.95,-16.9 / Config 南 -137.45,-8.15，南缘 ≤-4.0 避标签框）：**l1 3.73→4.50px、l2 2.55→4.00px 达标**；`tray.desc` 匣体 x→-123.5/y→-21.5、唇同步；
+   - 事件堆叠卡 11×8.8 → **13×8.8**，列距 13.1→13.4、`evTray.x`→-140.9，`tray.event` x→-124.5、唇同步：**l1 5.50→6.01px 达标**（l2 4.72→5.01px 顺带）。
+   - §7.2 避让重核：挂卡带位仍西距「Configured」标签带 1.4 世界、顶缘 32.2 < 「USB 设备」铭牌框底 32.4；「票据带」标签因挂卡 AABB 相交迁**塔身东立面**（沿 y 34 世界，4.32→5.00px）；「收件匣（描述符）」标签因描述符卡 AABB 相交迁**匣前桌面西段**（-165,2.5 @z23，字号不变）；探针迭代 2 命中 → **0**。
+
+### 8.3 豁免清单逐条新值（旧值 → 新值）
+
+| 处 | 旧 | 新 | 判定 |
+|---|---|---|---|
+| 教学锚句 | 3.46px | **7.00px**（双行 97.0/89.1 世界 ≤ 面板可容 99） | 达标（≥7） |
+| 软件装载副铭 | 2.75px | **5.00px**（advance 53.7 ≤ 台板可容 58） | 达标（≥5） |
+| SET_ADDRESS 票据夹卡 | 3.64px | **4.50px**（advance 29.8 ≤ 卡内可容 30） | 达标（≥4.5） |
+| 票据夹卡副行 | 3.54px | **2.30px** | **新豁免（回退登记）**：四卡带高硬约束——塔面可用带 6.3..32.2 共 25.8 世界 < 4×(4.5px+3.54px) 清叠放需求 30.5 世界；副行 2.30px 在 3.2× 档等效 7.4px（DESIGN §1.8 追注细节层 ≥7px 起），换主行达标且主/副行墨迹零叠印 |
+| 描述符卡 l1/l2 | 3.73/2.55px | **4.50/4.00px**（16.2/24.1 ≤ 卡内 24.6） | 达标（≥4.5/4） |
+| 事件堆叠卡 l1/l2 | 5.50/4.72px | **6.01/5.01px**（「事件」12.0 ≤ 卡内 12.1） | 达标（≥6） |
+| 票据带标签 | 4.32px | **5.00px**（迁塔身东立面 34 世界宿主面） | 顺带提升 |
+| 收件匣（描述符）标签 | 6.49px | 6.49px（迁匣前桌面，字号不变） | 避让挪位，不涉字号 |
+| 其余 §7.3 豁免项（五灯名/状态灯标签/Device Slot/槽位读数/命令环·收件口/DCBAA/EP0/表格卡格注/门铃铭） | — | 未动 | 不回退 |
+
+### 8.4 门复跑记录（本轮终态，双主题原始输出摘要）
+
+- `node build.mjs --audit` ×2 → `audit passed`（118 solids / 126 items，双主题）
+- `node ~/.zcode/skills/anatomy/scripts/lines.mjs <页> --select ".xhp-stage"` ×2 → `line ends: 0 of 150 ends on 37 lines float` · `console: clean`（双主题）
+- 遮挡探针 `scripts/xhci_spec_occlusion_probe.py <页> --frames 12 --dwell-ms 400` ×2 → `OCCLUSION-PASS`（dark/light；中途 2 命中：F7 票据带×挂卡 0.32、F9 收件匣×描述符卡 0.17，均按 §8.2 迁标签清零）
+- `python3 -I pagecheck.py` → `47/47 needles PASS`
+- `node verify_frames.mjs` → `frames-truth: 18/18 PASS`
+- `node zfscheck.mjs` → `alive=true, stages=2, bars=2, zooms 1/1.6/2.4/3.2`
+- 语言门 `python3 scripts/scan_words.py retired`（study 仓根）×2 → `total=0`（双主题）
+- 自包含 → 0 外部 script/link/@import（http 仅 SVG xmlns）
+- fit 机检 fit43c ×2 → 8 项全 FIT（见 §8.1/8.3 各行 advance/host 实测）
+- 措辞机检（拆行拼接==原句 + 冻结串在场）×2 → 28/28 PASS；`durs [4.5,7.7,7,7,9.1,8.4,9.1,9.8,7,9.1,9.8,6.3]` 落页核对不变；zoomfs focus 选择器 `['[data-name="portsc.board"]']` 未动（portsc.board 几何未变）
+- shots：`node shots.mjs dark|light|phone|zoom` 全量重拍 34 件，console clean
+
+### 8.5 shots 清单（本轮重拍，shots/ 34 件全量覆盖）
+
+full-{dark,light} · machine-{dark,light} · flowchart-{dark,light} · f00..f11 特写 ×双主题（f06-address 挂卡、f09-read-desc 描述符双卡、f10-configure 事件堆叠+四挂卡为重点复核帧）· phone390-machine · phone390-zoom（3.2× 档）。

@@ -174,18 +174,22 @@ const FORM = { x: -195, y: -23.2, w: 30, d: 1.6, r: 0.8 };
     [record(A.slab(FORM, DESK_TOP + 2, 32.5, { name: "desk.formcard" }, 2))], { bias: 0.3, label: 1 });
 }
 // 事件匣与收件匣
-box("tray.event", [-152, 6, DESK_TOP], [-128, 24, DESK_TOP + 3.4], { tone: "hi" }, { r: 1.4, steps: 3, bevel: 0.4 });
-box("tray.event.lip", [-128, 5, DESK_TOP], [-126.5, 25, DESK_TOP + 5.4], { tone: "mid" }, { r: 0.8 });
+// 2026-11-03 字号修复轮：事件匣卡 11→12.8 世界（「事件」6px=12.0 世界），匣东扩到 -124.5 容 2×2 格新跨距
+box("tray.event", [-152, 6, DESK_TOP], [-124.5, 24, DESK_TOP + 3.4], { tone: "hi" }, { r: 1.4, steps: 3, bevel: 0.4 });
+box("tray.event.lip", [-124.5, 5, DESK_TOP], [-123, 25, DESK_TOP + 5.4], { tone: "mid" }, { r: 0.8 });
 // 事件匣标签：平放桌面、匣前方（y≈31）——匣沿/北立面/匣内事件卡的斜投影 bbox
 // 都会与更近的标签位相交，匣前桌面是实测无遮挡位
 put("tray.event.tag", [-140, 31, DESK_TOP],
   topText([-140, 31, DESK_TOP + 0.02], "事件匣", { size: 4.0, tone: "mid" }),
   [record(A.box([-152, 29, DESK_TOP], [-128, 33, DESK_TOP + 0.15], { name: "tray.event.tag" }))], { bias: 0.1, label: 1 });
-box("tray.desc", [-152, -20, DESK_TOP], [-128, -2, DESK_TOP + 3.4], { tone: "hi" }, { r: 1.4, steps: 3, bevel: 0.4 });
-box("tray.desc.lip", [-128, -21, DESK_TOP], [-126.5, -1, DESK_TOP + 5.4], { tone: "mid" }, { r: 0.8 });
-put("tray.desc.tag", [-147, -0.4, DESK_TOP],
-  topText([-147, -0.6, DESK_TOP + 3.42], "收件匣（描述符）", { size: 3.3, tone: "mid" }),
-  [record(A.box([-152, -2.4, DESK_TOP + 3.4], [-128, -0.2, DESK_TOP + 3.6], { name: "tray.desc.tag" }))], { bias: 0.1, label: 1 });
+// 2026-11-03 字号修复轮：描述符卡 11.5→27 世界（l2「Descriptor」4px=24.1 世界），匣东扩 -123.5、北扩 -21.5
+box("tray.desc", [-152, -21.5, DESK_TOP], [-123.5, -2, DESK_TOP + 3.4], { tone: "hi" }, { r: 1.4, steps: 3, bevel: 0.4 });
+box("tray.desc.lip", [-123.5, -22.5, DESK_TOP], [-122, -1, DESK_TOP + 5.4], { tone: "mid" }, { r: 0.8 });
+// 2026-11-03 字号修复轮：描述符卡 11.5→27 世界后 AABB 与匣顶标签 AABB 相交（探针 F9
+// 命中 0.17）——标签迁匣前桌面西段（desk 顶面 z=23，y 带 2.5 避事件匣南墙 6/命令单堆 6）
+put("tray.desc.tag", [-165, 2.5, DESK_TOP],
+  topText([-165, 2.5, DESK_TOP + 0.02], "收件匣（描述符）", { size: 3.3, tone: "mid" }),
+  [record(A.box([-192, -1.2, DESK_TOP], [-138, 6, DESK_TOP + 0.2], { name: "tray.desc.tag" }))], { bias: 0.1, label: 1 });
 // 命令单堆（待发单据）
 for (let i = 0; i < 3; i++) {
   box("slipstack", [-196, 6 + i * 0.3, DESK_TOP + i * 0.5], [-174, 22 + i * 0.3, DESK_TOP + 0.5 + i * 0.5], { tone: i === 2 ? "hi" : "lo", crease: "none" }, { r: 0.8, steps: 2 });
@@ -218,10 +222,12 @@ const OUTCTX = { planX: -114.85, planY: -25, w: 4.2, d: 12, z: 3, cx: -112.75, c
   put("dcbaa.label", [-104, -27.4, 12],
     frontText([-104, -27.32, 22.0], "DCBAA", { size: 3.9, tone: "hi" }),
     [record(A.box([-116, -27.5, 19.6], [-92, -27.3, 24.4], { name: "dcbaa.label" }))], { bias: 0.08, label: 1 });
-  // 副铭迁到基座前脸：留在背板会落进 1 号格输出上下文卡（动件）的斜投影 bbox
-  put("dcbaa.sublabel", [-104, -5.94, 1.5],
-    frontText([-104, -5.94, 1.5], "软件装载 · xHC 只读", { size: 1.4, tone: "mid" }),
-    [record(A.box([-114, -6.06, 0.4], [-94, -5.94, 2.6], { name: "dcbaa.sublabel" }))], { bias: 0.08, label: 1 });
+  // 副铭（2026-11-03 字号修复轮）：基座前脸 28 世界容不下 5px（10.73em×5px=53.7 世界），
+  // 迁基座台板顶面、自架前向西起排（-114 起，anchor start）——文字 x -114..-60.3，
+  // 西距 desk.top 悬出缘(-120) 6、东距 cons 身(-40) 19.7；y 带避开架顶格号行(-7.4)
+  put("dcbaa.sublabel", [-87, -1, 0],
+    topText([-114, -1.0, 0.02], "软件装载 · xHC 只读", { size: 2.545, tone: "mid", anchor: "start" }),
+    [record(A.box([-114, -5.6, 0], [-60, 2.6, 0.15], { name: "dcbaa.sublabel" }))], { bias: 0.06, label: 1 });
   put("dcbaa.nums", [-104, -7.4, 3],
     ["1", "2", "3", "4"].map((n, i) => topText([-112.75 + i * 5.75, -7.4, 3.02], n, { size: 3.0, tone: "mid" })).join(""),
     [record(A.box([-118, -8.8, 3], [-90, -6, 3.2], { name: "dcbaa.nums" }))], { bias: 0.06, label: 1 });
@@ -471,23 +477,39 @@ put("hook.knob", [100, -16, 4.0],
     frontText([143, 20.06, 34.8], "USB 设备", { size: 4.85, tone: "hi" }),
     [record(A.box([126, 19.9, 33.2], [160, 20, 36.4], { name: "box.devlabel" }))], { bias: 0.08, label: 1 });
 
-  // 票据带（凸出塔面的轨道 + 挂夹）
+  // 票据带（凸出塔面的轨道 + 挂夹）——2026-11-03 字号修复轮：挂卡加高 5.2→6.3、
+  // 夹距 6→6.5（四卡带上限：底 6.3 / 顶 ≤32.2 避「USB 设备」铭牌与灯标签带）
   box("box.rail", [166, 20, 10], [170.4, 21.4, 34], { tone: "lo" }, { r: 0.6, steps: 2 });
   for (let i = 0; i < 4; i++) {
-    const z = 13.2 + i * 6;
+    const z = 12.4 + i * 6.5;
     box("box.clip", [166.8, 21.4, z - 0.5], [169.6, 22.4, z + 0.5], { tone: "mid" }, { r: 0.4, steps: 1 });
   }
-  put("box.rail.tag", [183, 20, 36.2],
-    frontText([183, 20.06, 36.2], "票据带", { size: 2.2, tone: "mid" }),
-    [record(A.box([176.5, 19.9, 35.0], [189.5, 20, 37.2], { name: "box.rail.tag" }))], { bias: 0.06, label: 1 });
+  // 2026-11-03 字号修复轮：挂卡 23×5.2→33×6.3 后其斜投影 AABB 与塔面标签带 AABB 相交
+  // （探针 F7 命中 0.32）——迁塔身东立面（沿 y 轴 34 世界宿主面，字号 4.32→5px）
+  const eastText = (o, text, { size = 2, tone = "mid", anchor = "middle" } = {}) => {
+    const p0 = at(o);
+    const px = at([o[0], o[1] - 1, o[2]]);
+    const py = at([o[0], o[1], o[2] - 1]);
+    return k.faceTextSvg(`matrix(${f2(px[0] - p0[0])} ${f2(px[1] - p0[1])} ${f2(py[0] - p0[0])} ${f2(py[1] - p0[1])} ${f2(p0[0])} ${f2(p0[1])})`, text, { size: size * KS, tone, anchor });
+  };
+  put("box.rail.tag", [190.1, 11, 30],
+    eastText([190.12, 11, 30], "票据带", { size: 2.545, tone: "mid" }),
+    [record(A.box([190, 3, 28.2], [190.3, 19, 31.8], { name: "box.rail.tag" }))], { bias: 0.06, label: 1 });
 
-  // 长铭牌：教学锚
+  // 长铭牌：教学锚（2026-11-03 字号修复轮：旧 84×1.2×4 贴地板单行 3.46px 溢出，
+  // 拆两行 7px 立专用面板 106×1.6×17.2——措辞一字不改，仅在「——」后拆行；
+  // 面板立于试验盒前基座台面 y=44，顶缘等效塔面 z≈7.6，低于最低灯窗下缘 8.7 不遮灯）
   {
-    const plan = { x: 110, y: 26.0, w: 84, d: 1.2, r: 0.6 };
-    const shape = record(A.slab(plan, 1.2, 4, { name: "box.nameplate" }, 2));
-    put("box.nameplate", [152, 26.6, 3.2],
-      S(k.slabOf(plan, 1.2, 4, P, 2), { tone: "lo", crease: "none" }) +
-      frontText([152, 27.26, 2.9], "只见 USB 请求与总线事件——槽/环/上下文对设备不可见", { size: 1.76, tone: "hi" }),
+    const NP = { x: 99, y: 44.0, w: 106, d: 1.6 };
+    const plan = { ...NP, r: 1.0 };
+    const shape = record(A.slab(plan, 0, 17.2, { name: "box.nameplate" }, 2));
+    const ix0 = 101.5, ix1 = 202.5, iz0 = 1.2, iz1 = 16.0, fy = 45.62;
+    put("box.nameplate", [152, 44.8, 8.6],
+      S(k.slabOf(plan, 0, 17.2, P, 2), { tone: "lo", crease: "none" }) +
+      Ln(path3([[ix0, fy, iz0], [ix1, fy, iz0], [ix1, fy, iz1], [ix0, fy, iz1], [ix0, fy, iz0]], true), { tone: "faint" }) +
+      Dots([[ix0, iz0], [ix1, iz0], [ix0, iz1], [ix1, iz1]].map(([x, z]) => at([x, fy, z])), { size: 0.45, tone: "mid" }) +
+      frontText([152, 45.68, 11.2], "只见 USB 请求与总线事件——", { size: 3.562, tone: "hi" }) +
+      frontText([152, 45.68, 3.9], "槽/环/上下文对设备不可见", { size: 3.562, tone: "hi" }),
       [shape], { bias: 0.1, label: 1 });
   }
   // 线缆端口座（西面）
@@ -583,13 +605,13 @@ const DATA_ = {
   },
   slipPath: [[-193, 38, 4.2], [-16, 38, 4.2], [-16, 30.9, 6.4]],
   writePath: [[-193, 38, 4.2], [-20, 38, 4.2], [-1, 33.5, 5.2], [-1, 30.9, 6.6]],
-  evTray: { x: -142, y: 17.5, z: 26.6 },
+  evTray: { x: -140.9, y: 17.5, z: 26.6 },
   descTray: { x: -140, y: -11, z: 26.6 },
   descFrom: [58, 10, CONS_TOPT + 1.3],
   outctxFrom: [-166, 14, 24.4],
   outctxTo: { planX: OUTCTX.planX, planY: OUTCTX.planY, z: OUTCTX.z, cx: OUTCTX.cx, cy: OUTCTX.cy },
   trbSlots: EP0_CENTERS.slice(0, 3).map((cx) => ({ x: cx, y: EP0.y + 11, z: 2.5 })),
-  railClips: [13.2, 19.2, 25.2, 31.2],
+  railClips: [12.4, 18.9, 25.4, 31.9],
   formFields: ["a0", "a1", "sport", "sroute", "sentries", "etype", "mps", "dcs", "cerr"],
   durs: [4.5, 7.7, 7, 7, 9.1, 8.4, 9.1, 9.8, 7, 9.1, 9.8, 6.3],
 };

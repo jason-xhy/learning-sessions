@@ -100,8 +100,9 @@ export function makeLiveGeo(k, G, D) {
     return g;
   }
 
-  // ---- 桁架滑车（x 水平位；drop 吊杆伸出量；cardKey 持卡；push 插入推进量） ----
-  function trolleySvg(x, drop, cardKey, push = 0) {
+  // ---- 桁架滑车（x 水平位；drop 吊杆伸出量；push 插入推进量） ----
+  // 2026-11-03 修复轮：飞行卡自滑车 svg 拆出为独立深度项（flyCardPos + live 每帧按深度插入 DOM 序）
+  function trolleySvg(x, drop, push = 0) {
     const zCar = 63;
     let g = S(k.slabOf({ x: x - 6.5, y: D.beamY - 4.5, w: 13, d: 9, r: 1.4 }, zCar, 14, P, 3, 0.4), { tone: "hi" })
       + Ln(k.pathOf([at([x, D.beamY - 3, zCar]), at([x, D.beamY - 3, zCar - drop])]), { tone: "mid", "stroke-width": 1.8 });
@@ -109,12 +110,14 @@ export function makeLiveGeo(k, G, D) {
     const zg = zCar - drop;
     g += S(k.slabOf({ x: x - 15, y: D.beamY - 4, w: 4, d: 2, r: 0.5 }, zg - 2.5, 3.4, P, 2), { tone: "mid" })
       + S(k.slabOf({ x: x + 11, y: D.beamY - 4, w: 4, d: 2, r: 0.5 }, zg - 2.5, 3.4, P, 2), { tone: "mid" });
-    if (cardKey) {
-      const def = D.cardDefs.find((c) => c.key === cardKey);
-      g += cardSvg(x - D.cardW / 2, D.beamY - 5.4 - push, zg - D.cardH + 2.2, def);
-    }
     return g;
   }
 
-  return { knobSvg, wheelWinSvg, numWinSvg, rsArmSvg, swArmSvg, cardSvg, magStackSvg, trolleySvg, vtext, faceM };
+  // ---- 飞行卡位姿（与修前 trolleySvg 内嵌卡完全同式：吊在爪下，push 推进） ----
+  function flyCardPos(x, drop, push) {
+    const zg = 63 - drop;
+    return { x: x - D.cardW / 2, yFace: D.beamY - 5.4 - push, z: zg - D.cardH + 2.2 };
+  }
+
+  return { knobSvg, wheelWinSvg, numWinSvg, rsArmSvg, swArmSvg, cardSvg, magStackSvg, trolleySvg, flyCardPos, vtext, faceM };
 }

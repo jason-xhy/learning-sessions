@@ -23,6 +23,10 @@
     - 帧速：DUR 全值 ×1.5、TOUR_DWELL 3.4→5.5；steps-frames/zfs 等待同步加长。
     - 字号：机制句上盖前带 7–8；檐格名双行错位去压字（单行六名在任何 ≥2.3 字号下必压字——等距斜排相邻半宽和＞格距）；卡名 8.2/数字窗 ×1.25/注记牌主行 8/端口铭 6.2 等；两块工位铭牌板面已满保持原字号（EVIDENCE §9.3 全表）。措辞零改动。
     - 门：audit ×2 · lines 0 ×2 · 探针 PASS ×2 · 语言门纯豁免 ×2 · checks 全 PASS · shots 32 张重拍。
+12. 老问题修复轮（2026-11-03，FIXSPEC §4.2 两项，详见 EVIDENCE §10）：
+    - 铭牌 ×2：desk 满脸板 88×20（9/6 右锚避 post0 屏带，抽屉细节移 +x 侧面）；cabinet 移柜顶后沿 112×19.2（中部板高上限 ~14.5 容不下 9/6 两行 17.8 世界——会遮 R/S 闸刀臂/柱）；fit 补后沿角点后 scale 1.579 不变（宽度约束 binding）。LABEL_AFTER 补两块铭牌板自身。
+    - 飞行卡：自 trolleySvg 拆独立非审计组，live 每帧对拉线分段 ray-box 判深插入 DOM 序（两带推导线均在卡前 Δd +5.7/+26.8，过线=线盖卡）；实测 DOM 序正确、静态 settle 序零扰动。
+    - 坑（新）：① 帧终态探针看不见飞行卡（终态 card=null）——过线正确性需 DOM 序实测/特写，别指望探针；② 截图驱动 drive 的 key 走 arm→raf 判空时序，纯 eval playTo 在死窗不启动——巡游态驱动（不按键）最稳；③ 本机 4_5v 读图通道整会话 400 时，sips 重编码也救不回，改 DOM 序/数值双证；④ 穿越窗口只有 ~30ms（drop 9.6..12 与 x 带交叠），轮询抓拍要靠巡游态 + 25ms 内周期，或 drive slow+until。
 
 ## 最终门（与 EVIDENCE §4 一致）
 audit passed ×2（dark/light）· line ends 0 ×2 · 语言门新判据 PASS · 自包含 0 外链 ×2 · 页码 18/18 · 互链全存在 · __zfs 双主题存活（zoomOf 1→3.2）· 截图 24 张 console clean。

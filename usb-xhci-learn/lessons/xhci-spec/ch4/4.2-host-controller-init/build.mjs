@@ -25,6 +25,9 @@ const CNT = { x: -25, y: -142, w: 175, d: 120, r: 1.6 };   // 主机仓柜体 x 
 const FACE = -22;                                            // 柜面（+y 朝观众）
 const PANEL = { x: -21, y: -22, w: 167, d: 1.8, r: 1 };     // 贴柜面的深色仪表面板（底面 y=-22 恰贴柜面）
 const CAB_Z = 12, CAB_TOP = 100;
+// 柜铭牌立牌（2026-11-03 老问题修复轮：自柜顶中部 y-40 移柜顶后沿——中部加高会遮 R/S 闸刀臂/铰柱，
+// ON 位臂 z≥115.4、铰柱顶 115，中部板高上限 ~14.5 容不下 9/6 两行墨迹 17.8；后沿 112×19.2 可容且与闸刀 3D 无交）
+const CABTITLE = { x: 0, y: -140, w: 112, d: 6, r: 1, h: 19.2 };
 
 // 卡笼：三条横轨 + 两行三列卡（28 宽 × 18 高，厚 3）
 const RAIL_Y = -20.5;                                        // 轨面（卡背贴其前）
@@ -59,7 +62,8 @@ const NOTE = { x: -196, y: 58, w: 78, d: 4, r: 0.8 };
 const P = k.fitProjection(
   [...k.boxCorners(PLATE, -PLATE_H - FOOT_H, 0), ...k.boxCorners(CNT, CAB_Z, 0),
    [0, 0, 118], [-116, -16, 84], [BEAM.x + BEAM.w, BEAM.y, 84],
-   [BAR.x + BAR.w, BAR.y + BAR.d, 30], [-196, 62, 46], ...POSTS.map(([x, y]) => [x, y, 14])],
+   [BAR.x + BAR.w, BAR.y + BAR.d, 30], [-196, 62, 46], ...POSTS.map(([x, y]) => [x, y, 14]),
+   [CABTITLE.x, CABTITLE.y, CAB_TOP + CABTITLE.h], [CABTITLE.x + CABTITLE.w, CABTITLE.y + CABTITLE.d, CAB_TOP + CABTITLE.h]],
   W, H, { pad: 26, azimuth: AZ, elevation: EL },
 );
 const V = G.viewOf(P), KS = G.scaleOf(P);
@@ -178,12 +182,13 @@ for (const [x, y] of byDepth(k.corners(PLATE, 26))) {
     { steps: 4, extra: Ln(k.planOutline(k.insetPlan(PANEL, 1.4), 96, P, 3), { tone: "faint" })
       + screwDots(PANEL, 3, 96) });
 }
-// 柜铭牌（柜顶左部立牌）——板留实体序，文字入 labels 层（防 gantry.beam/panel.face 盖字）
+// 柜铭牌（柜顶后沿立牌，2026-11-03 修复轮移位放大）——板留实体序，文字入 labels 层
+// 板 74×8→112×19.2，主行 6.4→9、副行 4.2→6（SVG size 参数=世界单位；实测墨迹见 EVIDENCE §10）
 {
-  const mp = { x: -20, y: -40, w: 74, d: 5, r: 1 };
-  slab("cabinet.title", mp, CAB_TOP, 8, { tone: "hi" }, { steps: 2 });
-  labelText(vtext(mp.x + 5, mp.y + 0.05, CAB_TOP + 5.2, "xHC 控制器", 6.4, "hi")
-    + vtext(mp.x + 5, mp.y + 0.05, CAB_TOP + 1.8, "寄存器面板 · 根集线器在其内", 4.2, "mid"));
+  const mp = { x: CABTITLE.x, y: CABTITLE.y, w: CABTITLE.w, d: CABTITLE.d, r: CABTITLE.r };
+  slab("cabinet.title", mp, CAB_TOP, CABTITLE.h, { tone: "hi" }, { steps: 2 });
+  labelText(vtext(mp.x + 4, mp.y + mp.d + 0.05, CAB_TOP + 9.9, "xHC 控制器", 9, "hi")
+    + vtext(mp.x + 4, mp.y + mp.d + 0.05, CAB_TOP + 1.9, "寄存器面板 · 根集线器在其内", 6, "mid"));
 }
 
 // ================= 卡笼（三轨 + 六卡位） =================
@@ -350,8 +355,8 @@ const PF = PANEL.y + PANEL.d;   // -20.2
   }
   slab("gantry.beam", BEAM, 77, 6, { tone: "mid" }, { steps: 4, bevel: 0.4 });
   slab("gantry.stop", { x: BEAM.x + BEAM.w, y: BEAM.y, w: 4, d: BEAM.d, r: 0.8 }, 75, 10, { tone: "lo" }, { steps: 2 });
-  // 滑车（动：live 重建；初始位入审计：车体 + 两夹爪臂）
-  put("trolley", [TROLLEY_HOME, BEAM.y + 6, 70], `<g data-part="trolley">${geo.trolleySvg(TROLLEY_HOME, 0, null)}</g>`,
+  // 滑车（动：live 重建；初始位入审计：车体 + 两夹爪臂；飞行卡自 2026-11-03 修复轮起为独立深度项）
+  put("trolley", [TROLLEY_HOME, BEAM.y + 6, 70], `<g data-part="trolley">${geo.trolleySvg(TROLLEY_HOME, 0)}</g>`,
     [record(A.slab({ x: TROLLEY_HOME - 6.5, y: BEAM.y + 1.5, w: 13, d: 9, r: 1.4 }, 63, 14, { name: "trolley" }, 3)),
      record(A.slab({ x: TROLLEY_HOME - 15, y: BEAM.y + 2, w: 12, d: 2, r: 0.5 }, 62.5, 3.4, { name: "trolley.jawL", owner: "trolley" }, 2)),
      record(A.slab({ x: TROLLEY_HOME + 3, y: BEAM.y + 2, w: 12, d: 2, r: 0.5 }, 62.5, 3.4, { name: "trolley.jawR", owner: "trolley" }, 2))], { bias: 1 });
@@ -361,19 +366,22 @@ const PF = PANEL.y + PANEL.d;   // -20.2
 {
   const seamD = k.sideSeam(DESK, 24, P, 4);
   slab("desk.body", DESK, PLATE_H, 20, { tone: "mid" }, { steps: 4, bevel: 0.6, inner: Ln(seamD, { tone: "faint" }) });
-  // 抽屉线 + 拉手点
+  // 抽屉线 + 拉手点（2026-11-03 修复轮：前台面被满幅铭牌占据，细节移 +x 侧面，仍两条线迹三拉手点）
+  const sx = DESK.x + DESK.w + 0.05;
   faceText(
-    Ln([[-186, DESK.y + DESK.d + 0.05, 22], [-112, DESK.y + DESK.d + 0.05, 22]].map((p) => at(p)), { tone: "lo" })
-    + Dots([[-176, DESK.y + DESK.d + 0.2, 18.6], [-148, DESK.y + DESK.d + 0.2, 18.6], [-120, DESK.y + DESK.d + 0.2, 18.6]].map((p) => at(p)), { size: 0.55 }));
+    Ln([[sx, DESK.y + 12, 22], [sx, DESK.y + DESK.d - 10, 22]].map((p) => at(p)), { tone: "lo" })
+    + Dots([[sx - 0.15, DESK.y + 24, 18.6], [sx - 0.15, DESK.y + 48, 18.6], [sx - 0.15, DESK.y + 72, 18.6]].map((p) => at(p)), { size: 0.55 }));
   slab("desk.top", { x: DESK.x - 3, y: DESK.y - 3, w: DESK.w + 6, d: DESK.d + 6, r: 2 }, 32, 3, { tone: "mid" },
     { steps: 4, bevel: 0.4, extra: Ln(k.planOutline(k.insetPlan({ x: DESK.x - 3, y: DESK.y - 3, w: DESK.w + 6, d: DESK.d + 6 }, 3), 35, P, 4), { tone: "lo" }) });
   // 台前铭牌：xHCI 驱动（底面贴台身前面 y=-6）——板留实体序，文字入 labels 层（防 gantry.beam/gantry.post0 盖字）
-  const mp = { x: -186, y: -6.2, w: 56, d: 1.6, r: 0.6 };
-  put("desk.title", [mp.x + 28, DESK.y + DESK.d + 1.3, 26],
-    S(k.slabOf(mp, 22, 7, P, 2, 0.3), { tone: "hi", crease: "none" }),
-    [record(A.slab(mp, 22, 7, { name: "desk.title" }, 2))], { bias: 0.1 });
-  labelText(vtext(mp.x + 5, mp.y + mp.d + 0.05, 27.1, "xHCI 驱动", 6.2, "hi")
-    + vtext(mp.x + 5, mp.y + mp.d + 0.05, 23.2, "规范称 system software", 4, "mid"));
+  // 2026-11-03 老问题修复轮：板 56×7→88×20 满脸板，主行 6.2→9、副行 4.0→6；右锚排版——主行避开
+  // gantry.post0 屏带（左锚 9 号字压柱 ~2.5 字符），副行左端残留 ~1 字符柱后墨迹与修前同级（EVIDENCE §10）
+  const mp = { x: -193, y: -6.2, w: 88, d: 1.6, r: 0.6 };
+  put("desk.title", [mp.x + mp.w / 2, DESK.y + DESK.d + 1.4, 22],
+    S(k.slabOf(mp, 12, 20, P, 2, 0.3), { tone: "hi", crease: "none" }),
+    [record(A.slab(mp, 12, 20, { name: "desk.title" }, 2))], { bias: 0.1 });
+  labelText(vtext(mp.x + mp.w - 4, mp.y + mp.d + 0.05, 22.1, "xHCI 驱动", 9, "hi", "end")
+    + vtext(mp.x + mp.w - 4, mp.y + mp.d + 0.05, 14.1, "规范称 system software", 6, "mid", "end"));
 }
 // 卡库（叠卡 + 托盘）
 {
@@ -399,6 +407,8 @@ const PF = PANEL.y + PANEL.d;   // -20.2
 }
 
 // ================= 拉线（两条 Bowden 线：拉杆排 → R/S 底座端子 / CONFIG 格端子） =================
+// 分段折线同步收集进 DATA.wires（飞行卡独立深度项每帧 ray-box 判深用，2026-11-03 修复轮）
+const wireChunks = [];
 {
   // 线1：拉杆0 → 台前空中 → 桁架右侧外 → 柜顶 → R/S 底座右缘竖端子柱上方
   const route1 = G.fillet([
@@ -406,8 +416,10 @@ const PF = PANEL.y + PANEL.d;   // -20.2
     [158, -2, 56], [158, -46, 100], [158, -69, 107.6], [139, -69, 107.25],
   ], 2.6, 8, { P, tube: 0.7 });
   R.route("wire.rs", route1, 0.7, { piece: "bench", limp: true, tips: [null, null], ends: [false, false] });
-  tubePieces(route1, 0.7, P, { maxLength: 20 }).forEach((piece, index) =>
-    put(`wire.rs:${index}`, piece.mid, tubeSvg(piece, { tone: "lo" }), [A.tube(piece.points, piece.radii)], { bias: 0.05, route: "wire.rs", chunk: index }));
+  tubePieces(route1, 0.7, P, { maxLength: 20 }).forEach((piece, index) => {
+    wireChunks.push({ name: `wire.rs:${index}`, r: 0.7, pts: piece.points.map((p) => [+p[0].toFixed(2), +p[1].toFixed(2), +p[2].toFixed(2)]) });
+    put(`wire.rs:${index}`, piece.mid, tubeSvg(piece, { tone: "lo" }), [A.tube(piece.points, piece.radii)], { bias: 0.05, route: "wire.rs", chunk: index });
+  });
   cyl("wire.rs.term", 139, -69, 1.2, RS.z, 5, { tone: "mid" }, { steps: 14, bevel: 0.2,
     extra: Ln(k.ring(139, -69, 0.62, RS.z + 5.05, P, 12), { tone: "lo" }) + Dots([at([139, -69, RS.z + 5.05])], { size: 0.42, tone: "hi" }) });
   // 线2：拉杆1 → 抬高跨过 rs 线 → 梁前 y=13 带 → 柜面顶部上方横带 → 格间缝下降 → CONFIG 格旁竖端子柱上方
@@ -416,11 +428,14 @@ const PF = PANEL.y + PANEL.d;   // -20.2
     [-24, -17, 64], [-24, -16, 100.9], [26, -16, 100.9], [26, -16, 77], [26, -19.2, 75.3],
   ], 4, 7, { P, tube: 0.55 });
   R.route("wire.cfg", route2, 0.55, { piece: "bench", limp: true, tips: [null, null], ends: [false, false] });
-  tubePieces(route2, 0.55, P, { maxLength: 18 }).forEach((piece, index) =>
-    put(`wire.cfg:${index}`, piece.mid, tubeSvg(piece, { tone: "lo" }), [A.tube(piece.points, piece.radii)], { bias: 0.05, route: "wire.cfg", chunk: index }));
+  tubePieces(route2, 0.55, P, { maxLength: 18 }).forEach((piece, index) => {
+    wireChunks.push({ name: `wire.cfg:${index}`, r: 0.55, pts: piece.points.map((p) => [+p[0].toFixed(2), +p[1].toFixed(2), +p[2].toFixed(2)]) });
+    put(`wire.cfg:${index}`, piece.mid, tubeSvg(piece, { tone: "lo" }), [A.tube(piece.points, piece.radii)], { bias: 0.05, route: "wire.cfg", chunk: index });
+  });
   cyl("wire.cfg.term", 26, -19.2, 0.9, 70.3, 3.9, { tone: "mid" }, { steps: 12, bevel: 0.2,
     extra: Ln(k.ring(26, -19.2, 0.5, 74.25, P, 12), { tone: "lo" }) + Dots([at([26, -19.2, 74.25])], { size: 0.4, tone: "hi" }) });
 }
+DATA.wires = wireChunks;
 
 // ================= 端口灯排（设备区） =================
 {
@@ -464,12 +479,19 @@ R.items.sort((a, b) => a.key - b.key);
 // panel.face（柜铭牌副行 overlap=0.5）、gantry.post0（探针 0.126 未达阈值但肉眼可见盖 'x' 首字）。
 // 插入点之后的其余实体与 labels 文字屏盒交集均 <探针阈值（wire.cfg:11 ∩ 柜铭牌副行 ≈0.04）；
 // actors（滑车/旋钮/闸刀臂）在其后，与 labels 无屏盒交集，滑车到卡库取卡时压过台铭牌属正确物理序。
-const LABEL_AFTER = ["gantry.beam", "panel.face", "gantry.post0"];
+// 2026-11-03 修复轮补：desk.title/cabinet.title 两块铭牌板自身也入 LABEL_AFTER——
+// 板加大/挪位后 settle 序位置可能落在 labelCut 之后，需保证铭牌文字必画在自家板之后
+const LABEL_AFTER = ["gantry.beam", "panel.face", "gantry.post0", "desk.title", "cabinet.title"];
 let labelCut = 0;
 R.items.forEach((it, i) => { if (LABEL_AFTER.includes(it.name)) labelCut = Math.max(labelCut, i + 1); });
 const itemG = (it) => `<g class="it" data-name="${it.name}"${it.attrs ?? ""}>${it.svg}</g>`;
 const seq = R.items.map(itemG);
 seq.splice(labelCut, 0, `<g class="fb-labels">${labels.join("")}</g>`);
+// 飞行卡独立深度项（2026-11-03 老问题修复轮）：非审计实体（不进 recorder，items settle 序零扰动），
+// 默认插在滑车 item 之后；live 每帧按与拉线分段的真实 3D 深度前移/后置（EVIDENCE §10）
+const trolleySeqIdx = R.items.findIndex((it) => it.name === "trolley");
+seq.splice(trolleySeqIdx < labelCut ? trolleySeqIdx + 1 : trolleySeqIdx + 2, 0,
+  `<g class="it" data-name="flycard"><g data-part="flycard" style="display:none"></g></g>`);
 const svg = k.figureSvg({
   width: W, height: H,
   label: "启机配电台：左侧文书台是 xHCI 驱动（规范称 system software）的操作位，卡库里六张寄存器卡经桁架滑车吊运插进右侧 xHC 主机仓的卡笼；柜面上部是 USBSTS 就绪灯（CNR）、CONFIG 槽数旋钮、ERSTSZ 计数轮、Interval 节流旋钮与 INTE/IE 两道闸，柜顶是 USBCMD 的 R/S 总闸；台前下沿是根集线器端口灯排——本流程无设备参与，R/S=1 后端口才开始上报连接。",

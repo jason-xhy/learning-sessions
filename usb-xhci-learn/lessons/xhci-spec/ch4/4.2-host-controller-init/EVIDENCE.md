@@ -180,3 +180,63 @@
 ### 9.5 修复轮门（全绿）
 
 audit passed ×2（--audit/--light --audit）· lines `line ends: 0` ×2（console clean）· 探针 OCCLUSION-PASS ×2 · 语言门残留 {柜台1, 回执3, 泳道6} ⊆ 豁免表 ×2 · checks.py 全 PASS（自包含 ×2/互链/页码 18/18/zoomfs wiring）· shots/ 32 张重拍（page/machine/lane 双主题、frame-1..8、390 全景+3.2× zoom、z-apron/cabtitle/desktitle/rsbase/portbar/noteboard 双主题特写；drive 全程 console clean）。
+
+## 10. 老问题修复轮（2026-11-03，FIXSPEC-42-43-2026-11-03 §4.2 两项：铭牌几何放大 + 飞行卡独立深度）
+
+### 10.1 改动面
+
+**任务一：工位铭牌 ×2 几何放大（授权改几何，措辞一字不改）**
+
+- `desk.title`：板 56×7（x −186..−130, z 22..29）→ **88×20 满脸板**（plan {x:−193, y:−6.2, w:88, d:1.6}，z 12..32，覆盖台身前面全高，嵌入 0.2 与修前同）。文字 6.2/4.0 → **9/6**，改**右锚**（锚 x = 板右−4 = −109）：左锚 9 号主行「xHCI 驱动」会与 gantry.post0 屏带（u −128.3..−123.1k）交叠约 2.5 字符（探针比值 0.128<0.15 可过，但墨迹压柱比修前「'x' 首字」级 wart 加重 2.5 倍）；右锚后主行屏带与 post0 **不相交**，副行左端（「规范称」区）残留约 1 字符级接触，与修前 §9.1 记录同级。抽屉刻线+三拉手点自前台面（被满幅板占据）移 **+x 侧面**（x=−102.95 面，线迹/点位数量不变，仅换宿主面）。
+- `cabinet.title`：柜顶中部立牌（x −20..54, y −40..−35, z 100..108）→ **柜顶后沿立牌** {x:0, y:−140, w:112, d:6}, z 100..119.2。移位理由（量化）：中部位置板高受 R/S 闸刀约束——ON 位臂 z ≥ 115.4、铰柱顶 115、柱身 z 106..115，板顶上限 ≈ 114.5 → 可容墨迹高约 12.9 世界 < 9/6 两行实测需 **17.8**（墨迹高为 CJK 全高 1.152em：主 10.36 + 副 6.93 + 行距 0.5；§9.3 旧表按 0.75 系估算偏低）；后沿位置与闸刀 3D 无交（y 差 42+），屏幕带不交（ON 臂带 sy ≥ −103.3k vs 文字带 ≤ −102.9k，且共列区实测分离 30k+，AABB 角处交叠为纯旋转膨胀）。
+- **KS 保持 1.579、整机不缩小**：fitProjection 点表补后沿两上角点后重新拟合——本页 fit 由宽度约束 binding（高度原余量 1.96×），后沿立牌只消耗顶部空余，build 输出 scale 1.579 不变。
+- `LABEL_AFTER` 增补 desk.title / cabinet.title 自身：板挪位后 settle 位次可能落到 labelCut 之后，须保证铭牌文字必画在自家板之后；items 间相对序、帧序、DUR、TOUR_DWELL、zoomfs wiring/focus 选择器、互链、页面级文字零改动。
+
+**任务二：飞行卡拆独立深度项（§9.4 遗留）**
+
+- 卡自 `trolleySvg` 拆出为独立组 `<g class="it" data-name="flycard">`（build 期插入滑车 item 之后；**非审计实体**——不进 recorder，静态 items 111 与 settle 序零扰动）。`geometry-live.mjs` 增 `flyCardPos(x, drop, push)`（与修前内嵌卡的位姿公式逐项相同）；`live.mjs` 每帧重建卡 svg（`cardSvg` 同源）并按与拉线分段的真实 3D 深度插入 DOM 序。
+- 拉线分段折线（wire.rs:0..20 / wire.cfg:0..13，与 put 同参 tubePieces）随 build 导出进 `DATA.wires`（live 同源）。
+
+### 10.2 新旧字号对照表（size 参数=世界单位；渲染 em ≈ size×1.372 viewBox px；屏上近似 = size×KS 1.579×页内显示比）
+
+| 位置 | 文字 | 修前 size | 修后 size | 板（旧→新） | 锚 |
+|---|---|---|---|---|---|
+| 文书台铭牌 | xHCI 驱动 | 6.2 | **9** | 56×7 前台 → 88×20 前台满幅 | start→**end**（避 post0 屏带） |
+| 文书台铭牌 | 规范称 system software | 4.0 | **6** | 同上（字宽 80.3 / 板宽 88） | 同上（左端残留 ~1 字符柱后墨迹，与修前同级） |
+| 主机仓铭牌 | xHC 控制器 | 6.4 | **9** | 74×8 柜顶中部 → 112×19.2 柜顶后沿 | start（板左+4） |
+| 主机仓铭牌 | 寄存器面板 · 根集线器在其内 | 4.2 | **6** | 同上（字宽 86.4 / 板宽 112） | start |
+
+目标「主行 ≥9 / 副行 ≥6」（size 参数口径，与 §9.3 表一致）**四项全部达标，无降档**。墨迹含板实测（浏览器 getBoundingClientRect，inset 全正）：desk 主行 l72.6/r10.7/t41.7/b23.4、desk 副行 l6.0/r10.7/t35.6/b5.7、cab 主行 l6.8/r125.9/t11.8/b76.1、cab 副行 l6.8/r54.2/t39.0/b22.5（screen px，含旋转 AABB 膨胀，实际边距更宽）。基线：desk 主 22.1/副 14.1（板 z 12..32）；cabinet 主 CAB_TOP+9.9/副 +1.9（板 z 100..119.2）；行间距 0.5 世界。
+
+### 10.3 飞行卡深度方案与过线帧判据
+
+- **视轴与判深**：等距 depthOf 视轴 VIEW=[0.612,0.612,0.5]（值大=近观众）。每帧对每条拉线分段按 2.5 世界步采样，对样品 p 解视线射线 p+τ·VIEW 与卡盒的 τ 交区（slab 法）：τ1 < −0.01 → 线整段在卡前 → **卡组移至该分段之前（线盖卡）**；τ0 > 0.01 → 卡在前 → 卡组移至该分段之后（卡盖线）；同段双态跳过；前后约束冲突时兜底取「线盖卡」（保持线连续，优于修前的线被截断）。
+- **两带前后关系推导（AZ45/EL30，勿想当然）**：吊运卡前脸 y=−3.4、盒 y∈[−6.4,−3.4]；wire.rs 水平带 y=−2、wire.cfg y=13 带 y=+13，均比卡**更近观众**。同屏对点（视线上同点）深度差：rs 带 Δd=+5.7（对点 z：线 39 / 卡面 36.0）、cfg 带 Δd=+26.8（线 51 / 卡面 37.6）——**两带线均在卡前**（卡 z 较高不翻案：z 项 0.5·Δz ≪ y 项 0.612·Δy）。故过线正解=线盖卡（修前卡随滑车 item 画在 wire.rs:1..5 / wire.cfg:0..4 之上=线被截断，即 §9.4 缺陷）。
+- **实测**（F2 吊运 60ms 采样真实动画，DOM 序即 SVG 画序——无 z-index/transform）：x=−82.8/drop=11.9 时 flycard 已移至 wire.rs:4 之前（desk.title 与 wire.rs:4 之间）；x=−43.7/drop=8.5 时在 wire.rs:5 之前（同时先于 wire.cfg:4/5，序位 4 < 30/35）——两带过线帧线分段均后画=**线盖卡** ✓；取卡/插卡段回默认位（滑车 item 后）——mag.stack（序 23）之前、拉线之后的既证配对不变；行进至 x>−33 后（wire.rs:6+ 本就后画区域）回默认位亦正确。
+- 静态探针（帧终态）看不见飞行卡（终态 card=null 组隐藏），无新增探针暴露；audit/lines/静态 items 序零扰动。
+
+### 10.4 门复跑原始输出（2026-11-03，全绿）
+
+```
+node build.mjs / --light        → wrote index.html 408 KB 111 items scale 1.579 ×2
+node build.mjs --audit（双主题） → audit passed ×2（111 items · 79 solids · 2 tubes；allow 2 对=拉线端子连接，沿旧）
+python3 -I checks.py            → 自包含×2 PASS(ext 0/0/0) · 互链全 PASS · page needles: 18/18 PASS · wiring 5/5 PASS（exit 0）
+lines ×2                        → line ends: 0 of 162 ends on 43 lines float · console: clean ×2
+遮挡探针 ×2                      → OCCLUSION-PASS ×2（--frames 8 --dwell-ms 8000，双主题）
+语言门 ×2                       → RETIRED-COUNT total=10 {'柜台':1,'回执':3,'泳道':6} ×2（=豁免集精确一致）
+drive（帧序/过线/final-frame2/zfs）→ console: clean；__zfs/__zfsLane/__fig42 双主题 object、zoomOf 1（setZoom 3.2 验证 390 档）
+```
+
+### 10.5 shots 清单（36 张 = 重拍 30 + 保留 2 + 新增 4）
+
+- 重拍 30：machine-dark/light、page-dark/light、frame-1..8（2832px 宽，读数逐帧正确：F6 R/S 1 · 端口 4/4）、z-desktitle/z-cabtitle/z-apron/z-noteboard/z-portbar/z-rsbase 各 ×2 主题（cabtitle 为**新取景：柜顶后沿**）、phone-dark-390、phone-machine-390(+3.2× zoom)、final-frame2、lines(+light)。
+- 保留 2：lane-dark/light（泳道卡零改动）。
+- ★新增 4：cross-rs / cross-cfg / cross-rs-light / cross-cfg-light（过线帧特写，2×dpr；抓拍位姿：cross-rs x=−60.6/drop=10.0（dcbaap 吊运中，y=−2 带）、cross-cfg x=−49.3/drop=10.7（crcr，y=13 带）、light 同窗）。
+- ★前后对比帧 1：cross-rs-before.png——同一构建仅禁用 placeFly 的对照页（=修前画序：卡随滑车默认位画在 wire.rs:1..5 之上）在穿越窗抓拍（x=−64.1/drop=12.8，seg 卡）；与 cross-rs.png 对照看线是否被卡截断。
+- 取景说明：本轮本机 4_5v 读图通道持续 400（BUILD-LOG 坑 8 的重编码法亦失效），过线帧目检以「DOM 序实测 + 位姿日志 + 双带深度推导」三证闭环替代像素目检；铭牌以含板 inset 数值验收。后续通道恢复后可补肉眼复核。
+
+### 10.6 新发现存量问题（非本轮引入，报主会话裁处）
+
+1. **静态页两条隐形废 path**（浏览器 SVG 解析层报错；渲染为空、无视觉缺失；CDP Runtime 域门（drive/capture console）与 audit/lines 均不可见）：① desk.top 内 `k.planOutline(k.insetPlan({…字面量缺 r…}, 3), 35, P, 4)` 产 `MNaN NaN…`（BUILD-LOG 坑 2 同族：plan 缺 r，当时只修了 slab 形状未扫 planOutline）；② rs.base svg 内一条逗号格式 d（`407.87,163.2,…`，非合法路径）。两者修复极小但会补出此前一直缺失的刻线（视觉变更），超出本轮授权未动。
+2. **live.mjs 脚本驱动时序怪癖**（交互路径不受影响）：`step()` 先 `arm()` 后 `playTo()`——arm 时新 anim 尚未建立；外部脚本直接 `__fig42.playTo(n)` 时若 tick 循环恰处停止窗口（巡游被关且上一动画已收尾），动画不自行启动（`run()` 仅由 arm/Escape/a/pointerdown/observer 触发）。本轮截图管线按「巡游态驱动 + 步间等待」产出（帧读数逐帧核对正确）；后续若做逐帧确定性驱动建议 live 侧给 playTo 补一次自启。
+

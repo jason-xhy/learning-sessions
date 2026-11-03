@@ -81,9 +81,11 @@ function frontCardSvg(x0, yF, z0, w, h, thick, lines, stripe) {
   });
   return s;
 }
-// 票据带挂卡：平板票贴塔面（y=20 面 +0.06），自挂夹下缘垂挂（四夹 z 间距 6，
-// 卡高 5.2 → 卡间留真实 z 间隙）；solid/text 分离，draw 侧先发卡面后发文字。
-const TKC_X0 = 153, TKC_W = 23, TKC_H = 5.2;
+// 票据带挂卡：平板票贴塔面（y=20 面 +0.06），自挂夹下缘垂挂。2026-11-03 字号修复轮：
+// 卡 23×5.2→33×6.3（主行 SET_ADDRESS 4.5px=29.8 世界）；四卡带上限 25.8 世界（塔面 6.3
+// 起、顶避「USB 设备」铭牌 em 框底 32.4）容不下 4.5px+3.54px 清叠放（需 30.5）——
+// 副行降至 2.30px（3.2× 档等效 7.4px，细节层台阶内），换主行达标且行间零叠印。
+const TKC_X0 = 154, TKC_W = 33, TKC_H = 6.3;
 const ticketClipParts = (l1, l2, zTop) => cached("tkc:" + l1 + zTop, () => {
   const z0 = zTop - TKC_H - 0.2;
   const quad = [[TKC_X0, 20.06, z0], [TKC_X0 + TKC_W, 20.06, z0], [TKC_X0 + TKC_W, 20.06, z0 + TKC_H], [TKC_X0, 20.06, z0 + TKC_H]];
@@ -91,7 +93,7 @@ const ticketClipParts = (l1, l2, zTop) => cached("tkc:" + l1 + zTop, () => {
     `<path d="${pathOf([isoPt([TKC_X0 + 0.8, 20.08, z0 + 0.5]), isoPt([TKC_X0 + 2.0, 20.08, z0 + 0.5]), isoPt([TKC_X0 + 2.0, 20.08, z0 + TKC_H - 0.5]), isoPt([TKC_X0 + 0.8, 20.08, z0 + TKC_H - 0.5])], true)}" style="fill:${DEV}"/>` +
     `<path d="${pathOf(quad.map(isoPt), true)}" style="fill:none;stroke:var(--anatomy-lo);stroke-width:0.8"/>`;
   let text = "";
-  [[l1, z0 + TKC_H - 1.7, "dev", 1.85], [l2, z0 + 1.1, "mid", 1.8]].forEach(([t, z, tone, size]) => {
+  [[l1, z0 + 3.5, "dev", 2.292], [l2, z0 + 0.3, "mid", 1.17]].forEach(([t, z, tone, size]) => {
     const o = [TKC_X0 + TKC_W / 2, 20.1, z];
     const p0 = isoPt(o), px = isoPt([o[0] + 1, o[1], o[2]]), py = isoPt([o[0], o[1], o[2] - 1]);
     text += `<text class="xhp-cardtext" data-tone="${tone}" transform="matrix(${f2(px[0] - p0[0])} ${f2(px[1] - p0[1])} ${f2(py[0] - p0[0])} ${f2(py[1] - p0[1])} ${f2(p0[0])} ${f2(p0[1])})" font-size="${f2(size * D.KS)}" text-anchor="middle">${t}</text>`;
@@ -107,19 +109,20 @@ const writeSvg = (l1, l2) => cached("write:" + l1, () =>
     { t: l1, dy: -1.2, size: 2.2 }, { t: l2, dy: 1.5, size: 1.7, tone: "mid" },
   ], HC));
 // 事件卡：堆叠时被上层同格卡盖住的卡只留卡背（无字），顶层卡带「事件 n」
+// 2026-11-03 字号修复轮：l1 5.5→6.0px（「事件」2em=12.0 世界），卡 11→13.0、列距 13.1→13.4
 const evCardParts = (l1, l2) => cached("evc:" + l1 + l2, () =>
-  flatCardParts({ x: -5.5, y: -4.4, w: 11, d: 8.8, r: 0.8 }, 0.9, [
-    { t: l1, dy: -1.6, size: 2.8 }, { t: l2, dy: 1.8, size: 2.4, tone: "mid" },
+  flatCardParts({ x: -6.5, y: -4.4, w: 13.0, d: 8.8, r: 0.8 }, 0.9, [
+    { t: l1, dy: -1.6, size: 3.06 }, { t: l2, dy: 1.8, size: 2.55, tone: "mid" },
   ], HC));
-const evBlank = () => cached("evb", () => flatCardParts({ x: -5.5, y: -4.4, w: 11, d: 8.8, r: 0.8 }, 0.9, [], HC).solid);
+const evBlank = () => cached("evb", () => flatCardParts({ x: -6.5, y: -4.4, w: 13.0, d: 8.8, r: 0.8 }, 0.9, [], HC).solid);
 const evSvg = (l1, l2) => { const p = evCardParts(l1, l2); return p.solid + p.text; };
 const ticketSvg = (l1, l2) => cached("tk:" + l1 + l2, () =>
   flatCardSvg({ x: -11, y: -4.5, w: 22, d: 9, r: 0.9 }, 1, [
     { t: l1, dy: -1.5, size: 2.0, tone: "dev" }, { t: l2, dy: 1.6, size: 1.6, tone: "mid" },
   ], DEV));
 const descCardParts = (l1, l2) => cached("dsc:" + l1, () =>
-  flatCardParts({ x: -5.75, y: -4.4, w: 11.5, d: 8.8, r: 0.9 }, 1, [
-    { t: l1, dy: -1.6, size: 1.9 }, { t: l2, dy: 1.8, size: 1.3, tone: "mid" },
+  flatCardParts({ x: -13.5, y: -4.15, w: 27, d: 8.3, r: 1.0 }, 1, [
+    { t: l1, dy: -1.4, size: 2.292 }, { t: l2, dy: 2.0, size: 2.036, tone: "mid" },
   ], SW));
 const OC_LINES = [
   { t: "输", dz: 12.2, size: 2.0 }, { t: "出", dz: 9.7, size: 2.0 }, { t: "上", dz: 7.2, size: 2.0 },
@@ -450,7 +453,7 @@ function draw(st) {
     });
     for (let i = 0; i < st.evCount; i++) {
       const col = i % 2, row = Math.floor(i / 2) % 2, lay = Math.floor(i / 4);
-      const at = [D.evTray.x - 4.5 + col * 13.1, D.evTray.y - 0.1 - row * 8.4, D.evTray.z + lay * 1.05];
+      const at = [D.evTray.x - 4.5 + col * 13.4, D.evTray.y - 0.1 - row * 8.4, D.evTray.z + lay * 1.05];
       const tr = `<g transform="${worldTranslate(at)}">`;
       if (i + 4 < st.evCount) h += tr + evBlank() + `</g>`;
       else {
@@ -468,7 +471,9 @@ function draw(st) {
     let h = "", ht = "";
     st.descs.forEach((dc) => {
       const t = clamp01(dc.t);
-      const to = dc.l1 === "Device" ? [-146.6, -8.2, D.descTray.z] : [-133.4, -14.4, D.descTray.z];
+      // 2026-11-03 字号修复轮：卡 27×8.3 后改两行落位（北 Device/南 Config，y 带南缘
+      // ≤ -4.0 避「收件匣（描述符）」标签 em 框北缘 -3.85）
+      const to = dc.l1 === "Device" ? [-137.95, -16.9, D.descTray.z] : [-137.45, -8.15, D.descTray.z];
       const pos = lerp3(D.descFrom, to, t);
       pos[2] += Math.sin(Math.PI * t) * 7;
       const p = descCardParts(dc.l1, dc.l2);
