@@ -42,3 +42,20 @@
    后续泳道页沿用。
 3. 令牌元素 getBBox 为本地坐标（transform 不入账）——隐藏元素也要把本地几何放进 viewBox，
    否则布局机械检误报。
+
+## E. 修订轮（2026-11-03 下午，用户反馈：遮挡/帧速/字号）
+
+| 项 | 修前 | 修后 | 验证 |
+|---|---|---|---|
+| 自动步进帧速 | 1700ms/步 | 3200ms/步 | build.mjs startAuto interval |
+| 令牌卡文字 | 12px | 14px | CSS .xsp-token text |
+| 泳道标题 | 17px/11.5px | 18px/12.5px | .xsp-hdr-t/.xsp-hdr-s |
+| 框内文字 | 15.5/14.5px | 16.5/15.5px | .xsp-t1/.xsp-t2/.xsp-t3 |
+| 页码角标 | 11.5px | 12.5px | .xsp-pg |
+| **令牌压字** | 固定 `-116px` 偏移：arrow 类元素文字带（ty-44 起）必被压 9px；step1/step5 顶位空间不足撞泳道标题/上一元素页码 | **三候选自选**（bbox 顶上方 12px → 左侧外 → 右侧外，取首个与全部 text getBBox 零交点；clamp 进画布） | token 探针 8/8 步零交集 TOKEN-PROBE-PASS（步进逐台核对令牌与全部 SVG 文字 bbox） |
+| shots | — | dark-tour/dark-step1/dark-step3/light-tour/phone-390 复拍 | 2026-11-03 14:32 |
+| 语言门 | — | 残留仍=豁免表内 {回执×13, 柜台×1, 泳道×1}，与修前一致 | scan_words retired |
+
+坑：令牌固定偏移的"每类元素逐一验算"方案在 step1（首元素离泳道标题仅 31px）与
+step5（上一元素 pg 落在顶位带）两处翻车——垂直空间是否充足取决于上下元素布局，
+不可静态假设；三候选自选+全文字交点检测是自愈合方案，布局变化自动适应。

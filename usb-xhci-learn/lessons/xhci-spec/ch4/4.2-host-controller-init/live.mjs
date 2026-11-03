@@ -25,7 +25,8 @@ const FRAMES = [
   { step: 6, cards: ["dcbaap", "crcr", "seg", "erdp", "erstba", "msix"], slots: 4, erstsz: 1, rs: 1 },
   { step: 7, cards: ["dcbaap", "crcr", "seg", "erdp", "erstba", "msix"], slots: 4, erstsz: 1, rs: 1 },
 ];
-const DUR = [2200, 2400, 3000, 2400, 4200, 3600, 2600, 2000];
+// 帧速（2026-11-03 用户反馈轮）：原 [2200,2400,3000,2400,4200,3600,2600,2000] 全值 ×1.5
+const DUR = [3300, 3600, 4500, 3600, 6300, 5400, 3900, 3000];
 
 const magTop = () => ({ x: D.mag.x + (D.mag.w - 4) / 2, z: 36.6 + magN * 2.3 });
 const slotOf = (key) => {
@@ -190,7 +191,7 @@ function playTo(i) {
 
 // ---------- 主循环 ----------
 let last = 0, raf = 0, visible = false, touring = !still.matches, idleTimer = 0, tourTimer = 0;
-const TOUR_DWELL = 3.4;
+const TOUR_DWELL = 5.5;
 function tick(now) {
   const dt = last ? Math.min((now - last) / 1000, 1 / 30) : 1 / 60;
   last = now;

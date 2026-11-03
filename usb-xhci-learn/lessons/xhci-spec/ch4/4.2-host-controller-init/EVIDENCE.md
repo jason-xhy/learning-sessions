@@ -30,11 +30,11 @@
 | 帧 | 画面断言 | 判据 |
 |---|---|---|
 | F0 | 全景静止，读数「启动步 0/7 · CNR 0 · R/S 0 · 端口活动 0/4」 | 读数四段与模型状态同源（live.mjs snapshot/render） |
-| F1 | CNR 就绪灯亮→灭（Chip Hardware Reset 后等待），檐刻「等 CNR=0 再动寄存器」 | p69 "After Chip Hardware Reset wait until the Controller Not Ready (CNR) flag in the USBSTS is '0' before writing any xHC Operational or Runtime registers"；脚注 6（复位=PCI reset 或可选上电复位输入） |
+| F1 | CNR 就绪灯亮→灭（Chip Hardware Reset 后等待），柜顶盖前带刻「等 CNR=0 再动寄存器」（2026-11-03 修复轮自檐下小注上移放大，措辞不变） | p69 "After Chip Hardware Reset wait until the Controller Not Ready (CNR) flag in the USBSTS is '0' before writing any xHC Operational or Runtime registers"；脚注 6（复位=PCI reset 或可选上电复位输入） |
 | F2 | MaxSlotsEn 旋钮转动+数字窗显 4；DCBAAP 卡吊运插入 | p69 "Program the Max Device Slots Enabled (MaxSlotsEn) field in the CONFIG register (5.4.7)"；"Program the DCBAAP register … with a 64-bit address pointing to where the Device Context Base Address Array is located"。数字 4 为示例值（规范未定具体值，登记于此） |
 | F3 | CRCR 卡插入（卡面「CRCR／命令环首 TRB 地址」） | p69 "Define the Command Ring Dequeue Pointer by programming the CRCR with a 64-bit address pointing to the starting address of the first TRB of the Command Ring" |
 | F4 | 事件环段卡、ERSTSZ 计数轮转至 1、ERDP 卡、ERSTBA 卡依次落位；事件环启用灯亮 | p69–70 "Allocate and initialize the Event Ring Segment(s)" / "Program the ERSTSZ … with the number of segments" / "Program the ERDP … with the starting address of the first segment" / "Program the ERSTBA … with a 64-bit address pointer"；p70 "Note that writing the ERSTBA enables the Event Ring"。计数轮 1=示例段数 |
-| F5 | MSI-X 表卡（卡面「MSI-X 表／向量 0」）+ Interval 旋钮 + INTE 闸刀 + IE 闸刀；檐刻「中断可选 · 可轮询／事件环」 | p69 "At a minimum, table vector entry 0 shall be initialized and enabled"；p70 "Enable the MSI-X interrupt mechanism …" / "Initializing the Interval field of the Interrupt Moderation register (5.5.2.2)" / "writing a '1' to the Interrupter Enable (INTE) flag of the USBCMD register (5.4.1)" / "writing a '1' to the Interrupt Enable (IE) field of the Interrupter Management register (5.5.2.1)"；p69 脚注 7 "Interrupts are optional. The xHC may be managed by polling Event Rings." |
+| F5 | MSI-X 表卡（卡面「MSI-X 表／向量 0」）+ Interval 旋钮 + INTE 闸刀 + IE 闸刀；柜顶盖前带刻「中断可选 · 可轮询／事件环」（2026-11-03 修复轮自檐下小注上移放大，措辞不变） | p69 "At a minimum, table vector entry 0 shall be initialized and enabled"；p70 "Enable the MSI-X interrupt mechanism …" / "Initializing the Interval field of the Interrupt Moderation register (5.5.2.2)" / "writing a '1' to the Interrupter Enable (INTE) flag of the USBCMD register (5.4.1)" / "writing a '1' to the Interrupt Enable (IE) field of the Interrupter Management register (5.5.2.1)"；p69 脚注 7 "Interrupts are optional. The xHC may be managed by polling Event Rings." |
 | F6 | R/S 大闸刀合上（底座刻「USBCMD · R/S 总闸」「OFF/ON」）；端口灯排苏醒：USB2 两灯常亮、SS 两灯闪烁；灯排铭「USB2 两灯＝等待端口复位 · SS 两灯＝自动检测中」 | p70 "Write the USBCMD to turn the host controller ON via setting the Run/Stop (R/S) bit to '1'. This operation allows the xHC to begin accepting doorbell references."（底座另刻「R/S=1 后 xHC 才开始接受门铃」）；p70 "USB2 (LS/FS/HS) devices require the port reset process to advance the port to the Enabled state" / "SS ports automatically advance to the Enabled state if a successful device attach is detected"（两协议族灯语义分开） |
 | F7 | 读数巡回（读数 7/7），回 F0 | 契约 §5.2 帧序 |
 
@@ -89,7 +89,7 @@
 
 - 零件（audit items）111：基座组（底板/4 地脚/凹槽/角螺丝/标尺条/铭牌）、主机仓（柜身两段/柜顶盖/通风刻槽/面板/铭牌）、卡笼（三轨/两挡块/六槽位框/六卡）、控件排（CNR 座+罩、CONFIG 座+旋钮+数字窗、ERSTSZ 框+轮+启用灯、Interval 座+旋钮、INTE/IE 座+铰柱+触点+杆）、R/S 闸刀（底座/铰柱/触点/杆）、桁架（双柱+帽+梁+端挡+滑车+双爪）、文书台（身/面/铭牌/卡库托盘+叠卡/三拉杆）、拉线 2 条+端子柱 2、端口灯排（基座/注记牌/四灯座+罩/速度铭）、注记牌、标签檐。
 - 帧数 8（F0–F7）；读数 `启动步 n/7 · CNR 0/1 · R/S 0/1 · 端口活动 n/4` 与帧模型同源。
-- 刻字台阶：主名 4.8–6.4 世界单位（×KS 1.579 ×页内 1.75 ≈ 13.2–17.7px ≥11px 等效）；最小微字 4.0（≈11.05px）；页内正文 16.5px、泳道框字 16px@1×、机内主刻字走 topMatrix 水平面（等距下不斜切）。
+- 刻字台阶（2026-11-03 修复轮后）：机制主句 7–8.2 世界单位（注记牌主行 8、盖前带机制句 7–8、卡名 8.2、檐格名 5）；两块工位铭牌 6.2/6.4（板面 56×7 / 74×8 世界单位已满，放大即溢出，见 §9 参数表）；最小微字 4.0（铭牌副行）。页内正文 16.5px、泳道框字 16px@1×、机内主刻字走 topMatrix 水平面（等距下不斜切）。
 
 ## 6. 契约修订建议（报主会话裁决，未改 DESIGN.md）
 
@@ -108,3 +108,75 @@
 - 页头导航直链 ../4.1-command-operation/index.html 与 ../4.3-usb-device-init/index.html（DESIGN §4 模板第 2 条；终验指示覆盖早前「暂指目录页」处理；兄弟节页面主会话终验轮已建，checks.py 验证存在）。
 - 页脚「证据见 EVIDENCE.md」补 href="EVIDENCE.md"（模板第 5 条）。
 - 防回归全绿：audit passed ×2、lines 0 ×2、语言门残留纯豁免集 {柜台1, 回执3, 泳道6}、checks 12/12 + 兄弟页 2/2 PASS、页码 18/18；受影响截图重拍（lane-dark/light、page-dark/light）。
+
+## 9. 修复轮（2026-11-03，用户反馈：文字被机械部件遮挡 / 帧速太快 / 文字太小）
+
+### 9.1 遮挡修复（探针 4 命中 → 0）
+
+**根因**：`build.mjs` 的两块工位铭牌（desk.title / cabinet.title）文字嵌在实体 item 的 svg 里，按 settle 判深序绘制时被**后画**的前景实体整体盖住——探针（`scripts/xhci_spec_occlusion_probe.py`，板块机械检）实锤 frame 0 起 4 处：
+「xHCI 驱动」(6.2px)、「规范称 system software」(4px)、「xHC 控制器」(6.4px)、「寄存器面板 · 根集线器在其内」(4.2px)。
+
+**遮挡者判定**（Playwright 逐 item 盒比对）：`gantry.beam`（桁架梁，两条铭牌 overlap=1.0 主犯）、`panel.face`（柜铭牌副行 overlap=0.5）、`gantry.post0`（立柱，0.126 未达探针阈值但肉眼盖 'x' 首字）。
+
+**修复**：items 保持 settle 判深画家序**不动**（线缆/滑车等全部既证配对不变），仅新增 `labels` 文字层插入在上述遮挡者最靠后一个之后（`LABEL_AFTER` 切入点）：
+- 铭牌板实体留原 item（audit shape 不变），两块铭牌文字移入 labels 层；
+- 机制短句「等 CNR=0 再动寄存器」「中断可选 · 可轮询」「事件环」自檐下小注位（单行六格名挤压源）上移柜顶盖前带空置区（y -19..-40 无部件），随层放大到 7/8/8；
+- 插入点之后实体与 labels 文字屏盒交集均低于探针阈值（最大 wire.cfg:11 ∩ 柜铭牌副行 ≈0.04 < 0.15）；actors（滑车等）在其后，与 labels 无屏盒交集。
+
+**探针前后对比**（`--frames 8 --dwell-ms 8000`，修前=/tmp/occl42-before.json、修后=/tmp/occl42-final-dark.json、light=/tmp/occl42-final-light.json）：
+```
+修前（dark）：frame 0:「xHCI 驱动」(6.2px) 被 path# 盖住 overlap=1.0
+             frame 0:「规范称 system software」(4px) … overlap=1.0
+             frame 0:「xHC 控制器」(6.4px) … overlap=1.0
+             frame 0:「寄存器面板 · 根集线器在其内」(4.2px) … overlap=0.5（1.0）
+             → OCCLUSION-FAIL 4（8 帧每帧同 4 条）
+修后（dark）：OCCLUSION-PASS（0 命中）
+修后（light）：OCCLUSION-PASS（0 命中）
+```
+
+### 9.2 帧速（live.mjs）
+
+| 参数 | 修前 | 修后 |
+|---|---|---|
+| DUR（F0–F7 各帧演出时长 ms） | [2200,2400,3000,2400,4200,3600,2600,2000] | **×1.5 → [3300,3600,4500,3600,6300,5400,3900,3000]** |
+| TOUR_DWELL（巡游帧间驻留 s） | 3.4 | **5.5** |
+
+`steps-frames.json` 各帧等待同步加长（截图取帧终态）；`steps-zfs.json` 步进等待 3200→4400。
+
+### 9.3 字号参数表（SVG 计算值 = size 参数；世界单位 × KS 1.579 = viewBox px）
+
+| 位置 | 文字 | 修前 | 修后 | 目标 | 结论 |
+|---|---|---|---|---|---|
+| 柜顶盖前带 | 等 CNR=0 再动寄存器 | 4.2（檐） | **7** | 机制句≥8 | 达 7；盖左带 x −26..54 宽 83 内放不下 8（80.3→91.4 溢出），回调 |
+| 柜顶盖前带 | 中断可选 · 可轮询 | 4.2（檐） | **8** | ≥8 | 达标（右带空置区 92 宽） |
+| 柜顶盖前带 | 事件环 | 4.2（檐） | **8** | ≥8 | 达标 |
+| 檐（标签檐） | 六格名（USBSTS·CNR 等） | 5 单行（相邻压字） | **5 双行错位**（后行 y−16.4 偶格/前行 y−12.8 奇格，USBSTS 改 start 锚防左溢） | 面板名≥9 | **达不了 9**：檐 156×7.4 世界单位，六名单行在任何 ≥2.3 字号下相邻压字（半宽和＞格距 26），双行墨迹带 2×3.6 已满檐深；修复=消除压字（修前檐左半是糊串，修后六名全部可辨，见 z-apron-2x*.png） |
+| 注记牌 | 中间各步顺序自由 | 4.8 | **8** | 机制句≥8 | 达标（板 78 宽内 82%） |
+| 注记牌 | 全部完成须在 R/S=1 前 | 4.2 | **5.8** | ≥8 | 达不了：8 时宽 73.2/78 贴边，回调 5.8 |
+| 注记牌 | （p69 Note） | 4.2 | **5.6** | — | 随行放大 |
+| 端口灯排铭 | 设备区 · 根集线器端口 | 4.6 | **6.2** | 主层≥9 | 达不了：板 78 宽，9 时 70.2×(9/6.2)=102 溢出 |
+| 端口灯排铭 | 本流程不参与—— | 4.2 | **5.8** | 机制句≥8 | 同板回调 |
+| 端口灯排铭 | R/S=1 后端口才开始上报连接 | 4.2 | **5.0** | ≥8 | 8 时宽 74.3×1.6=119 溢出板 78，回调（91% 板宽贴边） |
+| 灯排前缘 | 端口灯排：USB2 两灯＝…… | 4 | **6.2** | 机制句≥8 | 达不了：排顶面 200 世界单位，8 时 176 溢出，回调 |
+| 灯座标 | USB2 / SS ×4 | 4 | **6** | — | 达标（座距 30 世界单位内） |
+| R/S 底座 | USBCMD · R/S 总闸 | 4.6 | **7** | 面板名≥9 | 达不了：底座 80 世界单位，9 时 73.7×(9/7)=94.8 溢出 |
+| R/S 底座 | R/S=1 后 xHC 才开始接受门铃 | 4.2 | **5.2**（锚点左移 9 世界单位防右溢） | ≥8 | 8 时 84 溢出底座 80，回调 |
+| R/S 底座 | OFF / ON | 4.2 | **5.6** | — | 达标 |
+| 卡面 | 六卡名（DCBAAP…MSI-X 表） | 6.4 | **8.2**（基线 z+11.8） | 面板名≥9 | 接近：卡面 28×18 世界单位，'事件环段'/'MSI-X 表' 9 时贴边溢出，取 8.2（帧 5 数值验证六卡名/副行全部含于卡面） |
+| 卡面 | 六卡副行 | 4.4 | 4.4（不动） | 细节层 | 现状已贴卡面宽（'Event Ring Segment' 36/28 世界单位超宽已存），缩放档可读 |
+| 文书台 | 待插卡 ×6 | 4.2 | **5.6** | — | 达标 |
+| 文书台 | 旋钮/闸刀 · 拉线手柄 | 4/4 | **5.2/5.2**（基线 z 39.6/35.2） | — | 达标 |
+| 工位铭牌 ×2 | xHCI 驱动 / 规范 system software；xHC 控制器 / 寄存器面板…… | 6.2/4.0；6.4/4.2 | **不动**（基线微调 27.6→27.1、+5.6→+5.2） | 主层≥9 | **放不下也拆不了行**：板 56×7 / 74×8 世界单位，现行两行墨迹和已满板（6.2+4.0 的 cap 和 7.74 ≈ 板高 7）；9 单行也超副行宽（副行 4px 已占板宽 94%）。本轮收益=遮挡解除（修前 100% 被梁盖住） |
+| 数值窗 | ERSTSZ 计数轮数字 / MaxSlotsEn 数字 | 6.6 / 6.0 | **8.25 / 7.5**（×1.25） | ×1.25 | 达标 |
+| ERSTSZ 灯标 | 事件环 / 启用（竖直面） | 4.0 | 4.0（不动） | — | 灯位与计数轮框/Interval 座间空隙 11.8 世界单位容不下放大，保持 |
+
+措辞零改动（语言门复核：残留仍 ⊆ 豁免表）；机器几何/语义/EVIDENCE 断言值/zoomfs focus 选择器/页面级非动画文字均未动。
+
+### 9.4 已知遗留（非本轮引入，报主会话裁处）
+
+- **飞行卡与前置拉线的层次**：吊运中的卡越过 wire.rs（y=−2 带）/wire.cfg（y=13 带）水平段时，卡画在线上（线被截断）。根因：settle 只记录滑车 home 位姿，飞行卡是 live 重建、不在任何已判深 shape 内——修前即如此（本轮 items 序已恢复与修前完全一致，非回归）。正解需把飞行卡拆为独立深度项（live 架构改动+复审），超出本轮口径。
+- 檐格名 5px/双行与卡副行 4.4px 属「细节层」（DESIGN §1.8 修订：缩放档可读即可），zoomfs 3.2× 覆盖。
+
+### 9.5 修复轮门（全绿）
+
+audit passed ×2（--audit/--light --audit）· lines `line ends: 0` ×2（console clean）· 探针 OCCLUSION-PASS ×2 · 语言门残留 {柜台1, 回执3, 泳道6} ⊆ 豁免表 ×2 · checks.py 全 PASS（自包含 ×2/互链/页码 18/18/zoomfs wiring）· shots/ 32 张重拍（page/machine/lane 双主题、frame-1..8、390 全景+3.2× zoom、z-apron/cabtitle/desktitle/rsbase/portbar/noteboard 双主题特写；drive 全程 console clean）。

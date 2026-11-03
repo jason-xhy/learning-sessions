@@ -121,17 +121,17 @@ ${zoomFsCss()}
 /* 时序图 */
 .xsp-hdr { fill: var(--lane, var(--anatomy-shade2)); stroke: none; }
 .xsp-lanehdr.xsp-sw .xsp-hdr { fill: var(--xsp-sw); } .xsp-lanehdr.xsp-hc .xsp-hdr { fill: var(--xsp-hc); } .xsp-lanehdr.xsp-dev .xsp-hdr { fill: var(--xsp-dev); }
-.xsp-hdr-t { font: 700 17px var(--font-ui); fill: var(--xsp-lane-ink); }
-.xsp-hdr-s { font: 400 11.5px var(--font-mono); fill: var(--xsp-lane-ink); opacity: .82; }
+.xsp-hdr-t { font: 700 18px var(--font-ui); fill: var(--xsp-lane-ink); }
+.xsp-hdr-s { font: 400 12.5px var(--font-mono); fill: var(--xsp-lane-ink); opacity: .82; }
 .xsp-life { stroke: var(--anatomy-line-mid, #455); stroke-width: 1.4; stroke-dasharray: 3 6; }
 .xsp-box { fill: var(--anatomy-shade2, #20242c); stroke: var(--lane, #888); stroke-width: 1.8; }
 .xsp-bx.xsp-sw .xsp-box { stroke: var(--xsp-sw); } .xsp-bx.xsp-hc .xsp-box { stroke: var(--xsp-hc); }
-.xsp-t1 { font: 500 15.5px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
+.xsp-t1 { font: 500 16.5px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
 .xsp-t1:first-of-type { font-weight: 700; }
-.xsp-t2 { font: 500 14.5px var(--font-ui); fill: var(--anatomy-text); }
-.xsp-t3 { font: 500 14.5px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
+.xsp-t2 { font: 500 15.5px var(--font-ui); fill: var(--anatomy-text); }
+.xsp-t3 { font: 500 15.5px var(--font-ui); fill: var(--anatomy-text); text-anchor: middle; }
 .xsp-note2 .xsp-t3:first-of-type { font-weight: 700; } .xsp-dev .xsp-t3:first-of-type { font-weight: 700; }
-.xsp-pg { font: 400 11.5px var(--font-mono); fill: var(--anatomy-muted); }
+.xsp-pg { font: 400 12.5px var(--font-mono); fill: var(--anatomy-muted); }
 .iso[data-theme="light"] .xsp-pg { fill: #6b6350; }
 .xsp-notebox { fill: var(--xsp-note-bg); stroke: var(--anatomy-line-mid, #455); stroke-dasharray: 5 4; stroke-width: 1.4; }
 .xsp-act { fill: var(--anatomy-shade2, #20242c); stroke-width: 1.6; }
@@ -144,7 +144,7 @@ ${zoomFsCss()}
 .xsp-item.xsp-dim { opacity: .16; }
 .xsp-item.xsp-on .xsp-box { stroke-width: 3.2; filter: drop-shadow(0 0 6px var(--anatomy-line-hi, #fff3)); }
 .xsp-token rect { fill: var(--anatomy-shade2, #20242c); stroke: var(--anatomy-line-hi, #ccc); stroke-width: 1.5; }
-.xsp-token text { font: 700 12px var(--font-ui); fill: var(--anatomy-text); }
+.xsp-token text { font: 700 14px var(--font-ui); fill: var(--anatomy-text); }
 .xsp-token { transition: transform .5s cubic-bezier(.3,.7,.3,1), opacity .3s; }
 .xsp-token.xsp-pulse { animation: xsppl 1.1s ease infinite; }
 @keyframes xsppl { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
@@ -241,7 +241,21 @@ const LIVE = `
     if (mode === "step") {
       const el = items[ix];
       token.setAttribute("opacity", "1");
-      token.style.transform = "translate(" + (el.dataset.tx - 600) + "px," + (Number(el.dataset.ty) - 116) + "px)";
+      // 令牌位置三候选自选（顶上方/左侧外/右侧外），取首个与全部文字零交点——
+      // 固定 -116 偏移对 arrow 文字带必压 9px，顶位空间不足时也要能退到侧位
+      const bb = el.getBBox(), tw = 68, th = 22, VW = 1240;
+      const cand = [];
+      if (!el.classList.contains("xsp-note")) cand.push([bb.x + bb.width / 2 - tw / 2, bb.y - th - 12]);
+      cand.push([bb.x - tw - 12, bb.y + bb.height / 2 - th / 2]);
+      cand.push([bb.x + bb.width + 12, bb.y + bb.height / 2 - th / 2]);
+      const tb = [...svgRoot.querySelectorAll("text")].filter((t) => !t.closest("#xsp-token")).map((t) => t.getBBox());
+      let pos = cand[0] || [8, 8];
+      for (const c of cand) {
+        const cx = Math.max(8, Math.min(VW - tw - 8, c[0])), cy = Math.max(8, c[1]);
+        const hit = tb.some((b2) => cx < b2.x + b2.width && cx + tw > b2.x && cy < b2.y + b2.height && cy + th > b2.y);
+        if (!hit) { pos = [cx, cy]; break; }
+      }
+      token.style.transform = "translate(" + (pos[0] - 566) + "px," + (pos[1] - 59) + "px)";
       token.classList.toggle("xsp-pulse", el.classList.contains("xsp-bx") || el.classList.contains("xsp-note"));
       narr.textContent = (ix + 1) + "/8 · " + NARR[ix];
     } else {
@@ -266,7 +280,7 @@ const LIVE = `
   function startAuto(silent) {
     if (still) return; stopAuto();
     if (mode !== "step") mode = "step";
-    auto = setInterval(() => { ix = (ix + 1) % items.length; paint(); }, 1700);
+    auto = setInterval(() => { ix = (ix + 1) % items.length; paint(); }, 3200);
     const b = document.querySelector('[data-act="auto"]'); if (b) b.setAttribute("aria-pressed", "true");
     paint();
   }

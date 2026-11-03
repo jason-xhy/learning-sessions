@@ -131,8 +131,8 @@ put("desk.screws", [DESK.x + DESK.w / 2, DESK.y + DESK.d / 2, DESK_TOP],
   Dots(deskScrews.map(([x, y]) => at([x + 2, y + 2, DESK_TOP])), { size: 0.5, tone: "mid" }),
   deskScrews.map(([x, y]) => record(A.ball([x + 2, y + 2, DESK_TOP], 0.4, { name: "desk.screw" }))), { bias: 0.1 });
 put("desk.label", [-165, 30, 15.5],
-  frontText([-165, 30.06, 15.5], "xHCI 驱动", { size: 4.6, tone: "hi" }),
-  [record(A.box([-180, 29.9, 13.9], [-150, 30, 17.1], { name: "desk.label" }))], { bias: 0.08 });
+  frontText([-165, 30.06, 15.5], "xHCI 驱动", { size: 4.85, tone: "hi" }),
+  [record(A.box([-180, 29.9, 13.9], [-150, 30, 17.1], { name: "desk.label" }))], { bias: 0.08, label: 1 });
 
 // 表格卡架 + 输入上下文表格卡（字段填充为动件）
 box("formboard", [-198, -26.5, DESK_TOP], [-162, -23.2, 58], { tone: "lo" }, {
@@ -148,48 +148,51 @@ const FORM = { x: -195, y: -23.2, w: 30, d: 1.6, r: 0.8 };
     const cz = z0 + h / 2;
     return `<g class="xu-cell" data-fill="0" data-cell="${id}">` +
       `<path class="xu-box" d="${path3([[FORM.x + x0, -21.54, z0], [FORM.x + x0 + w, -21.54, z0], [FORM.x + x0 + w, -21.54, z0 + h], [FORM.x + x0, -21.54, z0 + h], [FORM.x + x0, -21.54, z0]], true)}"/>` +
-      k.faceTextSvg(frontMatrix([FORM.x + x0 + w / 2, -21.5, cz]), val, { size: 2.3 * KS, tone: "hi", anchor: "middle" }) +
+      k.faceTextSvg(frontMatrix([FORM.x + x0 + w / 2, -21.5, cz]), val, { size: 2.4 * KS, tone: "hi", anchor: "middle" }) +
       `</g>` +
-      k.faceTextSvg(frontMatrix([FORM.x + x0 + w / 2, -21.5, z0 + h + 0.9]), label, { size: 1.7 * KS, tone: "mid", anchor: "middle" });
+      k.faceTextSvg(frontMatrix([FORM.x + x0 + w / 2, -21.5, z0 + h + 1.0]), label, { size: 1.7 * KS, tone: "mid", anchor: "middle" });
   };
   const t = (x, z, s, size, tone) => k.faceTextSvg(frontMatrix([x, -21.5, z]), s, { size: size * KS, tone, anchor: "middle" });
+  // 盒内序：格子框/格注先画，标题类文字最后画——格框斜投影 bbox 不压标题
   const svg =
     S(k.slabOf(FORM, DESK_TOP + 2, 32.5, P, 2, 0.4), { tone: "hi", crease: "lo" }) +
-    t(FORM.x + 15, 55.4, "输入上下文", 3.0, "hi") +
-    t(FORM.x + 15, 52.4, "Input Context", 1.8, "mid") +
-    cell(1, 12.6, 46.2, 4.6, "a0", "1", "A0") +
-    cell(16.2, 12.6, 46.2, 4.6, "a1", "1", "A1") +
-    t(FORM.x + 15, 43.0, "Slot Context", 2.0, "mid") +
-    cell(1, 8.6, 37.6, 4.2, "sport", "1", "端口") +
-    cell(10.8, 8.6, 37.6, 4.2, "sroute", "0", "Route") +
-    cell(20.6, 8.4, 37.6, 4.2, "sentries", "1", "Entries") +
-    t(FORM.x + 15, 34.4, "EP0 Context", 2.0, "mid") +
-    cell(1, 6.6, 29.0, 4.2, "etype", "Ctrl", "类型") +
-    cell(8.4, 6.6, 29.0, 4.2, "mps", "8", "MPS") +
-    cell(15.8, 6.6, 29.0, 4.2, "dcs", "1", "DCS") +
-    cell(23.2, 5.8, 29.0, 4.2, "cerr", "3", "CErr") +
-    t(FORM.x + 15, 26.6, "MPS＝端口速度默认值", 1.8, "mid");
+    cell(1, 12.6, 45.6, 4.6, "a0", "1", "A0") +
+    cell(16.2, 12.6, 45.6, 4.6, "a1", "1", "A1") +
+    cell(1, 8.6, 37.0, 4.2, "sport", "1", "端口") +
+    cell(10.8, 8.6, 37.0, 4.2, "sroute", "0", "Route") +
+    cell(20.6, 8.4, 37.0, 4.2, "sentries", "1", "Entries") +
+    cell(1, 6.6, 28.4, 4.2, "etype", "Ctrl", "类型") +
+    cell(8.4, 6.6, 28.4, 4.2, "mps", "8", "MPS") +
+    cell(15.8, 6.6, 28.4, 4.2, "dcs", "1", "DCS") +
+    cell(23.2, 5.8, 28.4, 4.2, "cerr", "3", "CErr") +
+    t(FORM.x + 15, 42.8, "Slot Context", 2.2, "mid") +
+    t(FORM.x + 15, 34.2, "EP0 Context", 2.2, "mid") +
+    t(FORM.x + 15, 25.6, "MPS＝端口速度默认值", 1.8, "mid") +
+    t(FORM.x + 15, 54.6, "输入上下文", 3.0, "hi") +
+    t(FORM.x + 15, 51.9, "Input Context", 1.9, "mid");
   put("desk.formcard", [FORM.x + 15, -22.4, DESK_TOP + 18], svg,
-    [record(A.slab(FORM, DESK_TOP + 2, 32.5, { name: "desk.formcard" }, 2))], { bias: 0.3 });
+    [record(A.slab(FORM, DESK_TOP + 2, 32.5, { name: "desk.formcard" }, 2))], { bias: 0.3, label: 1 });
 }
 // 事件匣与收件匣
 box("tray.event", [-152, 6, DESK_TOP], [-128, 24, DESK_TOP + 3.4], { tone: "hi" }, { r: 1.4, steps: 3, bevel: 0.4 });
 box("tray.event.lip", [-128, 5, DESK_TOP], [-126.5, 25, DESK_TOP + 5.4], { tone: "mid" }, { r: 0.8 });
-put("tray.event.tag", [-140, 25.2, DESK_TOP],
-  topText([-140, 25.6, DESK_TOP + 3.42], "事件匣", { size: 2.2, tone: "mid" }),
-  [record(A.box([-152, 24.2, DESK_TOP + 3.4], [-128, 26.4, DESK_TOP + 3.6], { name: "tray.event.tag" }))], { bias: 0.1 });
+// 事件匣标签：平放桌面、匣前方（y≈31）——匣沿/北立面/匣内事件卡的斜投影 bbox
+// 都会与更近的标签位相交，匣前桌面是实测无遮挡位
+put("tray.event.tag", [-140, 31, DESK_TOP],
+  topText([-140, 31, DESK_TOP + 0.02], "事件匣", { size: 4.0, tone: "mid" }),
+  [record(A.box([-152, 29, DESK_TOP], [-128, 33, DESK_TOP + 0.15], { name: "tray.event.tag" }))], { bias: 0.1, label: 1 });
 box("tray.desc", [-152, -20, DESK_TOP], [-128, -2, DESK_TOP + 3.4], { tone: "hi" }, { r: 1.4, steps: 3, bevel: 0.4 });
 box("tray.desc.lip", [-128, -21, DESK_TOP], [-126.5, -1, DESK_TOP + 5.4], { tone: "mid" }, { r: 0.8 });
-put("tray.desc.tag", [-140, -1.4, DESK_TOP],
-  topText([-140, -1.8, DESK_TOP + 3.42], "收件匣（描述符）", { size: 2.2, tone: "mid" }),
-  [record(A.box([-152, -3.6, DESK_TOP + 3.4], [-128, -1.4, DESK_TOP + 3.6], { name: "tray.desc.tag" }))], { bias: 0.1 });
+put("tray.desc.tag", [-147, -0.4, DESK_TOP],
+  topText([-147, -0.6, DESK_TOP + 3.42], "收件匣（描述符）", { size: 3.3, tone: "mid" }),
+  [record(A.box([-152, -2.4, DESK_TOP + 3.4], [-128, -0.2, DESK_TOP + 3.6], { name: "tray.desc.tag" }))], { bias: 0.1, label: 1 });
 // 命令单堆（待发单据）
 for (let i = 0; i < 3; i++) {
   box("slipstack", [-196, 6 + i * 0.3, DESK_TOP + i * 0.5], [-174, 22 + i * 0.3, DESK_TOP + 0.5 + i * 0.5], { tone: i === 2 ? "hi" : "lo", crease: "none" }, { r: 0.8, steps: 2 });
 }
 put("slipstack.tag", [-185, 23.6, DESK_TOP],
-  topText([-185, 24.4, DESK_TOP + 2.0], "命令单", { size: 2.2, tone: "mid" }),
-  [record(A.box([-196, 22.4, DESK_TOP + 1.5], [-174, 24.8, DESK_TOP + 1.72], { name: "slipstack.tag" }))], { bias: 0.1 });
+  topText([-185, 24.4, DESK_TOP + 2.0], "命令单", { size: 4.6, tone: "mid" }),
+  [record(A.box([-196, 22.4, DESK_TOP + 1.5], [-174, 24.8, DESK_TOP + 1.72], { name: "slipstack.tag" }))], { bias: 0.1, label: 1 });
 
 // ---------- 输送轨道（软件 → xHC 通道） ----------
 const CONV_Y0 = 34, CONV_Y1 = 42;
@@ -213,12 +216,15 @@ const OUTCTX = { planX: -114.85, planY: -25, w: 4.2, d: 12, z: 3, cx: -112.75, c
   box("dcbaa.endw", [-115.9, -27.4, 3], [-115.1, -9, 23], { tone: "mid" }, { r: 0.3, steps: 1 });
   box("dcbaa.ende", [-92.9, -27.4, 3], [-92.1, -9, 23], { tone: "mid" }, { r: 0.3, steps: 1 });
   put("dcbaa.label", [-104, -27.4, 12],
-    frontText([-104, -27.32, 21.4], "DCBAA", { size: 2.8, tone: "hi" }) +
-    frontText([-104, -27.32, 18.4], "软件装载 · xHC 只读", { size: 1.9, tone: "mid" }),
-    [record(A.box([-116, -27.5, 17], [-92, -27.3, 23], { name: "dcbaa.label" }))], { bias: 0.08 });
+    frontText([-104, -27.32, 22.0], "DCBAA", { size: 3.9, tone: "hi" }),
+    [record(A.box([-116, -27.5, 19.6], [-92, -27.3, 24.4], { name: "dcbaa.label" }))], { bias: 0.08, label: 1 });
+  // 副铭迁到基座前脸：留在背板会落进 1 号格输出上下文卡（动件）的斜投影 bbox
+  put("dcbaa.sublabel", [-104, -5.94, 1.5],
+    frontText([-104, -5.94, 1.5], "软件装载 · xHC 只读", { size: 1.4, tone: "mid" }),
+    [record(A.box([-114, -6.06, 0.4], [-94, -5.94, 2.6], { name: "dcbaa.sublabel" }))], { bias: 0.08, label: 1 });
   put("dcbaa.nums", [-104, -7.4, 3],
-    ["1", "2", "3", "4"].map((n, i) => topText([-112.75 + i * 5.75, -7.4, 3.02], n, { size: 2.0, tone: "mid" })).join(""),
-    [record(A.box([-118, -8.8, 3], [-90, -6, 3.2], { name: "dcbaa.nums" }))], { bias: 0.06 });
+    ["1", "2", "3", "4"].map((n, i) => topText([-112.75 + i * 5.75, -7.4, 3.02], n, { size: 3.0, tone: "mid" })).join(""),
+    [record(A.box([-118, -8.8, 3], [-90, -6, 3.2], { name: "dcbaa.nums" }))], { bias: 0.06, label: 1 });
   // 输出上下文卡（静态按就位姿态入审计；画面由动件层绘制）
   const plan = { x: OUTCTX.planX, y: OUTCTX.planY, w: OUTCTX.w, d: OUTCTX.d, r: 0.6 };
   const shape = record(A.slab(plan, OUTCTX.z, 13, { name: "dcbaa.card" }, 2));
@@ -238,8 +244,8 @@ const EP0_CENTERS = [-78.8, -70.4, -62, -52.4];
     box("ep0.div", [x - 3.8 - 0.4, EP0.y + 4.2, 2.5], [x - 3.8 + 0.4, EP0.y + EP0.d - 4.2, 4.2], { tone: "mid" }, { r: 0.3, steps: 1 });
   }
   put("ep0.label", [EP0.x + 19, EP0.y + EP0.d + 2, 0],
-    topText([EP0.x + 19, EP0.y + EP0.d + 2.6, 0.02], "EP0 传输环", { size: 2.6, tone: "hi" }),
-    [record(A.box([EP0.x, EP0.y + EP0.d + 0.6, 0], [EP0.x + EP0.w, EP0.y + EP0.d + 4.4, 0.15], { name: "ep0.label" }))], { bias: 0.06 });
+    topText([EP0.x + 19, EP0.y + EP0.d + 2.6, 0.02], "EP0 传输环", { size: 3.7, tone: "hi" }),
+    [record(A.box([EP0.x, EP0.y + EP0.d + 0.6, 0], [EP0.x + EP0.w, EP0.y + EP0.d + 4.4, 0.15], { name: "ep0.label" }))], { bias: 0.06, label: 1 });
   // 就绪灯（环上架后点亮）：小立柱装在环床东端槽 4 区
   box("ep0.readyblock", [-51.2, 15.3, 2.5], [-48.8, 18.7, 4.9], { tone: "mid" }, { r: 0.5, steps: 2, bevel: 0.3 });
   {
@@ -248,8 +254,8 @@ const EP0_CENTERS = [-78.8, -70.4, -62, -52.4];
       `<path class="xhp-void" d="${path3([[bx0, bf - 0.02, bz0], [bx1, bf - 0.02, bz0], [bx1, bf - 0.02, bz1], [bx0, bf - 0.02, bz1]], true)}"/>` +
       `<g class="xhp-lamp" data-lamp="ep0ready"><path class="xhp-bulb" d="${path3([[bx0 + 0.4, bf - 0.06, bz0 + 0.35], [bx1 - 0.4, bf - 0.06, bz0 + 0.35], [bx1 - 0.4, bf - 0.06, bz1 - 0.35], [bx0 + 0.4, bf - 0.06, bz1 - 0.35]], true)}"/></g>` +
       Ln(path3([[bx0, bf, bz0], [bx1, bf, bz0], [bx1, bf, bz1], [bx0, bf, bz1], [bx0, bf, bz0]], true), { tone: "lo" }) +
-      topText([-50, 17, 4.92], "就绪", { size: 1.7, tone: "mid" }),
-      [record(A.box([bx0, bf - 0.1, bz0], [bx1, bf, bz1], { name: "ep0.ready" }))], { bias: 0.2 });
+      topText([-50, 17, 4.92], "就绪", { size: 2.2, tone: "mid" }),
+      [record(A.box([bx0, bf - 0.1, bz0], [bx1, bf, bz1], { name: "ep0.ready" }))], { bias: 13, label: 1 });
   }
   // TRB 小卡（静态就位姿态入审计；画面由动件层绘制）
   ["S", "D", "St"].forEach((lab, i) => {
@@ -275,22 +281,23 @@ const CONS = { x: -40, y: -50, w: 132, d: 80, r: 4 };
     Dots(cScrews.map(([x, y]) => at([x, y, CONS_TOPT])), { size: 0.5, tone: "mid" }),
     cScrews.map(([x, y]) => record(A.ball([x, y, CONS_TOPT], 0.4, { name: "cons.screw" }))), { bias: 0.1 });
   put("cons.label", [26, 30, 32.2],
-    frontText([26, 30.06, 32.2], "xHC 控制器", { size: 4.4, tone: "hi" }),
-    [record(A.box([0, 29.9, 30.4], [52, 30, 34], { name: "cons.label" }))], { bias: 0.08 });
+    frontText([26, 30.06, 32.2], "xHC 控制器", { size: 4.85, tone: "hi" }),
+    [record(A.box([0, 29.9, 30.4], [52, 30, 34], { name: "cons.label" }))], { bias: 0.08, label: 1 });
 
   const F = 30;
   // —— 命令单收件口（命令环）+ 寄存器写口（薄板贴面） ——
-  const faceSlot = (name, x0, x1, label) => {
+  const faceSlot = (name, x0, x1, label, labelSize, labelZ) => {
     const plan = { x: x0, y: 29.94, w: x1 - x0, d: 0.12, r: 0.6 };
     const shape = record(A.slab(plan, 3.5, 6, { name }, 3));
+    // 2026-11-03 遮挡修复：去掉薄板填充（保留框线与记录形状）——填充板 22 世界宽的
+    // 斜投影 bbox 下垂会盖住上方 PORTSC 信号灯标签
     put(name, [(x0 + x1) / 2, 30, 6.5],
-      S(k.slabOf(plan, 3.5, 6, P, 3), { tone: "lo", crease: "none" }) +
       Ln(path3([[x0 - 1, 30.04, 2.8], [x0 - 1, 30.04, 10.2], [x1 + 1, 30.04, 10.2], [x1 + 1, 30.04, 2.8], [x0 - 1, 30.04, 2.8]], true), { tone: "mid", className: "xhp-intake-frame" }) +
-      frontText([(x0 + x1) / 2, 30.1, 11.2], label, { size: 1.9, tone: "mid" }),
-      [shape], { bias: 0.1 });
+      frontText([(x0 + x1) / 2, 30.1, labelZ], label, { size: labelSize, tone: "mid" }),
+      [shape], { bias: 13, label: 1 });
   };
-  faceSlot("cons.intake", -32, -10, "命令环 · 收件口");
-  faceSlot("cons.wreg", -6, 4, "寄存器口");
+  faceSlot("cons.intake", -32, -10, "命令环 · 收件口", 2.1, 11.0);
+  faceSlot("cons.wreg", -6, 4, "寄存器口", 3.2, 1.9);
 
   // —— PORTSC 读数板 ——
   {
@@ -298,11 +305,16 @@ const CONS = { x: -40, y: -50, w: 132, d: 80, r: 4 };
     const shape = record(A.slab(plan, 12.8, 16.8, { name: "portsc.board" }, 3));
     put("portsc.board", [-9, 30, 21.2],
       S(k.slabOf(plan, 12.8, 16.8, P, 3), { tone: "lo", crease: "none" }) +
-      frontText([-36, 30.06, 28.4], "PORTSC", { size: 2.8, tone: "hi", anchor: "start" }) +
-      frontText([18, 30.06, 28.4], "端口 1", { size: 2.2, tone: "mid", anchor: "end" }),
-      [shape], { bias: 0.1 });
+      frontText([-36, 30.06, 28.4], "PORTSC", { size: 4.8, tone: "hi", anchor: "start" }),
+      [shape], { bias: 0.1, label: 1 });
+    // 「端口 1」拆独立文字项：板面 slab 的 AABB 下垂会盖住同板右侧文字（分层发射序里
+    // 置于五信号灯/数码窗之后）
+    put("portsc.port", [10, 30, 28.4],
+      frontText([18, 30.06, 28.4], "端口 1", { size: 3.8, tone: "mid", anchor: "end" }),
+      [record(A.box([4, 29.9, 26.6], [20, 30, 30.2], { name: "portsc.port" }))], { bias: 13, label: 1 });
   }
   const FLAGS = ["CCS", "CSC", "PR", "PRC", "PED"];
+  const flagTextSvg = [];
   FLAGS.forEach((fl, i) => {
     const x0 = -33.8 + i * 10.3, x1 = x0 + 8.4;
     const z0 = 19.8, z1 = 26;
@@ -315,18 +327,21 @@ const CONS = { x: -40, y: -50, w: 132, d: 80, r: 4 };
       walls.push({ tone: G.toneOf(normal, P), d: path3([A2, B2, [B2[0], B2[1] - 1.6, B2[2]], [A2[0], A2[1] - 1.6, A2[2]]], true) });
     }
     const cap0 = { tone: G.toneOf([0, 0, 1], P), d: path3([quad[3], quad[2], [quad[2][0], quad[2][1] - 1.6, quad[2][2]], [quad[3][0], quad[3][1] - 1.6, quad[3][2]]], true) };
-    const cap1 = { tone: G.toneOf([0, 0, -1], P), d: path3([quad[0], quad[1], [quad[1][0], quad[1][1] - 1.6, quad[1][2]], [quad[0][0], quad[0][1] - 1.6, quad[0][2]]], true) };
+    const cap1 = { tone: G.toneOf([0, 0, -1], P), d: path3([quad[0], quad[1], [quad[1][0], quad[1][1] - 1.6, quad[1][2]], [quad[0], quad[1][1] - 1.6, quad[1][2]]], true) };
+    // 灯窗实体与灯名刻字分拆两件（层序里先全体实体、后全体刻字——斜投影 bbox 不再互盖）
     put(`portsc.${fl}`, [(x0 + x1) / 2, F, (z0 + z1) / 2],
       walls.map((w) => `<path class="iso-shade" data-shade="${w.tone === 4 ? 3 : w.tone}" d="${w.d}"/>`).join("") +
       `<path class="iso-shade" data-shade="${cap0.tone === 4 ? 3 : cap0.tone}" d="${cap0.d}"/>` +
       `<path class="iso-shade" data-shade="${cap1.tone === 4 ? 3 : cap1.tone}" d="${cap1.d}"/>` +
       `<path class="xhp-void" d="${path3(recess, true)}"/>` +
       `<g class="xhp-lamp" data-flag="${fl.toLowerCase()}"><path class="xhp-bulb" d="${path3([[x0 + 1.4, F - 1.8, z0 + 1.1], [x1 - 1.4, F - 1.8, z0 + 1.1], [x1 - 1.4, F - 1.8, z1 - 1.1], [x0 + 1.4, F - 1.8, z1 - 1.1]], true)}"/></g>` +
-      Ln(path3(quad, true), { tone: "lo" }) +
-      frontText([(x0 + x1) / 2, F + 0.02, 18.4], fl, { size: 2.4, tone: "mid" }),
-      [record(A.box([x0, F - 0.1, z0], [x1, F, z1], { name: `portsc.${fl}` }))], { bias: 12 });
+      Ln(path3(quad, true), { tone: "lo" }),
+      [record(A.box([x0, F - 0.1, z0], [x1, F, z1], { name: `portsc.${fl}` }))], { bias: 12, label: 1 });
+    flagTextSvg.push(frontText([(x0 + x1) / 2, F + 0.02, 18.5], fl, { size: 2.8, tone: "mid" }));
   });
-  // 数码窗（标签内置）
+  put("portsc.flagtext", [-8, 30, 18.5], flagTextSvg.join(""),
+    [record(A.box([-34.5, 29.9, 16.4], [14.5, 30, 20.6], { name: "portsc.flagtext" }))], { bias: 12, label: 1 });
+  // 数码窗（实体与读数文字分拆两件）
   const win = (name, x0, x1, label, dataKey, initVal) => {
     const z0 = 13.4, z1 = 17.8;
     const quad = [[x0, F, z0], [x1, F, z0], [x1, F, z1], [x0, F, z1]];
@@ -338,16 +353,18 @@ const CONS = { x: -40, y: -50, w: 132, d: 80, r: 4 };
       walls.push({ tone: G.toneOf(normal, P), d: path3([A2, B2, [B2[0], B2[1] - 1.4, B2[2]], [A2[0], A2[1] - 1.4, A2[2]]], true) });
     }
     const cap0 = { tone: G.toneOf([0, 0, 1], P), d: path3([quad[3], quad[2], [quad[2][0], quad[2][1] - 1.4, quad[2][2]], [quad[3][0], quad[3][1] - 1.4, quad[3][2]]], true) };
-    const cap1 = { tone: G.toneOf([0, 0, -1], P), d: path3([quad[0], quad[1], [quad[1][0], quad[1][1] - 1.4, quad[1][2]], [quad[0][0], quad[0][1] - 1.4, quad[0][2]]], true) };
+    const cap1 = { tone: G.toneOf([0, 0, -1], P), d: path3([quad[0], quad[1], [quad[1][0], quad[1][1] - 1.4, quad[1][2]], [quad[0], quad[1][1] - 1.4, quad[1][2]]], true) };
     put(name, [(x0 + x1) / 2, F, (z0 + z1) / 2],
       walls.map((w) => `<path class="iso-shade" data-shade="${w.tone === 4 ? 3 : w.tone}" d="${w.d}"/>`).join("") +
       `<path class="iso-shade" data-shade="${cap0.tone === 4 ? 3 : cap0.tone}" d="${cap0.d}"/>` +
       `<path class="iso-shade" data-shade="${cap1.tone === 4 ? 3 : cap1.tone}" d="${cap1.d}"/>` +
       `<path class="xhp-void" d="${path3(recess, true)}"/>` +
-      `<text class="xhp-win" data-win="${dataKey}" transform="${frontMatrix([(x0 + x1) / 2, F - 1.45, z1 - 1.3])}" font-size="${f2(1.6 * KS)}" text-anchor="middle">${label}</text>` +
-      `<text class="xhp-win" data-win="${dataKey}-v" transform="${frontMatrix([(x0 + x1) / 2, F - 1.45, z0 + 1.6])}" font-size="${f2(3.0 * KS)}" text-anchor="middle">${initVal}</text>` +
       Ln(path3(quad, true), { tone: "lo" }),
-      [record(A.box([x0, F - 0.1, z0], [x1, F, z1], { name }))], { bias: 12 });
+      [record(A.box([x0, F - 0.1, z0], [x1, F, z1], { name }))], { bias: 12, label: 1 });
+    put(`${name}.t`, [(x0 + x1) / 2, F, (z0 + z1) / 2],
+      `<text class="xhp-win" data-win="${dataKey}" transform="${frontMatrix([(x0 + x1) / 2, F - 1.45, z1 - 0.9])}" font-size="${f2(2.0 * KS)}" text-anchor="middle">${label}</text>` +
+      `<text class="xhp-win" data-win="${dataKey}-v" transform="${frontMatrix([(x0 + x1) / 2, F - 1.45, z0 + 1.4])}" font-size="${f2(3.5 * KS)}" text-anchor="middle">${initVal}</text>`,
+      [record(A.box([x0, F - 0.06, z0], [x1, F, z1], { name: `${name}.t` }))], { bias: 12, label: 1 });
   };
   win("portsc.pls", -34, -22, "PLS", "pls", "—");
   win("portsc.speed", -18, -4, "Speed", "speed", "—");
@@ -370,11 +387,11 @@ const CONS = { x: -40, y: -50, w: 132, d: 80, r: 4 };
       `<path class="iso-shade" data-shade="${cap0.tone === 4 ? 3 : cap0.tone}" d="${cap0.d}"/>` +
       `<path class="iso-shade" data-shade="${cap1.tone === 4 ? 3 : cap1.tone}" d="${cap1.d}"/>` +
       `<path class="xhp-void" d="${path3(recess, true)}"/>` +
-      frontText([41, F - 0.02, 27.8], "Device Slot", { size: 2.2, tone: "hi" }) +
-      `<text class="xhp-win" data-win="slot" transform="${frontMatrix([41, F - 1.55, 22.6])}" font-size="${f2(3.6 * KS)}" text-anchor="middle">—</text>` +
-      frontText([41, F - 0.02, 15.6], "ID 1 · 示例", { size: 1.9, tone: "mid" }) +
+      frontText([41, F - 0.02, 28.0], "Device Slot", { size: 2.35, tone: "hi" }) +
+      `<text class="xhp-win" data-win="slot" transform="${frontMatrix([41, F - 1.55, 22.2])}" font-size="${f2(3.2 * KS)}" text-anchor="middle">—</text>` +
+      frontText([41, F - 0.02, 15.4], "ID 1 · 示例", { size: 2.2, tone: "mid" }) +
       Ln(path3(quad, true), { tone: "lo" }),
-      [record(A.box([x0, F - 0.1, z0], [x1, F, z1], { name: "slot.win" }))], { bias: 12 });
+      [record(A.box([x0, F - 0.1, z0], [x1, F, z1], { name: "slot.win" }))], { bias: 12, label: 1 });
   }
 
   // —— 门铃 0 / 门铃 1 ——
@@ -382,18 +399,20 @@ const CONS = { x: -40, y: -50, w: 132, d: 80, r: 4 };
     box(`${name}.base`, [cx - 4, cy - 4, CONS_TOPT], [cx + 4, cy + 4, CONS_TOPT + 3.5], { tone: "mid" }, { r: 1.4, steps: 3, bevel: 0.4 });
     col(`${name}.guide`, cx, cy, 1.4, CONS_TOPT + 3.5, CONS_TOPT + 6.5, { tone: "lo" }, { steps: 16 });
     const py = cy + 8;
-    put(`${name}.plate`, [cx, py, CONS_TOPT],
-      topText([cx, py, CONS_TOPT + 0.02], plate, { size: 2.0, tone: "hi" }),
-      [record(A.box([cx - 15, py - 2.4, CONS_TOPT], [cx + 15, py + 2.4, CONS_TOPT + 0.15], { name: `${name}.plate` }))], { bias: 0.06 });
+    const lines = Array.isArray(plate) ? plate : [[plate, 0]];
+    const size = Array.isArray(plate) ? 1.8 : 3.0;
+    put(`${name}.plate`, [cx - 4, py, CONS_TOPT],
+      lines.map(([txt, dy]) => topText([cx - 4, py + dy, CONS_TOPT + 0.02], txt, { size, tone: "hi" })).join(""),
+      [record(A.box([cx - 19, py - 4.6, CONS_TOPT], [cx + 11, py + 4.6, CONS_TOPT + 0.15], { name: `${name}.plate` }))], { bias: 0.06, label: 1 });
   };
   bell("bell0", 58, 16, "门铃 0 · DB Target=0");
-  bell("bell1", 78, 2, "门铃 1 · DB Target=1 · EP0");
+  bell("bell1", 78, 2, [["门铃 1", -2.6], ["DB Target=1 · EP0", 2.6]]);
 
   // —— 事件出口管座 ——
   col("evstub", 8, -46, 1.8, CONS_TOPT, CONS_TOPT + 4.5, { tone: "lo" }, { steps: 20 });
   put("evstub.tag", [8, -42.2, CONS_TOPT],
-    topText([8, -42.2, CONS_TOPT + 0.02], "事件出口", { size: 2.0, tone: "mid" }),
-    [record(A.box([-2, -43.8, CONS_TOPT], [18, -40.6, CONS_TOPT + 0.15], { name: "evstub.tag" }))], { bias: 0.06 });
+    topText([8, -42.2, CONS_TOPT + 0.02], "事件出口", { size: 4.6, tone: "mid" }),
+    [record(A.box([-2, -43.8, CONS_TOPT], [18, -40.6, CONS_TOPT + 0.15], { name: "evstub.tag" }))], { bias: 0.06, label: 1 });
 
   // —— 线缆出口（东面端口座） ——
   const CF = { o: [92, 0, 8], a: [1, 0, 0], u: [0, 1, 0], v: [0, 0, 1] };
@@ -445,12 +464,12 @@ put("hook.knob", [100, -16, 4.0],
       `<path class="xhp-void" d="${path3(recess, true)}"/>` +
       `<g class="xhp-lamp" data-lamp="dev-${dp.key}"><path class="xhp-bulb" d="${path3([[x0 + 1.2, BF - 1.8, z0 + 1.1], [x1 - 1.2, BF - 1.8, z0 + 1.1], [x1 - 1.2, BF - 1.8, z1 - 1.1], [x0 + 1.2, BF - 1.8, z1 - 1.1]], true)}"/></g>` +
       Ln(path3(quad, true), { tone: "lo" }) +
-      frontText([143.5, BF + 0.02, dp.z + 0.8], dp.label, { size: 2.5, tone: "mid" }),
-      [record(A.box([x0, BF - 0.1, z0], [x1, BF, z1], { name: `box.lamp.${dp.key}` }))], { bias: 10 });
+      frontText([140, BF + 0.02, dp.z + 0.8], dp.label, { size: 2.0, tone: "mid" }),
+      [record(A.box([x0, BF - 0.1, z0], [x1, BF, z1], { name: `box.lamp.${dp.key}` }))], { bias: 10, label: 1 });
   });
   put("box.devlabel", [143, 20, 34.8],
-    frontText([143, 20.06, 34.8], "USB 设备", { size: 3.8, tone: "hi" }),
-    [record(A.box([126, 19.9, 33.2], [160, 20, 36.4], { name: "box.devlabel" }))], { bias: 0.08 });
+    frontText([143, 20.06, 34.8], "USB 设备", { size: 4.85, tone: "hi" }),
+    [record(A.box([126, 19.9, 33.2], [160, 20, 36.4], { name: "box.devlabel" }))], { bias: 0.08, label: 1 });
 
   // 票据带（凸出塔面的轨道 + 挂夹）
   box("box.rail", [166, 20, 10], [170.4, 21.4, 34], { tone: "lo" }, { r: 0.6, steps: 2 });
@@ -458,15 +477,19 @@ put("hook.knob", [100, -16, 4.0],
     const z = 13.2 + i * 6;
     box("box.clip", [166.8, 21.4, z - 0.5], [169.6, 22.4, z + 0.5], { tone: "mid" }, { r: 0.4, steps: 1 });
   }
-  put("box.rail.tag", [178, 20, 35.8],
-    frontText([178, 20.06, 35.8], "票据带", { size: 2.0, tone: "mid" }),
-    [record(A.box([170, 19.9, 34.6], [186, 20, 36.8], { name: "box.rail.tag" }))], { bias: 0.06 });
+  put("box.rail.tag", [183, 20, 36.2],
+    frontText([183, 20.06, 36.2], "票据带", { size: 2.2, tone: "mid" }),
+    [record(A.box([176.5, 19.9, 35.0], [189.5, 20, 37.2], { name: "box.rail.tag" }))], { bias: 0.06, label: 1 });
 
   // 长铭牌：教学锚
-  box("box.nameplate", [110, 26.0, 1.2], [194, 27.2, 5.2], { tone: "lo", crease: "none" }, {
-    r: 0.6, steps: 2,
-    extra: frontText([152, 27.26, 2.9], "只见 USB 请求与总线事件——槽/环/上下文对设备不可见", { size: 2.2, tone: "hi" }),
-  });
+  {
+    const plan = { x: 110, y: 26.0, w: 84, d: 1.2, r: 0.6 };
+    const shape = record(A.slab(plan, 1.2, 4, { name: "box.nameplate" }, 2));
+    put("box.nameplate", [152, 26.6, 3.2],
+      S(k.slabOf(plan, 1.2, 4, P, 2), { tone: "lo", crease: "none" }) +
+      frontText([152, 27.26, 2.9], "只见 USB 请求与总线事件——槽/环/上下文对设备不可见", { size: 1.76, tone: "hi" }),
+      [shape], { bias: 0.1, label: 1 });
+  }
   // 线缆端口座（西面）
   const DF = { o: [114, 0, 19], a: [-1, 0, 0], u: [0, 1, 0], v: [0, 0, 1] };
   const bossD = record(A.disc(DF, 0, 3.5, 2.2, { name: "cableport.box" }));
@@ -508,9 +531,29 @@ const TUBE_ROUTE = G.fillet([
 }
 
 // ---------- settle / 排序 ----------
+// 2026-11-03 遮挡修复：文字类 items（label:1）整体提到最后、actors 六组之前——
+// 画家算法下铭牌/标签不再被后画的不透明实体面板（desk.top/conv.rail/cons.body/
+// box.tower/box.roof/portsc.board 等）盖住；item.key 与 audit 不受发射序影响。
+// label 层内部不用 settle key 序（约束链会把 portsc.board 抬到 bias 13 项之上），
+// 改用显式分层：板面载体 → 信号灯/数码窗/槽位窗 → 台铭牌与端口标签 → 长铭牌 → 其余按 key。
 A.settle(R, P);
 R.items.sort((a, b) => a.key - b.key);
-const groups = R.items.map((item) => `<g class="it" data-name="${item.name}"${item.attrs ?? ""}>${item.svg}</g>`);
+const LABEL_TIER = new Map([
+  ["portsc.board", 0],
+  ["portsc.CCS", 1], ["portsc.CSC", 1], ["portsc.PR", 1], ["portsc.PRC", 1], ["portsc.PED", 1],
+  ["portsc.pls", 1], ["portsc.speed", 1],
+  ["portsc.flagtext", 2], ["portsc.pls.t", 2], ["portsc.speed.t", 2], ["slot.win", 2],
+  ["cons.label", 3], ["portsc.port", 3],
+  ["box.nameplate", 4],
+]);
+// 其余 label items 默认 tier 5（nameplate 之后：长铭牌板 AABB 不再盖设备灯标签）
+const labelTier = (it) => LABEL_TIER.get(it.name) ?? 5;
+const solidGroups = R.items.filter((it) => !it.label).map((item) => `<g class="it" data-name="${item.name}"${item.attrs ?? ""}>${item.svg}</g>`);
+const labelGroups = R.items.filter((it) => it.label)
+  .map((it, i) => ({ it, i }))
+  .sort((a, b) => labelTier(a.it) - labelTier(b.it) || a.i - b.i)
+  .map(({ it }) => `<g class="it" data-name="${it.name}"${it.attrs ?? ""}>${it.svg}</g>`);
+const groups = [...solidGroups, ...labelGroups];
 
 // ---------- 机器 SVG 与卡片 ----------
 const machineSvg = k.figureSvg({
@@ -548,7 +591,7 @@ const DATA_ = {
   trbSlots: EP0_CENTERS.slice(0, 3).map((cx) => ({ x: cx, y: EP0.y + 11, z: 2.5 })),
   railClips: [13.2, 19.2, 25.2, 31.2],
   formFields: ["a0", "a1", "sport", "sroute", "sentries", "etype", "mps", "dcs", "cerr"],
-  durs: [3.2, 5.5, 5, 5, 6.5, 6, 6.5, 7, 5, 6.5, 7, 4.5],
+  durs: [4.5, 7.7, 7, 7, 9.1, 8.4, 9.1, 9.8, 7, 9.1, 9.8, 6.3],
 };
 
 // ---------- 三方流程图（静态 SVG，12 步） ----------

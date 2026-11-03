@@ -18,6 +18,11 @@
 8. 帧终态快照 bug：portsOn/erLamp/inte/ie/旋钮角在 snapshot() 缺字段，动画结束回零（F6 端口 0/4）→ snapshot 从帧定义推导终态，复验 8 帧读数全对。
 9. 泳道图 light 主题缺陷：框填色误用 --anatomy-shade1（light 下近黑）→ 按主题写死；驱动泳道高度不足第 7 框穿出 + dev 横条与 hc 泳道重叠 → 重排尺寸（stepH 60/gap 20/drv 654/hc 700/dev 动态 y）；.box.dash 补虚线样式；顺序自由组虚框被 box 填充覆盖（画序移到框后）；箭头线身 var 色过淡 → 按主题写死加粗 2.4、dash 6 5。
 10. 语言门：初稿残留 账本×4/戏×1/幕×1 不在豁免表 → 全部改写（DCBAA 直称/「初始化从这里开始」/「此刻还只是」/帧名「配槽与 DCBAA」）；终态残留 柜台/回执/泳道 全 ⊆ 豁免表（按 2026-11-03 契约修订判据 PASS）。
+11. 修复轮（用户反馈：遮挡/帧速/字号）：
+    - 遮挡：铭牌文字嵌实体 item 被 settle 序后画的 gantry.beam/panel.face/gantry.post0 盖住（探针 4 命中）→ 文字抽到 labels 层，插入点=遮挡者最靠后一个之后；items 序保持 settle 原序（曾试「静态→labels→actors」三分序，飞行卡压前置拉线属 settle 只知 home 位姿的固有盲区、修前即如此，回退三分序消除回归面）。
+    - 帧速：DUR 全值 ×1.5、TOUR_DWELL 3.4→5.5；steps-frames/zfs 等待同步加长。
+    - 字号：机制句上盖前带 7–8；檐格名双行错位去压字（单行六名在任何 ≥2.3 字号下必压字——等距斜排相邻半宽和＞格距）；卡名 8.2/数字窗 ×1.25/注记牌主行 8/端口铭 6.2 等；两块工位铭牌板面已满保持原字号（EVIDENCE §9.3 全表）。措辞零改动。
+    - 门：audit ×2 · lines 0 ×2 · 探针 PASS ×2 · 语言门纯豁免 ×2 · checks 全 PASS · shots 32 张重拍。
 
 ## 最终门（与 EVIDENCE §4 一致）
 audit passed ×2（dark/light）· line ends 0 ×2 · 语言门新判据 PASS · 自包含 0 外链 ×2 · 页码 18/18 · 互链全存在 · __zfs 双主题存活（zoomOf 1→3.2）· 截图 24 张 console clean。

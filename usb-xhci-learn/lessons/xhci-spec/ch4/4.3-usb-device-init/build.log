@@ -190,3 +190,47 @@ ZFS {"alive":true,"zoomOf":1,"isFs":false,"stages":2,"bars":2,"zooms":"1/1.6/2.4
 --- 流程图布局机械检（返修轮复核）---
 check_lesson_svg_layout.py index.html → svg0 findings=0（overlap 2/arrow 2/fit 1 全清，S9 回指箭头方向与触框目检确认；svg1 假阳性不修）
 light 页同检：svg0 findings=0
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+
+--- 12 帧状态真值表（DOM 断言）---
+PASS F0@p0.5
+PASS F1@p0.3
+PASS F1@p1
+PASS F2@p0.7
+PASS F3@p0.25
+PASS F3@p1
+PASS F4@p0.95
+PASS F5@p1
+PASS F6@p0.85
+PASS F6@p1
+PASS F7@p0.6
+PASS F7@p1
+PASS F8@p1
+PASS F9@p0.9
+PASS F9@p1
+PASS F10@p0.5
+PASS F10@p1
+PASS F11@p0.5
+frames-truth: 18/18 PASS
+--- zoomfs 存活机检 ---
+eval: "ZFS {\"alive\":true,\"zoomOf\":1,\"isFs\":false,\"stages\":2,\"bars\":2,\"zooms\":\"1/1.6/2.4/3.2\"}"

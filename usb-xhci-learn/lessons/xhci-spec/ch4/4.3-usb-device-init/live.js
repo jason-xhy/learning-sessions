@@ -47,17 +47,25 @@ const cardCache = new Map();
 function cached(key, fn) { if (!cardCache.has(key)) cardCache.set(key, fn()); return cardCache.get(key); }
 
 // 平放卡（在水平面 XY 上，绕局部原点构建，用 worldTranslate 安放；文字贴卡面沿长轴）
-function flatCardSvg(plan, h, lines, stripe) {
-  let s = solidSvg(slabOf(plan, 0, h, P, 2, 0.3), { tone: "hi", crease: "lo" });
+// 2026-11-03 遮挡修复：卡面与文字分离产出（solid/text 两段）——落位堆叠时先发全部卡面、
+// 后发全部文字：相邻卡沿方位角的斜投影 bbox 会把邻卡文字误判成被盖（探针按 AABB 求交），
+// 卡面间保持真实间隙 + 文字后发，停留态不盖字。
+function flatCardParts(plan, h, lines, stripe) {
+  let solid = solidSvg(slabOf(plan, 0, h, P, 2, 0.3), { tone: "hi", crease: "lo" });
   if (stripe) {
     const sp = { x: plan.x + 0.6, y: plan.y + 0.8, w: 1.3, d: plan.d - 1.6, r: 0.5 };
-    s += `<path d="${pathOf([isoPt([sp.x, sp.y, h]), isoPt([sp.x + sp.w, sp.y, h]), isoPt([sp.x + sp.w, sp.y + sp.d, h]), isoPt([sp.x, sp.y + sp.d, h])], true)}" style="fill:${stripe}"/>`;
+    solid += `<path d="${pathOf([isoPt([sp.x, sp.y, h]), isoPt([sp.x + sp.w, sp.y, h]), isoPt([sp.x + sp.w, sp.y + sp.d, h]), isoPt([sp.x, sp.y + sp.d, h])], true)}" style="fill:${stripe}"/>`;
   }
   const cx = plan.x + plan.w / 2, cy = plan.y + plan.d / 2;
+  let text = "";
   lines.forEach((ln) => {
-    s += `<text class="xhp-cardtext" data-tone="${ln.tone || "hi"}" transform="${topMatrix([cx, cy + ln.dy, 0], h + 0.04, P)}" font-size="${f2(ln.size * D.KS)}" text-anchor="middle">${ln.t}</text>`;
+    text += `<text class="xhp-cardtext" data-tone="${ln.tone || "hi"}" transform="${topMatrix([cx, cy + ln.dy, 0], h + 0.04, P)}" font-size="${f2(ln.size * D.KS)}" text-anchor="middle">${ln.t}</text>`;
   });
-  return s;
+  return { solid, text };
+}
+function flatCardSvg(plan, h, lines, stripe) {
+  const p = flatCardParts(plan, h, lines, stripe);
+  return p.solid + p.text;
 }
 // 立卡（竖直面 +y，frontText 平面）
 function frontCardSvg(x0, yF, z0, w, h, thick, lines, stripe) {
@@ -73,40 +81,56 @@ function frontCardSvg(x0, yF, z0, w, h, thick, lines, stripe) {
   });
   return s;
 }
+// 票据带挂卡：平板票贴塔面（y=20 面 +0.06），自挂夹下缘垂挂（四夹 z 间距 6，
+// 卡高 5.2 → 卡间留真实 z 间隙）；solid/text 分离，draw 侧先发卡面后发文字。
+const TKC_X0 = 153, TKC_W = 23, TKC_H = 5.2;
+const ticketClipParts = (l1, l2, zTop) => cached("tkc:" + l1 + zTop, () => {
+  const z0 = zTop - TKC_H - 0.2;
+  const quad = [[TKC_X0, 20.06, z0], [TKC_X0 + TKC_W, 20.06, z0], [TKC_X0 + TKC_W, 20.06, z0 + TKC_H], [TKC_X0, 20.06, z0 + TKC_H]];
+  const solid = `<path d="${pathOf(quad.map(isoPt), true)}" style="fill:var(--anatomy-hi)"/>` +
+    `<path d="${pathOf([isoPt([TKC_X0 + 0.8, 20.08, z0 + 0.5]), isoPt([TKC_X0 + 2.0, 20.08, z0 + 0.5]), isoPt([TKC_X0 + 2.0, 20.08, z0 + TKC_H - 0.5]), isoPt([TKC_X0 + 0.8, 20.08, z0 + TKC_H - 0.5])], true)}" style="fill:${DEV}"/>` +
+    `<path d="${pathOf(quad.map(isoPt), true)}" style="fill:none;stroke:var(--anatomy-lo);stroke-width:0.8"/>`;
+  let text = "";
+  [[l1, z0 + TKC_H - 1.7, "dev", 1.85], [l2, z0 + 1.1, "mid", 1.8]].forEach(([t, z, tone, size]) => {
+    const o = [TKC_X0 + TKC_W / 2, 20.1, z];
+    const p0 = isoPt(o), px = isoPt([o[0] + 1, o[1], o[2]]), py = isoPt([o[0], o[1], o[2] - 1]);
+    text += `<text class="xhp-cardtext" data-tone="${tone}" transform="matrix(${f2(px[0] - p0[0])} ${f2(px[1] - p0[1])} ${f2(py[0] - p0[0])} ${f2(py[1] - p0[1])} ${f2(p0[0])} ${f2(p0[1])})" font-size="${f2(size * D.KS)}" text-anchor="middle">${t}</text>`;
+  });
+  return { solid, text };
+});
 const slipSvg = (l1, l2) => cached("slip:" + l1, () =>
   flatCardSvg({ x: -11.5, y: -5, w: 23, d: 10, r: 1 }, 1, [
-    { t: l1, dy: -1.5, size: 1.8 }, { t: l2, dy: 1.8, size: 1.5, tone: "mid" },
+    { t: l1, dy: -1.5, size: 2.0 }, { t: l2, dy: 1.8, size: 1.6, tone: "mid" },
   ], SW));
 const writeSvg = (l1, l2) => cached("write:" + l1, () =>
   flatCardSvg({ x: -5.5, y: -4, w: 11, d: 8, r: 0.8 }, 0.9, [
-    { t: l1, dy: -1.2, size: 1.8 }, { t: l2, dy: 1.5, size: 1.7, tone: "mid" },
+    { t: l1, dy: -1.2, size: 2.2 }, { t: l2, dy: 1.5, size: 1.7, tone: "mid" },
   ], HC));
-const evSvg = (l1, l2) => cached("ev:" + l1 + l2, () =>
-  flatCardSvg({ x: -5.5, y: -4, w: 11, d: 8, r: 0.8 }, 0.9, [
-    { t: l1, dy: -1.2, size: 1.7 }, { t: l2, dy: 1.5, size: 1.6, tone: "mid" },
+// 事件卡：堆叠时被上层同格卡盖住的卡只留卡背（无字），顶层卡带「事件 n」
+const evCardParts = (l1, l2) => cached("evc:" + l1 + l2, () =>
+  flatCardParts({ x: -5.5, y: -4.4, w: 11, d: 8.8, r: 0.8 }, 0.9, [
+    { t: l1, dy: -1.6, size: 2.8 }, { t: l2, dy: 1.8, size: 2.4, tone: "mid" },
   ], HC));
+const evBlank = () => cached("evb", () => flatCardParts({ x: -5.5, y: -4.4, w: 11, d: 8.8, r: 0.8 }, 0.9, [], HC).solid);
+const evSvg = (l1, l2) => { const p = evCardParts(l1, l2); return p.solid + p.text; };
 const ticketSvg = (l1, l2) => cached("tk:" + l1 + l2, () =>
   flatCardSvg({ x: -11, y: -4.5, w: 22, d: 9, r: 0.9 }, 1, [
-    { t: l1, dy: -1.5, size: 1.35, tone: "dev" }, { t: l2, dy: 1.6, size: 1.3, tone: "mid" },
+    { t: l1, dy: -1.5, size: 2.0, tone: "dev" }, { t: l2, dy: 1.6, size: 1.6, tone: "mid" },
   ], DEV));
-const ticketClipSvg = (l1, l2, z) => cached("tkc:" + l1 + z, () =>
-  frontCardSvg(149.5, 20.0, z, 16.5, 6, 1.1, [
-    { t: l1, dz: 4.2, size: 1.7, tone: "dev" }, { t: l2, dz: 1.5, size: 1.4, tone: "mid" },
-  ], DEV));
-const descSvg = (l1, l2) => cached("desc:" + l1, () =>
-  flatCardSvg({ x: -6.5, y: -4.5, w: 13, d: 9, r: 0.9 }, 1, [
-    { t: l1, dy: -1.5, size: 1.9 }, { t: l2, dy: 1.7, size: 1.5, tone: "mid" },
+const descCardParts = (l1, l2) => cached("dsc:" + l1, () =>
+  flatCardParts({ x: -5.75, y: -4.4, w: 11.5, d: 8.8, r: 0.9 }, 1, [
+    { t: l1, dy: -1.6, size: 1.9 }, { t: l2, dy: 1.8, size: 1.3, tone: "mid" },
   ], SW));
 const OC_LINES = [
-  { t: "输", dz: 12.4, size: 1.7 }, { t: "出", dz: 10.3, size: 1.7 }, { t: "上", dz: 8.2, size: 1.7 },
-  { t: "下", dz: 6.1, size: 1.7 }, { t: "文", dz: 4.0, size: 1.7 },
+  { t: "输", dz: 12.2, size: 2.0 }, { t: "出", dz: 9.7, size: 2.0 }, { t: "上", dz: 7.2, size: 2.0 },
+  { t: "下", dz: 4.7, size: 2.0 }, { t: "文", dz: 2.2, size: 2.0 },
 ];
 const outctxFlySvg = () => cached("outctxFly", () => frontCardSvg(-2.7, -6, 0, 5.4, 13, 12, OC_LINES));
 const outctxRestSvg = () => cached("outctxRest", () => frontCardSvg(D.outctxTo.planX, D.outctxTo.planY, D.outctxTo.z, 5.4, 13, 12, OC_LINES));
 const trbSvg = (lab) => cached("trb:" + lab, () => {
   const plan = { x: -3.4, y: -6.9, w: 6.8, d: 13.8, r: 0.8 };
   return solidSvg(slabOf(plan, 0, 2.2, P, 2, 0.3), { tone: "hi", crease: "lo" }) +
-    `<text class="xhp-cardtext" transform="${topMatrix([0, 0, 0], 2.26, P)}" font-size="${f2(2.2 * D.KS)}" text-anchor="middle">${lab}</text>`;
+    `<text class="xhp-cardtext" transform="${topMatrix([0, 0, 0], 2.26, P)}" font-size="${f2(3.2 * D.KS)}" text-anchor="middle">${lab}</text>`;
 });
 
 // ---- DOM refs ----
@@ -395,50 +419,66 @@ function draw(st) {
     if (layers["actors-slips"].innerHTML !== h) layers["actors-slips"].innerHTML = h;
   }
 
-  // 票据（沿缆行走 + 挂票据带 + 复位脉冲）
+  // 票据（沿缆行走 + 挂票据带 + 复位脉冲；挂卡先发卡面、后发文字）
   {
-    let h = "";
+    let h = "", ht = "";
     if (st.ticket && !st.ticket.done) {
       const pos = CABLE.at(clamp01(st.ticket.t));
       h += `<g transform="${worldTranslate([pos[0], pos[1], pos[2] + 2.1])}">${ticketSvg(st.ticket.l1, st.ticket.l2)}</g>`;
     }
     st.clips.forEach((ix) => {
-      h += ticketClipSvg(TK_TEXTS[ix][0], TK_TEXTS[ix][1], D.railClips[ix]);
+      const p = ticketClipParts(TK_TEXTS[ix][0], TK_TEXTS[ix][1], D.railClips[ix] + 0.5);
+      h += p.solid;
+      ht += p.text;
     });
     if (st.resetPulse) {
       const pos = CABLE.at(st.resetPulse.t);
       const pt = isoPt([pos[0], pos[1], pos[2] + 2.4]);
       h += `<circle cx="${f2(pt[0])}" cy="${f2(pt[1])}" r="2.4" style="fill:none;stroke:var(--xhp-hc);stroke-width:1.2"/><circle cx="${f2(pt[0])}" cy="${f2(pt[1])}" r="0.9" style="fill:var(--xhp-hc)"/>`;
     }
-    if (layers["actors-tickets"].innerHTML !== h) layers["actors-tickets"].innerHTML = h;
+    const all = h + ht;
+    if (layers["actors-tickets"].innerHTML !== all) layers["actors-tickets"].innerHTML = all;
   }
 
-  // 事件卡（沿回流管 + 事件匣堆叠）
+  // 事件卡（沿回流管 + 事件匣 2×2 格 × z 层堆叠；被同格上层卡盖住的卡只留卡背，
+  // 文字统一后发——停留态不盖字）
   {
-    let h = "";
+    let h = "", ht = "";
     st.events.forEach((ev) => {
       if (ev.landed) return;
       h += `<g transform="${worldTranslate(TUBE.at(ev.t))}">${evSvg(ev.l1, ev.l2)}</g>`;
     });
     for (let i = 0; i < st.evCount; i++) {
       const col = i % 2, row = Math.floor(i / 2) % 2, lay = Math.floor(i / 4);
-      h += `<g transform="${worldTranslate([D.evTray.x + col * 8.6 - 4.3, D.evTray.y - row * 7.5, D.evTray.z + lay * 1.0])}">${evSvg("事件", String(i + 1))}</g>`;
+      const at = [D.evTray.x - 4.5 + col * 13.1, D.evTray.y - 0.1 - row * 8.4, D.evTray.z + lay * 1.05];
+      const tr = `<g transform="${worldTranslate(at)}">`;
+      if (i + 4 < st.evCount) h += tr + evBlank() + `</g>`;
+      else {
+        const p = evCardParts("事件", String(i + 1));
+        h += tr + p.solid + `</g>`;
+        ht += tr + p.text + `</g>`;
+      }
     }
-    if (layers["actors-events"].innerHTML !== h) layers["actors-events"].innerHTML = h;
+    const all = h + ht;
+    if (layers["actors-events"].innerHTML !== all) layers["actors-events"].innerHTML = all;
   }
 
-  // 描述符卡（总控台顶 → 收件匣抛物弧）
+  // 描述符卡（总控台顶 → 收件匣对角双卡位；卡面先行、文字后发）
   {
-    let h = "";
+    let h = "", ht = "";
     st.descs.forEach((dc) => {
       const t = clamp01(dc.t);
-      const to = [D.descTray.x + (dc.l1 === "Device" ? -4.4 : 4.4), D.descTray.y, D.descTray.z];
+      const to = dc.l1 === "Device" ? [-146.6, -8.2, D.descTray.z] : [-133.4, -14.4, D.descTray.z];
       const pos = lerp3(D.descFrom, to, t);
       pos[2] += Math.sin(Math.PI * t) * 7;
-      h += `<g transform="${worldTranslate(pos)}">${descSvg(dc.l1, dc.l2)}</g>`;
+      const p = descCardParts(dc.l1, dc.l2);
+      const tr = `<g transform="${worldTranslate(pos)}">`;
+      h += tr + p.solid + `</g>`;
+      ht += tr + p.text + `</g>`;
     });
+    const all = h + ht;
     if (!draw._descLayer) { draw._descLayer = document.createElementNS("http://www.w3.org/2000/svg", "g"); layers["actors-cards"].insertBefore(draw._descLayer, trbLayer); }
-    if (draw._descLayer.innerHTML !== h) draw._descLayer.innerHTML = h;
+    if (draw._descLayer.innerHTML !== all) draw._descLayer.innerHTML = all;
   }
 
   // TRB 小卡（EP0 环台槽位，落下动画）

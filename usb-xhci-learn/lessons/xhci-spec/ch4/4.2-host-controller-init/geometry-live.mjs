@@ -36,7 +36,7 @@ export function makeLiveGeo(k, G, D) {
     let g = `<g clip-path="url(#erszclip)">`;
     for (let i = -1; i <= 4; i++) {
       const z = y1 + i * cell - off - 4.4;
-      g += vtext(cx, PF + 0.4, z, String(Math.max(0, Math.min(9, i))), 6.6, i === Math.round(pos) ? "hi" : "lo", "middle");
+      g += vtext(cx, PF + 0.4, z, String(Math.max(0, Math.min(9, i))), 8.25, i === Math.round(pos) ? "hi" : "lo", "middle");
     }
     g += `</g>`;
     g += Ln(k.pathOf([
@@ -50,7 +50,7 @@ export function makeLiveGeo(k, G, D) {
   function numWinSvg(n) {
     const cx = D.cellX[1] + 7;
     let g = Ln(k.pathOf([[cx - 5.5, PF + 0.3, 76.4], [cx + 5.5, PF + 0.3, 76.4], [cx + 5.5, PF + 0.3, 85.4], [cx - 5.5, PF + 0.3, 85.4]].map((p) => at(p)), true), { tone: "lo" });
-    if (n > 0) g += vtext(cx, PF + 0.4, 78.4, String(n), 6, "hi", "middle");
+    if (n > 0) g += vtext(cx, PF + 0.4, 78.4, String(n), 7.5, "hi", "middle");
     return g;
   }
 
@@ -83,7 +83,7 @@ export function makeLiveGeo(k, G, D) {
     const plan = { x, y: yFace - D.cardT, w: D.cardW, d: D.cardT, r: 0.8 };
     let g = S(k.slabOf(plan, z, D.cardH, P, 2, 0.3), { tone: "hi" });
     g += S(k.slabOf({ x: x + D.cardW / 2 - 4, y: yFace - 1.8, w: 8, d: 1.6, r: 0.5 }, z, 2.6, P, 2, 0.2), { tone: "mid" });
-    g += vtext(x + D.cardW / 2, yFace + 0.05, z + D.cardH - 4.6, def.name, 6.4, "hi", "middle");
+    g += vtext(x + D.cardW / 2, yFace + 0.05, z + D.cardH - 6.2, def.name, 8.2, "hi", "middle");
     g += vtext(x + D.cardW / 2, yFace + 0.05, z + 4.2, def.sub, 4.4, "mid", "middle");
     g += k.dotsSvg([[x + 2.6, yFace + 0.2, z + D.cardH - 2.2], [x + D.cardW - 2.6, yFace + 0.2, z + D.cardH - 2.2]].map((p) => at(p)), { size: 0.42 });
     return g;

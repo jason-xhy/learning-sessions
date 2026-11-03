@@ -128,6 +128,10 @@ function cyl(name, cx, cy, r, z, h, style = {}, { steps = 24, bevel = 0, extra =
 // 贴面文字/刻线收集（无实体形状的 markup，组装时最后绘制，不进审计）
 const overlays = [];
 const faceText = (svg) => { overlays.push(svg); };
+// 铭牌/面向观众文字层（遮挡修复 2026-11-03）：组装序＝静态实体之后、actors 动态组之前
+// ——原序铭牌文字嵌在实体 item 内，被后画的 gantry.beam/panel.face/gantry.post0 整体盖住
+const labels = [];
+const labelText = (svg) => { labels.push(svg); };
 
 // ================= base =================
 const back = [];
@@ -174,12 +178,12 @@ for (const [x, y] of byDepth(k.corners(PLATE, 26))) {
     { steps: 4, extra: Ln(k.planOutline(k.insetPlan(PANEL, 1.4), 96, P, 3), { tone: "faint" })
       + screwDots(PANEL, 3, 96) });
 }
-// 柜铭牌（柜顶左部立牌）
+// 柜铭牌（柜顶左部立牌）——板留实体序，文字入 labels 层（防 gantry.beam/panel.face 盖字）
 {
   const mp = { x: -20, y: -40, w: 74, d: 5, r: 1 };
-  slab("cabinet.title", mp, CAB_TOP, 8, { tone: "hi" },
-    { steps: 2, extra: vtext(mp.x + 5, mp.y + 0.05, CAB_TOP + 5.6, "xHC 控制器", 6.4, "hi")
-      + vtext(mp.x + 5, mp.y + 0.05, CAB_TOP + 1.8, "寄存器面板 · 根集线器在其内", 4.2, "mid") });
+  slab("cabinet.title", mp, CAB_TOP, 8, { tone: "hi" }, { steps: 2 });
+  labelText(vtext(mp.x + 5, mp.y + 0.05, CAB_TOP + 5.2, "xHC 控制器", 6.4, "hi")
+    + vtext(mp.x + 5, mp.y + 0.05, CAB_TOP + 1.8, "寄存器面板 · 根集线器在其内", 4.2, "mid"));
 }
 
 // ================= 卡笼（三轨 + 六卡位） =================
@@ -225,14 +229,23 @@ const PF = PANEL.y + PANEL.d;   // -20.2
   const apron = { x: -23, y: -20.2, w: 156, d: 7.4, r: 1 };
   slab("panel.apron", apron, 66, 4, { tone: "lo" },
     { steps: 3, extra: Ln(k.planOutline(k.insetPlan(apron, 1), 70, P, 3), { tone: "faint" }) + screwDots(apron, 2.5, 70) });
-  const label = (x, text, size = 5, tone = "mid") => FT(k.topMatrix([x, -19.4], 70.1, P, "x"), text, size, tone, "middle");
+  // 格名双行错位（2026-11-03 字号轮）：单行六标牌互相压字（等距斜排下相邻半宽和＞格距），
+  // 改后行 y=-16.4（偶数格）/前行 y=-12.8（奇数格）——墨迹带 [-20.0,-16.4]/[-16.4,-12.8] 恰满檐深 7.4；
+  // USBSTS·CNR 改 start 锚自檐左缘起排（middle 锚左溢出板外 8.5）
+  const labelB = (x, text, size = 5, tone = "mid", anchor = "middle") => FT(k.topMatrix([x, -16.4], 70.1, P, "x"), text, size, tone, anchor);
+  const labelF = (x, text, size = 5, tone = "mid", anchor = "middle") => FT(k.topMatrix([x, -12.8], 70.1, P, "x"), text, size, tone, anchor);
   faceText(
-    label(CELL_X[0], "USBSTS · CNR") + label(CELL_X[1], "CONFIG · MaxSlotsEn")
-    + label(CELL_X[2], "ERSTSZ 段数") + label(CELL_X[3], "Interval")
-    + label(CELL_X[4], "INTE") + label(CELL_X[5], "IE")
-    + FT(k.topMatrix([CELL_X[0], -17.6], 70.1, P, "x"), "等 CNR=0 再动寄存器", 4.2, "lo", "middle")
-    + FT(k.topMatrix([CELL_X[5], -17.6], 70.1, P, "x"), "中断可选 · 可轮询", 4.2, "lo", "middle")
-    + FT(k.topMatrix([CELL_X[5], -16.2], 70.1, P, "x"), "事件环", 4.2, "lo", "middle"));
+    FT(k.topMatrix([-21, -16.4], 70.1, P, "x"), "USBSTS · CNR", 5, "mid", "start")
+    + labelB(CELL_X[2], "ERSTSZ 段数") + labelB(CELL_X[4], "INTE")
+    + labelF(CELL_X[1], "CONFIG · MaxSlotsEn") + labelF(CELL_X[3], "Interval") + labelF(CELL_X[5], "IE"));
+}
+// 机制短句上移柜顶盖前带（原檐下小注行被格名双行占据；盖前带 y-19..-40 空置且无部件，字可放大到 7–8）
+// ——盖前带与铭牌同受 gantry.beam 前梁遮挡，故入 labels 层
+{
+  labelText(
+    FT(k.topMatrix([-26, -26], CAB_TOP + 0.1, P, "x"), "等 CNR=0 再动寄存器", 7, "hi")
+    + FT(k.topMatrix([62, -26], CAB_TOP + 0.1, P, "x"), "中断可选 · 可轮询", 8, "hi")
+    + FT(k.topMatrix([62, -19.8], CAB_TOP + 0.1, P, "x"), "事件环", 8, "mid"));
 }
 // 格分组刻线：系统配置(格1-2) / 事件环组(格3) / 中断组(格4-6)
 {
@@ -318,12 +331,12 @@ const PF = PANEL.y + PANEL.d;   // -20.2
   put("rs.arm", [(RS.hinge[0] + RS.contact[0]) / 2, RS.hinge[1], RS.z + 12], `<g data-part="rsarm">${geo.rsArmSvg(0)}</g>`,
     [record(A.ball([RS.hinge[0], RS.hinge[1], RS.z + 17.6], 2.6, { name: "rs.arm.ball" })),
      record(A.prism(G.frameAlong([RS.hinge[0] + 2.45 * Math.cos((46 * Math.PI) / 180), RS.hinge[1], RS.z + 17.6 + 2.45 * Math.sin((46 * Math.PI) / 180)], [Math.cos((46 * Math.PI) / 180), 0, Math.sin((46 * Math.PI) / 180)]), [[-2, -2], [2, -2], [2, 2], [-2, 2]], 0, 59.5, { name: "rs.arm.beam" }))], { bias: 0.4 });
-  // 底座刻字
+  // 底座刻字（字号轮：4.6/4.2 → 7/5.6/5.2，锚点随宽度重排防出座面）
   faceText(
-    FT(k.topMatrix([RS.hinge[0] + 16, RS.hinge[1] + 9], RS.z + 6.1, P, "x"), "USBCMD · R/S 总闸", 4.6, "mid")
-    + FT(k.topMatrix([RS.hinge[0] - 2, RS.contact[1] + 12], RS.z + 6.1, P, "x"), "OFF", 4.2, "lo")
-    + FT(k.topMatrix([RS.contact[0] - 4, RS.contact[1] + 12], RS.z + 6.1, P, "x"), "ON", 4.2, "hi")
-    + FT(k.topMatrix([RS.hinge[0] + 14, RS.hinge[1] - 12], RS.z + 6.1, P, "x"), "R/S=1 后 xHC 才开始接受门铃", 4.2, "lo"));
+    FT(k.topMatrix([RS.hinge[0] + 12, RS.hinge[1] + 9], RS.z + 6.1, P, "x"), "USBCMD · R/S 总闸", 7, "mid")
+    + FT(k.topMatrix([RS.hinge[0] - 2, RS.contact[1] + 12], RS.z + 6.1, P, "x"), "OFF", 5.6, "lo")
+    + FT(k.topMatrix([RS.contact[0] - 6, RS.contact[1] + 12], RS.z + 6.1, P, "x"), "ON", 5.6, "hi")
+    + FT(k.topMatrix([RS.hinge[0] - 3, RS.hinge[1] - 12], RS.z + 6.1, P, "x"), "R/S=1 后 xHC 才开始接受门铃", 5.2, "lo"));
 }
 
 // ================= 桁架（双柱门架：梁横跨台面与柜前） =================
@@ -354,13 +367,13 @@ const PF = PANEL.y + PANEL.d;   // -20.2
     + Dots([[-176, DESK.y + DESK.d + 0.2, 18.6], [-148, DESK.y + DESK.d + 0.2, 18.6], [-120, DESK.y + DESK.d + 0.2, 18.6]].map((p) => at(p)), { size: 0.55 }));
   slab("desk.top", { x: DESK.x - 3, y: DESK.y - 3, w: DESK.w + 6, d: DESK.d + 6, r: 2 }, 32, 3, { tone: "mid" },
     { steps: 4, bevel: 0.4, extra: Ln(k.planOutline(k.insetPlan({ x: DESK.x - 3, y: DESK.y - 3, w: DESK.w + 6, d: DESK.d + 6 }, 3), 35, P, 4), { tone: "lo" }) });
-  // 台前铭牌：xHCI 驱动（底面贴台身前面 y=-6）
+  // 台前铭牌：xHCI 驱动（底面贴台身前面 y=-6）——板留实体序，文字入 labels 层（防 gantry.beam/gantry.post0 盖字）
   const mp = { x: -186, y: -6.2, w: 56, d: 1.6, r: 0.6 };
   put("desk.title", [mp.x + 28, DESK.y + DESK.d + 1.3, 26],
-    S(k.slabOf(mp, 22, 7, P, 2, 0.3), { tone: "hi", crease: "none" })
-    + vtext(mp.x + 3, mp.y + mp.d + 0.05, 27.6, "xHCI 驱动", 6.2, "hi")
-    + vtext(mp.x + 3, mp.y + mp.d + 0.05, 23.2, "规范称 system software", 4, "mid"),
+    S(k.slabOf(mp, 22, 7, P, 2, 0.3), { tone: "hi", crease: "none" }),
     [record(A.slab(mp, 22, 7, { name: "desk.title" }, 2))], { bias: 0.1 });
+  labelText(vtext(mp.x + 5, mp.y + mp.d + 0.05, 27.1, "xHCI 驱动", 6.2, "hi")
+    + vtext(mp.x + 5, mp.y + mp.d + 0.05, 23.2, "规范称 system software", 4, "mid"));
 }
 // 卡库（叠卡 + 托盘）
 {
@@ -369,7 +382,7 @@ const PF = PANEL.y + PANEL.d;   // -20.2
   put("mag.stack", [m.x + m.w / 2, m.y + m.d / 2, 38],
     `<g data-part="magstack">${geo.magStackSvg(6)}</g>`,
     [record(A.slab(m, 36.2, 16, { name: "mag.stack" }, 2))], { bias: 0.2 });
-  faceText(vtext(m.x + 1, m.y - 2.4, 42.5, "待插卡 ×6", 4.2, "lo"));
+  faceText(vtext(m.x + 1, m.y - 2.4, 42.5, "待插卡 ×6", 5.6, "lo"));
 }
 // 拉杆排（三只小拉杆）
 {
@@ -381,8 +394,8 @@ const PF = PANEL.y + PANEL.d;   // -20.2
       + Ln(k.knurl(x, -34, 1.7, 37, 40.6, 14, P), { tone: "lo" }) + `</g>`,
       [record(A.cylinder(x, -34, 1.7, 37, 3.6, { name: `lever${i}.knob` }, 16))], { bias: 0.2 });
   }
-  faceText(vtext(LEVERS[0] - 3, -30.6, 38.6, "旋钮/闸刀", 4, "lo")
-    + vtext(LEVERS[0] - 3, -30.6, 35.6, "拉线手柄", 4, "lo"));
+  faceText(vtext(LEVERS[0] - 3, -30.6, 39.6, "旋钮/闸刀", 5.2, "lo")
+    + vtext(LEVERS[0] - 3, -30.6, 35.2, "拉线手柄", 5.2, "lo"));
 }
 
 // ================= 拉线（两条 Bowden 线：拉杆排 → R/S 底座端子 / CONFIG 格端子） =================
@@ -412,13 +425,13 @@ const PF = PANEL.y + PANEL.d;   // -20.2
 // ================= 端口灯排（设备区） =================
 {
   slab("portbar", BAR, PLATE_H, 6, { tone: "mid" }, { steps: 4, bevel: 0.5, extra: screwDots(BAR, 4, PLATE_H + 6) });
-  // 设备区注记立牌（左端）
+  // 设备区注记立牌（左端）——字号轮 4.6/4.2/4.2 → 6.2/5.8/5.0，基线重排（34 高板容三行 cap 和）
   const np = { x: -38, y: BAR.y + 2, w: 78, d: 3.4, r: 1 };
   slab("portbar.note", np, PLATE_H + 6, 34, { tone: "lo" }, { steps: 2 });
   faceText(
-    vtext(np.x + 4, np.y + 0.05, PLATE_H + 36, "设备区 · 根集线器端口", 4.6, "dev")
-    + vtext(np.x + 4, np.y + 0.05, PLATE_H + 30.6, "本流程不参与——", 4.2, "mid")
-    + vtext(np.x + 4, np.y + 0.05, PLATE_H + 26.2, "R/S=1 后端口才开始上报连接", 4.2, "mid"));
+    vtext(np.x + 4, np.y + 0.05, PLATE_H + 34.5, "设备区 · 根集线器端口", 6.2, "dev")
+    + vtext(np.x + 4, np.y + 0.05, PLATE_H + 28, "本流程不参与——", 5.8, "mid")
+    + vtext(np.x + 4, np.y + 0.05, PLATE_H + 21.8, "R/S=1 后端口才开始上报连接", 5, "mid"));
   // 四灯：U2 U2 SS SS
   for (let i = 0; i < 4; i++) {
     const x = PORTS_X[i], isSS = i >= 2;
@@ -428,28 +441,39 @@ const PF = PANEL.y + PANEL.d;   // -20.2
       `<g data-part="port${i}" class="lamp${isSS ? " blink" : ""}">` +
       S(G.solidOf([[0, 0.2], [1.4, 2.8, 1], [3, 3.4, 1], [4.2, 2.6, 1], [4.8, 0.3]], lampF, P, { steps: 24 }), { tone: "hi" }) + `</g>`,
       [record(A.solid(lampF, [[0, 0.2], [1.4, 2.8, 1], [3, 3.4, 1], [4.2, 2.6, 1], [4.8, 0.3]], { name: `port${i}.dome` }))], { bias: 0.3 });
-    faceText(FT(k.topMatrix([x - 4, 117], PLATE_H + 6.1, P, "x"), isSS ? "SS" : "USB2", 4, "lo"));
+    faceText(FT(k.topMatrix([x - 4, 117], PLATE_H + 6.1, P, "x"), isSS ? "SS" : "USB2", 6, "lo"));
   }
-  faceText(FT(k.topMatrix([BAR.x + 6, BAR.y + BAR.d - 8], PLATE_H + 6.1, P, "x"), "端口灯排：USB2 两灯＝等待端口复位 · SS 两灯＝自动检测中", 4, "lo"));
+  faceText(FT(k.topMatrix([BAR.x + 6, BAR.y + BAR.d - 5], PLATE_H + 6.1, P, "x"), "端口灯排：USB2 两灯＝等待端口复位 · SS 两灯＝自动检测中", 6.2, "lo"));
 }
 
 // ================= 顺序自由注记牌 =================
 {
   slab("note.board", NOTE, PLATE_H - 0.2, 32.2, { tone: "lo" }, { steps: 2 });
+  // 字号轮 4.8/4.2/4.2 → 8/5.8/5.6，基线重排（板顶 z=44；2/3 行行距 1.8 防 CJK 全高粘连）
   faceText(
-    vtext(NOTE.x + 4, NOTE.y + 0.05, PLATE_H + 27.5, "中间各步顺序自由", 4.8, "hi")
-    + vtext(NOTE.x + 4, NOTE.y + 0.05, PLATE_H + 22.5, "全部完成须在 R/S=1 前", 4.2, "mid")
-    + vtext(NOTE.x + 4, NOTE.y + 0.05, PLATE_H + 17.5, "（p69 Note）", 4.2, "lo"));
+    vtext(NOTE.x + 4, NOTE.y + 0.05, PLATE_H + 25.4, "中间各步顺序自由", 8, "hi")
+    + vtext(NOTE.x + 4, NOTE.y + 0.05, PLATE_H + 18.6, "全部完成须在 R/S=1 前", 5.8, "mid")
+    + vtext(NOTE.x + 4, NOTE.y + 0.05, PLATE_H + 12, "（p69 Note）", 5.6, "lo"));
 }
 
 // ================= settle + assemble =================
 A.settle(R, P);
 R.items.sort((a, b) => a.key - b.key);
-const groups = R.items.map((it) => `<g class="it" data-name="${it.name}"${it.attrs ?? ""}>${it.svg}</g>`);
+// 组序（遮挡修复 2026-11-03）：items 严格保持 settle 判深的画家序（线缆/滑车等全部既证配对不变），
+// 仅把 labels 铭牌文字层插在「铭牌实体遮挡者」最靠后一个之后——遮挡者＝gantry.beam（探针 overlap=1.0 主犯）、
+// panel.face（柜铭牌副行 overlap=0.5）、gantry.post0（探针 0.126 未达阈值但肉眼可见盖 'x' 首字）。
+// 插入点之后的其余实体与 labels 文字屏盒交集均 <探针阈值（wire.cfg:11 ∩ 柜铭牌副行 ≈0.04）；
+// actors（滑车/旋钮/闸刀臂）在其后，与 labels 无屏盒交集，滑车到卡库取卡时压过台铭牌属正确物理序。
+const LABEL_AFTER = ["gantry.beam", "panel.face", "gantry.post0"];
+let labelCut = 0;
+R.items.forEach((it, i) => { if (LABEL_AFTER.includes(it.name)) labelCut = Math.max(labelCut, i + 1); });
+const itemG = (it) => `<g class="it" data-name="${it.name}"${it.attrs ?? ""}>${it.svg}</g>`;
+const seq = R.items.map(itemG);
+seq.splice(labelCut, 0, `<g class="fb-labels">${labels.join("")}</g>`);
 const svg = k.figureSvg({
   width: W, height: H,
   label: "启机配电台：左侧文书台是 xHCI 驱动（规范称 system software）的操作位，卡库里六张寄存器卡经桁架滑车吊运插进右侧 xHC 主机仓的卡笼；柜面上部是 USBSTS 就绪灯（CNR）、CONFIG 槽数旋钮、ERSTSZ 计数轮、Interval 节流旋钮与 INTE/IE 两道闸，柜顶是 USBCMD 的 R/S 总闸；台前下沿是根集线器端口灯排——本流程无设备参与，R/S=1 后端口才开始上报连接。",
-  body: [...back, `<g class="fb-stage">${groups.join("")}</g>`, ...overlays].join(""),
+  body: [...back, `<g class="fb-stage">${seq.join("")}</g>`, ...overlays].join(""),
 });
 
 // ================= figure CSS =================
