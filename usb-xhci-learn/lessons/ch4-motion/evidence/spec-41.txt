@@ -1,0 +1,25 @@
+Command Operation 
+There is only one Command Ring that is used for issuing xHC specific 
+commands or commands related to Device Slots. The Command Ring Control 
+Register is defined in the Operational Register space (refer to Section 5.4.5 
+Device Slot Management).Section 5.4.5 Device Slot Management).5.4.5 Device 
+Slot Management).5.4.5 Device Slot Management).5.4.5 Device Slot 
+Management). 
+All xHC commands are issued by placing the desired Command TRB(s) (Section 
+6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).All 
+xHC commands are issued by placing the desired Command TRB(s) (Section 
+6.4.3 Command TRBs)Section 6.4.3 Command TRBs6.4.3 Command TRBs6.4.3 
+Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to Section 5.6 Doorbell 
+Registers).Section 5.6 Doorbell Registers5.6 Doorbell Registers5.6 Doorbell 
+Registers). 
+All commands result in the generation of a Command Completion Event TRB 
+(Section 6.4.3 Command TRBs) on the Event Ring. All commands result in the 
+generation of a Command Completion Event TRB (Section 6.4.3 Command 
+TRBs)Section 6.4.3 Command TRBs6.4.3 Command TRBs) on the Event Ring. 
+6.4.3 Command TRBs) on the Event Ring. Refer to Section 4.11.3 Event TRBs 
+for a discussion of Event TRBs. 
+4.2 

@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>xHCI 第 4 章交互教学台 · 三环操作台 / URB→TRB→TD 组装</title>
+<style>
+  :root{
+    --bg:#0b0f15; --panel:#111823; --panel-hi:#18222f; --edge:#2a3849; --edge-hi:#3b4d63;
+    --ink:#eaf1f8; --dim:#9db0c4; --faint:#5f7186; --chip:#0e141d;
+    --driver:#7c9ff0; --driver-deep:#2d5fb3; --hc:#d9a860; --hc-deep:#8a5f14;
+    --dev:#86bd7a; --dev-deep:#2f7a3d; --evt:#7fd0b2; --warn:#e07a5f; --ok:#86bd7a;
+    --mono:"Menlo","SF Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html{background:var(--bg)}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:16px/1.65 "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    padding:24px 20px 60px;
+  }
+  .wrap{max-width:1360px; margin:0 auto}
+  .hidden{display:none !important}
+
+  header.hero{border:1px solid var(--edge); background:var(--panel); border-radius:14px; padding:20px 24px}
+  header.hero h1{font-size:24px; letter-spacing:.5px}
+  header.hero .sub{color:var(--dim); font-size:16px; margin-top:6px}
+  header.hero .sub code{font-family:var(--mono); font-size:14px; color:var(--ink); background:var(--chip); border:1px solid var(--edge); border-radius:4px; padding:0 5px}
+  .legend{display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; font-size:15px; color:var(--dim)}
+  .legend b{display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px; vertical-align:-1px}
+  .lg-drv b{background:var(--driver)} .lg-hc b{background:var(--hc)} .lg-dev b{background:var(--dev)} .lg-evt b{background:var(--evt)}
+
+  nav.tabs{display:flex; gap:10px; margin:18px 0}
+  .tab{
+    font:inherit; font-size:17px; color:var(--dim); background:var(--panel);
+    border:1px solid var(--edge); border-radius:10px; padding:10px 18px; cursor:pointer;
+  }
+  .tab.active{color:var(--ink); border-color:var(--driver); background:rgba(124,159,240,.10)}
+
+  .panel{background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:16px 18px}
+  .panel h2{font-size:18px; margin-bottom:8px}
+  .panel h3{font-size:16px; margin-bottom:8px}
+  .quote{color:var(--dim); border-left:3px solid var(--edge-hi); padding:2px 0 2px 10px; margin:8px 0; font-size:15px}
+  .quote em{font-style:normal; color:var(--ink)}
+  .note{color:var(--faint); font-size:14px; margin-top:6px}
+
+  .btn{
+    font:inherit; font-size:16px; border-radius:8px; padding:8px 14px; cursor:pointer;
+    border:1px solid var(--edge-hi); color:var(--ink); background:var(--panel-hi);
+  }
+  .btn.driver{border-color:var(--driver); color:var(--driver); background:rgba(124,159,240,.10)}
+  .btn.hc{border-color:var(--hc); color:var(--hc); background:rgba(217,168,96,.10)}
+  .btn.ghost{border-style:dashed; color:var(--faint)}
+  .btn:disabled{opacity:.35; cursor:not-allowed}
+
+  /* ---------- 模块一 ---------- */
+  ol.steps{list-style:none; margin-top:6px; display:grid; grid-template-columns:repeat(auto-fit,minmax(238px,1fr)); gap:8px}
+  ol.steps li{
+    border:1px solid var(--edge); border-radius:10px; padding:8px 12px;
+    color:var(--dim); font-size:15px;
+  }
+  ol.steps li .chk{font-family:var(--mono); margin-right:8px; color:var(--faint)}
+  ol.steps li .tip{display:block; font-size:13.5px; color:var(--faint); margin-top:2px}
+  ol.steps li.now{border-color:var(--driver); color:var(--ink)}
+  ol.steps li.now .tip{color:var(--dim)}
+  ol.steps li.done{border-color:rgba(134,189,122,.55)}
+  ol.steps li.done .chk{color:var(--ok); font-weight:700}
+  .script-done{
+    margin-top:10px; border:1px solid var(--ok); border-radius:10px; padding:8px 12px;
+    color:var(--ok); font-weight:600; background:rgba(134,189,122,.08);
+  }
+
+  .ringrow{display:flex; gap:14px; align-items:stretch; margin-top:14px}
+  .ringmeta{width:196px; flex:none; background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:10px 12px}
+  .ringmeta .rname{font-size:16px; font-weight:600}
+  .ringmeta .ren{font-family:var(--mono); font-size:13px; color:var(--dim); margin-top:2px}
+  .ringmeta .led{margin-top:8px; font-family:var(--mono); font-size:13px; color:var(--dim)}
+  .ringmeta .led i{display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px; background:var(--edge-hi); vertical-align:-1px}
+  .ringmeta .led.on i{background:var(--evt); box-shadow:0 0 8px rgba(127,208,178,.8)}
+  .ringmeta .led.off i{background:var(--edge-hi)}
+  .ringband{flex:1; overflow-x:auto; padding:6px 2px}
+  .ringcells{display:flex; gap:8px; padding:30px 0; width:max-content}
+  .cell{
+    position:relative; width:104px; height:64px; flex:none;
+    background:var(--chip); border:1px solid var(--edge); border-radius:8px;
+    display:flex; align-items:center; justify-content:center; cursor:default;
+  }
+  .cell.link{border-style:dashed; border-color:var(--edge-hi)}
+  .cell.link .linklab{font-family:var(--mono); font-size:13px; color:var(--faint)}
+  .cell .ccard{
+    width:100%; height:100%; border-radius:7px; padding:3px 5px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+    text-align:center;
+  }
+  .ccard.cmd{background:rgba(124,159,240,.14); border:1px solid var(--driver)}
+  .ccard.tr{background:rgba(124,159,240,.14); border:1px solid var(--driver)}
+  .ccard.evt{background:rgba(127,208,178,.13); border:1px solid var(--evt); cursor:pointer}
+  .ccard .clab{font-family:var(--mono); font-size:13px; line-height:1.25; color:var(--ink)}
+  .ccard .ccyc{font-family:var(--mono); font-size:13px; color:var(--dim)}
+  .ccard.evt .clab{color:var(--evt)}
+
+  .ptr{
+    position:absolute; z-index:3; font-family:var(--mono); font-size:13px; font-weight:700;
+    padding:0 8px; border-radius:6px; cursor:pointer; user-select:none; white-space:nowrap;
+  }
+  .ptr.drv{background:var(--driver); color:#0b0f15}
+  .ptr.hcc{background:var(--hc); color:#0b0f15}
+  .ptr.enq{top:calc(100% + 3px)}
+  .ptr.deq{bottom:calc(100% + 3px)}
+
+  .consoles{display:grid; grid-template-columns:1.35fr 1fr; gap:14px; margin-top:14px}
+  @media (max-width:1100px){ .consoles{grid-template-columns:1fr} }
+  .ctl-row{display:flex; flex-wrap:wrap; gap:10px; align-items:center}
+  .ctl-row label{font-size:15px; color:var(--dim)}
+  select{
+    font:inherit; font-size:16px; color:var(--ink); background:var(--chip);
+    border:1px solid var(--edge-hi); border-radius:6px; padding:5px 8px; max-width:280px;
+  }
+  .dbpop{
+    margin-top:10px; border:1px dashed var(--driver); border-radius:10px; padding:10px 12px;
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:rgba(124,159,240,.06);
+  }
+  .dbpop .dbt{font-size:15px; color:var(--dim)}
+  .hint{
+    margin-top:10px; min-height:52px; border-radius:8px; padding:8px 12px; font-size:15px;
+    color:var(--dim); background:var(--chip); border:1px solid var(--edge);
+  }
+  .hint.warn{border-color:var(--warn); color:var(--ink)}
+  .dbstate{font-family:var(--mono); font-size:14px; color:var(--hc); margin-top:8px}
+  table.ledger{width:100%; border-collapse:collapse; font-size:14.5px; margin-top:6px}
+  table.ledger th, table.ledger td{border:1px solid var(--edge); padding:4px 8px; text-align:center}
+  table.ledger th{color:var(--dim); font-weight:600; background:var(--chip)}
+  table.ledger td.mono{font-family:var(--mono); font-size:13.5px}
+  ul.receipts{list-style:none; margin-top:8px; max-height:150px; overflow:auto}
+  ul.receipts li{
+    font-size:13.5px; font-family:var(--mono); color:var(--evt);
+    border:1px solid rgba(127,208,178,.35); border-radius:8px; padding:6px 8px; margin-top:6px;
+    line-height:1.5;
+  }
+  .evtinfo{
+    margin-top:8px; font-family:var(--mono); font-size:13.5px; color:var(--evt);
+    border-left:3px solid var(--evt); padding:4px 0 4px 10px; line-height:1.55; min-height:20px;
+  }
+  .freeplay{margin-top:10px; font-size:14px; color:var(--faint)}
+
+  /* ---------- 模块二 ---------- */
+  #m2 .stack > .panel{margin-top:14px}
+  .urbtbl{border-collapse:collapse; font-size:15px; margin-top:4px}
+  .urbtbl th,.urbtbl td{border:1px solid var(--edge); padding:4px 10px; text-align:left}
+  .urbtbl th{color:var(--dim); font-weight:600; background:var(--chip)}
+  .urbtbl td.mono{font-family:var(--mono); font-size:14px}
+  .slots{display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:12px; margin-top:10px}
+  .slot{border:1px solid var(--edge); border-radius:10px; padding:10px 12px; background:var(--chip)}
+  .slot.ok{border-color:var(--ok)}
+  .slot h4{font-size:15px; margin-bottom:6px; color:var(--ink)}
+  .slot h4 .st{font-family:var(--mono); font-size:13px; margin-left:8px; color:var(--faint)}
+  .slot.ok h4 .st{color:var(--ok)}
+  .flds{display:grid; grid-template-columns:1fr 1fr; gap:8px 10px}
+  @media (max-width:760px){ .flds{grid-template-columns:1fr} }
+  .fld label.flab{display:block; font-family:var(--mono); font-size:13px; color:var(--dim); margin-bottom:2px}
+  .fld select{width:100%; font-size:15px; padding:4px 6px}
+  .fld.ok select{border-color:var(--ok)}
+  .fld.bad select{border-color:var(--warn)}
+  .fldhint{font-size:13px; margin-top:3px; line-height:1.45; min-height:0; color:var(--faint)}
+  .fld.ok .fldhint{color:var(--ok)}
+  .fld.bad .fldhint{color:var(--warn)}
+
+  .cards{display:flex; flex-wrap:wrap; gap:10px; margin-top:8px}
+  .trbcard2{
+    font-family:var(--mono); font-size:14px; padding:8px 14px; border-radius:10px;
+    border:1px dashed var(--edge-hi); color:var(--faint); user-select:none;
+  }
+  .trbcard2.ready{border-style:solid; border-color:var(--driver); color:var(--ink); cursor:pointer}
+  .trbcard2.sel{background:rgba(124,159,240,.22)}
+  .trbcard2.placed{opacity:.45; cursor:default}
+  .ep0strip{display:flex; gap:8px; margin:26px 0 6px; flex-wrap:wrap}
+  .cell2{
+    position:relative; width:118px; height:64px; flex:none; background:var(--chip);
+    border:1px solid var(--edge); border-radius:8px; display:flex; align-items:center;
+    justify-content:center; cursor:pointer; font-family:var(--mono); font-size:13px;
+  }
+  .cell2.filled{border-color:var(--driver); background:rgba(124,159,240,.12); color:var(--ink); cursor:default}
+  .cell2 .cyc{position:absolute; right:5px; bottom:3px; font-size:13px; color:var(--dim)}
+
+  .animrow{display:flex; gap:14px; align-items:stretch; margin-top:14px}
+  .party{flex:1; border-radius:10px; padding:10px 12px; min-height:110px}
+  .party .ptitle{font-size:14px; margin-bottom:8px}
+  .party.dev-side{border:1px solid var(--dev); background:rgba(134,189,122,.07)}
+  .party.dev-side .ptitle{color:var(--dev)}
+  .party.drv-side{border:1px solid var(--driver); background:rgba(124,159,240,.07)}
+  .party.drv-side .ptitle{color:var(--driver)}
+  .bytedeck{display:flex; gap:5px; flex-wrap:wrap}
+  .byte{
+    font-family:var(--mono); font-size:13px; width:38px; height:30px; border-radius:6px;
+    border:1px solid var(--edge-hi); color:var(--dim); display:flex; align-items:center; justify-content:center;
+    background:var(--chip);
+  }
+  .byte.hit{border-color:var(--dev); color:var(--dev); font-weight:700}
+  .bytedeck.rcv .byte{border-color:var(--driver); color:var(--ink)}
+  .bytedeck.rcv .byte.hit{border-color:var(--evt); color:var(--evt)}
+  .flycol{flex:1.2; position:relative; min-height:110px}
+  .flyrow{position:absolute; top:26px; left:0; display:flex; gap:5px; opacity:0}
+  .flyrow.go{animation:m2fly 1.05s cubic-bezier(.4,0,.6,1) forwards}
+  @keyframes m2fly{
+    0%{left:0; opacity:0} 12%{opacity:1} 86%{opacity:1} 100%{left:calc(100% - 172px); opacity:0}
+  }
+  .flycap{position:absolute; top:0; left:0; font-family:var(--mono); font-size:13px; color:var(--dim)}
+  .flynote{position:absolute; bottom:2px; left:0; font-size:13px; color:var(--faint)}
+  .evtcard{
+    margin-top:12px; border:1px solid var(--evt); border-radius:10px; padding:10px 12px;
+    color:var(--evt); font-family:var(--mono); font-size:13.5px; line-height:1.6;
+    background:rgba(127,208,178,.07);
+  }
+  .evtcard span{color:var(--dim); font-family:inherit}
+  .score{margin-top:14px}
+  .score ul{list-style:none; margin-top:8px}
+  .score li{font-size:15px; color:var(--dim); padding:4px 0}
+  .score li b{color:var(--ok); font-family:var(--mono); margin-right:8px}
+  .score .big{font-size:18px; color:var(--ok); font-weight:700}
+
+  footer{margin-top:26px; color:var(--faint); font-size:13.5px; line-height:1.7}
+  footer .mono{font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>xHCI 第 4 章交互教学台</h1>
+  <p class="sub">TRB（传输请求块，Transfer Request Block）在三方之间流转：<code>xHCI 驱动</code> 写环敲门铃 → <code>xHC 控制器</code> 取指执行、产生事件 → 驱动读事件环收回执。判据：xHCI 1.2b §4.1（p68）、§4.3（p71-80），字段值逐条对表 evidence/ 切片与 EVIDENCE.md。示例设备：FS 设备 · Slot ID=1（由 xHC 自选，§4.3.2 p75）。零依赖单文件，双击即开。</p>
+  <div class="legend">
+    <span class="lg-drv"><b></b>xHCI 驱动（system software）</span>
+    <span class="lg-hc"><b></b>xHC 控制器（host controller）</span>
+    <span class="lg-dev"><b></b>设备（USB device）</span>
+    <span class="lg-evt"><b></b>事件流（Event Ring 回执）</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="m1">模块一 · 三环操作台（传输环 / 命令环 / 事件环）</button>
+  <button class="tab" data-tab="m2">模块二 · URB→TRB→TD 手动组装练习</button>
+</nav>
+
+<!-- ================= 模块一 ================= -->
+<section id="m1">
+  <div class="panel">
+      <h2>剧本：Enable Slot 命令闭环</h2>
+      <p class="quote">设备插上根端口、端口复位完成后，软件要先拿到 Device Slot——「The Enable Slot Command returns a Slot ID that is selected by the host controller.」<em>（§4.3.2 p75）</em></p>
+      <ol class="steps" id="m1-steps">
+        <li data-step="1"><span class="chk">○</span><b>① 写命令 TRB 上环</b>
+          <span class="tip">驱动面板：环选「命令环」· 类型选「Enable Slot」→ 点「写 TRB 上环」</span></li>
+        <li data-step="2"><span class="chk">○</span><b>② 敲门铃 DB Target=0</b>
+          <span class="tip">点「敲门铃」→ 选「DB Target = 0 · Host Controller Command」（写门铃寄存器 0）</span></li>
+        <li data-step="3"><span class="chk">○</span><b>③ xHC 执行</b>
+          <span class="tip">点金色「执行」：命令环 deq 推进（取指），完成事件写上事件环（enq 推进）</span></li>
+        <li data-step="4"><span class="chk">○</span><b>④ 确认完成事件</b>
+          <span class="tip">点事件环上出现的「Command Completion Event」卡，查看内容（Slot ID=1）</span></li>
+        <li data-step="5"><span class="chk">○</span><b>⑤ 驱动读事件环</b>
+          <span class="tip">点「读事件环」：事件环 deq 推进，回执收入回执栏——闭环完成</span></li>
+      </ol>
+      <div id="m1-script-done" class="script-done hidden">✓ 剧本完成：Enable Slot 命令闭环（写 TRB → 门铃 0 → 执行 → 完成事件 → 读事件）</div>
+      <div class="freeplay">剧本之外可自由练习：EP0 传输环写 Setup/Data/Status Stage TRB → 门铃 DB Target=1 → xHC 执行（产出 Transfer Event）。enq/deq 指针可点击推进；写错方向会引规范原文提示。</div>
+      <div style="margin-top:10px"><button class="btn ghost" data-act="m1-reset">重置模块一</button></div>
+  </div>
+
+  <div class="ringrow" data-ringrow="cmd">
+        <div class="ringmeta">
+          <div class="rname">命令环</div>
+          <div class="ren">Command Ring · 唯一（§4.1 p68）</div>
+          <div class="led" data-led="cmd">PCS <i></i><span data-ledv="cmd">1</span></div>
+        </div>
+        <div class="ringband"><div class="ringcells" id="ring-cmd"></div></div>
+      </div>
+      <div class="ringrow" data-ringrow="ep0">
+        <div class="ringmeta">
+          <div class="rname">EP0 传输环</div>
+          <div class="ren">Endpoint 0 Transfer Ring（§4.3 p73）</div>
+          <div class="led" data-led="ep0">PCS <i></i><span data-ledv="ep0">1</span></div>
+        </div>
+        <div class="ringband"><div class="ringcells" id="ring-ep0"></div></div>
+      </div>
+      <div class="ringrow" data-ringrow="evt">
+        <div class="ringmeta">
+          <div class="rname">事件环</div>
+          <div class="ren">Event Ring（§4.1 p68）· xHC 写 / 驱动读</div>
+          <div class="led" data-led="evt">PCS <i></i><span data-ledv="evt">1</span></div>
+        </div>
+        <div class="ringband"><div class="ringcells" id="ring-evt"></div></div>
+      </div>
+
+      <div class="consoles">
+        <div class="panel">
+          <h3>xHCI 驱动（system software）</h3>
+          <div class="ctl-row">
+            <label>环 <select id="m1-ring">
+              <option value="cmd">命令环</option>
+              <option value="ep0">EP0 传输环</option>
+              <option value="evt">事件环</option>
+            </select></label>
+            <label>TRB 类型 <select id="m1-type"></select></label>
+            <button class="btn driver" data-act="m1-write">写 TRB 上环</button>
+            <button class="btn driver" data-act="m1-doorbell">敲门铃</button>
+            <button class="btn driver" data-act="m1-readevt">读事件环</button>
+          </div>
+          <div id="m1-dbpop" class="dbpop hidden">
+            <span class="dbt">门铃目标 DB Target：</span>
+            <button class="btn driver" data-db="0">DB Target = 0 · Host Controller Command（§4.1 p68）</button>
+            <button class="btn driver" data-db="1">DB Target = 1 · Control EP 0 Enqueue Pointer Update（§4.3 p74 viii）</button>
+          </div>
+          <div class="hint" id="m1-hint">从剧本第①步开始：环选「命令环」、类型选「Enable Slot」，点「写 TRB 上环」。</div>
+          <div class="evtinfo" id="m1-evtinfo">（点事件环上的事件卡，这里显示完成事件内容）</div>
+        </div>
+
+        <div>
+          <div class="panel">
+            <h3>xHC 控制器（host controller）</h3>
+            <button class="btn hc" data-act="m1-exec" disabled>执行（取指 + 产生完成事件）</button>
+            <div class="dbstate" id="m1-dbstate">doorbell: 未敲</div>
+            <p class="note">「执行」= xHC 取走环上待处理 TRB（deq 推进），并按环的种类产生事件写入事件环。命令环 → Command Completion Event；EP0 传输环 → Transfer Event。</p>
+          </div>
+          <div class="panel" style="margin-top:14px">
+            <h3>环账本（实时）</h3>
+            <table class="ledger">
+              <tr><th>环</th><th>enq</th><th>deq</th><th>PCS</th><th>CCS</th><th>待处理</th></tr>
+              <tr><td>命令环</td><td class="mono" data-lc="cmd-enq">0</td><td class="mono" data-lc="cmd-deq">0</td><td class="mono" data-lc="cmd-pcs">1</td><td class="mono" data-lc="cmd-ccs">1</td><td class="mono" data-lc="cmd-n">0</td></tr>
+              <tr><td>EP0 传输环</td><td class="mono" data-lc="ep0-enq">0</td><td class="mono" data-lc="ep0-deq">0</td><td class="mono" data-lc="ep0-pcs">1</td><td class="mono" data-lc="ep0-ccs">1</td><td class="mono" data-lc="ep0-n">0</td></tr>
+              <tr><td>事件环</td><td class="mono" data-lc="evt-enq">0</td><td class="mono" data-lc="evt-deq">0</td><td class="mono" data-lc="evt-pcs">1</td><td class="mono" data-lc="evt-ccs">1</td><td class="mono" data-lc="evt-n">0</td></tr>
+            </table>
+            <p class="note">PCS/CCS：生产者/消费者 cycle state。指针绕回 Link TRB 时翻转；TRB 的 Cycle bit 与消费者 CCS 一致才算有效（Cycle bit = Current Producer Cycle State，§4.3 p73 ii/iv/vi）。</p>
+            <h3 style="margin-top:10px">回执栏（读走的完成事件）</h3>
+            <ul class="receipts" id="m1-receipts"></ul>
+          </div>
+        </div>
+      </div>
+</section>
+
+<!-- ================= 模块二 ================= -->
+<section id="m2" class="hidden">
+  <div class="stack">
+    <div class="panel">
+      <h2>场景：FS 设备 · GET_DESCRIPTOR（Device Descriptor 前 8 字节）</h2>
+      <p class="quote">「For FS devices, system software should initially read the first 8 bytes of the USB Device Descriptor to retrieve the value of the <em>bMaxPacketSize0</em> field」<em>（§4.3 p72 步7）</em>——LS/HS/SS 设备（8/64/512 字节）可跳过此步。</p>
+      <p class="quote">「The USB GET_DESCRIPTOR request requires a Data Stage, so the Setup Stage TD shall be followed by a Data Stage TD, then a Status Stage TD.」<em>（§4.3 p73 a）</em>——控制传输三段：Setup → Data → Status；本例每段 TD 恰好一个 TRB（a single Setup/Data/Status Stage TRB，§4.3 p73 ii/iv/vi）。</p>
+    </div>
+
+    <div class="panel">
+      <h3>第 1 步 · URB（内核侧请求单位）</h3>
+      <table class="urbtbl">
+        <tr><th>字段</th><th>值</th><th>含义</th></tr>
+        <tr><td class="mono">bmRequestType</td><td class="mono">80h</td><td>Dir=Device-to-Host · Type=Standard · Recipient=Device（§4.3 p73 ii）</td></tr>
+        <tr><td class="mono">bRequest</td><td class="mono">6</td><td>GET_DESCRIPTOR（§4.3 p73 ii）</td></tr>
+        <tr><td class="mono">wValue</td><td class="mono">0100h</td><td>Low byte=0（Descriptor Index）· High Byte=1（Descriptor type）（§4.3 p73 ii）</td></tr>
+        <tr><td class="mono">wIndex</td><td class="mono">0</td><td>（§4.3 p73 ii）</td></tr>
+        <tr><td class="mono">wLength</td><td class="mono">8</td><td>只读前 8 字节（§4.3 p72 步7 / p73 ii）</td></tr>
+        <tr><td>缓冲</td><td class="mono">8B 接收缓冲</td><td>Allocate an 8 byte buffer to receive the Device Descriptor（§4.3 p73 i）</td></tr>
+      </table>
+      <p class="note">URB 是内核侧的请求单位，xHC 不认识 URB——必须拆成 TRB（传输请求块）放上 EP0 传输环。下面把这一个 URB 拆成三个 TRB。</p>
+    </div>
+
+    <div class="panel">
+      <h3>第 2 步 · 拆成 TRB（三个 TRB 槽 · 每格下拉选值，对/错即时判定并给规范依据）</h3>
+      <div class="slots">
+        <div class="slot" data-slot="setup"><h4>Setup Stage TRB <span class="st" data-slotst="setup">0/9</span></h4><div class="flds"></div></div>
+        <div class="slot" data-slot="data"><h4>Data Stage TRB <span class="st" data-slotst="data">0/6</span></h4><div class="flds"></div></div>
+        <div class="slot" data-slot="status"><h4>Status Stage TRB <span class="st" data-slotst="status">0/6</span></h4><div class="flds"></div></div>
+      </div>
+      <div class="hint" id="m2-hint">把每个 TRB 的字段填对（填对变绿、填错变红并给一句规范依据）。三个槽全绿后，第 3 步的 TRB 卡解锁。</div>
+    </div>
+
+    <div class="panel">
+      <h3>第 3 步 · TD 上环（点选 TRB 卡 → 点 EP0 环格子放入）</h3>
+      <div class="cards">
+        <div class="trbcard2" data-card="setup">Setup Stage TRB</div>
+        <div class="trbcard2" data-card="data">Data Stage TRB</div>
+        <div class="trbcard2" data-card="status">Status Stage TRB</div>
+      </div>
+      <div class="ep0strip" id="m2-ep0strip"></div>
+      <p class="note">每放一段，驱动推进 EP0 传输环 Enqueue Pointer（Advance the Endpoint 0 Transfer Ring Enqueue Pointer，§4.3 p73 iii/v/vii）。三段全部就位后才能敲门铃。</p>
+      <button class="btn driver" data-act="m2-ring" disabled>敲门铃 DB Target=1</button>
+
+      <div id="m2-anim" class="hidden">
+        <div class="animrow">
+          <div class="party dev-side">
+            <div class="ptitle">设备（USB device）· FS · EP0 MPS=8（§4.3.3 p76）</div>
+            <div class="bytedeck" id="m2-devbytes"></div>
+          </div>
+          <div class="flycol">
+            <div class="flycap">GET_DESCRIPTOR · IN · 8 bytes</div>
+            <div class="flyrow" id="m2-fly"></div>
+            <div class="flynote">Data Stage：DIR=1，设备→主机（§4.3 p73 iv）</div>
+          </div>
+          <div class="party drv-side">
+            <div class="ptitle">驱动 · Device Descriptor 接收缓冲（8B，§4.3 p73 i）</div>
+            <div class="bytedeck" id="m2-buffer"></div>
+          </div>
+        </div>
+        <div class="evtcard hidden" id="m2-evtcard"></div>
+      </div>
+
+      <div id="m2-done" class="score hidden">
+        <p class="big" id="m2-scorebig"></p>
+        <ul id="m2-checklist"></ul>
+        <p class="note">后续：wMaxPacketSize=8 与 EP0 当前 MPS（FS 默认 8）一致则无需更新；若不同，驱动更新 EP0 Context Max Packet Size 并发 Evaluate Context Command（A1=1）告知 xHC（§4.3 p74 ix/x）。</p>
+      </div>
+      <div style="margin-top:10px"><button class="btn ghost" data-act="m2-reset">重置模块二</button></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>本页全部位值/字段名对表判据文件：<span class="mono">evidence/spec-41.txt</span>（§4.1 p68 命令操作）、<span class="mono">evidence/spec-43.txt</span>（§4.3 p71-80，GET_DESCRIPTOR 三段 TRB 字段见 p73 ii/iv/vi）、<span class="mono">evidence/EVIDENCE.md</span>（已核断言表）。规范引文为 xHCI 1.2b 原文；示例值（Slot ID=1、FS 设备）为教学示例。「读事件环」即轮询式管理——「Interrupts are optional. The xHC may be managed by polling Event Rings.」（§4.2 p69 脚注 7）。</p>
+</footer>
+
+</div>
+
+<script>
+'use strict';
+/* ================= 通用 ================= */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+/* Tab 切换 */
+$$('.tab').forEach(b => b.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.toggle('active', x === b));
+  ['m1','m2'].forEach(id => $('#'+id).classList.toggle('hidden', id !== b.dataset.tab));
+}));
+
+/* ================= 模块一：三环操作台 ================= */
+const LINK = 8;                       // 第 9 格 = Link TRB（尾格虚线）
+const RINGS = {};
+const PTR = {};                       // 指针元素表 {ring:{enq,deq}}
+const m1 = { steps:[false,false,false,false,false], db:null, receipts:[] };
+
+const TYPES = {
+  cmd: ['Enable Slot', 'No Op', 'Address Device'],
+  ep0: ['Setup Stage TRB', 'Data Stage TRB', 'Status Stage TRB'],
+  evt: ['（事件环由 xHC 写入，不可选类型）'],
+};
+
+function freshRing(){ return {enq:0, deq:0, pcs:1, ccs:1, cells:Array(LINK+1).fill(null)}; }
+
+const cellEl = (r, i) => $(`.cell[data-ring="${r}"][data-idx="${i}"]`);
+
+function buildRing(r){
+  RINGS[r] = freshRing();
+  const wrap = $('#ring-' + r);   // id 就挂在 .ringcells 元素自身
+  wrap.innerHTML = '';
+  for (let i = 0; i <= LINK; i++){
+    const c = document.createElement('div');
+    c.className = 'cell' + (i === LINK ? ' link' : '');
+    c.dataset.ring = r; c.dataset.idx = i;
+    c.innerHTML = (i === LINK) ? '<span class="linklab">Link TRB</span>' : '<div class="ccard"></div>';
+    c.addEventListener('click', () => onCellClick(r, i));
+    wrap.appendChild(c);
+  }
+  const mk = (kind) => {
+    const el = document.createElement('div');
+    const owner = (r === 'evt') ? (kind === 'enq' ? 'hcc' : 'drv')   // 事件环：xHC 入、驱动读
+                                : (kind === 'enq' ? 'drv' : 'hcc');  // 命令/EP0 环：驱动入、xHC 取
+    el.className = `ptr ${kind} ${owner}`;
+    el.dataset.ptr = kind; el.dataset.ring = r;
+    el.textContent = kind;
+    el.title = (kind === 'enq' ? '入环指针 enq（点击推进）' : '出环指针 deq（点击推进）');
+    el.addEventListener('click', ev => { ev.stopPropagation(); (kind === 'enq' ? onEnqClick : onDeqClick)(r); });
+    return el;
+  };
+  PTR[r] = { enq: mk('enq'), deq: mk('deq') };
+  cellEl(r, 0).appendChild(PTR[r].enq);
+  cellEl(r, 0).appendChild(PTR[r].deq);
+}
+
+function pendingCount(g){ return g.cells.filter(Boolean).length; }
+
+function renderRing(r){
+  const g = RINGS[r];
+  for (let i = 0; i <= LINK; i++){
+    const cell = cellEl(r, i), card = g.cells[i], body = cell.querySelector('.ccard');
+    if (!body) continue;
+    if (card){
+      body.className = 'ccard ' + card.kind;
+      body.innerHTML = `<span class="clab">${card.label}</span><span class="ccyc">C=${card.cyc}</span>`;
+    } else {
+      body.className = 'ccard'; body.innerHTML = '';
+    }
+  }
+  cellEl(r, g.enq).appendChild(PTR[r].enq);
+  cellEl(r, g.deq).appendChild(PTR[r].deq);
+  const led = $(`[data-led="${r}"]`), ledv = $(`[data-ledv="${r}"]`);
+  led.classList.toggle('on',  g.pcs === 1);
+  led.classList.toggle('off', g.pcs === 0);
+  ledv.textContent = g.pcs;
+  $(`[data-lc="${r}-enq"]`).textContent = g.enq;
+  $(`[data-lc="${r}-deq"]`).textContent = g.deq;
+  $(`[data-lc="${r}-pcs"]`).textContent = g.pcs;
+  $(`[data-lc="${r}-ccs"]`).textContent = g.ccs;
+  $(`[data-lc="${r}-n"]`).textContent   = pendingCount(g);
+}
+
+function renderSteps(){
+  let nowSet = false;
+  $$('#m1-steps li').forEach((li, i) => {
+    li.classList.toggle('done', m1.steps[i]);
+    li.querySelector('.chk').textContent = m1.steps[i] ? '✓' : '○';
+    const isNow = !m1.steps[i] && !nowSet;
+    li.classList.toggle('now', isNow);
+    if (isNow) nowSet = true;
+  });
+  $('#m1-script-done').classList.toggle('hidden', !m1.steps.every(Boolean));
+}
+
+function renderAll(){
+  ['cmd','ep0','evt'].forEach(renderRing);
+  renderSteps();
+  const ex = $('[data-act="m1-exec"]');
+  ex.disabled = (m1.db === null);
+  $('#m1-dbstate').textContent = 'doorbell: ' + (
+    m1.db === null ? '未敲' :
+    m1.db === 0 ? 'DB Target=0（门铃寄存器 0 · Host Controller Command）' :
+                  'DB Target=1（设备槽门铃 · Control EP 0）');
+}
+
+function stepDone(i, msg){
+  if (m1.steps[i]) return;
+  m1.steps[i] = true;
+  if (msg) hint(msg, false);
+}
+
+function hint(text, warn){
+  const h = $('#m1-hint');
+  h.textContent = text;
+  h.classList.toggle('warn', !!warn);
+}
+
+/* ---- 写 TRB 上环（驱动） ---- */
+function actWrite(){
+  const r = $('#m1-ring').value;
+  if (r === 'evt'){
+    hint('事件环由 xHC 写入完成事件、驱动只读——「All commands result in the generation of a Command Completion Event TRB on the Event Ring.」（§4.1 p68）', true);
+    return;
+  }
+  const g = RINGS[r];
+  if (g.enq >= LINK){ g.enq = 0; g.pcs = 1 - g.pcs; }   // 生产者绕回 Link：PCS 翻转
+  if (g.cells[g.enq]){
+    hint(`第 ${g.enq} 格还有未被取走的 TRB——先让 xHC 执行（deq 推进）再写。Cycle bit 与 PCS 对表才有效（§4.3 p73 ii）。`, true);
+    renderAll(); return;
+  }
+  const type = $('#m1-type').value;
+  const idx = g.enq;
+  g.cells[idx] = { label: type, kind: (r === 'cmd' ? 'cmd' : 'tr'), cyc: g.pcs };
+  g.enq = Math.min(g.enq + 1, LINK);                     // 写后推进（最多停在 Link 上）
+  hint(`已写入 ${type} → ${r} 环第 ${idx} 格（C=${g.cells[idx].cyc}），enq 推进到 ${g.enq}${g.enq === LINK ? '（Link 格，下次写入绕回并翻转 Cycle bit）' : ''}——Advance the Endpoint 0 Transfer Ring Enqueue Pointer（§4.3 p73 iii/v/vii 同款动作）。`);
+  if (r === 'cmd' && type === 'Enable Slot'){
+    stepDone(0, '剧本①完成：Enable Slot 命令 TRB 已上命令环。下一步敲 DB Target=0。');
+  }
+  renderAll();
+}
+
+/* ---- 门铃（驱动写门铃寄存器） ---- */
+function actDoorbell(){ $('#m1-dbpop').classList.toggle('hidden'); }
+
+function actDb(t){
+  $('#m1-dbpop').classList.add('hidden');
+  m1.db = t;
+  if (t === 0){
+    const pend = RINGS.cmd.cells.some(c => c && c.label === 'Enable Slot');
+    if (m1.steps[0] && pend){
+      hint('已写门铃寄存器 0：DB Target = 0（Host Controller Command code）——「All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register, that is, writing the Host Controller Command code to the DB Target field of Doorbell register 0.」（§4.1 p68）。xHC 侧「执行」已亮起。');
+      stepDone(1, '剧本②完成：门铃 0 已敲。下一步点 xHC「执行」。');
+    } else if (!m1.steps[0]){
+      hint('顺序不对——先完成第①步：把 Enable Slot 命令 TRB 写上命令环，再敲门铃（§4.1 p68：先 placing the desired Command TRB(s) on the Command Ring，then ringing）。', true);
+    } else {
+      hint('命令环上已没有待处理的 Enable Slot TRB——先重新写一个（§4.1 p68）。', true);
+    }
+  } else {
+    const n = pendingCount(RINGS.ep0);
+    hint('已写设备槽门铃：DB Target = 1（Control EP 0 Enqueue Pointer Update）——「Ring the Device Slots\u2019 Doorbell with DB Target = Control EP 0 Enqueue Pointer Update.」（§4.3 p74 viii）'
+      + (n === 0 ? '（注意：EP0 传输环当前没有待取的 TRB——xHC 无 TD 可取。）' : `（EP0 传输环有 ${n} 个 TRB 待取，xHC「执行」已亮起。）`));
+  }
+  renderAll();
+}
+
+/* ---- xHC 执行（取指 + 产生完成事件） ---- */
+function actExec(){
+  if (m1.db === null){
+    hint('还没敲门铃——xHC 只在门铃后取指执行：「All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register\u2026」（§4.1 p68）。', true);
+    return;
+  }
+  const r = (m1.db === 0) ? 'cmd' : 'ep0';
+  const g = RINGS[r];
+  const taken = [];
+  let guard = 0;
+  while (guard++ < 24){
+    if (g.deq >= LINK){ g.deq = 0; g.ccs = 1 - g.ccs; continue; }   // 消费者绕回 Link：CCS 翻转
+    const c = g.cells[g.deq];
+    if (!c || c.cyc !== g.ccs) break;
+    taken.push(c); g.cells[g.deq] = null; g.deq++;
+  }
+  if (taken.length === 0){
+    m1.db = null;
+    hint(`门铃 DB Target=${r === 'cmd' ? 0 : 1} 对应的${r === 'cmd' ? '命令环' : 'EP0 传输环'}上没有待取的 TRB——先写 TRB 上环（§4.1 p68）。`, true);
+    renderAll(); return;
+  }
+  /* 产生完成事件 → 事件环（§4.1 p68） */
+  const e = RINGS.evt;
+  if (e.enq >= LINK){ e.enq = 0; e.pcs = 1 - e.pcs; }
+  let evLabel, evInfo;
+  if (r === 'cmd'){
+    const names = taken.map(c => c.label).join(' + ');
+    const hasES = taken.some(c => c.label === 'Enable Slot');
+    evLabel = 'Command Completion Event';
+    evInfo  = `Command Completion Event TRB · ${names}`
+      + (hasES ? ' · Slot ID=1（Slot ID 由 xHC 自选，「The Enable Slot Command returns a Slot ID that is selected by the host controller.」§4.3.2 p75）' : '')
+      + '（§4.1 p68：All commands result in the generation of a Command Completion Event TRB on the Event Ring.）';
+  } else {
+    evLabel = 'Transfer Event';
+    evInfo  = `Transfer Event · EP0 TD（${taken.map(c => c.label).join(' + ')}）完成——Status Stage TRB 的成功 Transfer Event（§4.3 p74 ix）。`;
+  }
+  if (e.cells[e.enq]){
+    hint('事件环满了——先「读事件环」清出空位。', true);
+  } else {
+    e.cells[e.enq] = { label: evLabel, kind: 'evt', cyc: e.pcs, info: evInfo };
+    e.enq = Math.min(e.enq + 1, LINK);
+  }
+  m1.db = null;
+  hint(`xHC 取指 ${taken.length} 个 TRB（${r} 环 deq 推进到 ${g.deq}），产生「${evLabel}」写入事件环（enq 推进到 ${e.enq}）——§4.1 p68。`);
+  if (r === 'cmd' && taken.some(c => c.label === 'Enable Slot') && m1.steps[1]){
+    stepDone(2, '剧本③完成：完成事件已上事件环。下一步点事件环上的事件卡确认。');
+  }
+  renderAll();
+}
+
+/* ---- 驱动读事件环（轮询） ---- */
+function actReadEvent(){
+  const e = RINGS.evt;
+  if (e.deq >= LINK){ e.deq = 0; e.ccs = 1 - e.ccs; }
+  const c = e.cells[e.deq];
+  if (!c){
+    hint('事件环为空——没有可读的完成事件。xHC 执行命令/TD 后才会写入事件环（§4.1 p68）。中断可选，轮询事件环是合法管理方式（§4.2 p69 脚注 7）。', true);
+    return;
+  }
+  e.cells[e.deq] = null;
+  e.deq = Math.min(e.deq + 1, LINK);
+  m1.receipts.unshift(c.info);
+  renderReceipts();
+  hint('已读走「' + c.label + '」（事件环 deq 推进到 ' + e.deq + '），回执见回执栏。'
+    + (c.info.includes('Enable Slot') ? '拿到 Slot ID 后才能对该槽发后续命令——「System software shall wait for the Command Completion Event associated with the Enable Slot Command before issuing any more commands to the slot.」（§4.3.2 p75）' : ''));
+  if (m1.steps[3] && c.label === 'Command Completion Event' && c.info.includes('Enable Slot')){
+    stepDone(4, '剧本⑤完成：Enable Slot 命令闭环走通。');
+  }
+  renderAll();
+}
+
+function renderReceipts(){
+  const ul = $('#m1-receipts');
+  ul.innerHTML = '';
+  m1.receipts.forEach(t => {
+    const li = document.createElement('li');
+    li.textContent = t;
+    ul.appendChild(li);
+  });
+}
+
+/* ---- 指针点击 / 事件卡点击 ---- */
+function onEnqClick(r){
+  if (r === 'evt'){
+    hint('事件环的入环侧属于 xHC——完成事件由 xHC 生成写入，驱动不能推进：「All commands result in the generation of a Command Completion Event TRB on the Event Ring.」（§4.1 p68）', true);
+    return;
+  }
+  const g = RINGS[r];
+  const next = (g.enq >= LINK) ? 0 : g.enq + 1;
+  if (g.cells[next]){
+    hint(`下一格（${next}）还有未取走的 TRB，不能越过——Cycle bit 机制：TRB 的 C 与消费者 CCS 对表才算有效（§4.3 p73 ii）。`, true);
+    return;
+  }
+  if (g.enq >= LINK){ g.enq = 0; g.pcs = 1 - g.pcs; }
+  else g.enq++;
+  hint(`enq 手动推进到 ${g.enq}` + (g.enq === 0 ? `（绕回 Link TRB，PCS 翻转为 ${g.pcs}）` : '') + '。');
+  renderAll();
+}
+
+function onDeqClick(r){
+  if (r === 'evt') actReadEvent();     // 事件环 deq = 驱动读
+  else actExec();                      // 命令/EP0 环 deq = xHC 取指执行
+}
+
+function onCellClick(r, i){
+  if (r !== 'evt') return;
+  const c = RINGS.evt.cells[i];
+  if (!c || c.kind !== 'evt') return;
+  $('#m1-evtinfo').textContent = c.info;
+  if (m1.steps[2] && c.info.includes('Enable Slot')){
+    stepDone(3, '剧本④完成：已确认 Command Completion Event（Slot ID=1）。下一步「读事件环」。');
+    renderAll();
+  } else {
+    hint('事件卡内容见下方事件信息栏。要收回执，点「读事件环」。');
+  }
+}
+
+/* ---- 模块一控件绑定 ---- */
+function populateTypes(){
+  const r = $('#m1-ring').value;
+  const sel = $('#m1-type');
+  sel.innerHTML = '';
+  TYPES[r].forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    sel.appendChild(o);
+  });
+}
+$('#m1-ring').addEventListener('change', populateTypes);
+$('[data-act="m1-write"]').addEventListener('click', actWrite);
+$('[data-act="m1-doorbell"]').addEventListener('click', actDoorbell);
+$$('[data-db]').forEach(b => b.addEventListener('click', () => actDb(Number(b.dataset.db))));
+$('[data-act="m1-readevt"]').addEventListener('click', actReadEvent);
+$('[data-act="m1-exec"]').addEventListener('click', actExec);
+$('[data-act="m1-reset"]').addEventListener('click', () => {
+  ['cmd','ep0','evt'].forEach(buildRing);
+  m1.steps = [false,false,false,false,false];
+  m1.db = null; m1.receipts = [];
+  renderReceipts();
+  $('#m1-evtinfo').textContent = '（点事件环上的事件卡，这里显示完成事件内容）';
+  $('#m1-dbpop').classList.add('hidden');
+  hint('已重置。从剧本第①步开始：环选「命令环」、类型选「Enable Slot」，点「写 TRB 上环」。');
+  renderAll();
+});
+
+/* ================= 模块二：URB→TRB→TD ================= */
+const M2DEFS = [
+  /* Setup Stage TRB（§4.3 p73 ii） */
+  {slot:'setup', id:'setup-trt',  label:'TRT',           opts:['IN Data Stage (3)','OUT Data Stage','No Data Stage'], ok:'IN Data Stage (3)', src:'TRT = IN Data Stage (3)——§4.3 p73 ii'},
+  {slot:'setup', id:'setup-len',  label:'Length',        opts:['0','8','64'],            ok:'8',    src:'TRB Transfer Length = 8——§4.3 p73 ii'},
+  {slot:'setup', id:'setup-ioc',  label:'IOC',           opts:['0','1'],                  ok:'0',    src:'Interrupt On Completion (IOC) = 0——§4.3 p73 ii'},
+  {slot:'setup', id:'setup-idt',  label:'IDT',           opts:['0','1'],                  ok:'1',    src:'Immediate Data (IDT) = 1（8 字节 Setup 数据随 TRB 立即携带）——§4.3 p73 ii'},
+  {slot:'setup', id:'setup-bmrt', label:'bmRequestType', opts:['80h','00h','02h'],        ok:'80h',  src:'bmRequestType = 80h（Dir = Device-to-Host, Type = Standard, Recipient = Device）——§4.3 p73 ii'},
+  {slot:'setup', id:'setup-brq',  label:'bRequest',      opts:['6','5','9'],              ok:'6',    src:'bRequest = 6（GET_DESCRIPTOR）——§4.3 p73 ii'},
+  {slot:'setup', id:'setup-wval', label:'wValue',        opts:['0100h','0002h','1000h'],  ok:'0100h',src:'wValue = 0100h（Low byte = 0 Descriptor Index，High Byte = 1 Descriptor type）——§4.3 p73 ii'},
+  {slot:'setup', id:'setup-widx', label:'wIndex',        opts:['0','1'],                  ok:'0',    src:'wIndex = 0——§4.3 p73 ii'},
+  {slot:'setup', id:'setup-wlen', label:'wLength',       opts:['8','64','0'],             ok:'8',    src:'wLength = 8——§4.3 p73 ii'},
+  /* Data Stage TRB（§4.3 p73 iv） */
+  {slot:'data',   id:'data-dir',  label:'DIR',           opts:['0','1'],                  ok:'1',    src:"Direction (DIR) = '1'（IN，设备→主机）——§4.3 p73 iv"},
+  {slot:'data',   id:'data-len',  label:'Length',        opts:['0','8','64'],             ok:'8',    src:'TRB Transfer Length = 8——§4.3 p73 iv'},
+  {slot:'data',   id:'data-ch',   label:'CH',            opts:['0','1'],                  ok:'0',    src:'Chain bit (CH) = 0——§4.3 p73 iv'},
+  {slot:'data',   id:'data-ioc',  label:'IOC',           opts:['0','1'],                  ok:'0',    src:'Interrupt On Completion (IOC) = 0——§4.3 p73 iv'},
+  {slot:'data',   id:'data-idt',  label:'IDT',           opts:['0','1'],                  ok:'0',    src:'Immediate Data (IDT) = 0（数据走缓冲，不内联）——§4.3 p73 iv'},
+  {slot:'data',   id:'data-buf',  label:'Buffer',        opts:['描述符接收缓冲','0','EP0 环地址'], ok:'描述符接收缓冲', src:'Data Buffer Pointer = Device Descriptor 接收缓冲地址——§4.3 p73 iv'},
+  /* Status Stage TRB（§4.3 p73 vi） */
+  {slot:'status', id:'status-dir',label:'DIR',           opts:['0','1'],                  ok:'0',    src:"Direction (DIR) = '0'——§4.3 p73 vi"},
+  {slot:'status', id:'status-len',label:'Length',        opts:['0','8'],                  ok:'0',    src:'TRB Transfer Length = 0——§4.3 p73 vi'},
+  {slot:'status', id:'status-ch', label:'CH',            opts:['0','1'],                  ok:'0',    src:'Chain bit (CH) = 0——§4.3 p73 vi'},
+  {slot:'status', id:'status-ioc',label:'IOC',           opts:['0','1'],                  ok:'1',    src:'Interrupt On Completion (IOC) = 1（状态段完成即收 Transfer Event）——§4.3 p73 vi'},
+  {slot:'status', id:'status-idt',label:'IDT',           opts:['0','1'],                  ok:'0',    src:'Immediate Data (IDT) = 0——§4.3 p73 vi'},
+  {slot:'status', id:'status-buf',label:'Buffer',        opts:['0','描述符接收缓冲'],     ok:'0',    src:'Data Buffer Pointer = 0——§4.3 p73 vi'},
+];
+const M2NAMES = { setup:'Setup Stage TRB', data:'Data Stage TRB', status:'Status Stage TRB' };
+const M2ORDER = ['setup', 'data', 'status'];
+const m2 = { answers:{}, placed:[], sel:null, locked:false, done:false };
+
+function buildM2(){
+  m2.answers = {}; m2.placed = []; m2.sel = null; m2.locked = false; m2.done = false;
+  $$('.slot').forEach(sl => {
+    const slot = sl.dataset.slot;
+    const box = sl.querySelector('.flds');
+    box.innerHTML = '';
+    M2DEFS.filter(d => d.slot === slot).forEach(d => {
+      const fld = document.createElement('div');
+      fld.className = 'fld'; fld.dataset.fld = d.id;
+      const lab = document.createElement('label');
+      lab.className = 'flab'; lab.textContent = d.label;
+      const sel = document.createElement('select');
+      sel.dataset.field = d.id;
+      const ph = document.createElement('option');
+      ph.value = ''; ph.textContent = '—— 选值 ——';
+      sel.appendChild(ph);
+      d.opts.forEach(o => {
+        const op = document.createElement('option');
+        op.value = o; op.textContent = o;
+        sel.appendChild(op);
+      });
+      sel.addEventListener('change', () => onFieldChange(d, sel.value));
+      const hintEl = document.createElement('div');
+      hintEl.className = 'fldhint';
+      fld.append(lab, sel, hintEl);
+      box.appendChild(fld);
+    });
+    updateSlot(slot);
+  });
+  $$('.trbcard2').forEach(c => { c.classList.remove('ready','sel','placed'); });
+  const strip = $('#m2-ep0strip');
+  strip.innerHTML = '';
+  for (let i = 0; i < 6; i++){
+    const cell = document.createElement('div');
+    cell.className = 'cell2'; cell.dataset.ep0cell = i;
+    cell.addEventListener('click', () => onStripCell(i));
+    strip.appendChild(cell);
+  }
+  $('#m2-anim').classList.add('hidden');
+  $('#m2-fly').classList.remove('go');
+  $('#m2-buffer').classList.remove('rcv');
+  $('#m2-evtcard').classList.add('hidden');
+  $('#m2-done').classList.add('hidden');
+  $('[data-act="m2-ring"]').disabled = true;
+  m2Hint('把每个 TRB 的字段填对（填对变绿、填错变红并给一句规范依据）。三个槽全绿后，第 3 步的 TRB 卡解锁。');
+}
+
+function m2Hint(text, warn){
+  const h = $('#m2-hint');
+  h.textContent = text;
+  h.classList.toggle('warn', !!warn);
+}
+
+function onFieldChange(d, v){
+  if (m2.locked) return;
+  const fld = $(`[data-fld="${d.id}"]`);
+  const hintEl = fld.querySelector('.fldhint');
+  m2.answers[d.id] = v;
+  if (v === ''){
+    fld.classList.remove('ok','bad');
+    hintEl.textContent = '';
+  } else if (v === d.ok){
+    fld.classList.add('ok'); fld.classList.remove('bad');
+    hintEl.textContent = '✓ ' + d.src;
+  } else {
+    fld.classList.add('bad'); fld.classList.remove('ok');
+    hintEl.textContent = '✗ 应为 ' + d.ok + '：' + d.src;
+  }
+  updateSlot(d.slot);
+}
+
+function slotOk(slot){
+  return M2DEFS.filter(d => d.slot === slot).every(d => m2.answers[d.id] === d.ok);
+}
+function slotCount(slot){
+  return M2DEFS.filter(d => d.slot === slot && m2.answers[d.id] === d.ok).length;
+}
+function updateSlot(slot){
+  const total = M2DEFS.filter(d => d.slot === slot).length;
+  const n = slotCount(slot);
+  $(`[data-slotst="${slot}"]`).textContent = `${n}/${total}`;
+  $(`.slot[data-slot="${slot}"]`).classList.toggle('ok', n === total);
+  const card = $(`[data-card="${slot}"]`);
+  card.classList.toggle('ready', n === total && !m2.placed.includes(slot));
+}
+
+$$('.trbcard2').forEach(c => c.addEventListener('click', () => {
+  const slot = c.dataset.card;
+  if (m2.locked || m2.placed.includes(slot)) return;
+  if (!slotOk(slot)){
+    m2Hint(`「${M2NAMES[slot]}」的字段还没填对（${slotCount(slot)}/${M2DEFS.filter(d=>d.slot===slot).length}）——先回第 2 步把字段补齐。`, true);
+    return;
+  }
+  $$('.trbcard2').forEach(x => x.classList.remove('sel'));
+  if (m2.sel === slot){ m2.sel = null; return; }
+  m2.sel = slot;
+  c.classList.add('sel');
+  m2Hint(`已选中「${M2NAMES[slot]}」——点下方 EP0 环的空格子放入（每放一段，enq 推进：§4.3 p73 iii/v/vii）。`);
+}));
+
+function onStripCell(i){
+  if (m2.locked) return;
+  const cell = $(`[data-ep0cell="${i}"]`);
+  if (m2.placed.length > i){ m2Hint('这格已经放了 TRB——选下一格。', true); return; }
+  if (m2.placed.length !== i){ m2Hint('请按顺序放入：从第 0 格开始。', true); return; }
+  if (!m2.sel){ m2Hint('先在上方点选一张已填对的 TRB 卡，再点格子放入。', true); return; }
+  const expect = M2ORDER[m2.placed.length];
+  if (m2.sel !== expect){
+    m2Hint(`控制传输三段顺序：Setup→Data→Status（§4.3 p73 ii→iv→vi）——现在应放「${M2NAMES[expect]}」。`, true);
+    return;
+  }
+  cell.classList.add('filled');
+  cell.innerHTML = `<span>${M2NAMES[m2.sel]}</span><span class="cyc">C=1</span>`;
+  $(`[data-card="${m2.sel}"]`).classList.remove('sel');
+  $(`[data-card="${m2.sel}"]`).classList.add('placed');
+  m2.placed.push(m2.sel);
+  m2.sel = null;
+  if (m2.placed.length === 3){
+    $('[data-act="m2-ring"]').disabled = false;
+    m2Hint('TD 就绪：三段按序上环（Setup→Data→Status）。可以敲门铃了——「Ring the Device Slots\u2019 Doorbell with DB Target = Control EP 0 Enqueue Pointer Update.」（§4.3 p74 viii）');
+  } else {
+    m2Hint(`已放 ${m2.placed.length}/3 段，enq 推进。下一段：${M2NAMES[M2ORDER[m2.placed.length]]}。`);
+  }
+}
+
+/* ---- 8 字节票据（仅示第 7 字节 bMaxPacketSize0=08h，判据：§4.3 p72 步7 / p73 iv / FS 默认 8 §4.3.3 p76） ---- */
+const BYTES = ['··','··','··','··','··','··','··','08h'];
+function byteDeck(el, chips){
+  el.innerHTML = '';
+  chips.forEach((b, i) => {
+    const s = document.createElement('span');
+    s.className = 'byte' + (i === 7 ? ' hit' : '');
+    s.textContent = b;
+    el.appendChild(s);
+  });
+}
+
+function actM2Ring(){
+  if ($('[data-act="m2-ring"]').disabled || m2.locked) return;
+  m2.locked = true;
+  $$('[data-field]').forEach(s => s.disabled = true);
+  $('#m2-anim').classList.remove('hidden');
+  byteDeck($('#m2-devbytes'), BYTES);
+  byteDeck($('#m2-fly'), BYTES);
+  byteDeck($('#m2-buffer'), ['--','--','--','--','--','--','--','--']);
+  m2Hint('已敲门铃 DB Target=1（§4.3 p74 viii）——xHC 按三段执行控制传输：Setup（发请求）→ Data（IN 8 字节）→ Status（收尾，IOC=1）。');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    $('#m2-fly').classList.add('go');
+  }));
+  setTimeout(() => {
+    byteDeck($('#m2-buffer'), BYTES);
+    $('#m2-buffer').classList.add('rcv');
+  }, 1150);
+  setTimeout(() => {
+    const ec = $('#m2-evtcard');
+    ec.classList.remove('hidden');
+    ec.innerHTML = 'Transfer Event · Success<br><span>EP0 · Status Stage TRB 完成（§4.3 p74 ix）。设备回了 Device Descriptor 前 8 字节，第 7 字节 bMaxPacketSize0 = 08h——FS 默认 MPS=8（§4.3.3 p76），与 EP0 当前值一致；若不同，驱动更新 EP0 Context Max Packet Size 并发 Evaluate Context Command（A1=1）（§4.3 p74 ix/x）。</span>';
+  }, 1700);
+  setTimeout(() => {
+    m2.done = true;
+    renderScore();
+    $('#m2-done').classList.remove('hidden');
+    m2Hint('闭环完成：门铃 → 三段执行 → 8 字节回票 → Transfer Event 回事件环。清单与得分见下。');
+  }, 2200);
+}
+
+function renderScore(){
+  const nOk = M2DEFS.filter(d => m2.answers[d.id] === d.ok).length;
+  $('#m2-scorebig').textContent = `得分：${nOk}/${M2DEFS.length} 个 TRB 字段全对 · 控制传输闭环完成`;
+  const items = [
+    ['URB 请求', 'GET_DESCRIPTOR · Device Descriptor 前 8 字节（bmRequestType=80h / bRequest=6 / wValue=0100h / wIndex=0 / wLength=8，§4.3 p73 ii）'],
+    ['Setup Stage TRB', 'TRT=IN Data Stage(3) · Length=8 · IOC=0 · IDT=1（§4.3 p73 ii）'],
+    ['Data Stage TRB', 'DIR=1 · Length=8 · CH=0 · IOC=0 · IDT=0 · Buffer=描述符接收缓冲（§4.3 p73 iv）'],
+    ['Status Stage TRB', 'DIR=0 · Length=0 · CH=0 · IOC=1 · IDT=0 · Buffer=0（§4.3 p73 vi）'],
+    ['TD 上环', '三段按序 Setup→Data→Status 入 EP0 传输环，每段推进 enq（§4.3 p73 iii/v/vii）'],
+    ['门铃', 'DB Target=1 · Control EP 0 Enqueue Pointer Update（§4.3 p74 viii）'],
+    ['回票', '设备 IN 回 8 字节：bMaxPacketSize0=08h（§4.3 p72 步7；FS 默认 MPS=8 §4.3.3 p76）'],
+    ['Transfer Event', 'Status Stage TRB 成功完成回事件环（§4.3 p74 ix）'],
+  ];
+  const ul = $('#m2-checklist');
+  ul.innerHTML = '';
+  items.forEach(([k, v]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<b>✓</b>${k} —— ${v}`;
+    ul.appendChild(li);
+  });
+}
+
+$('[data-act="m2-ring"]').addEventListener('click', actM2Ring);
+$('[data-act="m2-reset"]').addEventListener('click', () => {
+  buildM2();
+  $$('[data-field]').forEach(s => s.disabled = false);
+});
+
+/* ================= 调试钩子（冒烟/自检用，与 UI 同一状态通路） ================= */
+window.__ts = {
+  m1, RINGS, m2, m2Defs: M2DEFS,
+  snapshot(){
+    const rr = {};
+    for (const k of ['cmd','ep0','evt']){
+      rr[k] = {
+        enq: RINGS[k].enq, deq: RINGS[k].deq,
+        pcs: RINGS[k].pcs, ccs: RINGS[k].ccs,
+        filled: pendingCount(RINGS[k]),
+      };
+    }
+    return {
+      m1: { steps: m1.steps.slice(), rings: rr, done: m1.steps.every(Boolean), receipts: m1.receipts.length },
+      m2: {
+        slotsOk: { setup: slotOk('setup'), data: slotOk('data'), status: slotOk('status') },
+        placed: m2.placed.slice(), done: m2.done,
+        fieldsOk: M2DEFS.filter(d => m2.answers[d.id] === d.ok).length,
+      },
+    };
+  },
+};
+
+/* ================= 初始化 ================= */
+['cmd','ep0','evt'].forEach(buildRing);
+populateTypes();
+buildM2();
+renderAll();
+</script>
+</body>
+</html>

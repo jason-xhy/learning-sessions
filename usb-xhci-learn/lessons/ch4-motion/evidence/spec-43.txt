@@ -1,0 +1,568 @@
+USB Device Initialization 
+This section describes the process of detecting and initializing a USB device 
+attached to an xHC Root Hub port. 
+The USB device initialization process is the same, whether the device attached 
+to the port is a Function or a Hub. Once the Pipes associated with an external 
+hub are set up, the Hub Driver will enumerate the devices attached to the 
+external hub’s ports using standard Hub Class command sequences. This 
+section focuses on the device initialization process when a device is attached to 
+a Root Hub port. 
+After a Chip Hardware Reset, HCRST, or commanded to the PLS = RxDetect 
+state, all Root Hub ports shall be in Disconnected state, that is, the port is 
+powered on (PP = ‘1’) and waiting for a device connect. Refer to section 4.19.1 
+for more information on xHCI Root Hub port states. 
+If a USB device is attached to a port when it is in the Disconnected state: 
+• 
+USB3 protocol ports shall: 
+o 
+Advance to the Polling state (refer to Figure 4-30): 
+▪ 
+If polling is successful, the port shall advance to the Enabled state, 
+and the Current Connect Status (CCS) and Connect Status Change 
+(CSC) flags are set to ‘1’. 
+▪ 
+If polling is unsuccessful, the port shall advance to the 
+Disconnected state. 
+• 
+USB2 protocol ports shall: 
+o 
+Advance to the Disabled state (refer to Figure 4-25) and set the 
+Current Connect Status (CCS) and Connect Status Change (CSC) flags 
+to ‘1’. 
+Note: The “Disabled” Root Hub port state represents different conditions when 
+referring to USB3 or USB2 protocol ports. For USB3 ports, the Disabled state 
+indicates that the port is in the DSPORT.Disabled state (refer to Figure 10-9 in 
+the USB3 spec.). For USB2 ports, the Disabled state indicates that the port is 
+in the Disabled state (refer to Figure 11-10 in the USB2 spec). 
+The following steps describe a typical USB Device initialization process: 
+1. 
+When the xHC detects a device attach, it shall set the Current Connect 
+Status (CCS) and Connect Status Change (CSC) flags to ‘1’. If the assertion of 
+CSC results in a ‘0’ to ‘1’ transition of Port Status Change Event Generation 
+(PSCEG, section 4.19.2), the xHC shall generate a Port Status Change Event. 
+2. 
+Upon receipt of a Port Status Change Event system software evaluates 
+the Port ID field to determine the port that generated the event. 
+3. 
+System software then reads the PORTSC register of the port that 
+generated the event. 
+CSC = ‘1’ if the event was due to an attach (CCS = ‘1’) or detach (CCS = ‘0’). 
+Assuming the event was due to an attach: 
+
+===== [PAGE 72] =====
+ 
+72 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+a. A USB3 protocol port attempts to automatically advance to the 
+Enabled state as part of the attach process.  
+ 
+If successful, the port shall transition to the Enabled state, that is, the 
+Port Enabled/Disabled (PED) flag shall be set to ‘1’, and the Port 
+Reset (PR) flag and Port Link State (PLS) field shall be ‘0’. The 
+attached USB device shall be in the Default state. 
+ 
+If unsuccessful, the port shall transition to the Disconnected state, 
+that is, the PED and PR flags shall be cleared to ‘0’ and Port Link 
+State (PLS) field shall be set to RxDetect (‘5’). The attached USB 
+device shall remain powered. 
+b. A USB2 protocol port requires software to reset the port to advance 
+the port to the Enabled state and a USB device from the Powered 
+state to the Default state. After an attach event, the PED and PR flags 
+shall be ‘0’ and the PLS field shall be ‘7’ (Polling) in the PORTSC 
+register. 
+ 
+System software shall enable the port by resetting the port (writing a 
+'1' to the PORTSC PR bit) then waiting for a Port Status Change Event 
+due to the assertion of Port Reset Change (PRC) flag. Refer to section 
+4.3.1 for an overview of the Root Hub port reset activities. 
+ 
+The completion of the port reset shall cause the PORTSC register PRC 
+and PED flags to be set (‘1’), the PR flag to be cleared (‘0’), and the 
+PLS field to be U0 (‘0’). If the assertion of PRC results in a ‘0’ to ‘1’ 
+transition of PSCEG (4.19.2), the xHC shall generate a Port Status 
+Change Event as a result of the transition of PRC. The reset operation 
+sets the USB2 device into the Default state, preparing it for a 
+SET_ADDRESS request. 
+4. 
+After the port successfully reaches the Enabled state, system software 
+shall obtain a Device Slot for the newly attached device using an Enable Slot 
+Command, as described in section 4.3.2. 
+5. 
+After successfully obtaining a Device Slot, system software shall initialize 
+the data structures associated with the slot as described in section 4.3.3. 
+6. 
+Once the slot related data structures are initialized, system software shall 
+use an Address Device Command to assign an address to the device and 
+enable its Default Control Endpoint, as described in section 4.3.4. 
+7. 
+For LS, HS, and SS devices; 8, 64, and 512 bytes, respectively, are the 
+only packet sizes allowed for the Default Control Endpoint, so step a may be 
+skipped. 
+ 
+For FS devices, system software should initially read the first 8 bytes of the 
+USB Device Descriptor to retrieve the value of the bMaxPacketSize0 field and 
+determine the actual Max Packet Size for the Default Control Endpoint, by 
+issuing a USB GET_DESCRIPTOR request to the device, update the Default 
+Control Endpoint Context with the actual Max Packet Size and inform the xHC 
+of the context change. Step a describes this operation. 
+
+===== [PAGE 73] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+73 
+a. The USB GET_DESCRIPTOR request requires a Data Stage, so the 
+Setup Stage TD shall be followed by a Data Stage TD, then a Status 
+Stage TD. To do this software shall: 
+i. 
+Allocate an 8 byte buffer to receive the Device Descriptor. 
+ii. Initialize the Setup Stage TD (a single Setup Stage TRB) on the 
+Endpoint 0 Transfer Ring. 
+•  TRB Type = Setup Stage TRB. 
+•  Transfer Type (TRT) = IN Data Stage (3). 
+•  TRB Transfer Length = 8. 
+•  Interrupt On Completion (IOC) = 0. 
+•  Immediate Data (IDT) = 1. 
+•  bmRequestType = 80h. (Dir = Device-to-Host, Type = Standard, 
+Recipient = Device) 
+•  bRequest = 6 (GET_DESCRIPTOR). 
+•  wValue = 0100h. Low byte = 0 (Descriptor Index), High Byte = 1 
+(Descriptor type). 
+•  wIndex = 0. 
+•  wLength = 8. 
+•  Cycle bit = Current Producer Cycle State. 
+iii. Advance the Endpoint 0 Transfer Ring Enqueue Pointer 
+iv. Initialize the Data Stage TD (a single Data Stage TRB) on the 
+Endpoint 0 Transfer Ring. 
+•  
+TRB Type = Data Stage TRB. 
+•  
+Direction (DIR) = ‘1’. 
+•  
+TRB Transfer Length = 8. 
+•  
+Chain bit (CH) = 0. 
+•  
+Interrupt On Completion (IOC) = 0. 
+•  
+Immediate Data (IDT) = 0. 
+•  
+Data Buffer Pointer = The address of the Device Descriptor receive 
+buffer. 
+•  
+Cycle bit = Current Producer Cycle State. 
+v. Advance the Endpoint 0 Transfer Ring Enqueue Pointer 
+vi. Initialize the Status Stage TD (a Status Stage TRB) on the 
+Endpoint 0 Transfer Ring. 
+•  
+TRB Type = Status Stage TRB. 
+•  
+Direction (DIR) = ‘0’. 
+•  
+TRB Transfer Length = 0. 
+•  
+Chain bit (CH) = 0. 
+•  
+Interrupt On Completion (IOC) = 1. 
+•  
+Immediate Data (IDT) = 0. 
+•  
+Data Buffer Pointer = 0. 
+•  
+Cycle bit = Current Producer Cycle State. 
+vii. Advance the Endpoint 0 Transfer Ring Enqueue Pointer 
+
+===== [PAGE 74] =====
+ 
+74 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+viii. Ring the Device Slots’ Doorbell with DB Target = Control EP 0 
+Enqueue Pointer Update. 
+ix. When a successful Transfer Event is returned for the 
+GET_DESCRIPTOR Status Stage TRB system software shall 
+update the Endpoint 0 Context Max Packet Size with 
+wMaxPacketSize value returned in the Device Descriptor buffer, if 
+the wMaxPacketSize value is different. 
+x. Software shall then issue an Evaluate Context Command with 
+Add Context bit 1 (A1) set to ‘1’ to inform the xHC of the change 
+to the Default Control endpoint’s Max Packet Size parameter. 
+After successfully executing the Evaluate Context Command the 
+xHC will use the updated Max Packet Size for all subsequent 
+Default Control Endpoint transfers.  
+8. 
+Now that the Default Control Endpoint is fully operational, system 
+software may read the complete USB Device Descriptor and possibly the 
+Configuration Descriptors so that it can hand the device off to the appropriate 
+Class Driver(s). To read the USB descriptors, software will issue USB 
+GET_DESCRIPTOR requests through the devices’ Default Control Endpoint. 
+9. 
+After reading the Configuration Descriptors software may issue an 
+Evaluate Context Command with Add Context bit 0 (A0) set to ‘1’ to inform the 
+xHC of the value of the Max Exit Latency parameter. Note that the value of the 
+Output Slot Context Interrupter Target field may also be modified by this 
+command.  
+10. 
+The Class Driver may then configure the Device Slot using a Configure 
+Endpoint Command as described in section 4.3.5, and configure the USB 
+Device itself by issuing a USB SET_CONFIGURATION request through the 
+devices’ Default Control Endpoint. The successful completion of both operations 
+is required to advance the state of the USB device from Address to Configured 
+and xHC Device Slot from Addressed to Configured. 
+11. 
+If required, system software may configure Alternate Interfaces. For each 
+Alternate Interface set the alternate interface as described in section 4.3.6. 
+12. 
+The pipe interfaces to the USB device are now fully operational. 
+Note: To ensure proper operation software shall fully initialize the hubs and TTs of 
+each tier of the USB topology before proceeding to the next tier, starting at 
+the Root Hub. Failure to meet this requirement may result in undefined xHC 
+behavior. 
+4.3.1 
+Resetting a Root Hub Port 
+Resetting a Root Hub port, resets the attached USB device, and if successful, 
+the port logic reports the speed of the attached device and sets the port to the 
+Enabled state. Whether successful or not, the Port Reset Change (PRC) flag is 
+set to ‘1’. If the assertion of PRC results in a ‘0’ to ‘1’ transition of PSCEG 
+(4.19.2), a Port Status Change Event shall be generated. 
+To reset a USB device attached to a Root Hub port, system software shall 
+perform the following operations: 
+
+===== [PAGE 75] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+75 
+1. 
+Write the PORTSC register with the Port Reset (PR) bit set to ‘1’. 
+2. 
+Wait for a successful Port Status Change Event for the port, where the 
+Port Reset Change (PRC) bit in the PORTSC field is set to ‘1’. 
+3. 
+Section 4.19.5 describes the port reset operations performed by the xHC. 
+The next step requires system software to obtain a Device Slot (section 4.3.2), 
+then associate the newly attached device with the Device Slot and enable its 
+Default Control Endpoint. 
+Note: After a Root Hub port is successfully reset, the PORTSC Port Speed field shall 
+indicate the speed of the attached device. 
+4.3.2 
+Device Slot Assignment 
+The first operation that software shall perform after detecting a device attach 
+event and resetting the port is to obtain a Device Slot for the device by issuing 
+an Enable Slot Command to the xHC through the Command Ring. The Enable 
+Slot Command returns a Slot ID that is selected by the host controller. Refer to 
+section 4.6.3 for a detailed description of the Enable Slot command. 
+System software executes the Slot Assignment process by successfully 
+completing an Enable Slot Command as described in section 4.11.4.2. 
+System software shall wait for the Command Completion Event associated with 
+the Enable Slot Command before issuing any more commands to the slot. If 
+the command was successful, software may proceed to the Device Slot 
+Initialization phase (section 4.3.3). 
+Successful completion of the Enable Slot Command shall transition the Device 
+Slot to the Enabled state. Refer to section 4.5.3 for more information on Device 
+Slot states. 
+4.3.3 
+Device Slot Initialization 
+Once an xHC Device Slot ID has been obtained for a USB device, software shall 
+initialize the data structures associated with the slot. The following steps shall 
+be performed by system software: 
+4. 
+Allocate an Input Context data structure (6.2.5) and initialize all fields to 
+‘0’. 
+5. 
+Initialize the Input Control Context (6.2.5.1) of the Input Context by 
+setting the A0 and A1 flags to ‘1’. These flags indicate that the Slot Context 
+and the Endpoint 0 Context of the Input Context are affected by the command. 
+6. 
+Initialize the Input Slot Context data structure (6.2.2). 
+•  
+Root Hub Port Number = Topology defined. 
+•  
+Route String = Topology defined8. Refer to section 8.9 in the USB3 spec. Note 
+ 
+8For example, to access a device attached directly to a Root Hub port, the Route String shall equal ‘0’, and the Root Hub 
+Port Number shall indicate the specific Root Hub port to use. 
+ 
+
+===== [PAGE 76] =====
+ 
+76 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+that the Route String does not include the Root Hub Port Number. 
+•  
+Context Entries = 1. 
+7. 
+Allocate and initialize the Transfer Ring for the Default Control Endpoint. 
+Refer to section 4.9 for TRB Ring initialization requirements and to section 6.4 
+for the formats of TRBs. 
+8. 
+Initialize the Input default control Endpoint 0 Context (6.2.3). 
+•  
+EP Type = Control. 
+•  
+Max Packet Size = The default maximum packet size for the Default Control 
+Endpoint, as function of the PORTSC Port Speed field. 
+•  
+Max Burst Size = 0. 
+•  
+TR Dequeue Pointer = Start address of first segment of the Default Control 
+Endpoint Transfer Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Reflects Cycle bit state for valid TRBs written by 
+software. 
+•  
+Interval = 0. 
+•  
+Max Primary Streams (MaxPStreams) = 0. 
+•  
+Mult = 0. 
+•  
+Error Count (CErr) = 3. 
+9. 
+Allocate the Output Device Context data structure (6.2.1) and initialize it 
+to ‘0’. 
+10. 
+Load the appropriate (Device Slot ID) entry in the Device Context Base 
+Address Array (5.4.6) with a pointer to the Output Device Context data 
+structure (6.2.1). 
+11. 
+Issue an Address Device Command for the Device Slot, where the 
+command points to the Input Context data structure described above. Refer to 
+sections 3.3.4 and 6.4.3.4 for more information on the Address Device 
+Command. 
+4.3.4 
+Address Assignment 
+Typically the first operation that software performs on a USB device is to assign 
+an address to it, which transitions the USB device from the Default to the 
+Address state. To assign an address to a USB device attached to the xHC, 
+system software shall issue an Address Device Command with the Block Set 
+Address Request (BSR) flag cleared to ‘0’ to the xHC through the Command 
+Ring. Refer to section 4.6.5 for a detailed description of the Address Device 
+command. 
+System software executes the Address Assignment process by successfully 
+completing an Address Device Command as described in section 4.6.5. 
+System software shall wait for Address Device Command completion event on 
+the Event Ring before issuing any more commands to the slot. If successful, 
+software proceeds to the Device Configuration phase (section 4.3.5). 
+Note: For some legacy USB devices it may be necessary to communicate with the 
+device when it is in the Default state, before transitioning it to the Address 
+
+===== [PAGE 77] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+77 
+state. For some legacy USB devices it may be necessary to communicate with 
+the device when it is in the Default state, before transitioning it to the 
+Address state. To accomplish this system software shall issue an Address 
+Device Command with the BSR flag set to ‘1’. Setting the BSR flag enables 
+the operation of the Default Control Endpoint for the Device Slot but blocks 
+the xHC from issuing a SET_ADDRESS request to the device, which would 
+transition it to the Address state. 
+Successful completion of the Address Device Command with BSR = ‘0’ shall 
+transition the Device Slot from the Enabled to the Addressed state. Successful 
+completion of the Address Device Command with BSR = ‘1’ shall transition the 
+Device Slot from the Enabled to the Default state. Refer to section 4.5.3 for 
+more information on Device Slot states. 
+4.3.5 
+Device Configuration 
+As part of the initialization process of a USB device, the system software shall 
+select a configuration. A USB device presents one or more configurations to 
+choose from. The USB Framework requires that a SET_CONFIGURATION 
+request is issued to a device to set a specific configuration. Refer to section 
+9.4.7 of the USB2 spec for more information on the USB SET_CONFIGURATION 
+request. 
+For software to successfully “configure” a USB device, the state of both the 
+USB Device and the xHC Device Slot assigned to the device must be 
+synchronized. Software shall successfully complete a SET_CONFIGURATION 
+request (with a Setup Stage TD on the device’s Default Control Endpoint) to 
+select a specific configuration, and a Configure Endpoint Command for the slot 
+with the matching Endpoint Context configuration information, to transition the 
+USB device and the xHC Device Slot to the Configured state. Refer to section 
+4.11.4.5 for more information on the Configure Endpoint Command. 
+A USB device may declare multiple alternate interfaces, each with different 
+periodic bandwidth and resource requirements. If a Configure Endpoint 
+Command for a particular configuration is unsuccessful, software may issue 
+additional Configure Endpoint Commands with other interface settings in an 
+attempt to successfully configure the slot. If all interface settings have been 
+exhausted (that is, none have been accepted by the xHC), only the Default 
+Control Endpoint will remain enabled. 
+If system software was unable to successfully complete a Configure Endpoint 
+Command due to a Bandwidth Error, it may optionally use the Negotiate 
+Bandwidth Command to cause the xHC to request bandwidth with other 
+devices. Refer to section 4.16.1 for more information on bandwidth negotiation. 
+System software executes the xHCI portion of the device configuration process 
+by successfully completing a Configure Endpoint Command as described in 
+section 4.11.4.5. 
+System software shall wait for the Command Completion Event associated with 
+the Configure Endpoint Command before issuing any more commands to the 
+slot. 
+
+===== [PAGE 78] =====
+ 
+78 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+After the Configure Endpoint Command and SET_CONFIGURATION request 
+complete successfully, software may schedule TDs on any enabled endpoint 
+Transfer Ring. 
+If the Configure Endpoint Command is not successful, undefined behavior will 
+result if software issues a SET_CONFIGURATION request to the device. 
+Successful completion of the Configure Endpoint Command with the 
+Deconfigure (DC) flag = ‘0’ shall transition the Device Slot from the Addressed 
+to the Configured state. Refer to section 4.5.3 for more information on how the 
+Configure Endpoint Command affects Device Slot states. 
+4.3.6 
+Setting Alternate Interfaces 
+The USB SET_INTERFACE request allows the host to select an Alternate Setting 
+for a specified interface in a USB device. A SET_INTERFACE request may 
+disable or modify the operation of currently enabled endpoints, or it may 
+enable previously unused endpoints. A SET_INTERFACE request does not affect 
+endpoints owned by another interface. Refer to section 9.4.10 of the USB2 
+spec. for more information on the USB SET_INTERFACE request. 
+A SET_INTERFACE request provides the “Number” of the Interface that is 
+affected and the Alternate Setting that it will be set to. A SET_INTERFACE 
+request does not explicitly identify which endpoints of a device are affected or 
+how. This information is available in the Configuration Descriptor retrieved from 
+the device, hence known to host software and the device at their respective 
+ends. 
+The xHC does not keep track of relationships between USB interfaces and 
+endpoints, so it is system software’s responsibility to explicitly “Disable” any 
+endpoints that are affected in the current configuration by a USB 
+SET_INTERFACE request, and then explicitly “Enable” any endpoints identified 
+in the new Alternate Interface Setting. An xHCI endpoint (that is, Endpoint 
+Context) is “Disabled” by stopping it if it is in the Running state with a Stop 
+Endpoint Command and freeing its Transfer Ring. 
+Setting an Alternate Interface is accomplished by the successful completion of 
+a Configure Endpoint command (refer to section 4.6.6), and a USB 
+SET_INTERFACE request to the USB device (with a Setup Stage TD on the 
+Default Control Endpoint). 
+Below is an example of the sequence of events that would be employed to 
+successfully set an alternate interface in a USB device. 
+System software shall wait for the Command Completion Event associated with 
+the Configure Endpoint Command before issuing further commands to the slot. 
+Prior to issuing a Configure Endpoint Command to change an Alternate 
+Interface setting system software should perform the following operations: 
+12. 
+Stop any Running Transfer Rings affected by the Alternate Interface 
+setting. 
+
+===== [PAGE 79] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+79 
+13. 
+Free9 Transfer Rings of all endpoints that will be affected by the Alternate 
+Interface setting. 
+14. 
+Clear all the Endpoint Context fields of each endpoint that will be disabled 
+by the Alternate Interface setting, to ‘0’. 
+15. 
+For each endpoint enabled by the Configure Endpoint Command: 
+a. Allocate a Transfer Ring9. 
+b. Initialize the Transfer Ring Segment(s) by clearing all fields of all 
+TRBs to ‘0’.10 
+c. Initialize the Endpoint Context data structure: 
+•  
+EP Type = Derived from the Endpoint Descriptor:bmAttributes:Transfer 
+Type and Endpoint Descriptor:bEndpointAddress:Direction. Refer to Table 
+6-9 for the encoding. 
+•  
+Max Packet Size = Endpoint Descriptor:wMaxPacketSize & 07FFh. 
+•  
+Interval = Refer to section 6.2.3.6 for the computation of the Interval value. 
+•  
+Max Burst Size = SuperSpeed Endpoint Companion Descriptor:bMaxBurst 
+or (Endpoint Descriptor: wMaxPacketSize & 1800h) >> 11. 
+•  
+Mult = ‘0’ or SuperSpeed Endpoint Companion Descriptor:bmAttributes Mult 
+field if Descriptor:bmAttributes.SSPIsocCompanion field is “0”. 
+•  
+Max ESIT Payload = SuperSpeed Endpoint Companion 
+Descriptor:wBytesPerInverval for SuperSpeed Endpoint or (SuperSpeedPlus 
+Isochronous Endpoint Companion Descriptior:dwBytesPerInteval for 
+SuperSpeedPlus Endpoints. 
+•  
+CErr = 3, or 0 for an Isoch endpoint. 
+•  
+If Streams are supported by the endpoint (that is, SuperSpeed Endpoint 
+Companion Descriptor:bmAttributes MaxStreams field > 0): 
+•  
+Select a Max Primary Streams (MaxPStreams) value > 0 and <= 
+SuperSpeed Endpoint Companion Descriptor:bmAttributes MaxStreams 
+•  
+Update MaxPStreams. 
+•  
+Allocate and clear Primary Stream Array. 
+•  
+MaxPStreams = Size of Primary Stream Array. 
+•  
+TR Dequeue Pointer = Start address of Primary Stream Array. 
+ 
+ 
+ 
+9If just the parameters of a currently defined endpoint are being changed by the Alternate Interface setting then software may choose to 
+reuse the Transfer Ring for the new interface setting and not free it. In this case, software does not need to allocate a new Transfer 
+Ring as described in step 4a). 
+10The Cycle bit (C) of all TRBs in a TR Segment shall be initialized to the inverse of the value that the Dequeue Cycle State (DCS) field is 
+initialized to. This pseudo code recommends initializing the all bytes in a TR Segment to ‘0’, which also initializes the Cycle bit to ‘0’ in 
+all TRBs of the TR Segment, and the DCS flag of the pointer that references the TR Segment to ‘1’, however software may initialize the 
+Cycle bit to ‘1’ in all TRBs of a newly allocated TR Segment and the DCS flag of the pointer that references it to ‘0’. Refer to section 
+4.9.2 for more information on Cycle bit (C) initialization. 
+ 
+
+===== [PAGE 80] =====
+ 
+80 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+•  
+else 
+•  
+MaxPStreams = ‘0’. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously 
+allocated Transfer Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment 
+referenced by the TR Dequeue Pointer have been initialized to ‘0’, this field 
+reflects Cycle bit state for valid TRBs written by software. 
+16. 
+Issue and successfully complete a Configure Endpoint Command as 
+described in section 4.11.4.5. 
+System software shall wait for the Command Completion Event associated with 
+the Configure Endpoint Command before issuing any more commands to the 
+slot. 
+Note: A Configure Endpoint Command is not necessary prior to a SET_INTERFACE 
+request, if the SET_INTERFACE request does not change any  
+endpoint parameters. 
+4.3.7 
+Low-Speed/Full-Speed Device Support 
+Special provisions shall be made to generate the Split Transactions required for 
+a Low- or Full-speed device connected through a High-speed hub. A Split 
+Transaction token targets the downstream facing port of the hub that isolates 
+the High-speed signaling environment from the Full/Low-speed signaling 
+environment for this device. To generate the Split Transaction token, the xHC 
+requires parameters associated with the target hub for which this full-/low-
+speed transaction is destined. This information shall be provided by system 
+software in the Multi-TT (MTT), Parent Hub Slot ID and Parent Port Number 
+fields of the device’s Slot Context. 
+The xHC uses the Parent Hub Slot ID to obtain the hub’s address from the USB 
+Device Address field of the hub’s Slot Context. 
+The xHC also checks that the Hub flag in the hub’s Slot Context equals ‘1’, to 
+verify that the Parent Hub Slot ID references a hub. A Parameter Error shall be 
+generated for the offending TD if the Hub flag = ‘0’. 
+If the device is not Low- or Full-speed or if the device is attached to a Root Hub 
+port, then the Parent Hub Slot ID, Multi-TT (MTT), and the Parent Port Number 
+fields shall be cleared to ‘0’. 
+Refer to section 8.4.2 of the USB2 spec. for more information on Split 
+Transaction tokens, and section 11.14 for Transaction Translator information. 
+4.3.8 
+Bandwidth Management 
+When a device cannot be configured because of bandwidth constraints 
+Bandwidth Negotiation may be performed. Refer to section 4.16.1 for more 
+details. 
+

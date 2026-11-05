@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xHCI 第 4 章视频课件 · R2 评审版</title>
+<style>
+  :root {
+    --bg: #0b0f15;
+    --panel: #111823;
+    --line: #1d2735;
+    --text: #e8edf5;
+    --muted: #8fa0b8;
+    --blue: #7c9ff0;
+    --amber: #d9a860;
+    --green: #86bd7a;
+    --teal: #7fd0b2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 64px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  h1 .tag { color: var(--amber); font-size: 15px; font-weight: 600; margin-left: 10px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meta b { color: var(--green); font-weight: 600; }
+  h2 { font-size: 17px; margin: 34px 0 14px; }
+  h2 .no { color: var(--amber); margin-right: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+  .card video { width: 100%; border-radius: 6px; background: #000; display: block; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+  .vhead .name { font-size: 16px; font-weight: 600; }
+  .vhead .dur { color: var(--muted); font-size: 13px; font-family: ui-monospace, Menlo, monospace; }
+  .vhead .spec { margin-left: auto; color: var(--muted); font-size: 12px; }
+  .int-links { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-block; padding: 9px 18px; border-radius: 8px; text-decoration: none;
+    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 14px;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .int-note { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; }
+  .int-note b { color: var(--teal); font-weight: 600; }
+  ul.points { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: 13.5px; }
+  ul.points b { color: var(--text); font-weight: 600; }
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
+  code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>xHCI 第 4 章视频课件<span class="tag">R2 评审版 · 2026-11-05</span></h1>
+    <div class="meta">
+      1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 违例</b>（三场景全帧，非抽样）·
+      终片 2:16 / 2:00 / 2:12 · 判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
+    </div>
+  </header>
+
+  <h2><span class="no">§4.1</span>命令操作</h2>
+  <div class="card">
+    <div class="vhead">
+      <span class="name">41-command-operation</span>
+      <span class="dur">2:16</span>
+      <span class="spec">命令路径：xhci_submit_command → 命令 TRB 入环 → 门铃 writel</span>
+    </div>
+    <video controls preload="metadata" src="41-command-operation.mp4"></video>
+  </div>
+
+  <h2><span class="no">§4.2</span>主机控制器初始化</h2>
+  <div class="card">
+    <div class="vhead">
+      <span class="name">42-host-controller-init</span>
+      <span class="dur">2:00</span>
+      <span class="spec">初始化链：xhci_setup / xhci_run 主线寄存器写序列</span>
+    </div>
+    <video controls preload="metadata" src="42-host-controller-init.mp4"></video>
+  </div>
+
+  <h2><span class="no">§4.3</span>USB 设备初始化</h2>
+  <div class="card">
+    <div class="vhead">
+      <span class="name">43-usb-device-init</span>
+      <span class="dur">2:12</span>
+      <span class="spec">设备初始化：usb_control_msg → xhci_address_device / setup_device → URB enqueue</span>
+    </div>
+    <video controls preload="metadata" src="43-usb-device-init.mp4"></video>
+  </div>
+
+  <h2>交互操作台</h2>
+  <div class="card">
+    <div class="int-links">
+      <a class="btn" href="interactive/index.html">打开交互操作台 →</a>
+      <span class="spec" style="color:var(--muted);font-size:12px;">单文件自包含 · SMOKE 29 项 PASS</span>
+    </div>
+    <p class="int-note"><b>三环操作台：</b>传输环 / 事件环 / 命令环手动 enq · deq 推进、cycle bit 翻转、Link 回绕、门铃 DB 写、事件产生/消费</p>
+    <p class="int-note"><b>组装练习：</b>URB→TRB→TD 手动组装（GET_DESCRIPTOR 8B，Setup/Data/Status 三段 TRB 字段逐项核对）</p>
+    <p class="int-note"><b>代码调用栈：</b>驱动（内核 xhci*.c 真实调用链）/ xHC 控制器（寄存器动作）/ 设备（USB 请求）三视角，与动画节拍同步</p>
+  </div>
+
+  <footer>
+    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与草稿）· <code>evidence/</code>（规范切片与上屏断言对照）。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。评审反馈请按 §4.1 / §4.2 / §4.3 / 交互 分项。
+  </footer>
+</div>
+</body>
+</html>
