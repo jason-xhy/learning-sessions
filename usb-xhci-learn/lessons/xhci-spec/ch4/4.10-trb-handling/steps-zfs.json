@@ -1,0 +1,6 @@
+[
+  ["wait", 1200],
+  ["eval", "JSON.stringify({ zfs: typeof window.__zfs, zfsLane: typeof window.__zfsLane, fig42: typeof window.__fig42, fig410: typeof window.__fig410, ctl: !!document.querySelector('.fig-ctl'), stages: document.querySelectorAll('.iso-stage').length })"],
+  ["eval", "window.__zfsLane.setZoom(3); window.__zfsLane.zoomOf()"],
+  ["eval", "window.__zfs.setZoom(2); [window.__zfs.zoomOf(), window.__zfsLane.zoomOf()]"]
+]

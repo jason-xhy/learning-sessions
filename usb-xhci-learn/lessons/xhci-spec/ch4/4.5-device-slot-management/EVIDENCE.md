@@ -78,16 +78,49 @@ ARROW-EDGE-PASS（最差触边偏差 0.00px，门限 ≤2.5px · 盒 5 · 边 8�
 - focus 选择器：`[".st-enabled"]`（放大时居中 Enabled 盒——状态机枢轴，自 Disabled 后的第一迁出态）。
 - `window.__zfs` 存活：冒烟实测 True ×2 主题。
 
-## 门输出汇总
+## 代码走读卡（CODE-STEPPER 量产轮，2026-11-04）
+
+- 数据件：`lessons-data/stepper_45x.json`（marker **X45**，schema usb-xhci-stepper/1，worldKind=rings3，
+  **58 帧 / 15 ev op（11 个 ev 帧）/ 9 refs / 55 锚点**）。链选择=**Configure Endpoint 全链（§4.5.4.2 双操作）**：
+  usb_set_configuration（message.c）→ usb_hcd_alloc_bandwidth 逐端点 add_endpoint（hcd.c→xhci.c）→
+  xhci_check_bandwidth（A 位修整/LAST_CTX）→ xhci_configure_endpoint 投递 CONFIGURE_ENDPOINT TRB（xhci-ring.c
+  xhci_queue_configure_endpoint）→ 门铃 0 → xHC 桥帧（评估 add/drop 全部位→DCI3 拷入 Device Context→Slot State
+  改写 Configured）→ 中断侧 handle_cmd_completion 消费 → 回线程 result=Success → EP1 环转正 →
+  usb_control_msg_send（SET_CONFIGURATION）→ EP0 控制传输两 TRB（Setup+Status）→ 门铃 1 → 总线 SETUP→
+  设备票据→Transfer Event→设备灯 Addressed→Configured。**选择理由**：本节主轴=槽状态迁移的命令侧，
+  状态图两条 Configure Endpoint 边（DC=0 配置/DC=1 回退）+§4.5.4.2 SET_CONFIGURATION 双操作映射行共同指向
+  Configure Endpoint；Reset Device 在状态图中为合并边且 §4.6.6 详述归命令接口节——故取本链（报告注明）。
+- 双账本口径（41x 先例）：walknote 与操作二帧注挑明——规范按传输阶段记 TD（Setup/Data/Status），内核
+  struct xhci_td 按 URB 记；本链操作二=无数据阶段控制传输（两颗 TRB 一个内核 TD），两个口径在本例重合。
+- 集成：本节=tablePage 自绘 build（非 lanePage）——走读块（walknote+stepperHtml）后处理插在互链卡
+  `<div class="xsp-card"><h2>相关` 之前（4.17 锚点注入同位）；course.css 走读段+变量垫片/codestepper.js
+  并入既有 body 尾注入段；replace 一律函数形态防 `$` 展开（4.17 立法）。构建幂等：sha256 双跑一致。
+- 三环账本：`check_rings3_ledger.py` → **LEDGER-PASS**（frames=58 evt_enq=2 cmd_deq=1 ep0_deq=1——
+  2==1+1 平衡；设备态 Addressed→Configured 单向；无槽位复活）。EP0 控制传输=两颗 TRB 单 ring_deq
+  （消费指针到 TD 末）+单 Transfer Event——与「每 TD 一条完成事件」的实码口径一致。
+- 诚实呈现点：①case TRB_CONFIG_EP 命中但 `if (!cmd->completion)` 不成立→xhci_handle_cmd_config_ep 不执行
+  （函数体仅 trace，Slot State 归 xHC 维护 p85 Note）；②DCBAA 指针本命令不动（Address Device 时装载，
+  原地更新所指内容）；③槽态与设备态各迁各的——命令完成时槽先 Configured、请求完成时设备才 Configured
+  （§4.5.4.2 双操作判据）；④换配置 drop 循环/错误码分支本链不走，帧注记如实标注。
+- 引文 9 条 verify-refs 全 OK（p88×2/p89/p102/p103×3/p85/p69 脚注 7 空 quote）；**p103 三条为走读卡新增引用页**。
+
+## 门输出汇总（2026-11-04 走读卡轮更新）
 
 | 门 | 结果 |
 |---|---|
-| 页码机核 | PAGECHECK-PASS（26 needle，上表） |
-| 语言门 | `scan_words.py retired` index.html **total=0**；index-light.html **total=0**（残留 ⊆ {回执,柜台,泳道} 门限内，实为空） |
-| 静态冒烟 | `smoke_state.py`（playwright channel=chrome，1500×1000）：dark/light console=0、zoombar=1、__zfs=True、.iso-stage=1 → **STATE-SMOKE-PASS** |
-| 自包含 | `grep -c 'http://\|https://'` index.html=1、index-light.html=1，唯一命中 `http://www.w3.org/2000/svg`（SVG xmlns）✓ |
-| 互链 | 6 个相对链接目标全部存在（../../index.html、4.1/4.3/4.4/4.7、EVIDENCE.md） |
-| 箭头触边 | ARROW-EDGE-PASS（上节） |
+| 页码机核 | PAGECHECK-PASS（**34 needle**=原 26+走读卡新增 8；`subsequent updates of the Slot State`@p85、`successfully configured`@p89、`Configure Endpoint Command and the`@p88、`Contexts between 1 and 15`@p88、`enable the set of Device Slot endpoints`@p102、`Add Context flag A1`@p103、`explicitly identify to the xHC`@p103、`Drop Context and Add Context flags are evaluated`@p103。坑：`the Configured state due` 跨 pypdf 断行假阴性，改断行后短 needle `Configure Endpoint Command and the`） |
+| 语言门 | `scan_words.py retired` ×2 → **total=8 {回执×8} ⊆豁免表**（走读卡文案引入回执=豁免①；首轮 12 处，账本×2/那支×1/主角×1 非豁免当轮改定：双账本口径→计数口径挑明、用的是那支→走该分支、传输环操作的主角→传输环操作见 §4.14） |
+| 走读卡-verify | `stepper_builder.py --verify` → VERIFY OK（35 代码步/137 行与 git 62f4c998b297 逐字节一致；frames=58） |
+| 走读卡-verify-refs | VERIFY-REFS OK（9 条引用与 PDF 所引页原文一致，去空白子串） |
+| 三环账本 | LEDGER-PASS（见走读卡节） |
+| 布局探针 | `st_layout_probe.py` ×2 → PROBE-PASS（rings3 段：四区在场/三带等高 100.03 三值相等/零溢出/small=[]） |
+| 行为探针 | `xhci_spec_stepper_probe.py index.html` → STEPPER-PROBE-PASS（11 ev 帧 reset 法全 PASS：CFEP 入队/门铃×2/cmd 消费/CCE Slot=1·CC=1/SETUP·STAT 入队/ep0 消费/SET_CONFIGURATION 票据/设备灯→Configured/ERDP×2） |
+| console ×2 | 三域（Runtime.console+pageerror+CDP Log.entryAdded）5 帧步进 → **全 0**；另全程 58 帧步进（scroll+逐帧）×2 主题 → 0 条 → CONSOLE-CLEAN-PASS |
+| 静态冒烟 | `smoke_state.py` → STATE-SMOKE-PASS（dark/light console=0、zoombar=1、__zfs=True、.iso-stage=1） |
+| 自包含 | `grep -E 'src=\|href="http'` ×2 =0；http URL 唯一 `http://www.w3.org/2000/svg`（SVG xmlns）✓ |
+| 互链 | check_lesson_links ×2 → PASS（ok=0 missing=0；走读卡未新增 `<a>`，正文互指为纯文本） |
+| 箭头触边 | ARROW-EDGE-PASS（走读卡轮复跑仍 0.00px） |
+| 幂等 | node build.mjs 双跑 sha256 一致（dark f5fd11dd…→编辑后 6f53a0ad… 双跑同值） |
 
 ## shots 清单（shots/）
 
@@ -96,13 +129,18 @@ ARROW-EDGE-PASS（最差触边偏差 0.00px，门限 ≤2.5px · 盒 5 · 边 8�
 | state-overview-dark.png / state-overview-light.png | 双主题全页全景（full_page，1500 宽） |
 | state-diagram-dark.png / state-diagram-light.png | 状态图卡 .iso-stage 特写（双主题目检：无标签压线/压框、对比度成立） |
 | state-390-dark.png / state-390-light.png | 390px 宽全页（内容纵排，图可经 zoomfs 放大） |
+| walk-card-dark.png / walk-card-light.png | 走读卡初始帧（reset 后帧 1：三环全空、设备灯 Addressed、命令/事件双环静默） |
+| walk-card-end-dark.png / walk-card-end-light.png | 走读卡尾帧（CFEP 已消费/SETUP+STAT 在 EP0 环/CCE+TRFE 双事件卡/SET_CONFIGURATION 票据/设备灯 Configured/ERDP 更新——DOM 对账以行为探针 11 帧断言为准） |
 
 ## 工艺注记
 
 - 形态=table_page.mjs 表格节布局 + 状态图卡：状态图卡按 brief「额外 HTML 拼进 linksHtml 前的位置」
   走 cfg.cards 数组（卡序=规范节序 4.5→4.5.1/2→4.5.3→Table 4-1→4.5.4）；zoomfs 样式/脚本 body 尾注入，
   `_gen/table_page.mjs` 未改。
-- 节内脚本：`audit_arrows.py`（触边机核）、`smoke_state.py`（冒烟）——状态图/表格节手工冒烟口径的固化件。
+- 走读卡集成（2026-11-04 量产轮）：build.mjs 顶部 execFileSync render_block 直出块 HTML（渲染单一事实源
+  =scripts/stepper_builder.py），`_gen/table_page.mjs` 与 `assets/` 均未改。
+- 节内脚本：`audit_arrows.py`（触边机核）、`smoke_state.py`（冒烟）——状态图/表格节手工冒烟口径的固化件；
+  走读卡门脚本（console/shots/note 扫描）在 `~/.cache/zcode-tmp/`（临时件，不入 scripts/）。
 
 ## 已知边界
 
@@ -115,3 +153,5 @@ ARROW-EDGE-PASS（最差触边偏差 0.00px，门限 ≤2.5px · 盒 5 · 边 8�
 3. **保持原态不画自环**：三态的「remain」命令清单以状态卡读图注记列出（p87/p88/p89）。
 4. §4.5.4 映射表的 GET_DESCRIPTOR 行是 §4.3 p74 的补充映射，页面已明示「§4.5.4 清单外」。
 5. 下一节导航留空（§4.6 命令接口待建，链板块 index.html 并标「待建」）；prev=§4.4（已建）。
+6. 走读卡走的是配置方向（DC=0）；DC=1 deconfigure（Configured→Addressed）与 Reset Device 链未走读
+   ——状态图卡已画边、帧注记指向 §4.6.6，待命令接口节建卡时补（walk 尾帧注记同）。

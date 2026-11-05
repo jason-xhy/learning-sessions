@@ -226,6 +226,7 @@ for (const [x, y] of byDepth(k.corners(PLATE, 26))) {
 }
 
 // ---- 卡片（build 时六张落位卡 display:none，live 按帧点亮；飞行卡由 live 重建） ----
+const cardTexts = [];
 {
   // 空槽位浅框（未插卡时可见的槽位刻线，闭合线框无端点）
   let ghost = "";
@@ -238,12 +239,15 @@ for (const [x, y] of byDepth(k.corners(PLATE, 26))) {
   }
   faceText(ghost);
   // 六张落位卡（live 控制 display；静态 svg 入审计）
+  // 2026-11-05 遮挡修复轮：卡体入 item 深度序不变；刻字拆入 cardTexts（页尾 textlayer，
+  // 防后画的 cage.rail0/rail1、wire.rs/cfg 分段 bbox 盖字——探针逐帧判 FAIL 的主因）
   for (const def of CARD_DEFS) {
     const x = cardX(def.col), z = cardZ(def.row);
     put(`card.${def.key}`, [x + CARD_W / 2, -20, z + CARD_H / 2],
-      `<g data-card="${def.key}" style="display:none">` + geo.cardSvg(x, CARD_Y, z, def) + `</g>`,
+      `<g data-card="${def.key}" style="display:none">` + geo.cardBodySvg(x, CARD_Y, z, def) + `</g>`,
       [record(A.slab({ x, y: CARD_Y - CARD_T, w: CARD_W, d: CARD_T, r: 0.8 }, z, CARD_H, { name: `card.${def.key}` }, 2))],
       { bias: 0.35 });
+    cardTexts.push(`<g data-cardtext="${def.key}" style="display:none">` + geo.cardTextSvg(x, CARD_Y, z, def) + `</g>`);
   }
 }
 
@@ -515,6 +519,11 @@ seq.splice(labelCut, 0, `<g class="fb-labels">${labels.join("")}</g>`);
 const trolleySeqIdx = R.items.findIndex((it) => it.name === "trolley");
 seq.splice(trolleySeqIdx < labelCut ? trolleySeqIdx + 1 : trolleySeqIdx + 2, 0,
   `<g class="it" data-name="flycard"><g data-part="flycard" style="display:none"></g></g>`);
+// 尾置文字层（2026-11-05 遮挡修复轮）：落位卡刻字 + 飞行卡刻字。位于全部实体 item 之后
+// （含 gantry.beam / portbar 等大 bbox 后画件）——飞行卡卡体仍走 placeFly 真深度序，
+// 刻字置尾保证逐帧不被任何后画几何盖住（滑车吊运途中被 wire.rs/cfg 分段、柜体 bbox 盖字全消）。
+seq.push(`<g class="it" data-name="textlayer">` + cardTexts.join("")
+  + `<g data-part="flytext" style="display:none"></g></g>`);
 const svg = k.figureSvg({
   width: W, height: H,
   label: "启机配电台：左侧文书台是 xHCI 驱动（规范称 system software）的操作位，卡库里六张寄存器卡经桁架滑车吊运插进右侧 xHC 主机仓的卡笼；柜面上部是 USBSTS 就绪灯（CNR）、CONFIG 槽数旋钮、ERSTSZ 计数轮、Interval 节流旋钮与 INTE/IE 两道闸，柜顶是 USBCMD 的 R/S 总闸；台前下沿是根集线器端口灯排——本流程无设备参与，R/S=1 后端口才开始上报连接。",
@@ -738,7 +747,7 @@ ${stepperCss}
 const walkNoteHtml = `
 <p class="xsp-walknote">上面这台启机配电台的每一步，在真实内核代码里是一条怎样的调用链——下面按函数调用逐语句走读（左列代码＝基线 62f4c998b297 原文直读；右列三环全程空环、寄存器窗逐项落值；注记里的 F1–F7 与机器页帧号对表，顺序自由组的代码顺序与机器归组不同属规范允许，见帧注记）：</p>
 `;
-const body = pageCss + navHtml + proseHtml + quoteHtml + `<div class="lane-wrap">` + laneCard + `</div>` + `<div class="fig-wrap">` + figCard + `</div>` + walkNoteHtml + stepperHtml + linksHtml + footerHtml;
+const body = pageCss + navHtml + proseHtml + quoteHtml + `<div class="lane-wrap">` + laneCard + `</div>` + `<div class="fig-wrap">` + figCard + `</div>` + walkNoteHtml + stepperHtml + footerHtml;
 
 // zoomfs：两实例 scoped（第二实例不覆盖 window.__zfs）
 const zoomFor = (ix, focus, winName) => zoomFsScript({ focus })

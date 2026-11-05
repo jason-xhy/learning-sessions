@@ -60,6 +60,7 @@ function snapshot(i) {
 //   线样品 τ 区间整段在样品之后（t1<-0.01）→ 线在卡前 → 卡组移到该分段之前（线盖卡）；
 //   τ 区间整段在样品之前（t0> 0.01）→ 卡在线前 → 卡组移到该分段之后（卡盖线）。
 const flyInner = $('[data-part="flycard"]');
+const flyTextInner = $('[data-part="flytext"]');   // 尾置刻字层（2026-11-05 遮挡修复轮）
 const flyWrap = flyInner.closest(".it");
 const itemOrder = [...svgRoot.querySelectorAll(".fb-stage .it")].filter((el) => el !== flyWrap);
 const itemByName = new Map(itemOrder.map((el) => [el.getAttribute("data-name"), el]));
@@ -114,12 +115,20 @@ function placeFly(lo, hi) {
   else if (!ref) parent.appendChild(flyWrap);
 }
 function renderFly(a) {
-  if (!a.card) { if (flyInner.style.display !== "none") flyInner.style.display = "none"; return; }
+  if (!a.card) {
+    if (flyInner.style.display !== "none") flyInner.style.display = "none";
+    if (flyTextInner.style.display !== "none") flyTextInner.style.display = "none";
+    return;
+  }
   const def = D.cardDefs.find((c) => c.key === a.card);
   const pos = geo.flyCardPos(a.x, a.drop, a.push);
-  const html = geo.cardSvg(pos.x, pos.yFace, pos.z, def);
+  const html = geo.cardBodySvg(pos.x, pos.yFace, pos.z, def);
   if (flyInner.innerHTML !== html) flyInner.innerHTML = html;
   flyInner.style.display = "";
+  // 刻字入尾置层：与卡体同位姿，绘制序在全部实体之后（探针盖字零容忍）
+  const th = geo.cardTextSvg(pos.x, pos.yFace, pos.z, def);
+  if (flyTextInner.innerHTML !== th) flyTextInner.innerHTML = th;
+  flyTextInner.style.display = "";
   placeFly([pos.x, pos.yFace - D.cardT, pos.z], [pos.x + D.cardW, pos.yFace, pos.z + D.cardH]);
 }
 
@@ -173,12 +182,13 @@ function render(s, dt) {
     const on = i < s.portsOn;
     if (el.classList.contains("on") !== on) el.classList.toggle("on", on);
   });
-  // 落位卡
+  // 落位卡（卡体 + 尾置刻字同步显隐）
   for (const def of D.cardDefs) {
-    const el = $('[data-card="' + def.key + '"]');
-    if (!el) continue;
     const show = s.cards.has(def.key) ? "" : "none";
-    if (el.style.display !== show) el.style.display = show;
+    const el = $('[data-card="' + def.key + '"]');
+    if (el && el.style.display !== show) el.style.display = show;
+    const te = $('[data-cardtext="' + def.key + '"]');
+    if (te && te.style.display !== show) te.style.display = show;
   }
   // 读数
   const text = "启动步 " + s.step + "/7 · CNR " + (s.cnr ? 1 : 0) + " · R/S " + (s.rs ? 1 : 0) + " · 端口活动 " + s.portsOn + "/4";

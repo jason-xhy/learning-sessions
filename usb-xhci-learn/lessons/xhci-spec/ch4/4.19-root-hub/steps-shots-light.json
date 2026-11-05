@@ -1,0 +1,9 @@
+[
+  ["until", "() => !!window.__fig419", 8000],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "(window.__fig419.pause(), 'paused')"],
+  ["wait", 1500],
+  ["eval", "(window.__fig419.playTo(3), 'F3')"], ["wait", 9000], ["shot", "shots/frame-03-reset-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(5), 'F5')"], ["wait", 7200], ["shot", "shots/frame-05-suspend-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(8), 'F8')"], ["wait", 9000], ["shot", "shots/frame-08-overcurrent-light.png", ".fig-wrap .iso-plate", 2]
+]

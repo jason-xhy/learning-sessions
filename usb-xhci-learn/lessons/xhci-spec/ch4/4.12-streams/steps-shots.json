@@ -1,0 +1,21 @@
+[
+  ["until", "() => !!window.__fig412", 8000],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "(window.__fig412.pause(), 'paused')"],
+  ["wait", 1500],
+  ["shot", "shots/machine-dark.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(1), 'F1')"], ["wait", 5300], ["shot", "shots/frame-01-open.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(2), 'F2')"], ["wait", 5600], ["shot", "shots/frame-02-td.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(3), 'F3')"], ["wait", 7400], ["shot", "shots/frame-03-bell.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(4), 'F4')"], ["wait", 7400], ["shot", "shots/frame-04-route.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(5), 'F5')"], ["wait", 5600], ["shot", "shots/frame-05-dbpv.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(6), 'F6')"], ["wait", 8000], ["shot", "shots/frame-06-switch.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(7), 'F7')"], ["wait", 7700], ["shot", "shots/frame-07-ent.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(8), 'F8')"], ["wait", 4700], ["shot", "shots/frame-08-event.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(9), 'F9')"], ["wait", 7400], ["shot", "shots/frame-09-bounds.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(10), 'F10')"], ["wait", 3800], ["shot", "shots/frame-10-tour.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(6), 'F6b')"], ["wait", 8000],
+  ["shot", "shots/z-cage-dark.png", ".fig-wrap .iso-plate", 4, [540, 440, 280, 330]],
+  ["shot", "shots/z-console-dark.png", ".fig-wrap .iso-plate", 4, [583, 234, 569, 300]],
+  ["shot", "shots/z-nameplate-dark.png", ".fig-wrap .iso-plate", 4, [760, 700, 190, 220]]
+]

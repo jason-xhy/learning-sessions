@@ -1,0 +1,7 @@
+[
+  ["wait", 1200],
+  ["eval", "window.__fig42.playTo(3); 'ok'"], ["wait", 6000], ["shot", "shots/frame-04-light.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(7); 'ok'"], ["wait", 7300], ["shot", "shots/frame-08-light.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(8); 'ok'"], ["wait", 6700], ["shot", "shots/frame-09-light.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.stateOf()"]
+]

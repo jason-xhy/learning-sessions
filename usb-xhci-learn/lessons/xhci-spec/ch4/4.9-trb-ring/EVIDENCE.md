@@ -1,7 +1,9 @@
 # EVIDENCE.md —— §4.9 TRB 环（2026-11-04，互链型表格节量产）
 
 节目录：`lessons/xhci-spec/ch4/4.9-trb-ring/`（build.mjs + index.html dark + index-light.html light + shots/）。
-呈现类型：表格节（`_gen/table_page.mjs`）＋互链卡——三环机制图不重造，链四机课 fig2/3/4 与机制课 0006/0007/0009（板块 index.html 4.9 行既定口径「互链四机 fig2/3/4 不重造」）。
+呈现类型：表格节（`_gen/table_page.mjs`）＋互链卡——三环机制图不重造，链四机课 fig2/3/4 与机制课 0006/0007/0009（板块 index.html 4.9 行既定口径「互链四机 fig2/3/4 不重造」；**2026-11-05 起本节已自建机器、互链停用——见文末自含化段**）。
+
+**形态**：全定制 build.mjs（照 4.12-streams 先例；prose 3 段/引文 6 条/三张对照表逐字移植自旧 table_page 量产件——仅三处例外：prose 第 1 段尾句改指本节机器、linksHtml 数据段删除、footLine 日期 2026-11-05）。机器＝「环运转台」：9 槽环形卡柜（8 数据 TRB 槽 + 第 9 槽 Link TRB，槽 0 在前、Link 在前左与槽 0 相邻——照 Figure 4-6 布局）悬在四柱上；中央立柱顶出双针＝两根指针（压卡头针＝Enqueue、取卡钳针＝Dequeue，配重臂+角色盾牌；事件环模式盾牌蓝金互换＝方向反转）；卡顶翻牌＝Cycle bit；环内侧点列＝回绕路径（Link→槽0，live 点亮）；前低控台＝模式三键（传输/命令/事件）+ Enq/Deq/PCS/CCS 读数窗 + 空/满窗；左文书台（xHCI 驱动·蓝：TD 卡堆/事件匣/门铃 DB Target）；右总控台（xHC·金：CRCR/ERDP 寄存器牌/中断灯）；通知缆一根（门铃去程/完成事件与中断回程/写 ERDP 去程）承担全部跨台信号。13 帧三模式（传输 F0–F8 / 命令 F9–F10 / 事件 F11–F12），`window.__fig49 = { playTo, pause, stateOf, frameOf, cycleMode }`。
 
 ## 逐条断言 → 判据
 
@@ -81,3 +83,87 @@
 - 上一节链接指向 4.8-endpoint（并行施工节，本节交付时其 index.html 已存在且 check_lesson_links 通过；若 4.8 最终未落地需回改本节 prevHref）。
 - 中途语言门咬词 2 处（子串巧合），已当轮改写——见门输出 2。
 - 390px 下六列对照表内文字最小约 13px（td.mono 13px）且需卡内横滚——表格节窄幅形态如实登记，未做响应式重排。
+
+---
+
+---
+
+# 2026-11-05 自含化改造——anatomy 机器「环运转台」（替换互链承载）
+
+用户指令：去掉互链逻辑、忘掉 0001-0010 课程，在本节内自建机器重述四机课 fig2/3/4 的概念承载（环几何 / Cycle bit / Link TRB 回绕（Toggle Cycle 翻 PCS·CCS）/ 生产消费双指针）。
+
+**形态**：全定制 build.mjs（照 4.12-streams 先例；prose 3 段/引文 6 条/三张对照表逐字移植自旧 table_page 量产件——仅三处例外：prose 第 1 段尾句改指本节机器、linksHtml 数据段删除、footLine 日期 2026-11-05）。机器＝「环运转台」：9 槽环形卡柜（8 数据 TRB 槽 + 第 9 槽 Link TRB，槽 0 在前、Link 在前左与槽 0 相邻——照 Figure 4-6 布局）悬在四柱上；中央立柱顶出双针＝两根指针（压卡头针＝Enqueue、取卡钳针＝Dequeue，配重臂+角色盾牌；事件环模式盾牌蓝金互换＝方向反转）；卡顶翻牌＝Cycle bit；环内侧点列＝回绕路径（Link→槽0，live 点亮）；前低控台＝模式三键（传输/命令/事件）+ Enq/Deq/PCS/CCS 读数窗 + 空/满窗；左文书台（xHCI 驱动·蓝：TD 卡堆/事件匣/门铃 DB Target）；右总控台（xHC·金：CRCR/ERDP 寄存器牌/中断灯）；通知缆一根（门铃去程/完成事件与中断回程/写 ERDP 去程）承担全部跨台信号。13 帧三模式（传输 F0–F8 / 命令 F9–F10 / 事件 F11–F12），`window.__fig49 = { playTo, pause, stateOf, frameOf, cycleMode }`。
+
+## 帧清单（13 帧；narr 全中文带 pg 角标）
+
+| 帧 | 名 | pg | 帧终态（stateOf 实测） |
+|---|---|---|---|
+| F0 | 全景 · 三环共用一套机构 | p149 | mode 传输环 enq0 deq0 pcs1 ccs1 |
+| F1 | 建环：清 0 与 Link | p151·p157 | enq0 deq0 pcs1 ccs1（Link 卡入位） |
+| F2 | 生产：压入一颗 TD（NC,NC,ED） | p151–153 | enq3 deq0 pcs1 ccs1 |
+| F3 | 门铃与消费（Transfer Event 回报） | p152–153 | enq3 deq3（CCS=1==Cycle 执行） |
+| F4 | Link 回绕 · PCS 翻转 | p154–155 | enq0（重载回槽0） pcs0 |
+| F5 | 出队过 Link · CCS 翻转 | p154·p156 | deq0（跳回槽0） ccs0 |
+| F6 | 第二圈：双翻后照常 | p154 | enq1 deq1（新 Cycle=0==CCS0 执行） |
+| F7 | 空：双针重合（失配停等） | p153·p156 | enq1 deq1 empty=1 |
+| F8 | 满：入队+1＝出队 | p151·p156 | enq0 deq1 pcs1 full=1 |
+| F9 | 命令环：单 TRB · 门铃 0 | p160·§4.1 p68 | mode 命令环 enq1 deq0（CRCR 牌/CMD 卡） |
+| F10 | 命令完成回执 | p160 | deq1（Command Completion） |
+| F11 | 事件环：方向反转 · ERDP | p150·p161 | mode 事件环 enq3 deq3（盾牌互换/中断灯/写 ERDP） |
+| F12 | ERST 分段：每段 ≥16 | p161–163 | erdp 牌示 EHB→0·DESI＝0 |
+
+## 机器读数 ↔ 规范条文真值表（stateOf 实测对表）
+
+| 机器读数 | 规范条文 |
+|---|---|
+| F2 每写一张卡顶翻牌＝PCS 值、入队针推进一格 | p153「The Cycle bit field in a TRB identifies the location of the Enqueue Pointer…eliminating the need to define a physical Enqueue Pointer register」+ Figure 4-8 入队推进流图（p157） |
+| F3 出队针读翻牌与 CCS 相等才执行、完成后「毕」标 | p153「If the CCS flag is equal to the value of the TRB Cycle bit, then the consumer owns the TRB…may process it」 |
+| F4 入队针到 Link 槽重载回槽 0、PCS 1→0 | p154「If the Producer encounters a Toggle Cycle flag set in a Link TRB it shall toggle the state of its PCS flag」；重载＝Ring Segment Pointer（p153） |
+| F5 出队针过 Link：CCS 1→0、跳回槽 0 | p154（Consumer 侧同条）+ p156「xHC will automatically set the Dequeue Pointer to the address provided by the Link TRB」 |
+| F6 第二圈 Cycle=0 与翻转后 CCS 相等照常执行 | p154 Figure 4-6「~PCS」第二圈语义 |
+| F7 双针重合＋空窗亮（失配＝入队未到） | p153「If a transition detected, the ring is empty」+ p156 空＝Dequeue＝Enqueue |
+| F8 满窗亮：入队+1 撞出队（跨 Link 计入） | p151「If the “Enqueue Pointer + 1” = Dequeue Pointer, then the ring is full」+ p156 +16/Link 比对两法 |
+| F9 单命令单 TRB、DB Target=0、CRCR 管起点 | p160「No multi-TRB TDs are allowed」「Host Controller Doorbell Register (0)」「CRCR…initialize the Command Ring Dequeue Pointer」；仅一条命令环＝§4.1 p68 |
+| F10 Command Completion 报出队位置 | p160「The location of the Command Ring Dequeue Pointer is reported on the Event Ring in Command Completion Events」 |
+| F11 盾牌互换＝xHC 生产/驱动消费；无门铃发中断；写 ERDP | p161「the xHC is the producer and system software is the consumer」+「Software shall write the Event Ring Dequeue Pointer (ERDP) register」；ERDP 物理寄存器＝p150 Note |
+| F12 段尾卡「段尾 ERST」+ 注记牌 | p161–163 ERST Base/Size 对、每段 ≥16（p163「is at least 16」）、段表循环使用（p162） |
+
+## 门输出（2026-11-05 实测，逐条末行）
+
+1. 构建：`node build.mjs --audit` / `--light --audit` → **audit passed** ×2（75 solids · 78 items · 1 tubes · 162 order rules）；纯构建 `node build.mjs && node build.mjs --light` → wrote index.html/index-light.html 301 KB。
+2. 页码机核：`python3 scripts/xhci_spec_pagecheck.py 149 "TRB Ring" 151 "4.9.1" 152 "4.9.2" 160 "4.9.3" 161 "4.9.4" 157 "Consumer Cycle State (CCS)" 155 "is always a Link TRB" 156 "adding the size of a TRB" 163 "is at least 16" 150 "Only the Dequeue Pointer for an Event Ring" 68 "There is only one Command Ring"` → 12/12 PAGE-OK，末行 **PAGECHECK-PASS**。
+3. 语言门：`scan_words.py retired index.html / index-light.html` → 双主题 **total=6 {'回执': 6}** ⊆ 豁免表 **PASS**（中途咬过一次「ERST 段表」〔统一形 guard〕与一次「签下」〔geometry-live 注释「上标签下值」内联进页〕，当轮改写复跑通过）。
+4. console 清点：playwright channel="chrome" 双主题加载 + playTo 驱动 13 帧 → **console error 0 / pageerror 0 ×2**；API 实测 `playTo(5) → frameOf()==5`、`stateOf()` 逐帧读数见上真值表（playwright 逐帧采集后并入本表，采集脚本为一次性验证件未入仓）。
+5. 自包含：`grep -c 'http://\|https://'` → index.html=2、index-light.html=2，命中均为 SVG xmlns → **PASS**。
+6. 遮挡探针：`xhci_spec_occlusion_probe.py index.html --frames 13` → **OCCLUSION-FAIL 6**（light 同 6）——**已知边界**，见下「遮挡门实录」。
+7. anatomy 线端检查：`scripts/lines.mjs index.html / index-light.html` → 无 finding、console clean（初版 hub.column 装饰弧线端悬空 2.57px，删弧后清零）。
+8. 互链存在性：本节出链 `../../index.html`（板块目录）、`../4.8-endpoint/index.html`、`EVIDENCE.md`——三目标均在场。
+
+## 遮挡门实录（15 → 6，全部定性）
+
+初跑 15 处，三轮修复后 6 处，逐处用 `isPointInFill` 精判（文字中心+四角 5 点采样）：
+- 纯 bbox 假阳性 4 处（F0/F4「6」槽号、F4「C=1」：0/5 点在遮挡 path 填充内）——探针 rect-overlap 近似 vs 针件斜置 bbox；几何实测无覆盖。
+- 动作瞬间单角掠边 2 处（F4/F5 卡顶翻牌数字「1」：1/5，中心与三角全清，≤1px 角点）——取卡钳悬停在正下方卡顶翻牌上方的物理瞬间，属针头工作位的真实近距，非文字不可读。
+- 修复历程：槽号外移 r82（针尖 r72 之外）＋针梁分三段（分段件 bbox 收窄）＋前控台降为低台并收窄至 x+40（投影 bbox 退出前卡文字带）＋deq 针整体抬高 1.8（轭退出卡面文字行）＋模式钮改平贴点亮环（凸帽不遮刻名）。
+
+## 坑实录（2026-11-05）
+
+1. **kit plan 缺 `r` 即 NaN**：`k.slabOf/planOutline/roundedPlan` 收到无 `r` 的 plan 会产出 `MNaN NaN` 路径（本节踩 3 处：TRAY、cardSvg 卡体/翻牌、desk.top 内联 insetPlan）——首跑 85 条 console error 全源于此；判据＝console 报 `<path> attribute d: Expected number, "MNaN…"` 时先查 plan 字面量。
+2. **A.prism 第 4 参是终点不是高度**：`A.prism(F, poly, s0, s1)` 传成 `(F, poly, 46.9, 1.4)` 产出一根从 z1.4 到 z46.9 的巨柱（sunk 2.5 报警）——与 `slab(name, plan, z, h)` 的「z+高度」习惯不同形。
+3. **径向单体质穿立轴**：针梁单体 polygon 从 r−15 连到 r+72 必过柱心（sunk 2.2）——拆「梁三段+配重臂」四件，端面贴轴面。
+4. **遮挡探针是 bbox 近似**：斜置长件（针梁/轭）的 bbox 远大于实体；已按「修复到可修、余下 isPointInFill 定性记录」收口（见上）。低前台若高过 z≈22，其投影 bbox 必进前卡（槽 0/1）文字带——前控台限高 21.5 + 收窄右缘 x+40 是实测边界。
+5. **注释也会进语言门**：geometry-live.mjs 源码整体内联进页面，注释里的「上标签下值」拼出退役词「签下」——内联源码的注释按页面文本对待。
+6. **遮挡探针只认 `__figNN`**：按序探测 `__fig49 → __fig412 → __fig42 → __fig43`（2026-11-05 泛化后），本节 `window.__fig49` 直接可驱动，无需别名。
+7. 双针 painter 序：径向梁跨环轨前后景深，单键画家序必出环（settle 报 8 cycles）——双针按逐帧动件处理：形状入 R.solids 供支撑/间距审计、绘制恒在 actors 顶层（双针 z≥46.9 高于全部静件卡顶 46.2；钟顶饰 z56+ 仅柱心 r≤3.2 与针根无屏面交，4× 截图核过）。
+
+## shots 清单（2026-11-05 终版；playwright chrome 1500×1000@2x）
+
+- page-overview-dark.png / page-overview-light.png —— 全页全景
+- page-390-reduced-dark.png —— 390px 窄幅 + reduced-motion（playTo(6) 静止帧）
+- machine-390-dark.png —— 390px 机器特写
+- machine-f4-wrap-dark/light.png —— F4 Link 回绕·PCS 翻转（回绕点列点亮）
+- machine-f8-full-dark/light.png —— F8 满（空/满窗、双针相邻）
+- machine-f9-cmd-dark/light.png —— F9 命令环（注记牌/CRCR/DB Target=0）
+- machine-f11-evt-dark/light.png —— F11 事件环（盾牌互换/中断灯/ERDP）
+- lines-dark.png —— 线端检查环示图（anatomy lines.mjs）
+- （2026-11-04 旧表格节 shots：table-*.png 6 张留档未删）

@@ -367,3 +367,49 @@ linksHtml 之前（卡前加 xsp-walknote 导语），script=kitScript+stepperJs
 - walk-card-dark.png / walk-card-light.png：走读卡初态（行 1/48，寄存器窗两格初值）
 - walk-card-end-dark.png / walk-card-end-light.png：末帧（行 48/48，寄存器窗十格全部落位、
   USBCMD=R/S=1·INTE=1、设备端仍 Powered）
+
+## §14 文字遮挡修复轮（2026-11-05，板块级 occlusion 探针清零）
+
+探针：`scripts/xhci_spec_occlusion_probe.py`（默认 8 帧 dwell 5000ms，逐帧驱动终态取可视
+text bbox 与 DOM 序在后的可见几何 bbox 求交 >15% 判 FAIL）。本节基线 **13 处**（主会话
+2026-11-05 跑，~/.cache/zcode-tmp/occ_42.json）→ 终值 **OCCLUSION-PASS（0 处）**。
+
+### 14.1 逐 finding 处置表（手法统一：刻字绘制序后移——卡体深度序零变动）
+
+| 被盖文字（帧） | 遮挡者（bbox） | 手法 |
+|---|---|---|
+| 「DCBAAP」「64 位地址 → DCBAA」（F2 起，flycard 途中） | cabinet.lower（飞行中被 placeFly 移到柜体 item 之前，大 bbox 整盖 ov=1.0） | cardSvg 拆 cardBodySvg/cardTextSvg：卡体照旧走 placeFly 真深度序（拉线互遮既证不动），刻字入页尾 textlayer（`data-part="flytext"`，全部实体 item 之后） |
+| 「MSI-X 表」「向量 0」（F5–F7，flycard） | cabinet.lower / trolley（F5 取卡途中） | 同上（flytext 置尾后任何后画件都盖不到） |
+| 「DCBAAP」「CRCR」「事件环段」及副行（F3–F7，落位卡） | cage.rail0（轨 z 62..66 在卡顶上方 8+ 世界单位，纯 bbox 伪影——轨的 112 长菱形 bbox 高 128px 罩住卡面文字，实际填充不覆盖） | 落位卡刻字同样拆出，入 textlayer（`data-cardtext` 六组，live 与 `data-card` 同步显隐）；字面矩阵/字号零改动 |
+| 「ERDP」「首段起点地址」「ERSTBA」「段表基地址」（F5–F7） | wire.rs:8 / wire.cfg:13 / cage.rail1（同类后画 bbox） | 同上（textlayer 在 gantry.beam/portbar 等一切后画件之后） |
+
+零视觉损失依据：轨/线与字的真实像素并不交叠（轨前缘在字上方 ~8.4 世界单位 ≈17px），被
+探针命中是 bbox 语义；置尾只改绘制序，不动任何位姿——刻字同矩阵同字号（cardTextSvg 与原
+cardSvg 内两行 vtext 逐参数相同）。
+
+### 14.2 机器读数回归（语义零变对表）
+
+改动面=纯 DOM 层序（build 组装序 + live 显隐循环 + cardSvg 拆分），FRAMES/snapshot/cues
+逐行零触碰。双主题 × 8 帧逐帧驱动（playTo(i)，dwell=DUR+600ms）实测（gate 报告
+~/.cache/zcode-tmp/gate23_report.json）：
+
+- stateOf 逐帧与 FRAMES 真值全等：F2 cards=[dcbaap] → F5 起六卡全、F6/7 rs=1；
+- 灯牌逐帧全等（例）：F0「启动步 0/7 · CNR 0 · R/S 0 · 端口活动 0/4」→ F6「启动步 6/7 ·
+  CNR 0 · R/S 1 · 端口活动 4/4」；
+- `data-card` 与 `data-cardtext` 六组逐帧 display 全等（新增不变量）；
+- console/pageerror 双主题 8 帧全 0。
+
+### 14.3 门与产物
+
+- occlusion 探针（默认参数，终版构件复跑）：`OCCLUSION-PASS`（exit 0）；
+- scan_words retired：index/index-light 均 {回执:1, 泳道:6} ⊆ 允许集；
+- shots 新增：occ-fix-dark.png（F7 全景六卡全位）+ occ-fix-cards-zoom.png（卡笼特写——
+  六卡刻字全部可读，无互叠；特写为锚元素外扩 60px 裁切，边缘截断属裁切框非页面）。
+
+### 14.4 坑实录
+
+- settle 是约束求解重排 key（audit.mjs `solveDepthRules`→`settle` 回写 item.key），不是纯
+  depthOf——trolley(31)/flycard(32) 之后仍排着 cabinet.lower(34) 一串大件；想靠 bias 反转
+  真实屏叠对会被规则求解拉回，勿走此路。文字层置尾是与 bbox 判定语义不对抗的解。
+- 探针只豁免 fill:none 的线与 opacity<0.35——labels/overlays 层全是线+文字，永不构成
+  遮挡者；唯一要防的是实体 item，textlayer 置于全部 .it 之后即闭环。

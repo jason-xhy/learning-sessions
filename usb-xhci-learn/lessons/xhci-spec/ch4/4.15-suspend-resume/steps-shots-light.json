@@ -1,0 +1,18 @@
+[
+  ["until", "() => !!window.__fig415", 8000],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "(window.__fig415.pause(), 'paused')"],
+  ["wait", 1500],
+  ["shot", "shots/machine-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig415.playTo(3), 'F3')"], ["wait", 7800], ["shot", "shots/frame-03-suspend-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig415.playTo(5), 'F5')"], ["wait", 6600], ["shot", "shots/frame-05-wake-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig415.playTo(9), 'F9')"], ["wait", 6000], ["shot", "shots/frame-09-usb2-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig415.playTo(10), 'F10')"], ["wait", 7800], ["shot", "shots/frame-10-host-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig415.playTo(3), 'F3b')"], ["wait", 7800],
+  ["shot", "shots/z-gate-light.png", ".fig-wrap .iso-plate", 4, [724, 666, 190, 150]],
+  ["shot", "shots/z-console-light.png", ".fig-wrap .iso-plate", 4, [560, 380, 330, 210]],
+  ["eval", "(window.__fig415.playTo(2), 'F2b')"], ["wait", 5400],
+  ["shot", "shots/z-panel-light.png", ".fig-wrap .iso-plate", 4, [558, 168, 170, 210]],
+  ["shot", "shots/z-dev-light.png", ".fig-wrap .iso-plate", 4, [788, 608, 286, 190]],
+  ["shot", "shots/lane-light.png", ".lane-wrap .iso-plate", 1.2]
+]

@@ -79,14 +79,22 @@ export function makeLiveGeo(k, G, D) {
   }
 
   // ---- 飞行卡 / 落位卡（同一造型：底板 + 底部拉耳 + 刻字 + 测试点） ----
-  function cardSvg(x, yFace, z, def) {
+  // 2026-11-05 遮挡修复轮：卡体与刻字拆开（cardBodySvg / cardTextSvg）——卡体保持 settle
+  // 深度序（滑车/拉线互遮不变），刻字统一入页尾 textlayer（rail0/rail1/wire 分段按 bbox
+  // 盖字=探针 FAIL；字面本体在 rail 前方 8+ 世界单位，纯 bbox 伪影，置尾零视觉损失）。
+  function cardBodySvg(x, yFace, z, def) {
     const plan = { x, y: yFace - D.cardT, w: D.cardW, d: D.cardT, r: 0.8 };
     let g = S(k.slabOf(plan, z, D.cardH, P, 2, 0.3), { tone: "hi" });
     g += S(k.slabOf({ x: x + D.cardW / 2 - 4, y: yFace - 1.8, w: 8, d: 1.6, r: 0.5 }, z, 2.6, P, 2, 0.2), { tone: "mid" });
-    g += vtext(x + D.cardW / 2, yFace + 0.05, z + D.cardH - 6.2, def.name, 8.2, "hi", "middle");
-    g += vtext(x + D.cardW / 2, yFace + 0.05, z + 4.2, def.sub, 4.4, "mid", "middle");
     g += k.dotsSvg([[x + 2.6, yFace + 0.2, z + D.cardH - 2.2], [x + D.cardW - 2.6, yFace + 0.2, z + D.cardH - 2.2]].map((p) => at(p)), { size: 0.42 });
     return g;
+  }
+  function cardTextSvg(x, yFace, z, def) {
+    return vtext(x + D.cardW / 2, yFace + 0.05, z + D.cardH - 6.2, def.name, 8.2, "hi", "middle")
+      + vtext(x + D.cardW / 2, yFace + 0.05, z + 4.2, def.sub, 4.4, "mid", "middle");
+  }
+  function cardSvg(x, yFace, z, def) {
+    return cardBodySvg(x, yFace, z, def) + cardTextSvg(x, yFace, z, def);
   }
 
   // ---- 卡库叠卡（n 张平叠，托盘上方留缝） ----
@@ -119,5 +127,5 @@ export function makeLiveGeo(k, G, D) {
     return { x: x - D.cardW / 2, yFace: D.beamY - 5.4 - push, z: zg - D.cardH + 2.2 };
   }
 
-  return { knobSvg, wheelWinSvg, numWinSvg, rsArmSvg, swArmSvg, cardSvg, magStackSvg, trolleySvg, flyCardPos, vtext, faceM };
+  return { knobSvg, wheelWinSvg, numWinSvg, rsArmSvg, swArmSvg, cardSvg, cardBodySvg, cardTextSvg, magStackSvg, trolleySvg, flyCardPos, vtext, faceM };
 }

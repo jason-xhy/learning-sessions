@@ -294,9 +294,6 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 <p class="xsp-narr" data-status aria-live="polite">总览模式：完整流程图。设备泳道不参与——所有权交接是软件代理之间的事。</p><div class="xsp-legend">
 <span><i style="background:var(--xsp-sw)"></i>xHCI 驱动（BIOS→OS 两位代理先后在场）</span><span><i style="background:var(--xsp-hc)"></i>xHC 控制器</span><span><i style="background:var(--xsp-dev)"></i>设备（不参与）</span><span>实线=信号量写 · 虚线=SMI 通知</span>
 </div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进</span></div></div><figcaption class="iso-legend"><span class="iso-caption">软件泳道先后站着两位代理（BIOS→OS）：握手全部通过 USBLEGSUP 信号量完成，SMI 只是 BIOS 侧的门铃。</span></figcaption></figure>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——OS 接管后的初始化（交接完成才轮到它）；<a href="../../index.html">§4.23 电源管理（待建）</a>——Aux Power 井的功耗域细节（§4.23.1）。</p>
-<p><a href="../../index.html">§7.1.1/§7.1.2 寄存器字段（第 5-7 章后续扩展）</a>——USBLEGSUP/USBLEGCTLSTS 位定义；调试能力归 §7.6、虚拟化归第 8 章（后续扩展）。</p></div>
 <p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.22 p307–310 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><script type="module">const AZIMUTH = 45;
 const ELEVATION = 30;
 const SHADES = 4;
@@ -829,7 +826,7 @@ function groupSvg(children, extra = {}) {
 }
 function figureSvg({ width, height, label, body, standalone = false, className }) {
     const style = standalone ? `<style>${ISO_CSS}</style>` : "";
-    return `<svg${attrs({
+    return `\x3csvg${attrs({
         xmlns: "http://www.w3.org/2000/svg",
         class: `iso-svg${standalone ? " iso" : ""}${className ? ` ${className}` : ""}`,
         "data-theme": standalone || undefined,

@@ -2,11 +2,16 @@
 // 形态：table_page.mjs 表格节布局（cfg.cards 承载全部卡，状态图卡按 brief「额外 HTML 拼进
 //   linksHtml 前的位置」进入 cards 数组）+ zoomfs 三件套以 body 尾注入（_gen/ 未改）。
 //   状态图卡单 .iso-stage，接 zoomBarHtml/zoomFsCss/zoomFsScript（照抄 4.4 接线形态）。
+// 走读卡（CODE-STEPPER 量产轮，2026-11-04）：render_block 渲染 stepper_45x.json + codestepper/
+//   course.css 走读段内联——渲染单一事实源=scripts/stepper_builder.py，行号零誊抄（锚点断言门）。
+//   tablePage 自绘产物：走读块（walknote+stepper）经后处理插在互链卡之前（4.17 锚点注入同位）、
+//   CSS/JS 并入既有 body 尾注入段；replace 一律函数形态防 $ 展开（4.17 立法）。
 // 判据：xHCI 1.2b §4.5 p81–90（三组件/布局/DCI/初始化/槽态/映射逐条对页）；
 //   状态图按 §4.5.3.2–4.5.3.6 p86–89 文字逐边重构（对照 Figure 4-2 p85 五态名与 large bubble 原注）；
 //   Configured→Addressed 取 DC=‘1’（§4.6.6 p102 · Table 6-64 p451；§4.5.3.6 p89 印刷 DC=‘0’ 为矛盾值，
 //   与 §4.5.3.5 p88「DC=‘1’ 才按 No Op 保持 Addressed」冲突——取值理由登记 EVIDENCE.md）。
-import { writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tablePage } from "../_gen/table_page.mjs";
@@ -14,8 +19,25 @@ import * as k from "/Users/jason/.zcode/skills/anatomy/kit/iso-kit.mjs";
 import { zoomBarHtml, zoomFsCss, zoomFsScript } from "../../shared/zoomfs.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const WS = "/Users/jason/ZCodeProject/usb-xhci-study";
 const THEME = process.argv.includes("--light") ? "light" : "dark";
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// ---------- 代码走读卡（rings3 四区：命令环/EP0 传输环/事件环/设备端；CODE-STEPPER 量产轮） ----------
+const stepperHtml = execFileSync("python3", [
+  join(WS, "scripts/stepper_builder.py"), "render_block",
+  join(WS, "lessons-data/stepper_45x.json"),
+], { encoding: "utf8" });
+const courseCss = readFileSync(join(WS, "assets/course.css"), "utf8");
+const cssSeg = (a, b) => {
+  const i = courseCss.indexOf(a);
+  const j = courseCss.indexOf(b, i);
+  if (i < 0 || j < 0) throw new Error(`course.css 段标记缺失: ${a.slice(0, 30)}`);
+  return courseCss.slice(i, j);
+};
+const stepperCss = cssSeg("/* ===== 代码步进放映机", "/* ===== 右缘批注")
+  .replace(/\/\*[\s\S]*?\*\//g, "");  // 剥段内注释：资产注释不进交付件（载体三分），兼减字节
+const stepperJs = readFileSync(join(WS, "assets/codestepper.js"), "utf8");
 
 // ---------- 槽状态机静态 SVG（Figure 4-2 复刻；坐标核算表见 EVIDENCE.md） ----------
 const BOX_W = 150, BOX_H = 64;
@@ -194,8 +216,21 @@ const ST_CSS = `
 .st-pg { font: 400 12.5px var(--font-mono); fill: var(--anatomy-muted); }
 .iso[data-theme="light"] .st-pg { fill: #6b6350; }
 `;
-const inject = `<style>${zoomFsCss()}${ST_CSS}</style><script>${zoomFsScript({ focus: [".st-enabled"] })}</script>`;
-const out = page.replace("</body>", inject + "</body>");
+const inject = `<style>${zoomFsCss()}${ST_CSS}
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+${stepperCss}
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--font-ui, system-ui, sans-serif); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
+</style><script>${zoomFsScript({ focus: [".st-enabled"] })}${stepperJs}</script>`;
+// 走读块插互链卡之前（4.17 注入同位）；replace 一律函数形态防 $ 展开
+const walkHtml = `<p class="xsp-walknote">同一张映射表（§4.5.4.2 SET_CONFIGURATION 双操作行）在真实内核代码里的样子——从 USB 核心 usb_set_configuration 起步，逐语句走进 HCD 层逐端点 add_endpoint、xhci_check_bandwidth 的输入控制上下文 A 位修整，再到 Configure Endpoint 命令投递、xHC 执行、中断侧消费回执，最后 SET_CONFIGURATION 请求经 EP0 上总线、设备灯迁到 Configured；右列三环与设备端随每帧演进。TD 计数口径挑明：规范按传输阶段记 TD（Setup/Data/Status），内核 struct xhci_td 按 URB 记——本链操作二是无数据阶段的控制传输（两颗 TRB 一个内核 TD），两个口径在本例重合。槽态与设备态各迁各的：命令完成时槽先 Configured，请求完成时设备才 Configured——双操作同成正是 §4.5.4.2 的判据。</p>
+` + stepperHtml + "\n";
+const LINKS_HEAD = '<div class="xsp-card"><h2>相关</h2>';
+let out = page.replace(LINKS_HEAD, () => walkHtml + LINKS_HEAD);
+out = out.replace("</body>", () => inject + "</body>");
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), out);
 console.log("wrote", name, (out.length / 1024).toFixed(0) + " KB");

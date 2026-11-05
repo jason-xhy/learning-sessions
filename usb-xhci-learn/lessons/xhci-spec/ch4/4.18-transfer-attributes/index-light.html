@@ -167,7 +167,4 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 <tr><td><b>4.18.2.1 payload 的 NS 选项</b></td><td>软件知道「CPU 自上次 xHC 持有后未碰过这缓冲」时可置 IN TRB 的 NS 位——xHC 写该缓冲时走 no-snoop DMA（典型：应用缓冲由 xHC DMA 引擎填过）</td><td class="mono">p271</td></tr>
 <tr><td><b>4.18.2.2 Scratchpad 引用的 NS</b></td><td>scratchpad 数组与缓冲归 xHC 独占——xHC 访问它们应走 no-snoop DMA，省掉不必要的总线嗅探</td><td class="mono">p271–272</td></tr>
 </table></div>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.20-scratchpad-buffers/index.html">§4.20 暂存缓冲区</a>——Opaque 区的归属与 NS 的落点；<a href="../4.21-pci-express/index.html">§4.21 PCI Express</a>——PCIe 配置空间里的 Enable No Snoop 位语境。</p>
-<p><a href="../../index.html">§5.2.8 PCIe 能力结构（第 5 章后续扩展）</a>——Table 7-12 位 11。</p></div>
 <p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.18 p270–272 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main></body></html>

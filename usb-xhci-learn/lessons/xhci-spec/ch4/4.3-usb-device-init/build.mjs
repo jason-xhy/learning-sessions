@@ -851,7 +851,7 @@ const notesHtml = `
 const linksHtml = `
 <div class="d3-card"><h2>互链</h2>
 <p><a href="../../../xhc-machines/fig1-assembly/index.html">四机课 Fig1 总装流水线</a>——TRB 装配机器（Setup/Data/Status 三段控制传输的位域卡）；<a href="../../../xhc-machines/fig4-command-ring/index.html">Fig4 命令环机器</a>——命令环与命令完成事件（§4.6.1）；<a href="../../../xhc-machines/fig2-transfer-ring/index.html">Fig2 传输环分度台</a>——EP0 传输环的生产与消费。</p>
-<p><a href="../4.1-command-operation/index.html">§4.1 命令操作</a>——命令模型（命令环 + 门铃 0 + 命令完成事件）；<a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——R/S=1 后端口开始上报连接，本节从此接手；<a href="../../../0009-xhc-transfer-drama.html">0009 传输三视角课</a>——控制传输三段的包序视角。§4.4 设备移除（待建）。</p></div>`;
+<p><a href="../4.1-command-operation/index.html">§4.1 命令操作</a>——命令模型（命令环 + 门铃 0 + 命令完成事件）；<a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——R/S=1 后端口开始上报连接，本节从此接手；<a href="../../../0009-xhc-transfer-drama.html">0009 三视角走读</a>——控制传输三段的包序视角。§4.4 设备移除（待建）。</p></div>`;
 
 const machineCtlHtml = `<div class="fig-ctl" role="toolbar" aria-label="动画控制条">
   <button type="button" data-act="prev">◀ 上一帧</button>
@@ -906,7 +906,7 @@ ${stepperCss}
   }) + `
 <p class="xsp-walknote">同一条编址主线在真实内核代码里的样子——从 USB 核心 hub_set_address 起步，逐语句走进 xhci_setup_device 的输入上下文填格与 Address Device 投递，再到 xHC 执行、SET_ADDRESS 上总线、中断侧消费；右列四区随每帧演进。语义与上方机器 F5（槽初始化）→F6（编址）对表。TD 计数口径：规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记——本链不涉传输 TD，EP0 环唯一的写入是初始化期的 Link TRB；EP0 Max Packet Size 的内核值与规范值差异在帧注记里登记。</p>
 ` + stepperHtml +
-  linksHtml + `
+  /* 自含化 2026-11-05：互链卡停渲染 */ "" + `
 <p class="d3-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.3 p71–80 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-03</p>`;
 
 // 双 .iso-stage：第二实例（机器台）用选择器补丁绑定

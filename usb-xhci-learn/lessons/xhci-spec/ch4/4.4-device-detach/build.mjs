@@ -1,13 +1,35 @@
 // §4.4 设备拔出 —— 泳道节（生成器 lane_page.mjs 首个量产件）
 // 判据：xHCI 1.2b §4.4 p81（拔出检测/PSCEG/Disable Slot 三句逐字）；§4.6.4 p96（命令效果五项）
 // 工艺：_gen/lane_page.mjs 生成器 + anatomy kit pageHtml + shared/zoomfs.mjs（构建期内联，自包含）
-import { writeFileSync } from "node:fs";
+// 走读卡（CODE-STEPPER 量产轮，2026-11-04）：render_block 渲染 stepper_44x.json + codestepper/course.css
+//   走读段内联——渲染单一事实源=scripts/stepper_builder.py，行号零誊抄（锚点断言门）。
+//   生成器不接受额外 css/js（禁改 _gen/），走读卡三件（CSS/body 块/JS）对 lanePage 产物做
+//   锚点注入：head `</style></head>` 前、linksHtml 首标记 `<!--X44:WALK-->` 处、module 脚本首。
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { lanePage } from "../_gen/lane_page.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const WS = "/Users/jason/ZCodeProject/usb-xhci-study";
 const THEME = process.argv.includes("--light") ? "light" : "dark";
+
+// ---------- 代码走读卡（rings3 四区：命令环/EP0 传输环/事件环/设备端；Disable Slot 链） ----------
+const stepperHtml = execFileSync("python3", [
+  join(WS, "scripts/stepper_builder.py"), "render_block",
+  join(WS, "lessons-data/stepper_44x.json"),
+], { encoding: "utf8" });
+const courseCss = readFileSync(join(WS, "assets/course.css"), "utf8");
+const cssSeg = (a, b) => {
+  const i = courseCss.indexOf(a);
+  const j = courseCss.indexOf(b, i);
+  if (i < 0 || j < 0) throw new Error(`course.css 段标记缺失: ${a.slice(0, 30)}`);
+  return courseCss.slice(i, j);
+};
+const stepperCss = cssSeg("/* ===== 代码步进放映机", "/* ===== 右缘批注")
+  .replace(/\/\*[\s\S]*?\*\//g, "");  // 剥段内注释：资产注释不进交付件（载体三分），兼减字节
+const stepperJs = readFileSync(join(WS, "assets/codestepper.js"), "utf8");
 
 const cfg = {
   theme: THEME,
@@ -65,14 +87,31 @@ const cfg = {
     { i: "var(--xsp-dev)", t: "设备（拔出即离场）" },
     { t: "实线=命令流 · 虚线=事件回执流" },
   ],
-  linksHtml: `
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.3-usb-device-init/index.html">§4.3 USB 设备初始化</a>——拔出的逆过程：Enable Slot 取槽与登记（§4.3.2 取槽，本节 Disable Slot 还槽）。</p>
-<p><a href="../4.1-command-operation/index.html">§4.1 命令操作</a>——Disable Slot 的投递与回执模型；<a href="../../index.html">§4.6.4 Disable Slot（待建）</a>——命令逐条展开。</p></div>`,
+  extraHtml: `<!--X44:WALK-->`,  // 自含化：原互链卡移除，仅留走读卡注入锚
   footLine: "判据：xHCI 1.2b（625472 Rev 1.2b）§4.4 p81、§4.6.4 p96、§4.19.2 · 引文逐字核对，证据见 <a href=\"EVIDENCE.md\">EVIDENCE.md</a> · 生成于 2026-11-04",
 };
 
-const page = lanePage(cfg);
+// ---------- 走读卡三件注入（lanePage 产物后处理；锚点唯一，replace 函数形态防 $ 误展开） ----------
+const walknote = `<p class="xsp-walknote">同一条回收主线在真实内核代码里的样子——从 USB 核心 usb_disconnect 收尾起步，逐语句走进 xhci_free_dev 的 Disable Slot 投递、xHC 五项回收、中断侧消费，最后回到驱动线程释放内存（与上方泳道图第 5-8 步对表）。TD 计数口径：规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记——本链是命令，不涉传输 TD（EP0 传输环的内存只在收尾帧被释放，环上无 TRB 流转）。</p>
+`;
+const stepperCssBlock = `
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+${stepperCss}
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--font-ui); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
+`;
+let page = lanePage(cfg);
+for (const [anchor, inject] of [
+  ["</style></head>", () => stepperCssBlock + "</style></head>"],
+  ["<!--X44:WALK-->", () => walknote + stepperHtml],
+  ['<script type="module">', () => '<script type="module">' + stepperJs.replace(/<\/(script)/gi, "<\\/$1") + "\n"],
+]) {
+  if (!page.includes(anchor)) throw new Error(`注入锚点缺失: ${anchor.slice(0, 40)}`);
+  page = page.replace(anchor, inject);
+}
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);
 console.log("wrote", name, (page.length / 1024).toFixed(0) + " KB");

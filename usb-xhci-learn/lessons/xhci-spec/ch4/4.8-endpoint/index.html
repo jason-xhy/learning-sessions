@@ -282,11 +282,6 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 <li><b>EP0 三条特例</b>：STALL 任一阶段都进 Halted，Reset Endpoint 清断后门铃（下一个 Setup Stage TD）回 Running（p147 注）；Configure Endpoint 不影响 EP0（p148）；只有 Disable Slot 能把 EP0 从任意态打回 Disabled（p146 注4 / p148）。</li>
 <li><b>TRB Error 不保证优雅处理</b>：实现可能未定义行为乃至 HCE——软件的责任是始终呈现格式正确的 TRB（p148 注）。</li>
 </ul></div>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.3-usb-device-init/index.html">§4.3 USB 设备初始化</a>——Address Device 把 EP0 从 Disabled 送入 Running（§4.8.3 注1）；EP0 上下文初值与 A0/A1 置位见该节。</p>
-<p><a href="../4.4-device-detach/index.html">§4.4 设备拔出</a>——Disable Slot 把全槽端点（含 EP0）从任意态打回 Disabled（§4.8.3 注4）；<a href="../4.7-doorbells/index.html">§4.7 门铃</a>——Disabled 端点的门铃禁写与 Endpoint Not Enabled Error（p143）。</p>
-<p><a href="../../../xhc-machines/fig2-transfer-ring/index.html">Fig2 传输环分度台</a>——状态机管的传输环本体（Stopped 态下软件可增删改 TD）。</p>
-<p><a href="../../index.html">§4.9 TRB Ring（待建）</a>——传输环与 Dequeue Pointer；<a href="../../index.html">§4.12 Streams（待建）</a>——MaxPStreams&gt;0 时 DCS 不适用（p145）。</p></div>
 <p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.8 p143–149、§4.5.1 p83、§6.2.3 p413–414 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><script type="module">
 // 画面缩放+全屏（shared/zoomfs.mjs 内联）
 (() => {

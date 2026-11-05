@@ -1,0 +1,14 @@
+[
+  ["until", "() => !!window.__fig414", 8000],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "(window.__fig414.pause(), 'paused')"],
+  ["wait", 1500],
+  ["shot", "shots/machine-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig414.playTo(4), 'F4')"], ["wait", 7800],
+  ["shot", "shots/frame-04-esit-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig414.playTo(8), 'F8')"], ["wait", 8100],
+  ["shot", "shots/frame-08-roundrobin-light.png", ".fig-wrap .iso-plate", 2],
+  ["shot", "shots/z-dial-light.png", ".fig-wrap .iso-plate", 4, [828, 194, 228, 274]],
+  ["shot", "shots/z-periodic-light.png", ".fig-wrap .iso-plate", 4, [768, 93, 246, 269]],
+  ["shot", "shots/lane-light.png", ".lane-wrap .iso-plate", 1.2]
+]

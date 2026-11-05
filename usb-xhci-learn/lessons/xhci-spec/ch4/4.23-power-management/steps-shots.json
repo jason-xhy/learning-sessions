@@ -1,0 +1,17 @@
+[
+["until", "() => !!window.__fig423", 8000],
+["scroll", ".fig-wrap .iso-stage"],
+["eval", "() => window.__fig423.pause()"],
+["eval", "(window.__fig423.playTo(1), 'F1')"], ["wait", 6400], ["shot", "shots/frame-01-stop-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(2), 'F2')"], ["wait", 7000], ["shot", "shots/frame-02-regs-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(3), 'F3')"], ["wait", 8200], ["shot", "shots/frame-03-css-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(4), 'F4')"], ["wait", 6400], ["shot", "shots/frame-04-image-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(5), 'F5')"], ["wait", 8800], ["shot", "shots/frame-05-coreoff-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(6), 'F6')"], ["wait", 7000], ["shot", "shots/frame-06-pme-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(7), 'F7')"], ["wait", 8200], ["shot", "shots/frame-07-d0restore-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(8), 'F8')"], ["wait", 8800], ["shot", "shots/frame-08-crs-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(9), 'F9')"], ["wait", 7000], ["shot", "shots/frame-09-restart-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(10), 'F10')"], ["wait", 5800], ["shot", "shots/frame-10-lpm-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(11), 'F11')"], ["wait", 4600], ["shot", "shots/frame-11-mel-dark.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__zfs.setZoom(3.2), 'zoom')"], ["wait", 1200], ["shot", "shots/frame-zoom32-dark.png", ".fig-wrap .iso-plate", 2]
+]

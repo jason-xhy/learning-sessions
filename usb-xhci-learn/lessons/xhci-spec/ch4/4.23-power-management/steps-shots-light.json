@@ -1,0 +1,8 @@
+[
+["until", "() => !!window.__fig423", 8000],
+["scroll", ".fig-wrap .iso-stage"],
+["eval", "() => window.__fig423.pause()"],
+["eval", "(window.__fig423.playTo(5), 'F5')"], ["wait", 8800], ["shot", "shots/frame-05-coreoff-light.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(7), 'F7')"], ["wait", 8200], ["shot", "shots/frame-07-d0restore-light.png", ".fig-wrap .iso-plate", 2],
+["eval", "(window.__fig423.playTo(10), 'F10')"], ["wait", 5800], ["shot", "shots/frame-10-lpm-light.png", ".fig-wrap .iso-plate", 2]
+]

@@ -253,7 +253,7 @@ ${cfg.quotes.map((q) => `<div class="xsp-q"><div class="en">“${esc(q.en)}”</
 const cardsHtml = cfg.cards.map((c) => `<div class="xsp-card"><h2>${c.h2}</h2>
 ${c.html}</div>`).join("\n");
 
-const body = pageCss + navHtml + proseHtml + quotesHtml + figureCard + cardsHtml + cfg.linksHtml + `
+const body = pageCss + navHtml + proseHtml + quotesHtml + figureCard + cardsHtml + `
 <p class="xsp-foot">${cfg.footLine}</p>`;
 
 const page = k.pageHtml({ title: cfg.pageTitle, theme: THEME, body, script: zoomFsScript({ focus: [] }), width: 1500 });

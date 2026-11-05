@@ -1,0 +1,13 @@
+[
+  ["until", "() => !!window.__fig412", 8000],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "(window.__fig412.pause(), 'paused')"],
+  ["wait", 1500],
+  ["shot", "shots/machine-light.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig412.playTo(6), 'F6')"], ["wait", 8000],
+  ["shot", "shots/frame-06-switch-light.png", ".fig-wrap .iso-plate", 2],
+  ["shot", "shots/z-cage-light.png", ".fig-wrap .iso-plate", 4, [540, 440, 280, 330]],
+  ["shot", "shots/z-console-light.png", ".fig-wrap .iso-plate", 4, [583, 234, 569, 300]],
+  ["eval", "(window.__fig412.playTo(9), 'F9')"], ["wait", 7400],
+  ["shot", "shots/frame-09-bounds-light.png", ".fig-wrap .iso-plate", 2]
+]

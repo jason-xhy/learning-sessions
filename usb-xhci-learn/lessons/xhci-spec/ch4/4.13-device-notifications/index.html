@@ -111,6 +111,137 @@ html{color-scheme:dark}
 body[data-theme="light"]{color-scheme:light}
 body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 .iso-page{width:min(1500px,100% - 32px);margin:64px auto 96px}
+
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+
+.stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
+.stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
+.stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
+.stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+
+.stepper.js .st-ctl { position: sticky; top: .45rem; z-index: 6; background: #fff; border-radius: 4px; padding: .25rem .4rem; margin-left: -.4rem; margin-right: -.4rem; box-shadow: 0 1px 6px rgba(30,28,18,.08); }
+.stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
+.stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
+@media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
+
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; overflow-x: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; scroll-margin-top: 3.4rem; scroll-margin-bottom: 3.4rem; }
+
+.stepper .st-crow.ctx, .stepper .st-crow.hw, .stepper .st-crow.ph { white-space: normal; }
+.stepper .st-crow code { font: inherit; }
+.stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: #666; font-size: .74rem; }
+.stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
+.stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
+.stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
+.stepper .st-crow.ph { background: var(--ink); color: #fff; font-weight: 700; margin-top: .5rem; border-radius: 3px; }
+.stepper .st-crow.ph .st-tag { color: #cfcfc5; }
+.stepper.js .st-crow { cursor: pointer; }
+.stepper.js .st-crow:hover { background: #f4f4ee; }
+.stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
+.stepper.js .st-crow.done { opacity: .66; }
+
+.stepper.js .st-crow.ph:hover { background: #3a3a30; }
+.stepper.js .st-crow.ph.cur { background: var(--ink); color: #fff; box-shadow: inset 0 0 0 2px #f0c94a; }
+
+.stepper .st-crow.ph code { background: rgba(255, 255, 255, .16); color: #fff; }
+
+
+.stepper .st-world { position: sticky; top: 3.4rem; align-self: start; border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; height: calc(100vh - 7.6rem); height: calc(100dvh - 7.6rem); overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+.stepper .st-world::-webkit-scrollbar { display: none; }
+
+.stepper .st-world .st-chg { animation: stChgPulse 1.8s ease-out 1; }
+@keyframes stChgPulse {
+  0% { background: #fff3c4; box-shadow: 0 0 0 3px rgba(160, 0, 0, .45); }
+  60% { background: #fff8dd; box-shadow: 0 0 0 3px rgba(160, 0, 0, .18); }
+  100% { box-shadow: 0 0 0 3px rgba(160, 0, 0, 0); }
+}
+.stepper .stw-ring { margin: .35rem 0 .6rem; }
+.stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.stepper .stw-rhead b { font-size: .84rem; }
+.stepper .stw-own { color: var(--muted); font-size: .7rem; }
+.stepper .stw-cells { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .stw-cell { position: relative; border: 1px dashed var(--line); border-radius: 4px; padding: .35rem .45rem .38rem; min-width: 6.8rem; text-align: center; background: #fff; }
+.stepper .stw-cell b { display: block; color: var(--muted); font-size: .64rem; letter-spacing: .04em; }
+.stepper .stw-cell .stw-t { display: block; font-weight: 600; font-size: .78rem; }
+.stepper .stw-cell .stw-f { display: block; color: #4a4a3f; font-size: .67rem; }
+.stepper .stw-cell .stw-cyc { display: block; color: var(--muted); font-size: .64rem; }
+.stepper .stw-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .stw-cell.st-published { border: 1px solid #1a5fb4; background: #e8f0fb; }
+.stepper .stw-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .stw-ptr { position: absolute; top: -0.6rem; font-size: .6rem; font-style: normal; padding: 0 .25rem; border-radius: 3px; color: #fff; }
+.stepper .stw-ptr.pe { left: .2rem; background: #1a5fb4; }
+.stepper .stw-ptr.pd { right: .2rem; background: var(--good); }
+.stepper .stw-box { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .stw-box > b { display: block; background: #f0efe6; padding: .2rem .5rem; font-size: .8rem; }
+.stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
+.stepper .stw-box th { width: 6em; background: #fbfbf6; }
+
+
+.stepper .st-world .r3 { --r3-drv: #2d5fb3; --r3-xhc: #8a5f14; --r3-dev: #2f7a3d; }
+.stepper .st-world .r3-zone { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .st-world .r3-zhead { display: flex; align-items: baseline; gap: .45rem; flex-wrap: wrap; padding: .25rem .5rem; background: #f0efe6; }
+.stepper .st-world .r3-zhead b { font-size: .86rem; }
+.stepper .st-world .r3-ring-cmd .r3-zhead b, .stepper .st-world .r3-ring-ep0 .r3-zhead b { color: var(--r3-drv); }
+.stepper .st-world .r3-ring-evt .r3-zhead b { color: var(--r3-xhc); }
+.stepper .st-world .r3-devzone .r3-zhead b { color: var(--r3-dev); }
+.stepper .st-world .r3-own { color: var(--muted); font-size: .72rem; margin-left: auto; }
+.stepper .st-world .r3-db { font-size: .74rem; padding: 0 .3rem; border: 1px solid var(--line); border-radius: 3px; background: #fff; }
+.stepper .st-world .r3-cells { display: flex; flex-wrap: wrap; gap: .32rem; padding: .58rem .45rem .45rem; }
+.stepper .st-world .r3-cell { position: relative; min-width: 5.6rem; text-align: center; border: 1px dashed var(--line); border-radius: 4px; background: #fff; padding: .5rem .4rem .42rem; }
+.stepper .st-world .r3-cell .r3-a { display: block; font-size: .88rem; font-weight: 700; letter-spacing: .03em; }
+.stepper .st-world .r3-cell .r3-t { display: block; font-size: .74rem; margin-top: .1rem; }
+.stepper .st-world .r3-cell .r3-f { display: block; color: #4a4a3f; font-size: .7rem; }
+.stepper .st-world .r3-cell .r3-cyc { position: absolute; top: .12rem; right: .22rem; font-size: .7rem; color: var(--muted); font-style: normal; }
+.stepper .st-world .r3-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .st-world .r3-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .st-world .r3-cell.st-evt { border: 1px solid var(--r3-xhc); background: #faf3e4; }
+.stepper .st-world .r3-ptr { position: absolute; left: 50%; transform: translateX(-50%); font-style: normal; font-size: .72rem; color: #fff; padding: 0 .22rem; border-radius: 3px; }
+.stepper .st-world .r3-ptr.pe { top: -0.62rem; background: var(--r3-drv); }
+.stepper .st-world .r3-ptr.pd { bottom: -0.62rem; background: var(--r3-xhc); }
+.stepper .st-world .r3-ring-evt .r3-ptr.pe { background: var(--r3-xhc); }
+.stepper .st-world .r3-ring-evt .r3-ptr.pd { background: var(--r3-drv); }
+.stepper .st-world .r3-lamps { display: flex; flex-wrap: wrap; gap: .3rem; padding: .45rem .5rem .1rem; }
+.stepper .st-world .r3-lamp { font-style: normal; font-size: .76rem; border: 1px solid var(--line); border-radius: 999px; padding: .05rem .5rem; color: var(--muted); background: #fbfbf6; }
+.stepper .st-world .r3-lamp.on { border-color: var(--r3-dev); background: #e9f4ea; color: var(--r3-dev); font-weight: 700; }
+.stepper .st-world .r3-tickets { display: flex; flex-wrap: wrap; gap: .3rem; padding: .35rem .5rem .5rem; }
+.stepper .st-world .r3-tk { font-size: .74rem; border: 1px dashed var(--r3-dev); border-radius: 4px; padding: .1rem .4rem; background: #fff; }
+.stepper .st-world .r3-tk em { font-style: normal; color: var(--muted); }
+.stepper .st-world .r3-mut { color: var(--muted); font-size: .72rem; }
+.stepper .st-world .r3-regs { display: flex; flex-wrap: wrap; gap: .3rem .55rem; padding: .4rem .5rem .5rem; }
+.stepper .st-world .r3-reg { font-size: .74rem; border: 1px solid var(--line); border-radius: 3px; padding: .05rem .35rem; background: #fbfbf6; }
+.stepper .st-world .r3-reg em { font-style: normal; font-weight: 700; margin-right: .3rem; }
+.stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+
+.stepper.js .st-note { position: sticky; bottom: 0; z-index: 5; box-shadow: 0 -2px 10px rgba(30,28,18,.07); border-radius: 0 0 4px 4px; }
+.stepper .st-note .st-mut { color: var(--muted); }
+.stepper .st-refs { margin-top: .55rem; }
+.stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .st-chip { font: inherit; font-size: .78rem; padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 10px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-chip.on { border-color: var(--accent); background: #fff3c4; }
+.stepper .st-fref { margin-left: .3rem; }
+.stepper .st-refs details { font-size: .85rem; }
+
+.st-modal { display: none; position: fixed; inset: 0; background: rgba(20,20,15,.45); z-index: 90; padding: 3rem 1rem; }
+.st-modal.show { display: flex; }
+.st-modal .st-mbox { position: relative; margin: auto; max-width: 40rem; max-height: 80vh; overflow-y: auto; background: #fffdf4; border: 1px solid var(--ink); border-radius: 8px; padding: 1rem 1.2rem; }
+.st-modal .st-mclose { position: absolute; top: .5rem; right: .6rem; font: inherit; font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.st-modal .st-mbody h4 { margin: 0 0 .3rem; }
+.st-modal .st-msrc { color: var(--muted); font-size: .85rem; }
+.st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
+.st-modal .st-mnote { font-size: .88rem; }
+
+
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--font-ui); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
 </style></head><body class="iso" data-theme="dark"><main class="iso-page"><style>
 
 /* 画面缩放+全屏（2026-11-02 可读性二轮）：1× 布局不变，>1× 出滚动平移 */
@@ -215,8 +346,8 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 <p>事件的去向由设备槽决定：xHC 用该槽 Slot Context 的 <b>Interrupter Target</b> 字段选择接收它的事件环。调试例外：DNCTRL 也允许把本来由 xHC 直接处理的通知类型一并上报（便于排查）。</p>
 <p>本节主体 4.13.1 是 <b>LTM</b>（Latency Tolerance Messaging，延迟容忍消息）：USB3 设备用 LTM TP 报告自己的延迟容忍值（<b>BELT</b>）；xHC 逐设备记录 Device BELT，比较后把最小值经宿主平台的 <b>LTR</b> 机制转发——这条转发路径在三方泳道之外（平台总线特定，如 PCIe LTR）。软件可用 <b>Set LTV 命令</b>自设一个 Device BELT 值（§4.6.14）。</p></div><div class="xsp-card"><h2>原文对照</h2>
 <div class="xsp-q"><div class="en">“The Device Notification Control (DNCTRL) register allows system software to individually select which notifications are important to it and shall generate a Device Notification Event.”</div>
-<div class="zh">DNCTRL 按位选择要收的通知类型——选中的才生成设备通知事件。</div><div class="src">xHCI 1.2b §4.13 p229</div></div><div class="xsp-q"><div class="en">“The xHC shall use the Device Slot’s Slot Context Interrupter Target field to determine the Event Ring that shall receive the event.”</div>
-<div class="zh">事件进哪条事件环由该槽 Slot Context 的 Interrupter Target 字段决定——不是固定进 0 号中断器。</div><div class="src">xHCI 1.2b §4.13 p229 Note</div></div><div class="xsp-q"><div class="en">“The xHC's role in supporting this new platform capability is to accept latency tolerance values from USB3 devices, evaluate the values and forward the lowest value to the host platform, using the host platform’s Latency Tolerance Reporting (LTR) mechanism.”</div>
+<div class="zh">DNCTRL 按位选择要收的通知类型——选中的才生成设备通知事件。</div><div class="src">xHCI 1.2b §4.13 p229</div></div><div class="xsp-q"><div class="en">“The xHC shall use the Device Slot's Slot Context Interrupter Target field to determine the Event Ring that shall receive the event.”</div>
+<div class="zh">事件进哪条事件环由该槽 Slot Context 的 Interrupter Target 字段决定——不是固定进 0 号中断器。</div><div class="src">xHCI 1.2b §4.13 p229 Note</div></div><div class="xsp-q"><div class="en">“The xHC's role in supporting this new platform capability is to accept latency tolerance values from USB3 devices, evaluate the values and forward the lowest value to the host platform, using the host platform's Latency Tolerance Reporting (LTR) mechanism.”</div>
 <div class="zh">xHC 在 LTM 里的角色：收设备 BELT 值、比较、把最小值经平台 LTR 转发给宿主。</div><div class="src">xHCI 1.2b §4.13.1 p229</div></div></div><figure class="iso-figure"><div class="iso-plate"><div class="iso-plate-corners" aria-hidden="true"><span class="iso-plate-corner" data-corner="fig">Fig 4.13</span><span class="iso-plate-corner" data-corner="title">设备通知与 LTM：设备第一次主动说话</span><span class="iso-plate-corner" data-corner="hint">总览=流程图 · 步进=动画（空格/A 驱动）· 可放大可全屏</span><span class="iso-plate-corner" data-corner="readout" data-readout>模式 总览 · 步 -/7</span></div><div class="iso-stage" tabindex="0" role="group" aria-label="设备通知三方时序图：Dev Notification TP、DNCTRL 筛选与 Device Notification Event"><svg xmlns="http://www.w3.org/2000/svg" class="iso-svg" viewBox="0 0 1240 882" role="img" aria-label="三方泳道时序图">
 <defs>
   <marker id="xsp-mk-xsp-sw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="xsp-fill-sw"/></marker>
@@ -289,11 +420,567 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 </div>
 <p class="xsp-narr" data-status aria-live="polite">总览模式：完整流程图。本节设备泳道真实在场——设备是通知的发起方。</p><div class="xsp-legend">
 <span><i style="background:var(--xsp-sw)"></i>xHCI 驱动</span><span><i style="background:var(--xsp-hc)"></i>xHC 控制器</span><span><i style="background:var(--xsp-dev)"></i>设备（通知发起方）</span><span>实线=包/配置写 · 虚线=事件流</span>
-</div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进</span></div></div><figcaption class="iso-legend"><span class="iso-caption">通知类型先经 DNCTRL 筛选；LTM 例子里 xHC 比较各设备 BELT、把最小值经平台 LTR 转出三方泳道。</span></figcaption></figure>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.1-command-operation/index.html">§4.1 命令操作</a>——事件环消费模型；<a href="../../../xhc-machines/fig3-event-ring/index.html">四机课 Fig3 回执登记机</a>——事件环的生产与消费。</p>
-<p><a href="../../index.html">§4.6.14 Set LTV（待建）</a> · <a href="../../index.html">§4.23 电源管理（待建）</a>——LTM 所属的功耗管理域。</p></div>
-<p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.13 p229–232 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><script type="module">const AZIMUTH = 45;
+</div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进</span></div></div><figcaption class="iso-legend"><span class="iso-caption">通知类型先经 DNCTRL 筛选；LTM 例子里 xHC 比较各设备 BELT、把最小值经平台 LTR 转出三方泳道。</span></figcaption></figure><p class="xsp-walknote">§4.13 泳道图第 1-5 步在真实内核代码里的样子——从设备发出 FUNCTION_WAKE 通知包起，经 DNCTRL 筛选、Device Notification Event 落事件环，到中断侧 case TRB_DEV_NOTE → handle_device_notification 取 Slot ID、usb_wakeup_notification 把唤醒通知交 USB 核心（与上方泳道图逐拍对表）。事件口径挑明：Device Notification Event 的生产者是设备侧通知包，不是命令/TD 消费的完成回执——本链命令环与传输环全程无 TRB 流转（如实呈现为空）、门铃零动作；TD 计数两个口径（规范按传输阶段记 TD、内核 struct xhci_td 按 URB 记）在本链都不出现——零 TD 链。链前提 DNCTRL.N1=1 来自平台固件/调试路径：基线内核 xhci 驱动自身不写 DNCTRL（全树无写入点，如实注记）。</p>
+<!--STEPPER:X413:BEGIN-->
+  <div class="stepper">
+    <div class="st-intro"><h4>▶ 设备通知全链走读：FUNCTION_WAKE 通知包 → Device Notification Event → handle_device_notification → usb_wakeup_notification</h4><p>左列＝真实内核调用链逐语句步进（事件环分发 case TRB_DEV_NOTE → handle_device_notification 取 Slot ID、防走飞 → usb_wakeup_notification 交 USB 核心：pm_wakeup_event 唤醒端口下设备、wakeup_bits 置位、调度 hub 工作队列）。右列＝命令环 / EP0 传输环 / 事件环与设备端随每帧演进：命令环与传输环本链无 TRB 流转（设备在 U3 挂起、无传输在跑，如实呈现为空），事件环是主线——Device Notification Event 由 xHC 写入、驱动消费，它不是命令/TD 消费的完成回执（生产者=设备侧通知包）；设备端是发起方：FUNCTION_WAKE 通知票据自设备发出（上行），设备态全程 Configured。</p><p class="st-base">代码基线 62f4c998b297（本板块代码走读卡专用声明，与 §4.1/§4.3/§4.4/§4.17 走读卡同源）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-grid">
+      <div class="st-code">
+<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>设备发 FUNCTION_WAKE → DNCTRL 筛选 → Device Notification Event 写事件环 → case TRB_DEV_NOTE → handle_device_notification → usb_wakeup_notification：一次设备通知的生成与消费全链（§4.13/§4.13.2）</code></div>
+<div class="st-crow ctx" data-id="r1"><span class="st-tag">xHCI 驱动</span><code>场景回放：槽 1 的 USB3 设备已 Configured，整机省电后链路挂在 U3；此刻设备内某功能要干活。前提一：DNCTRL.N1=1（§4.13.2 应然）；前提二（基线事实，如实注记）：内核 xhci 驱动自身不写 DNCTRL——全树无写入点，N1 由平台固件/调试路径置位（复位默认全 0=全关）</code></div>
+<div class="st-crow hw" data-id="r2"><span class="st-tag">设备</span><code>设备侧动作：功能唤醒请求 → 设备先把链路拉回 U0（底层唤醒信号，链路层握手）→ 随后在总线上发出 FUNCTION_WAKE Device Notification TP（Notification Type=1）——设备主动发给主机的消息，不是对任何主机请求的应答</code></div>
+<div class="st-crow hw" data-id="r3"><span class="st-tag">xHC 控制器</span><code>xHC 收到 DN TP：查 DNCTRL——N1=1，FUNCTION_WAKE 类型被选中 → 组 Device Notification Event TRB（TRB 类型 38：Notification Type=1 · DNTP 数据 05h-0Bh · CC=Success 恒定 · Slot ID=1）→ 按该槽 Slot Context 的 Interrupter Target 选事件环（本例中断器 0），写入 0 号槽</code></div>
+<div class="st-crow hw" data-id="r4"><span class="st-tag">xHC 控制器</span><code>中断器 0 节流放行（IMODC=0 · IPE=1 · EHB=0）→ IP 置 1 → MSI-X 向量 0 发出（posted write，IP 由 PCI 写完成自动清）——通知的出口与命令/传输完成事件同一条路</code></div>
+<div class="st-crow ctx" data-id="r5"><span class="st-tag">xHCI 驱动</span><code>事件送达：MSI-X 向量 0 → xhci_irq → xhci_handle_events（中断器 0 事件环主循环）——while(unhandled_event_trb) 以 cycle 位判定有新事件 → 进入单事件分发 xhci_handle_event_trb（这段消费机器的逐语句走读见 §4.17 走读卡，此处到点即入）</code></div>
+<div class="st-crow ln" data-id="r6" style="padding-left:0.4em"><code>	switch (trb_type) {
+	case TRB_COMPLETION:
+		handle_cmd_completion(xhci, &amp;event-&gt;event_cmd);
+		break;
+	case TRB_PORT_STATUS:
+		handle_port_status(xhci, event);
+		break;
+	case TRB_TRANSFER:
+		handle_tx_event(xhci, ir, &amp;event-&gt;trans_event);
+		break;
+	case TRB_DEV_NOTE:
+		handle_device_notification(xhci, event);</code></div>
+<div class="st-crow fn" data-id="r7" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 1951-1955</span><code>static void handle_device_notification(struct xhci_hcd *xhci,
+		union xhci_trb *event)
+{
+	u32 slot_id;
+	struct usb_device *udev;</code></div>
+<div class="st-crow ln" data-id="r8" style="padding-left:0.4em"><code>	slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event-&gt;generic.field[3]));</code></div>
+<div class="st-crow ln" data-id="r9" style="padding-left:0.4em"><code>	if (!xhci-&gt;devs[slot_id]) {
+		xhci_warn(xhci, &quot;Device Notification event for &quot;
+				&quot;unused slot %u\n&quot;, slot_id);
+		return;
+	}</code></div>
+<div class="st-crow ln" data-id="r10" style="padding-left:0.4em"><code>	xhci_dbg(xhci, &quot;Device Wake Notification event for slot ID %u\n&quot;,
+			slot_id);</code></div>
+<div class="st-crow ln" data-id="r11" style="padding-left:0.4em"><code>	udev = xhci-&gt;devs[slot_id]-&gt;udev;</code></div>
+<div class="st-crow ln" data-id="r12" style="padding-left:0.4em"><code>	if (udev &amp;&amp; udev-&gt;parent)</code></div>
+<div class="st-crow ln" data-id="r13" style="padding-left:0.4em"><code>		usb_wakeup_notification(udev-&gt;parent, udev-&gt;portnum);</code></div>
+<div class="st-crow fn" data-id="r14" style="padding-left:1.5em"><span class="st-file">▸ hub.c : 751-756</span><code>void usb_wakeup_notification(struct usb_device *hdev,
+		unsigned int portnum)
+{
+	struct usb_hub *hub;
+	struct usb_port *port_dev;
+	unsigned long flags;</code></div>
+<div class="st-crow ln" data-id="r15" style="padding-left:1.5em"><code>	if (!hdev)
+		return;</code></div>
+<div class="st-crow ln" data-id="r16" style="padding-left:1.5em"><code>	spin_lock_irqsave(&amp;device_state_lock, flags);
+	hub = usb_hub_to_struct_hub(hdev);
+	if (hub) {</code></div>
+<div class="st-crow ln" data-id="r17" style="padding-left:1.5em"><code>		port_dev = hub-&gt;ports[portnum - 1];
+		if (port_dev &amp;&amp; port_dev-&gt;child)
+			pm_wakeup_event(&amp;port_dev-&gt;child-&gt;dev, 0);</code></div>
+<div class="st-crow ln" data-id="r18" style="padding-left:1.5em"><code>		set_bit(portnum, hub-&gt;wakeup_bits);
+		kick_hub_wq(hub);</code></div>
+<div class="st-crow ln" data-id="r19" style="padding-left:1.5em"><code>	spin_unlock_irqrestore(&amp;device_state_lock, flags);
+}
+EXPORT_SYMBOL_GPL(usb_wakeup_notification);</code></div>
+<div class="st-crow ctx" data-id="r20"><span class="st-tag">xHCI 驱动</span><code>事件环收尾：handle_device_notification 返回 → xhci_handle_event_trb 返回 0 → 循环尾 inc_deq（:3135-3136）事件环软件出队指针前移；while 再判 cycle 位已错开——环空退出；:3142 xhci_update_erst_dequeue 把消费进度写回 ERDP（clear_ehb=true）——机制细节见 §4.17 走读卡</code></div>
+<div class="st-crow hw" data-id="r21"><span class="st-tag">设备</span><code>本链终点对表：设备端票据=FUNCTION_WAKE（上行，设备主动发出）· 设备态全程 Configured（链路 U3/U0 是电源态，不是 USB 设备态）；事件环一颗 DNE 由 xHC 写入、驱动消费；命令环与 EP0 传输环全程无 TRB 流转（如实呈现为空）——设备通知是唯一由设备侧活动直接产生事件的路径</code></div>
+      </div>
+      <div class="st-world">
+<div class="r3"><div class="r3-zone r3-ring-cmd"><div class="r3-zhead"><b>命令环 CRCR</b><span class="r3-own">驱动生产 · xHC 消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-ring-ep0"><div class="r3-zhead"><b>传输环 EP0（本链静止）</b><span class="r3-own">驱动生产 · xHC 消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-ring-evt"><div class="r3-zhead"><b>事件环 ERST/ERDP</b><span class="r3-own">xHC 生产 · 驱动消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-devzone"><div class="r3-zhead"><b>设备端</b></div><div class="r3-lamps"><i class="r3-lamp">Powered</i><i class="r3-lamp">Default</i><i class="r3-lamp">Addressed</i><i class="r3-lamp on">Configured</i></div><div class="r3-tickets"><span class="r3-mut">（链前无票据——设备静默在 U3）</span></div></div><div class="r3-zone r3-regszone"><div class="r3-zhead"><b>寄存器窗</b></div><div class="r3-regs"><span class="r3-reg"><em>DNCTRL</em>N1=1（FUNCTION_WAKE）</span><span class="r3-reg"><em>ERDP</em>→ 事件环段 0</span><span class="r3-reg"><em>IMAN</em>IP=0 · IE=1（向量 0）</span></div></div></div>
+      </div>
+    </div>
+    <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
+    <div class="st-refs"><details><summary>📎 §4.13 DNCTRL 按位选通知类型（p229）</summary><p class="st-msrc">xHCI 1.2b §4.13 · p229</p><blockquote>The Device Notification Control (DNCTRL) register allows system software to individually select which notifications are important to it and shall generate a Device Notification Event.</blockquote><p class="st-mnote">16 类通知逐位选——选中的才生成事件；调试例外（同页 Note）：xHC 自处理的类型也可打开上报。</p></details><details><summary>📎 §4.13 事件路由跟着槽走（p229）</summary><p class="st-msrc">xHCI 1.2b §4.13 · p229</p><blockquote>The xHC shall use the Device Slot’s Slot Context Interrupter Target field to determine the Event Ring that shall receive the event.</blockquote><p class="st-mnote">DN 事件进哪条事件环由该槽 Slot Context 的 Interrupter Target 字段决定——不是固定进 0 号中断器。</p></details><details><summary>📎 §4.13.2 收 FUNCTION_WAKE 应置 N1（p231）</summary><p class="st-msrc">xHCI 1.2b §4.13.2 · p231</p><blockquote>Software should set flag N1 in the DNCTRL register to enable the generation of Device Notification Events when FUNCTION_WAKE Device Notifications are received.</blockquote><p class="st-mnote">规范对软件的应然：想收功能唤醒通知就置 N1。基线内核 xhci 驱动自身不写 DNCTRL（全树无写入点）——如实注记：本链场景的 N1=1 来自平台固件/调试路径。</p></details><details><summary>📎 §4.13.2 FUNCTION_WAKE=功能级远程唤醒（p231）</summary><p class="st-msrc">xHCI 1.2b §4.13.2 · p231</p><blockquote>A USB3 device sends a FUNCTION_WAKE Device Notification Transaction Packet to inform the host of a “Function Remote Wake”.</blockquote><p class="st-mnote">Function Remote Wake（功能级）与底层 USB 信号发起的 Remote Wake（链路级）是两回事（同节 Note）——前者走通知包，后者只是链路信号。</p></details><details><summary>📎 §6.4.2.7 DN Event TRB 报告收到的通知包（p446）</summary><p class="st-msrc">xHCI 1.2b §6.4.2.7 · p446</p><blockquote>A Device Notification Event TRB is used to report the information received in USB Device Notification (DEV_NOTIFICATION) Transaction Packets from USB Devices.</blockquote><p class="st-mnote">事件字段=通知包的转写：Notification Type（7:4 位）＋Device Notification Data（63:8 位，DNTP 05h-0Bh）＋Slot ID（31:24 位）。</p></details><details><summary>📎 §6.4.2.7 完成码恒为 Success（p447）</summary><p class="st-msrc">xHCI 1.2b §6.4.2.7 · p447</p><blockquote>Completion Code. This field encodes the completion status of the TRB, and shall always be set to Success.</blockquote><p class="st-mnote">DN 事件没有失败语义——它报告的是「收到了通知包」这件事本身。</p></details><details><summary>📎 §4.13.1 LTM 由 xHC 自处理（p231）</summary><p class="st-msrc">xHCI 1.2b §4.13.1 · p231</p><blockquote>The xHC hardware automatically handles LATENCY_TOLERANCE_MESSAGE Device Notifications (Notification Type = 2) so there is no need to enable Device Notification Event generation for this notification type.</blockquote><p class="st-mnote">LTM（Type=2）在 xHC 内消化（收 BELT→比较→经平台 LTR 转发）——不需要也不应该为它开事件生成。</p></details><details><summary>📎 §5.4.4 复位后通知全关（p365）</summary><p class="st-msrc">xHCI 1.2b §5.4.4 · p365</p><blockquote>If a flag is set for a specific notification type, a Device Notification Event shall be generated when the respective notification packet is received. After reset all notifications are disabled.</blockquote><p class="st-mnote">DNCTRL 复位值 0000 0000h——16 类通知默认全关；不置位就永远收不到 DN 事件。</p></details><details><summary>📎 §5.4.4 16 类里只有 FUNCTION_WAKE 该上报（p366）</summary><p class="st-msrc">xHCI 1.2b §5.4.4 · p366</p><blockquote>Of the currently defined USB3 Device Notification Types, only the FUNCTION_WAKE type should not be handled automatically by the xHC.</blockquote><p class="st-mnote">同页 Note：除调试外软件只该往 DNCTRL 写 0002h（只开 N1）——常规上报的常客只有功能唤醒一类。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"设备通知全链走读：FUNCTION_WAKE 通知包 → Device Notification Event → handle_device_notification → usb_wakeup_notification","intro":"左列＝真实内核调用链逐语句步进（事件环分发 case TRB_DEV_NOTE → handle_device_notification 取 Slot ID、防走飞 → usb_wakeup_notification 交 USB 核心：pm_wakeup_event 唤醒端口下设备、wakeup_bits 置位、调度 hub 工作队列）。右列＝命令环 / EP0 传输环 / 事件环与设备端随每帧演进：命令环与传输环本链无 TRB 流转（设备在 U3 挂起、无传输在跑，如实呈现为空），事件环是主线——Device Notification Event 由 xHC 写入、驱动消费，它不是命令/TD 消费的完成回执（生产者=设备侧通知包）；设备端是发起方：FUNCTION_WAKE 通知票据自设备发出（上行），设备态全程 Configured。","baseline":"代码基线 62f4c998b297（本板块代码走读卡专用声明，与 §4.1/§4.3/§4.4/§4.17 走读卡同源）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"设备发 FUNCTION_WAKE → DNCTRL 筛选 → Device Notification Event 写事件环 → case TRB_DEV_NOTE → handle_device_notification → usb_wakeup_notification：一次设备通知的生成与消费全链（§4.13/§4.13.2）"},{"id":"r1","kind":"ctx","depth":0,"text":"场景回放：槽 1 的 USB3 设备已 Configured，整机省电后链路挂在 U3；此刻设备内某功能要干活。前提一：DNCTRL.N1=1（§4.13.2 应然）；前提二（基线事实，如实注记）：内核 xhci 驱动自身不写 DNCTRL——全树无写入点，N1 由平台固件/调试路径置位（复位默认全 0=全关）","tag":"xHCI 驱动"},{"id":"r2","kind":"hw","depth":0,"text":"设备侧动作：功能唤醒请求 → 设备先把链路拉回 U0（底层唤醒信号，链路层握手）→ 随后在总线上发出 FUNCTION_WAKE Device Notification TP（Notification Type=1）——设备主动发给主机的消息，不是对任何主机请求的应答","tag":"设备"},{"id":"r3","kind":"hw","depth":0,"text":"xHC 收到 DN TP：查 DNCTRL——N1=1，FUNCTION_WAKE 类型被选中 → 组 Device Notification Event TRB（TRB 类型 38：Notification Type=1 · DNTP 数据 05h-0Bh · CC=Success 恒定 · Slot ID=1）→ 按该槽 Slot Context 的 Interrupter Target 选事件环（本例中断器 0），写入 0 号槽","tag":"xHC 控制器"},{"id":"r4","kind":"hw","depth":0,"text":"中断器 0 节流放行（IMODC=0 · IPE=1 · EHB=0）→ IP 置 1 → MSI-X 向量 0 发出（posted write，IP 由 PCI 写完成自动清）——通知的出口与命令/传输完成事件同一条路","tag":"xHC 控制器"},{"id":"r5","kind":"ctx","depth":0,"text":"事件送达：MSI-X 向量 0 → xhci_irq → xhci_handle_events（中断器 0 事件环主循环）——while(unhandled_event_trb) 以 cycle 位判定有新事件 → 进入单事件分发 xhci_handle_event_trb（这段消费机器的逐语句走读见 §4.17 走读卡，此处到点即入）","tag":"xHCI 驱动"},{"id":"r6","kind":"ln","depth":0,"text":"\tswitch (trb_type) {\n\tcase TRB_COMPLETION:\n\t\thandle_cmd_completion(xhci, &event->event_cmd);\n\t\tbreak;\n\tcase TRB_PORT_STATUS:\n\t\thandle_port_status(xhci, event);\n\t\tbreak;\n\tcase TRB_TRANSFER:\n\t\thandle_tx_event(xhci, ir, &event->trans_event);\n\t\tbreak;\n\tcase TRB_DEV_NOTE:\n\t\thandle_device_notification(xhci, event);","file":"xhci-ring.c","a":3009,"b":3020},{"id":"r7","kind":"fn","depth":0,"text":"static void handle_device_notification(struct xhci_hcd *xhci,\n\t\tunion xhci_trb *event)\n{\n\tu32 slot_id;\n\tstruct usb_device *udev;","file":"xhci-ring.c","a":1951,"b":1955},{"id":"r8","kind":"ln","depth":0,"text":"\tslot_id = TRB_TO_SLOT_ID(le32_to_cpu(event->generic.field[3]));","file":"xhci-ring.c","a":1957,"b":1957},{"id":"r9","kind":"ln","depth":0,"text":"\tif (!xhci->devs[slot_id]) {\n\t\txhci_warn(xhci, \"Device Notification event for \"\n\t\t\t\t\"unused slot %u\\n\", slot_id);\n\t\treturn;\n\t}","file":"xhci-ring.c","a":1958,"b":1962},{"id":"r10","kind":"ln","depth":0,"text":"\txhci_dbg(xhci, \"Device Wake Notification event for slot ID %u\\n\",\n\t\t\tslot_id);","file":"xhci-ring.c","a":1964,"b":1965},{"id":"r11","kind":"ln","depth":0,"text":"\tudev = xhci->devs[slot_id]->udev;","file":"xhci-ring.c","a":1966,"b":1966},{"id":"r12","kind":"ln","depth":0,"text":"\tif (udev && udev->parent)","file":"xhci-ring.c","a":1967,"b":1967},{"id":"r13","kind":"ln","depth":0,"text":"\t\tusb_wakeup_notification(udev->parent, udev->portnum);","file":"xhci-ring.c","a":1968,"b":1968},{"id":"r14","kind":"fn","depth":1,"text":"void usb_wakeup_notification(struct usb_device *hdev,\n\t\tunsigned int portnum)\n{\n\tstruct usb_hub *hub;\n\tstruct usb_port *port_dev;\n\tunsigned long flags;","file":"hub.c","a":751,"b":756},{"id":"r15","kind":"ln","depth":1,"text":"\tif (!hdev)\n\t\treturn;","file":"hub.c","a":758,"b":759},{"id":"r16","kind":"ln","depth":1,"text":"\tspin_lock_irqsave(&device_state_lock, flags);\n\thub = usb_hub_to_struct_hub(hdev);\n\tif (hub) {","file":"hub.c","a":761,"b":763},{"id":"r17","kind":"ln","depth":1,"text":"\t\tport_dev = hub->ports[portnum - 1];\n\t\tif (port_dev && port_dev->child)\n\t\t\tpm_wakeup_event(&port_dev->child->dev, 0);","file":"hub.c","a":764,"b":766},{"id":"r18","kind":"ln","depth":1,"text":"\t\tset_bit(portnum, hub->wakeup_bits);\n\t\tkick_hub_wq(hub);","file":"hub.c","a":768,"b":769},{"id":"r19","kind":"ln","depth":1,"text":"\tspin_unlock_irqrestore(&device_state_lock, flags);\n}\nEXPORT_SYMBOL_GPL(usb_wakeup_notification);","file":"hub.c","a":771,"b":773},{"id":"r20","kind":"ctx","depth":0,"text":"事件环收尾：handle_device_notification 返回 → xhci_handle_event_trb 返回 0 → 循环尾 inc_deq（:3135-3136）事件环软件出队指针前移；while 再判 cycle 位已错开——环空退出；:3142 xhci_update_erst_dequeue 把消费进度写回 ERDP（clear_ehb=true）——机制细节见 §4.17 走读卡","tag":"xHCI 驱动"},{"id":"r21","kind":"hw","depth":0,"text":"本链终点对表：设备端票据=FUNCTION_WAKE（上行，设备主动发出）· 设备态全程 Configured（链路 U3/U0 是电源态，不是 USB 设备态）；事件环一颗 DNE 由 xHC 写入、驱动消费；命令环与 EP0 传输环全程无 TRB 流转（如实呈现为空）——设备通知是唯一由设备侧活动直接产生事件的路径","tag":"设备"}],"frames":[{"c":"r0","note":"本链是 §4.13 泳道图第 1-5 步（通知包→DNCTRL→事件生成→事件环→软件读环消费）的真实代码形态——设备是发起方；每帧一次调用，右列三环与设备端同步演进。","ph":"设备发 FUNCTION_WAKE → DNCTRL 筛选 → Device Notification Event 写事件环 → case TRB_DEV_NOTE → handle_device_notification → usb_wakeup_notification：一次设备通知的生成与消费全链（§4.13/§4.13.2）"},{"c":"r1","note":"右列寄存器窗的 DNCTRL=N1=1 是本链的场景前提，不是本链动作；设备态=Configured——链路电源态 U3 与 USB 设备态是两个层面的事。","refs":["r_n1","r_dflt"]},{"c":"r2","note":"功能级 Function Remote Wake 走通知包；链路级 Remote Wake 只是底层信号（§4.13.2 Note 两者分立）——设备票据区记下这张上行票据。","refs":["r_fw"],"ev":[{"op":"dev_req","req":"FUNCTION_WAKE","dir":"IN"}]},{"c":"r3","note":"16 类通知多数由 xHC 自处理不落环（LTM Type=2 自动处理，p231 Note）；DNCTRL 选中的才写事件环——xHC 是第一道筛子；本链无门铃动作：通知由设备侧发起，不经过任何门铃。","refs":["r_dn","r_route","r_trb","r_cc"],"ev":[{"op":"ring_enq","ring":"evt","slot":0,"trb":{"a":"DNE","t":"Device Notification","f":"Type=1 FW · Slot=1","cyc":1}}]},{"c":"r4","note":"中断器机制全链（节流三条件/IMAN/向量绑定）见 §4.17 走读卡；本卡从向量抵达处接手。"},{"c":"r5","note":"消费主循环与前三分支（命令完成/端口状态/传输完成）已由 §4.17 卡走读——本链补第四路：设备通知。"},{"c":"r6","note":"按事件类型分发四路：:3010-3018 三路（命令完成/端口状态/传输完成）§4.17 卡已走，本链不走只列在案。"},{"c":"r7","note":"函数入口（:3020 进入）——设备通知的消费主体，19 行小函数：取槽号、防走飞、交 USB 核心。"},{"c":"r8","note":"从事件第 4 个双字（offset 0Ch）取 Slot ID=1（字段 31:24 位）——事件自带定位，无需回查。","refs":["r_trb"]},{"c":"r9","note":"防走飞护栏：槽号无对应设备（如 Disable Slot 后迟到的通知）→ 告警后丢弃。本链槽 1 在位，分支不走，如实注记。"},{"c":"r10","note":"调试日志口径＝Device Wake Notification：内核不读事件的 Notification Type 字段做细分——凡 Device Notification Event 一律按唤醒通知处理（类型细分字段在，需要它的消费者自己读，如实注记）。"},{"c":"r11","note":"由槽号取该槽的 usb_device（xhci->devs[1]->udev）；事件携带的 DN 数据（DNTP 05h-0Bh）内核不消费，如实注记。"},{"c":"r12","note":"parent=设备所挂的 hub（直插根口时即根 hub）——唤醒通知交给父 hub 处理，不是设备自己。"},{"c":"r13","note":"主线调用：usb_wakeup_notification(父 hub, 端口号)——通知移交 USB 核心（usbcore），xhci 驱动在此交还事权。"},{"c":"r14","note":"被调用的函数：usb_wakeup_notification()（:1968 → 此处；usbcore 层）——函数头注释原话点破它存在的理由：USB3 hub 不上报设备发起恢复的 U3→U0 链路变化，USB 核心从常规 hub 中断 URB 听不到这件事（:747-749）——这条路径专门为此而设。"},{"c":"r15","note":"空指针护栏：hdev 为空直接返回（防御式；本链父 hub 在位，不走）。"},{"c":"r16","note":"持 device_state_lock（设备状态自旋锁）——与 hub 事件处理并发时保持一致视图。"},{"c":"r17","note":"端口号→端口对象（portnum 从 1 计，数组从 0 访问）。"},{"c":"r18","note":"父 hub 的 wakeup_bits 按端口号置位——hub 工作队列处理端口事件时要看这张位图。"},{"c":"r19","note":"解锁返回——usb_wakeup_notification 完成。"},{"c":"r20","note":"软件出队指针与硬件进度对齐；EHB 随 ERDP 写回归 0——下一颗事件可再触发中断。","ev":[{"op":"evt_deq","slot":0},{"op":"reg_wr","reg":"ERDP","val":"→ 槽 0 后（EHB 写 1 清）"}]},{"c":"r21","note":"对照 §4.13 泳道图第 1-5 步逐拍对上；LTM（Type=2）在 xHC 内自处理不产生事件（p231 Note）——能落事件环的常客只有 FUNCTION_WAKE（p366 Note：当前定义的 16 类里仅它不该由 xHC 自动处理）。","refs":["r_ltm","r_only"]}],"refs":[{"id":"r_dn","label":"§4.13","title":"DNCTRL 按位选通知类型","src":"xHCI 1.2b §4.13","p":"p229","quote":"The Device Notification Control (DNCTRL) register allows system software to individually select which notifications are important to it and shall generate a Device Notification Event.","note":"16 类通知逐位选——选中的才生成事件；调试例外（同页 Note）：xHC 自处理的类型也可打开上报。"},{"id":"r_route","label":"§4.13","title":"事件路由跟着槽走","src":"xHCI 1.2b §4.13","p":"p229","quote":"The xHC shall use the Device Slot’s Slot Context Interrupter Target field to determine the Event Ring that shall receive the event.","note":"DN 事件进哪条事件环由该槽 Slot Context 的 Interrupter Target 字段决定——不是固定进 0 号中断器。"},{"id":"r_n1","label":"§4.13.2","title":"收 FUNCTION_WAKE 应置 N1","src":"xHCI 1.2b §4.13.2","p":"p231","quote":"Software should set flag N1 in the DNCTRL register to enable the generation of Device Notification Events when FUNCTION_WAKE Device Notifications are received.","note":"规范对软件的应然：想收功能唤醒通知就置 N1。基线内核 xhci 驱动自身不写 DNCTRL（全树无写入点）——如实注记：本链场景的 N1=1 来自平台固件/调试路径。"},{"id":"r_fw","label":"§4.13.2","title":"FUNCTION_WAKE=功能级远程唤醒","src":"xHCI 1.2b §4.13.2","p":"p231","quote":"A USB3 device sends a FUNCTION_WAKE Device Notification Transaction Packet to inform the host of a “Function Remote Wake”.","note":"Function Remote Wake（功能级）与底层 USB 信号发起的 Remote Wake（链路级）是两回事（同节 Note）——前者走通知包，后者只是链路信号。"},{"id":"r_trb","label":"§6.4.2.7","title":"DN Event TRB 报告收到的通知包","src":"xHCI 1.2b §6.4.2.7","p":"p446","quote":"A Device Notification Event TRB is used to report the information received in USB Device Notification (DEV_NOTIFICATION) Transaction Packets from USB Devices.","note":"事件字段=通知包的转写：Notification Type（7:4 位）＋Device Notification Data（63:8 位，DNTP 05h-0Bh）＋Slot ID（31:24 位）。"},{"id":"r_cc","label":"§6.4.2.7","title":"完成码恒为 Success","src":"xHCI 1.2b §6.4.2.7","p":"p447","quote":"Completion Code. This field encodes the completion status of the TRB, and shall always be set to Success.","note":"DN 事件没有失败语义——它报告的是「收到了通知包」这件事本身。"},{"id":"r_ltm","label":"§4.13.1","title":"LTM 由 xHC 自处理","src":"xHCI 1.2b §4.13.1","p":"p231","quote":"The xHC hardware automatically handles LATENCY_TOLERANCE_MESSAGE Device Notifications (Notification Type = 2) so there is no need to enable Device Notification Event generation for this notification type.","note":"LTM（Type=2）在 xHC 内消化（收 BELT→比较→经平台 LTR 转发）——不需要也不应该为它开事件生成。"},{"id":"r_dflt","label":"§5.4.4","title":"复位后通知全关","src":"xHCI 1.2b §5.4.4","p":"p365","quote":"If a flag is set for a specific notification type, a Device Notification Event shall be generated when the respective notification packet is received. After reset all notifications are disabled.","note":"DNCTRL 复位值 0000 0000h——16 类通知默认全关；不置位就永远收不到 DN 事件。"},{"id":"r_only","label":"§5.4.4","title":"16 类里只有 FUNCTION_WAKE 该上报","src":"xHCI 1.2b §5.4.4","p":"p366","quote":"Of the currently defined USB3 Device Notification Types, only the FUNCTION_WAKE type should not be handled automatically by the xHC.","note":"同页 Note：除调试外软件只该往 DNCTRL 写 0002h（只开 N1）——常规上报的常客只有功能唤醒一类。"}],"world0":{"worldKind":"rings3","rings":{"cmd":{"label":"命令环 CRCR","own":"驱动生产 · xHC 消费","db":0,"cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]},"ep0":{"label":"传输环 EP0（本链静止）","own":"驱动生产 · xHC 消费","db":1,"cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]},"evt":{"label":"事件环 ERST/ERDP","own":"xHC 生产 · 驱动消费","cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]}},"dev":{"title":"设备端","state":"Configured","states":["Powered","Default","Addressed","Configured"],"tickets":[],"noTkNote":"链前无票据——设备静默在 U3"},"regs":{"DNCTRL":"N1=1（FUNCTION_WAKE）","ERDP":"→ 事件环段 0","IMAN":"IP=0 · IE=1（向量 0）"}}}</script>
+  </div>
+<!--STEPPER:X413:END-->
+<p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.13 p229–232 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><script type="module">/* codestepper.js — 代码步进放映机（课程族共享，配 course.css 的 .stepper 段）
+ * 数据驱动：宿主 div.stepper 内嵌 <script type="application/json" class="stepper-data">
+ *   { title, intro, baseline, phases[], rows[], frames[], refs[], world0 }
+ * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
+ * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
+ * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 记录。
+ * v3（2026-10-21）：init 后量最宽代码行给 .st-code/.stepper 设定紧致像素宽（宽度自适应）。
+ * v3.2（2026-10-21）：世界面板全高无内滚、与代码列等高（纯 CSS 改动，见 course.css v3.2 注）。
+ * v3.3（2026-10-21 用户裁定）：步进跟随对齐——当前代码行滚到视口垂直居中；世界面板钉
+ *   视口右列、约一屏高、滚动条隐藏（内滚仍在，内容全量在 DOM），每帧把发生变化的
+ *   元素标 .st-chg 脉冲并自动滚到与当前代码行齐平（alignWorld）。
+ * v3.4（2026-10-21 用户报"前几行高亮时导航条要追着点"）：居中滚动加"钉住地板"夹紧
+ *   （stepScroll）——前几行纯居中会把页面滚得让控件条/世界面板的 sticky 不咬合
+ *   （自然位落进视口中带），此后每步"下一行"页面下滚一行高、按钮随内容上移一格格，
+ *   用户被迫追着鼠标向上移。地板=让两件钉住位咬合的最小 scrollY（ctl 自然位以
+ *   零高静止锚点 .st-pinref 量取——sticky 咬合后 ctl 自身 rect 是钉住位，不可用）。
+ * v3.5（2026-10-29，0007 世界面板 anatomy 机器）：world0 可选字段 machine:{svg}——
+ *   存在时世界面板渲染该 SVG 机构替代卡片网格（worldHtml 默认路径零变更）。
+ *   状态应用 machineApply，与卡片 op 语义一致：cell→[data-k=ring:i] 组切 st-* 类并
+ *   更新 .st-ma/.st-mt/.st-mf/.st-mcyc；ptr→组内 .st-menq/.st-mdeq 翻 visibility；
+ *   dev/td→[data-k=dev|td] 组内 [data-f=字段] 改 textContent。脉冲样式内嵌在机构
+ *   SVG 里（.st-chg 走 stroke/fill 动画，SVG 无 box-shadow）；alignWorld 复用不变
+ *   （getBoundingClientRect 对 SVG 元素有效）。机构标注约定见本目录 design.md。
+ * v3.6（2026-11-03，CODE-STEPPER 提案步 1）：world0.worldKind==="rings3" 时世界
+ *   面板渲染「命令环/EP0 传输环/事件环/设备端」四区模板（rings3Html），配套高层
+ *   ev 枚举（ring_enq/ring_deq/ring_link/db/evt_enq/evt_deq/reg_wr/dev_req/dev_state，
+ *   applyEvR3 应用——低级 cell/ptr/dev/td 旧 op 不受影响）。指针着色按生产/消费方
+ *   （cmd/ep0：▲驱动蓝写·▼xHC 金取；evt 反转），槽卡语汇对齐 4.3 机器 TRB 小卡
+ *   （类型缩写+cycle 位角标）。门铃=环头徽标按次数累计亮（闪=当帧 .st-chg 脉冲）。 */
+(function () {
+  'use strict';
+
+  /* ---------- 世界渲染（纯函数：state → HTML 字符串） ---------- */
+  var RING_ORDER = ['xfer', 'cmd', 'evt'];
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function cellHtml(c, ring, i, st) {
+    var cls = 'stw-cell st-' + (c.st || 'empty');
+    var ptr = [];
+    if (st && st.rings[ring].enq === i) ptr.push('<i class="stw-ptr pe">写▸enq</i>');
+    if (st && st.rings[ring].deq === i) ptr.push('<i class="stw-ptr pd">取▸deq</i>');
+    if (ring === 'evt') { /* 事件环指针语义反转，标签在 CSS 里换 */
+    }
+    return '<div class="' + cls + '" data-k="' + ring + ':' + i + '">' + ptr.join('') +
+      '<b>' + esc(c.a) + '</b><span class="stw-t">' + (c.t ? esc(c.t) : '空') + '</span>' +
+      (c.f ? '<span class="stw-f">' + esc(c.f) + '</span>' : '') +
+      '<span class="stw-cyc">cyc=' + esc(c.cyc) + '</span></div>';
+  }
+  function worldHtml(W) {
+    var h = '';
+    RING_ORDER.forEach(function (k) {
+      if (!W.rings[k]) return;
+      var r = W.rings[k];
+      h += '<div class="stw-ring"><div class="stw-rhead"><b>' + esc(r.label) + '</b>' +
+        '<span class="stw-own">' + esc(r.own) + '</span></div><div class="stw-cells">';
+      r.cells.forEach(function (c, i) { h += cellHtml(c, k, i, W); });
+      h += '</div></div>';
+    });
+    ['dev', 'td'].forEach(function (k) {
+      if (!W[k]) return;
+      var b = W[k];
+      h += '<div class="stw-box" data-k="' + k + '"><b>' + esc(b.title) + '</b><table>';
+      Object.keys(b).forEach(function (f) {
+        if (f === 'title') return;
+        h += '<tr><th>' + esc(f) + '</th><td>' + esc(b[f]) + '</td></tr>';
+      });
+      h += '</table></div>';
+    });
+    return h;
+  }
+  function applyEv(W, ev) { /* 就地应用一条事件（深拷贝由调用方保证） */
+    if (!ev) return;
+    if (R3_OPS[ev.op]) return applyEvR3(W, ev); /* v3.6 rings3 高层枚举 */
+    if (ev.op === 'cell') {
+      var c = W.rings[ev.ring].cells[ev.i];
+      Object.keys(ev.set || {}).forEach(function (k) { c[k] = ev.set[k]; });
+    } else if (ev.op === 'ptr') {
+      if (typeof ev.enq === 'number') W.rings[ev.ring].enq = ev.enq;
+      if (typeof ev.deq === 'number') W.rings[ev.ring].deq = ev.deq;
+    } else if (ev.op === 'dev' || ev.op === 'td') {
+      Object.keys(ev.set || {}).forEach(function (k) { W[ev.op][k] = ev.set[k]; });
+    }
+  }
+  /* ---------- v3.5 机构面板状态应用（world0.machine.svg 在场时；语义与卡片一致） ---------- */
+  function mSetText(scope, sel, v) {
+    var t = scope.querySelector(sel);
+    if (t) t.textContent = (v == null ? '' : String(v));
+  }
+  function machineApply(W, box) {
+    Object.keys(W.rings || {}).forEach(function (rk) {
+      var r = W.rings[rk];
+      var slots = {};
+      Array.prototype.forEach.call(box.querySelectorAll('[data-ring="' + rk + '"]'), function (el) {
+        var id = el.getAttribute('data-k');
+        if (id != null) slots[id] = el;
+      });
+      (r.cells || []).forEach(function (c, i) {
+        var el = slots[rk + ':' + i];
+        if (!el) return;
+        el.setAttribute('class', (el.getAttribute('data-base') || 'st-mslot') + ' st-' + (c.st || 'empty'));
+        mSetText(el, '.st-ma', c.a);
+        mSetText(el, '.st-mt', c.t ? c.t : '空');
+        mSetText(el, '.st-mf', c.f || '');
+        mSetText(el, '.st-mcyc', 'cyc=' + c.cyc);
+        var enq = el.querySelector('.st-menq'), deq = el.querySelector('.st-mdeq');
+        if (enq) enq.setAttribute('visibility', r.enq === i ? 'visible' : 'hidden');
+        if (deq) deq.setAttribute('visibility', r.deq === i ? 'visible' : 'hidden');
+      });
+    });
+    ['dev', 'td'].forEach(function (k) {
+      var b = W[k];
+      if (!b) return;
+      Array.prototype.forEach.call(box.querySelectorAll('[data-k="' + k + '"]'), function (el) {
+        Object.keys(b).forEach(function (f) {
+          if (f === 'title') return;
+          mSetText(el, '[data-f="' + f + '"]', b[f]);
+        });
+      });
+    });
+  }
+  /* ---------- v3.6 rings3 四区模板（world0.worldKind==="rings3"；提案 §3.1/§3.2） ----------
+   * world0 形态：{ worldKind, rings:{cmd,ep0,evt}, dev:{title,state,states,tickets}, regs?, dbs? }
+   *   环 cells 元素与卡片面板同构 {st,a,t,f,cyc}；ev 载荷见 applyEvR3 各分支。 */
+  var R3_ORDER = ['cmd', 'ep0', 'evt'];
+  var R3_OPS = { ring_enq: 1, ring_deq: 1, ring_link: 1, db: 1, evt_enq: 1, evt_deq: 1, reg_wr: 1, dev_req: 1, dev_state: 1 };
+  function r3CellHtml(c, ring, i, r) {
+    var ptr = '';
+    if (r.enq === i) ptr += '<i class="r3-ptr pe" title="生产指针 enq">▲</i>';
+    if (r.deq === i) ptr += '<i class="r3-ptr pd" title="消费指针 deq">▼</i>';
+    return '<div class="r3-cell st-' + (c.st || 'empty') + '" data-k="' + ring + ':' + i + '">' + ptr +
+      '<span class="r3-cyc">c' + esc(c.cyc) + '</span>' +
+      '<b class="r3-a">' + esc(c.a || '·') + '</b>' +
+      (c.t ? '<span class="r3-t">' + esc(c.t) + '</span>' : '') +
+      (c.f ? '<span class="r3-f">' + esc(c.f) + '</span>' : '') + '</div>';
+  }
+  function rings3Html(W) {
+    var h = '<div class="r3">';
+    R3_ORDER.forEach(function (k) {
+      var r = W.rings[k];
+      if (!r) return;
+      var dbadge = '';
+      if (typeof r.db === 'number')
+        dbadge = '<span class="r3-db" data-k="db:' + r.db + '" title="门铃 ' + r.db + '">🔔' + r.db +
+          ((W.dbs && W.dbs[r.db]) ? '×' + W.dbs[r.db] : '') + '</span>';
+      h += '<div class="r3-zone r3-ring-' + k + '"><div class="r3-zhead"><b>' + esc(r.label) + '</b>' +
+        dbadge + '<span class="r3-own">' + esc(r.own) + '</span></div>' +
+        '<div class="r3-cells">' +
+        r.cells.map(function (c, i) { return r3CellHtml(c, k, i, r); }).join('') +
+        '</div></div>';
+    });
+    if (W.dev) {
+      var states = W.dev.states || [], cur = W.dev.state || '';
+      h += '<div class="r3-zone r3-devzone"><div class="r3-zhead"><b>' + esc(W.dev.title || '设备端') + '</b></div>' +
+        '<div class="r3-lamps" data-k="dev-state">' +
+        states.map(function (s) { return '<i class="r3-lamp' + (s === cur ? ' on' : '') + '">' + esc(s) + '</i>'; }).join('') +
+        '</div><div class="r3-tickets" data-k="dev-tickets">' +
+        ((W.dev.tickets && W.dev.tickets.length)
+          ? W.dev.tickets.map(function (t) {
+              return '<span class="r3-tk">' + esc(t.req) + (t.dir ? ' <em>' + esc(t.dir) + '</em>' : '') + '</span>';
+            }).join('')
+          : '<span class="r3-mut">（' + esc(W.dev.noTkNote || '无 USB 请求到达——命令环对设备不可见') + '）</span>') +
+        '</div></div>';
+    }
+    if (W.regs && Object.keys(W.regs).length) {
+      h += '<div class="r3-zone r3-regszone"><div class="r3-zhead"><b>寄存器窗</b></div><div class="r3-regs">' +
+        Object.keys(W.regs).map(function (rk) {
+          return '<span class="r3-reg" data-k="reg:' + esc(rk) + '"><em>' + esc(rk) + '</em>' + esc(W.regs[rk]) + '</span>';
+        }).join('') + '</div></div>';
+    }
+    return h + '</div>';
+  }
+  function applyEvR3(W, ev) { /* rings3 高层事件（提案 §3.2 表）；深拷贝由调用方保证 */
+    var R = W.rings;
+    if (ev.op === 'ring_enq') {
+      var r = R[ev.ring], trb = ev.trb || {}, c = r.cells[ev.slot];
+      c.st = trb.st || 'written'; c.a = trb.a || ''; c.t = trb.t || ''; c.f = trb.f || '';
+      if (trb.cyc != null) c.cyc = trb.cyc;
+      r.enq = (ev.slot + 1) % r.cells.length;
+    } else if (ev.op === 'ring_deq') {
+      R[ev.ring].deq = ev.slot;
+    } else if (ev.op === 'ring_link') { /* 回绕：生产指针回 0 槽 + 首槽 cycle 翻转 */
+      var rl = R[ev.ring];
+      rl.cells[0].cyc = rl.cells[0].cyc ? 0 : 1;
+      rl.enq = 0;
+    } else if (ev.op === 'db') {
+      W.dbs = W.dbs || {};
+      W.dbs[ev.target] = (W.dbs[ev.target] || 0) + 1;
+    } else if (ev.op === 'evt_enq') {
+      var re = R.evt, ec = ev.ev || {}, c2 = re.cells[ev.slot];
+      c2.st = 'evt'; c2.a = ec.a || ''; c2.t = ec.t || '';
+      c2.f = [(ec.sid != null ? 'Slot=' + ec.sid : ''), (ec.cc != null ? 'CC=' + ec.cc : '')]
+        .filter(Boolean).join(' · ');
+      re.enq = (ev.slot + 1) % re.cells.length;
+    } else if (ev.op === 'evt_deq') {
+      R.evt.deq = ev.slot;
+    } else if (ev.op === 'reg_wr') {
+      W.regs = W.regs || {};
+      W.regs[ev.reg] = ev.val;
+    } else if (ev.op === 'dev_req') {
+      W.dev.tickets = W.dev.tickets || [];
+      W.dev.tickets.push({ req: ev.req, dir: ev.dir || '' });
+    } else if (ev.op === 'dev_state') {
+      W.dev.state = ev.to;
+    }
+  }
+  function stateAt(D, idx) {
+    var W = JSON.parse(JSON.stringify(D.world0));
+    for (var i = 0; i <= idx && i < D.frames.length; i++)
+      (D.frames[i].ev || []).forEach(function (e) { applyEv(W, e); });
+    return W;
+  }
+
+  /* ---------- 弹窗（全局单例，多 stepper 共用） ---------- */
+  var modal = null;
+  function ensureModal() {
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'st-modal';
+    modal.innerHTML = '<div class="st-mbox" role="dialog" aria-modal="true">' +
+      '<button type="button" class="st-mclose">✕ 关闭</button><div class="st-mbody"></div></div>';
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || (e.target.getAttribute && e.target.getAttribute('class') === 'st-mclose'))
+        modal.classList.remove('show');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') modal.classList.remove('show');
+    });
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function showRef(ref) {
+    var m = ensureModal();
+    m.querySelector('.st-mbody').innerHTML =
+      '<h4>' + esc(ref.label) + ' · ' + esc(ref.title) + '</h4>' +
+      '<p class="st-msrc">' + esc(ref.src) + (ref.p ? ' · ' + esc(ref.p) : '') + '</p>' +
+      (ref.quote ? '<blockquote>' + esc(ref.quote) + '</blockquote>' : '') +
+      (ref.note ? '<p class="st-mnote">' + esc(ref.note) + '</p>' : '');
+    m.classList.add('show');
+  }
+
+  /* ---------- 每台 stepper 的初始化 ---------- */
+  function initStepper(root) {
+    var dataEl = root.querySelector('script.stepper-data');
+    if (!dataEl) return;
+    var D;
+    try { D = JSON.parse(dataEl.textContent); } catch (e) { return; /* 静态内容保留 */ }
+    var rows = {}, rowEls = {};
+    D.rows.forEach(function (r) { rows[r.id] = r; });
+    Array.prototype.forEach.call(root.querySelectorAll('.st-crow'), function (el) {
+      rowEls[el.getAttribute('data-id')] = el;
+    });
+    var codeBox = root.querySelector('.st-code');
+    var worldBox = root.querySelector('.st-world');
+    var noteBox = root.querySelector('.st-note');
+    var refsBox = root.querySelector('.st-refs');
+    var gridBox = root.querySelector('.st-grid');
+    if (!codeBox || !worldBox || !noteBox) return;
+
+    /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
+    var idx = 0, timer = null, lastWorld = null;
+    var N = D.frames.length;
+    var refMap = {};
+    (D.refs || []).forEach(function (r) { refMap[r.id] = r; });
+
+    /* 控制条 */
+    var ctl = document.createElement('div');
+    ctl.className = 'st-ctl';
+    ctl.innerHTML = '<button type="button" data-a="prev">◀ 上一行</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一行 ▶</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<span class="st-count"></span><span class="st-ph"></span>' +
+      '<span class="st-hint">←/→ 键也可步进</span>';
+    root.insertBefore(ctl, root.querySelector('.st-grid'));
+    /* v3.4：ctl 前的零高静止锚点——量 ctl 自然文档位用（见头部 v3.4 注） */
+    var pinRef = document.createElement('div');
+    pinRef.className = 'st-pinref';
+    pinRef.style.height = '0';
+    root.insertBefore(pinRef, ctl);
+    var countEl = ctl.querySelector('.st-count'), phEl = ctl.querySelector('.st-ph');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+
+    /* 引用条（chips） */
+    var chips = document.createElement('div');
+    chips.className = 'st-chips';
+    (D.refs || []).forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'st-chip'; b.textContent = r.label + ' ' + r.title;
+      b.title = '查看规范原文'; b.setAttribute('data-ref', r.id);
+      b.addEventListener('click', function () { showRef(refMap[r.id]); });
+      chips.appendChild(b);
+    });
+    if (refsBox) { refsBox.innerHTML = ''; refsBox.appendChild(chips); }
+
+    function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = '播放'; }
+    /* v3.4 钉住地板（见头部注）：行尽量滚到视口居中，但不低于"控件条与世界面板
+     * 都咬合在钉住位"的最小 scrollY——否则前几行阶段按钮随内容上移、要追着点。 */
+    var ctlStickTop = parseFloat(getComputedStyle(ctl).top) || 0;
+    var worldStickTop = parseFloat(getComputedStyle(worldBox).top) || 0;
+    function stepScroll(cur) {
+      var sy = window.scrollY || window.pageYOffset || 0;
+      var rowR = cur.getBoundingClientRect();
+      var center = sy + rowR.top + rowR.height / 2 - innerHeight / 2;
+      var floor = Math.max(sy + pinRef.getBoundingClientRect().top - ctlStickTop,
+                           sy + gridBox.getBoundingClientRect().top - worldStickTop);
+      var maxS = document.documentElement.scrollHeight - innerHeight;
+      window.scrollTo(0, Math.max(0, Math.min(maxS, Math.max(center, floor))));
+    }
+    /* v3.3 齐平对位：本帧事件命中的世界元素标 .st-chg，并把它们整体滚到与当前代码行
+     * 同一水平线（中线对齐）。无事件帧不动世界（代码行照常居中）。对位夹在
+     * [0, scrollHeight-clientHeight] 内：变化元素贴世界顶/底时贴边即止。 */
+    function alignWorld(fr, cur) {
+      if (!cur) return;
+      var marks = [];
+      (fr.ev || []).forEach(function (e) {
+        var sel = null;
+        if (e.op === 'cell') sel = '[data-k="' + e.ring + ':' + e.i + '"]';
+        else if (e.op === 'ptr') sel = '[data-k="' + e.ring + ':' + (typeof e.enq === 'number' ? e.enq : e.deq) + '"]';
+        else if (e.op === 'dev' || e.op === 'td') sel = '[data-k="' + e.op + '"]';
+        else if (R3_OPS[e.op]) { /* v3.6 rings3 高层枚举的脉冲定位 */
+          if (e.op === 'ring_enq' || e.op === 'ring_deq' || e.op === 'ring_link') sel = '[data-k="' + e.ring + ':' + e.slot + '"]';
+          else if (e.op === 'db') sel = '[data-k="db:' + e.target + '"]';
+          else if (e.op === 'evt_enq' || e.op === 'evt_deq') sel = '[data-k="evt:' + e.slot + '"]';
+          else if (e.op === 'reg_wr') sel = '[data-k="reg:' + e.reg + '"]';
+          else if (e.op === 'dev_req') sel = '[data-k="dev-tickets"]';
+          else if (e.op === 'dev_state') sel = '[data-k="dev-state"]';
+        }
+        if (!sel) return;
+        var el = worldBox.querySelector(sel);
+        if (el && marks.indexOf(el) < 0) { el.classList.add('st-chg'); marks.push(el); }
+      });
+      if (!marks.length) return;
+      var top = Infinity, bot = -Infinity;
+      marks.forEach(function (el) {
+        var rc = el.getBoundingClientRect();
+        top = Math.min(top, rc.top); bot = Math.max(bot, rc.bottom);
+      });
+      var rowR = cur.getBoundingClientRect();
+      var delta = (top + bot) / 2 - (rowR.top + rowR.height / 2);
+      var maxT = worldBox.scrollHeight - worldBox.clientHeight;
+      worldBox.scrollTop = Math.max(0, Math.min(maxT, worldBox.scrollTop + delta));
+    }
+    function go(i, noScroll) {
+      idx = Math.max(0, Math.min(N - 1, i));
+      var fr = D.frames[idx];
+      /* 当前行高亮 + 滚动跟随（v3.3：居中于视口；初始 go(0) 不滚——多台 stepper 各自
+       * go(0) 会连环拽页（最后一台赢，v3.2 起即有的加载跳页），只在用户步进时接管） */
+      Object.keys(rowEls).forEach(function (id) { rowEls[id].classList.remove('cur', 'done'); });
+      var cur = rowEls[fr.c];
+      if (cur) {
+        cur.classList.add('cur');
+        if (!noScroll) stepScroll(cur);
+      }
+      /* 已执行过的同段行打 done（当前行之前出现过的行） */
+      var seen = {};
+      for (var k = 0; k <= idx; k++) seen[D.frames[k].c] = true;
+      Object.keys(seen).forEach(function (id) { if (rowEls[id] && id !== fr.c) rowEls[id].classList.add('done'); });
+      /* 世界面板重放 */
+      var W = stateAt(D, idx);
+      if (D.world0.worldKind === 'rings3') {
+        worldBox.innerHTML = rings3Html(W);
+      } else if (D.world0.machine && D.world0.machine.svg) {
+        worldBox.innerHTML = D.world0.machine.svg;
+        machineApply(W, worldBox);
+      } else {
+        worldBox.innerHTML = worldHtml(W);
+      }
+      worldBox.classList.add('live');
+      lastWorld = W;
+      if (!noScroll) alignWorld(fr, cur);
+      /* 当行解说 + 活跃引用 */
+      noteBox.innerHTML = (fr.note ? fr.note : '<span class="st-mut">（本行无注记）</span>') +
+        (fr.refs && fr.refs.length
+          ? ' <span class="st-fref">' + fr.refs.map(function (id) {
+              var r = refMap[id]; if (!r) return '';
+              return '<button type="button" class="st-chip on" data-ref="' + id + '">📎 ' + esc(r.label) + '</button>';
+            }).join('') + '</span>'
+          : '');
+      Array.prototype.forEach.call(noteBox.querySelectorAll('[data-ref]'), function (b) {
+        b.addEventListener('click', function () { showRef(refMap[b.getAttribute('data-ref')]); });
+      });
+      countEl.textContent = '行 ' + (idx + 1) + ' / ' + N;
+      phEl.textContent = fr.ph ? '· ' + fr.ph : '';
+      if (idx === N - 1) stop();
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { stop(); go(idx - 1); }
+      else if (a === 'next') { stop(); go(idx + 1); }
+      else if (a === 'reset') { stop(); go(0); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        if (idx === N - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === N - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2000);
+      }
+    });
+    /* 行点击跳帧：该行最近一次出现的帧 */
+    Object.keys(rowEls).forEach(function (id) {
+      rowEls[id].addEventListener('click', function () {
+        stop();
+        for (var k = idx; k < N; k++) if (D.frames[k].c === id) return go(k);
+        for (k = 0; k < N; k++) if (D.frames[k].c === id) return go(k);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      /* 2026-11-03 xhci-spec 板块集成：宿主页面的动画台（.iso-stage， tabindex 可聚焦）
+       * 自己接管方向键/空格——焦点在台上时不抢键，否则一台页面两处同键同驱。 */
+      if (t && t.closest && t.closest('.iso-stage')) return;
+      var r = root.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return; /* 只在视野内接管方向键 */
+      if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
+      else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
+    });
+
+    /* 宽度自适应（v3 2026-10-21 用户裁定"窗口太大"）：代码窗宽度=实际最宽代码行
+     * （ln/fn）的渲染宽度；prose 行与文字段落不驱动宽度。整台 .stepper 随之紧致，
+     * 上限仍 96vw/1720px（超宽代码回落横向滚动），窄窗堆叠布局下不启用。 */
+    function fitWidth() {
+      if (innerWidth <= 1100) {
+        root.style.width = ''; gridBox.style.gridTemplateColumns = ''; codeBox.style.width = '';
+        return;
+      }
+      var maxW = 0;
+      Array.prototype.forEach.call(root.querySelectorAll('.st-crow.ln, .st-crow.fn'), function (el) {
+        var cs = getComputedStyle(el), cw = 0;
+        var code = el.querySelector('code');
+        if (code) cw = Math.max(cw, code.getBoundingClientRect().width);
+        var file = el.querySelector('.st-file');
+        if (file) { /* 徽标是 block（填满行宽），量文字须用 Range */
+          var rg = document.createRange();
+          rg.selectNodeContents(file);
+          var fr = rg.getBoundingClientRect();
+          if (fr.width) cw = Math.max(cw, fr.width);
+        }
+        var rowW = cw + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + 2;
+        if (rowW > maxW) maxW = rowW;
+      });
+      if (!maxW) return;
+      var csR = getComputedStyle(root);
+      var chrome = (parseFloat(csR.paddingLeft) || 0) + (parseFloat(csR.paddingRight) || 0) + 2; /* 容器内边距+边框 */
+      var gap = parseFloat(getComputedStyle(gridBox).columnGap) || 14;
+      var cap = Math.min(document.documentElement.clientWidth * 0.96, 1720);
+      /* 2026-10-30 用户裁定（反馈轮②）：data-world-w=N 时世界面板目标宽 N px（动画侧优先）——
+       * 代码列在 cap 内让位（下限 400，超出回落横向滚动），世界列富余视口可到 900。缺省 0=旧路径。 */
+      var WT = parseFloat(root.getAttribute('data-world-w')) || 0;
+      if (WT > 0) {
+        var avail2 = cap - chrome - gap;
+        var codeW2 = Math.min(Math.ceil(maxW) + 18, Math.max(400, avail2 - WT));
+        var worldW2 = Math.min(Math.max(avail2 - codeW2, 300), 900);
+        codeBox.style.width = codeW2 + 'px';
+        gridBox.style.gridTemplateColumns = codeW2 + 'px minmax(300px, 1fr)';
+        root.style.width = Math.min(codeW2 + worldW2 + gap + chrome, cap) + 'px';
+        return;
+      }
+      var worldW = worldBox.getBoundingClientRect().width || 400;
+      var codeW = Math.min(Math.ceil(maxW) + 18, cap - chrome - gap - 320); /* 18=滚动条与舍入余量 */
+      if (codeW < 320) codeW = 320;
+      codeBox.style.width = codeW + 'px';
+      gridBox.style.gridTemplateColumns = codeW + 'px minmax(300px, 1fr)';
+      var total = codeW + worldW + gap + chrome;
+      root.style.width = Math.max(Math.min(total, cap), Math.min(720, cap)) + 'px';
+    }
+    var fitTimer = null;
+    window.addEventListener('resize', function () {
+      if (fitTimer) clearTimeout(fitTimer);
+      fitTimer = setTimeout(fitWidth, 150);
+    });
+
+    go(0, true);
+    fitWidth();
+  }
+
+  document.querySelectorAll('.stepper').forEach(function (el) {
+    try { el.classList.add('js'); initStepper(el); }
+    catch (e) { /* 静态内容保留，组件自身错误不白屏 */ }
+  });
+})();
+
+const AZIMUTH = 45;
 const ELEVATION = 30;
 const SHADES = 4;
 const RADIANS = Math.PI / 180;
@@ -825,7 +1512,7 @@ function groupSvg(children, extra = {}) {
 }
 function figureSvg({ width, height, label, body, standalone = false, className }) {
     const style = standalone ? `<style>${ISO_CSS}</style>` : "";
-    return `<svg${attrs({
+    return `\x3csvg${attrs({
         xmlns: "http://www.w3.org/2000/svg",
         class: `iso-svg${standalone ? " iso" : ""}${className ? ` ${className}` : ""}`,
         "data-theme": standalone || undefined,

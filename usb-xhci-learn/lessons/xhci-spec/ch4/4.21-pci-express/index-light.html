@@ -158,7 +158,4 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 <tr><td>跑着清 BME（xHC 可能判定）</td><td>HCE=1 → 立即停机（R/S=0 · HCH=1）</td><td>恢复需 <b>HCRST</b>（§4.24.1 内部错误）</td></tr>
 </table>
 <p>旁注（p306 实现注记，跨 §4.23.2）：FSC 能力位区分挂起流程是否需要对全部端点先发 Stop Endpoint——FSC=1 的实现只对 Running:Busy 端点要求；新实现建议支持 FSC 以兼容假定 FSC 行为的存量驱动。</p></div>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——R/S 与 HCH 的停机语义（§4.2 收尾的逆过程）；<a href="../4.20-scratchpad-buffers/index.html">§4.20 暂存缓冲区</a>——SPR 位与 Save/Restore（同为电源事件边界）。</p>
-<p><a href="../../index.html">§4.24.1 内部错误（待建）</a>——HCE/HCRST 恢复路径；<a href="../../index.html">第 8 章虚拟化（后续扩展）</a>——Virtualization 模式全貌。</p></div>
 <p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.21 p306–307 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main></body></html>

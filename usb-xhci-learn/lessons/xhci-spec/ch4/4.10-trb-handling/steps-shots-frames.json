@@ -1,0 +1,14 @@
+[
+  ["wait", 1200],
+  ["eval", "window.__fig42.playTo(0); 'ok'"], ["wait", 3400], ["shot", "shots/frame-01-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(1); 'ok'"], ["wait", 4600], ["shot", "shots/frame-02-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(2); 'ok'"], ["wait", 6600], ["shot", "shots/frame-03-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(3); 'ok'"], ["wait", 6000], ["shot", "shots/frame-04-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(4); 'ok'"], ["wait", 5400], ["shot", "shots/frame-05-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(5); 'ok'"], ["wait", 5000], ["shot", "shots/frame-06-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(6); 'ok'"], ["wait", 7000], ["shot", "shots/frame-07-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(7); 'ok'"], ["wait", 7300], ["shot", "shots/frame-08-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(8); 'ok'"], ["wait", 6700], ["shot", "shots/frame-09-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.playTo(9); 'ok'"], ["wait", 4100], ["shot", "shots/frame-10-dark.png", ".fig-wrap .iso-plate", 1.4],
+  ["eval", "window.__fig42.stateOf()"]
+]

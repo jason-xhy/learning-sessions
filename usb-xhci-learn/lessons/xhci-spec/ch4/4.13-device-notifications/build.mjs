@@ -1,13 +1,35 @@
 // §4.13 设备通知 —— 泳道节（生成器 lane_page.mjs 量产件 #3）
 // 判据：xHCI 1.2b §4.7 p229（DNCTRL/事件路由两条引文逐字）+ §4.13.1 LTM p229–231
 // 工艺：_gen/lane_page.mjs + anatomy kit pageHtml + shared/zoomfs.mjs（构建期内联，自包含）
-import { writeFileSync } from "node:fs";
+// 走读卡（CODE-STEPPER 量产轮，2026-11-04）：render_block 渲染 stepper_413x.json + codestepper/course.css
+//   走读段内联——渲染单一事实源=scripts/stepper_builder.py，行号零誊抄（锚点断言门）。
+//   生成器不接受额外 css/js（禁改 _gen/），走读卡三件（CSS/body 块/JS）对 lanePage 产物做
+//   锚点注入：head `</style></head>` 前、linksHtml 首标记 `<!--X413:WALK-->` 处、module 脚本首。
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { lanePage } from "../_gen/lane_page.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const WS = "/Users/jason/ZCodeProject/usb-xhci-study";
 const THEME = process.argv.includes("--light") ? "light" : "dark";
+
+// ---------- 代码走读卡（rings3 四区：命令环/EP0 传输环/事件环/设备端；设备通知生成与消费链） ----------
+const stepperHtml = execFileSync("python3", [
+  join(WS, "scripts/stepper_builder.py"), "render_block",
+  join(WS, "lessons-data/stepper_413x.json"),
+], { encoding: "utf8" });
+const courseCss = readFileSync(join(WS, "assets/course.css"), "utf8");
+const cssSeg = (a, b) => {
+  const i = courseCss.indexOf(a);
+  const j = courseCss.indexOf(b, i);
+  if (i < 0 || j < 0) throw new Error(`course.css 段标记缺失: ${a.slice(0, 30)}`);
+  return courseCss.slice(i, j);
+};
+const stepperCss = cssSeg("/* ===== 代码步进放映机", "/* ===== 右缘批注")
+  .replace(/\/\*[\s\S]*?\*\//g, "");  // 剥段内注释：资产注释不进交付件（载体三分），兼减字节
+const stepperJs = readFileSync(join(WS, "assets/codestepper.js"), "utf8");
 
 const cfg = {
   theme: THEME,
@@ -25,10 +47,10 @@ const cfg = {
     { en: "The Device Notification Control (DNCTRL) register allows system software to individually select which notifications are important to it and shall generate a Device Notification Event.",
       zh: "DNCTRL 按位选择要收的通知类型——选中的才生成设备通知事件。",
       src: "xHCI 1.2b §4.13 p229" },
-    { en: "The xHC shall use the Device Slot’s Slot Context Interrupter Target field to determine the Event Ring that shall receive the event.",
+    { en: "The xHC shall use the Device Slot's Slot Context Interrupter Target field to determine the Event Ring that shall receive the event.",
       zh: "事件进哪条事件环由该槽 Slot Context 的 Interrupter Target 字段决定——不是固定进 0 号中断器。",
       src: "xHCI 1.2b §4.13 p229 Note" },
-    { en: "The xHC's role in supporting this new platform capability is to accept latency tolerance values from USB3 devices, evaluate the values and forward the lowest value to the host platform, using the host platform’s Latency Tolerance Reporting (LTR) mechanism.",
+    { en: "The xHC's role in supporting this new platform capability is to accept latency tolerance values from USB3 devices, evaluate the values and forward the lowest value to the host platform, using the host platform's Latency Tolerance Reporting (LTR) mechanism.",
       zh: "xHC 在 LTM 里的角色：收设备 BELT 值、比较、把最小值经平台 LTR 转发给宿主。",
       src: "xHCI 1.2b §4.13.1 p229" },
   ],
@@ -59,14 +81,31 @@ const cfg = {
     { i: "var(--xsp-dev)", t: "设备（通知发起方）" },
     { t: "实线=包/配置写 · 虚线=事件流" },
   ],
-  linksHtml: `
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.1-command-operation/index.html">§4.1 命令操作</a>——事件环消费模型；<a href="../../../xhc-machines/fig3-event-ring/index.html">四机课 Fig3 回执登记机</a>——事件环的生产与消费。</p>
-<p><a href="../../index.html">§4.6.14 Set LTV（待建）</a> · <a href="../../index.html">§4.23 电源管理（待建）</a>——LTM 所属的功耗管理域。</p></div>`,
+  extraHtml: `<!--X413:WALK-->`,  // 自含化：原互链卡移除，仅留走读卡注入锚
   footLine: "判据：xHCI 1.2b（625472 Rev 1.2b）§4.13 p229–232 · 引文逐字核对，证据见 <a href=\"EVIDENCE.md\">EVIDENCE.md</a> · 生成于 2026-11-04",
 };
 
-const page = lanePage(cfg);
+// ---------- 走读卡三件注入（lanePage 产物后处理；锚点唯一，replace 函数形态防 $ 误展开） ----------
+const walknote = `<p class="xsp-walknote">§4.13 泳道图第 1-5 步在真实内核代码里的样子——从设备发出 FUNCTION_WAKE 通知包起，经 DNCTRL 筛选、Device Notification Event 落事件环，到中断侧 case TRB_DEV_NOTE → handle_device_notification 取 Slot ID、usb_wakeup_notification 把唤醒通知交 USB 核心（与上方泳道图逐拍对表）。事件口径挑明：Device Notification Event 的生产者是设备侧通知包，不是命令/TD 消费的完成回执——本链命令环与传输环全程无 TRB 流转（如实呈现为空）、门铃零动作；TD 计数两个口径（规范按传输阶段记 TD、内核 struct xhci_td 按 URB 记）在本链都不出现——零 TD 链。链前提 DNCTRL.N1=1 来自平台固件/调试路径：基线内核 xhci 驱动自身不写 DNCTRL（全树无写入点，如实注记）。</p>
+`;
+const stepperCssBlock = `
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+${stepperCss}
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--font-ui); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
+`;
+let page = lanePage(cfg);
+for (const [anchor, inject] of [
+  ["</style></head>", () => stepperCssBlock + "</style></head>"],
+  ["<!--X413:WALK-->", () => walknote + stepperHtml],
+  ['<script type="module">', () => '<script type="module">' + stepperJs.replace(/<\/(script)/gi, "<\\/$1") + "\n"],
+]) {
+  if (!page.includes(anchor)) throw new Error(`注入锚点缺失: ${anchor.slice(0, 40)}`);
+  page = page.replace(anchor, inject);
+}
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);
 console.log("wrote", name, (page.length / 1024).toFixed(0) + " KB");

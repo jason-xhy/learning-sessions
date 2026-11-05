@@ -1,0 +1,7 @@
+[
+  ["wait", 1200],
+  ["eval", "window.__zfs && window.__zfs.setZoom ? (window.__zfs.setZoom(3), 'zoom3') : 'no-zfs'"],
+  ["wait", 600],
+  ["shot", "shots/phone-390-zoom.png", ".fig-wrap .iso-plate", 1],
+  ["eval", "(window.__zfs && window.__zfs.zoomOf) ? window.__zfs.zoomOf() : 'n/a'"]
+]

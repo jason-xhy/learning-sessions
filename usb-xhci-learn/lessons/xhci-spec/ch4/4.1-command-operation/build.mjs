@@ -44,7 +44,7 @@ const STEPS = [
   { kind: "box", at: "hc", y: 310, lines: ["按 CRCR 指针取命令 TRB", "执行命令"], pg: "p68",
     narr: "xHC 沿 CRCR 指针取走命令并执行——命令环这一侧由 xHC 管理，软件只写入。" },
   { kind: "arrow", from: "hc", to: "sw", y: 396, ev: true, lines: ["Command Completion Event TRB", "写入事件环"], pg: "p68",
-    narr: "每条命令必有一条完成回执：Command Completion Event TRB 写进事件环（事件环机制见四机课 Fig3）。" },
+    narr: "每条命令必有一条完成回执：Command Completion Event TRB 写进事件环（事件环机制见 §4.9.4）。" },
   { kind: "arrow", from: "hc", to: "sw", y: 478, ev: true, thin: true, lines: ["MSI-X 中断唤起驱动", "（可选——软件也可轮询事件环）"], pg: "p68·脚注7 p69",
     narr: "通知方式二选一：MSI-X 中断唤起驱动，或软件轮询事件环——规范脚注 7 明说中断是可选项。" },
   { kind: "box", at: "sw", y: 556, lines: ["读事件环 · 收回执", "（如 Enable Slot 回执里的 Slot ID）"], pg: "p68",
@@ -204,7 +204,7 @@ const proseHtml = `
 
 const quotesHtml = `
 <div class="xsp-card"><h2>原文对照</h2>
-<div class="xsp-q"><div class="en">“There is only one Command Ring that is used for issuing xHCI specific commands or commands related to Device Slots.”</div>
+<div class="xsp-q"><div class="en">“There is only one Command Ring that is used for issuing xHC specific commands or commands related to Device Slots.”</div>
 <div class="zh">全规范只有一条命令环：xHCI 专用命令与设备槽相关命令共用它。</div><div class="src">xHCI 1.2b §4.1 p68</div></div>
 <div class="xsp-q"><div class="en">“All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register, that is, writing the Host Controller Command code to the DB Target field of Doorbell register 0”</div>
 <div class="zh">命令的完整投递动作 = 命令 TRB 写入命令环 + 写门铃 0（DB Target=0，Host Controller Command）。</div><div class="src">xHCI 1.2b §4.1 p68</div></div>
@@ -248,7 +248,7 @@ const body = pageCss + navHtml + proseHtml + quotesHtml +
     body: `<div class="iso-stage" tabindex="0" role="group" aria-label="命令操作三方时序图，总览为完整流程图，步进模式逐帧播放八步">${svg}</div>` + ctlHtml + legendHtml + zoomBarHtml("放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进"),
   }) + `
 <p class="xsp-walknote">同一个命令模型在真实内核代码里的样子——按函数调用逐语句走读（规范 TD 与内核 xhci_td 的计数口径不同：规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记；本链是命令，不涉传输环）：</p>
-` + stepperHtml + linksHtml + `
+` + stepperHtml + `
 <p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.1 p68、p69 脚注 7 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-03</p>`;
 
 const LIVE = `

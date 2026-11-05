@@ -1,12 +1,34 @@
 // §4.17 中断器 —— 泳道节（生成器 lane_page.mjs 量产件 #7；泳道互链 fig3）
 // 判据：xHCI 1.2b §4.17 p261–269（引文四条逐字）；节流流程 Figure 4-22/4-23/4-24 p264–267
-import { writeFileSync } from "node:fs";
+// 走读卡（CODE-STEPPER 量产轮，2026-11-04）：render_block 渲染 stepper_47x.json + codestepper/course.css
+//   走读段内联——渲染单一事实源=scripts/stepper_builder.py，行号零誊抄（锚点断言门）。
+//   生成器不接受额外 css/js（禁改 _gen/），走读卡三件（CSS/body 块/JS）对 lanePage 产物做
+//   锚点注入：head `</style></head>` 前、linksHtml 首标记 `<!--X47:WALK-->` 处、module 脚本首。
+import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { lanePage } from "../_gen/lane_page.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const WS = "/Users/jason/ZCodeProject/usb-xhci-study";
 const THEME = process.argv.includes("--light") ? "light" : "dark";
+
+// ---------- 代码走读卡（rings3 四区：命令环/EP1 传输环/事件环/设备端；事件环消费链） ----------
+const stepperHtml = execFileSync("python3", [
+  join(WS, "scripts/stepper_builder.py"), "render_block",
+  join(WS, "lessons-data/stepper_47x.json"),
+], { encoding: "utf8" });
+const courseCss = readFileSync(join(WS, "assets/course.css"), "utf8");
+const cssSeg = (a, b) => {
+  const i = courseCss.indexOf(a);
+  const j = courseCss.indexOf(b, i);
+  if (i < 0 || j < 0) throw new Error(`course.css 段标记缺失: ${a.slice(0, 30)}`);
+  return courseCss.slice(i, j);
+};
+const stepperCss = cssSeg("/* ===== 代码步进放映机", "/* ===== 右缘批注")
+  .replace(/\/\*[\s\S]*?\*\//g, "");  // 剥段内注释：资产注释不进交付件（载体三分），兼减字节
+const stepperJs = readFileSync(join(WS, "assets/codestepper.js"), "utf8");
 
 const cfg = {
   theme: THEME,
@@ -61,23 +83,31 @@ const cfg = {
     { i: "var(--xsp-dev)", t: "设备（不参与）" },
     { t: "实线=事件/寄存器流 · 虚线=中断通知" },
   ],
-  linksHtml: `
-<div class="xsp-card"><h2>PCI 三中断机制 × 中断器映射（§4.17 p261–262 · §4.17.3）</h2>
-<table class="xsp-tb">
-<tr><th>机制</th><th>中断器→向量映射</th><th>约束</th><th>IP 清除方式</th></tr>
-<tr><td><b>PCI Pin（INTx#）</b></td><td>仅中断器 0 可用，其余禁用（p261–262）</td><td>PCI 只允许一 function 一引脚；MSI/MSI-X 使能时不用引脚（§4.17.3 p267）</td><td class="mono">软件写 IMAN（p265）</td></tr>
-<tr><td><b>MSI</b></td><td class="mono">向量 = Index MOD Multiple Message Enable</td><td>MaxIntrs&gt;32 时 32–MaxIntrs-1 禁用；Multiple Message Capable ≤ MaxIntrs（p262）</td><td class="mono">PCI 写完成自动清（p265）</td></tr>
-<tr><td><b>MSI-X</b></td><td>Index↔MSI-X Table 条目 <b>1:1</b>（含 PBA Pending Bit）</td><td>Table Size = MaxIntrs；按各中断器 MSI-X Enable 位分配（p262）</td><td class="mono">PCI 写完成自动清（p265）</td></tr>
-</table>
-<p>事件目标三来源（§4.17.4 p267–268）：固定 Primary 中断器 / Transfer TRB 的 Interrupter Target 字段 / Slot Context 的 Interrupter Target 字段——各事件 TRB（§6.4.2）规定用哪一种。</p>
-</div>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——中断四件（MSI-X 表/Interval/INTE/IE）装配；<a href="../../../xhc-machines/fig3-event-ring/index.html">四机课 Fig3 回执登记机</a>——事件环的生产与消费（本节是它的通知出口）。</p>
-<p><a href="../4.13-device-notifications/index.html">§4.13 设备通知</a>——Slot Context Interrupter Target 决定事件环的实例；<a href="../../index.html">§5.5.2 中断器寄存器（第 5 章后续扩展）</a>——IMAN/IMOD/ERDP 位定义。</p></div>`,
+  extraHtml: `<!--X47:WALK-->`,  // 自含化：原互链卡移除，仅留走读卡注入锚
   footLine: "判据：xHCI 1.2b（625472 Rev 1.2b）§4.17 p261–269 · 引文逐字核对，证据见 <a href=\"EVIDENCE.md\">EVIDENCE.md</a> · 生成于 2026-11-04",
 };
 
-const page = lanePage(cfg);
+// ---------- 走读卡三件注入（lanePage 产物后处理；锚点唯一，replace 函数形态防 $ 误展开） ----------
+const walknote = `<p class="xsp-walknote">中断器三方时序图第 3-4 步（ISR 读事件环处理事件）在真实内核代码里的样子——从 MSI-X 向量抵达进入 xhci_irq 起，逐语句走进事件环主循环、Transfer Event 分发与 URB 交还，最后 ERDP 写回解除 EHB（与上方泳道图第 3-4 步对表）。TD 计数口径：规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记；本例 bulk 单阶段传输两个口径重合，控制传输三阶段在内核并成一个 TD。命令环本链无 TRB 流转，右列如实呈现为空。</p>
+`;
+const stepperCssBlock = `
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+${stepperCss}
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--font-ui); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
+`;
+let page = lanePage(cfg);
+for (const [anchor, inject] of [
+  ["</style></head>", () => stepperCssBlock + "</style></head>"],
+  ["<!--X47:WALK-->", () => walknote + stepperHtml],
+  ['<script type="module">', () => '<script type="module">' + stepperJs.replace(/<\/(script)/gi, "<\\/$1") + "\n"],
+]) {
+  if (!page.includes(anchor)) throw new Error(`注入锚点缺失: ${anchor.slice(0, 40)}`);
+  page = page.replace(anchor, inject);
+}
 const name = THEME === "light" ? "index-light.html" : "index.html";
 writeFileSync(join(HERE, name), page);
 console.log("wrote", name, (page.length / 1024).toFixed(0) + " KB");

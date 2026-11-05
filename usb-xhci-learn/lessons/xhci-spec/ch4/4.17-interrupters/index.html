@@ -111,6 +111,137 @@ html{color-scheme:dark}
 body[data-theme="light"]{color-scheme:light}
 body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 .iso-page{width:min(1500px,100% - 32px);margin:64px auto 96px}
+
+/* 代码走读卡（rings3）：course.css 走读段整体内联 + 纸面卡变量垫片——走读卡固定
+   浅色纸面（读代码的场景材质），双主题同形；变量映射到板内中性色。 */
+
+.stepper { position: relative; left: 50%; transform: translateX(-50%); width: min(96vw, 1720px); border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: .8rem 1rem; margin: 1.4rem 0; }
+.stepper .st-intro { border-left: 3px solid var(--ink); padding: .35rem .8rem; background: #faf8f2; font-size: .93rem; margin-bottom: .6rem; }
+.stepper .st-intro h4 { margin: 0 0 .2rem; font-size: 1rem; }
+.stepper .st-intro .st-base { color: var(--muted); font-size: .8rem; }
+.stepper .st-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: .5rem 0; }
+
+.stepper.js .st-ctl { position: sticky; top: .45rem; z-index: 6; background: #fff; border-radius: 4px; padding: .25rem .4rem; margin-left: -.4rem; margin-right: -.4rem; box-shadow: 0 1px 6px rgba(30,28,18,.08); }
+.stepper .st-ctl button { font: inherit; font-size: .9rem; padding: .3rem .85rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-count { color: var(--muted); font-size: .88rem; font-weight: 600; }
+.stepper .st-ph { font-size: .88rem; color: var(--accent); font-weight: 600; }
+.stepper .st-hint { color: var(--muted); font-size: .78rem; margin-left: auto; }
+.stepper .st-grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: .9rem; }
+@media (max-width: 1100px) { .stepper .st-grid { grid-template-columns: 1fr; } }
+
+.stepper .st-code { border: 1px solid var(--line); border-radius: 5px; background: #fcfcf7; overflow-x: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; line-height: 1.55; }
+
+.stepper .st-crow { display: block; padding: .1rem .6rem; white-space: pre; border-left: 3px solid transparent; scroll-margin-top: 3.4rem; scroll-margin-bottom: 3.4rem; }
+
+.stepper .st-crow.ctx, .stepper .st-crow.hw, .stepper .st-crow.ph { white-space: normal; }
+.stepper .st-crow code { font: inherit; }
+.stepper .st-crow .st-file { display: block; color: var(--accent); font-weight: 700; font-size: .74rem; letter-spacing: .03em; margin-bottom: .06rem; }
+.stepper .st-crow .st-tag { display: inline-block; min-width: 4.6em; color: #666; font-size: .74rem; }
+.stepper .st-crow.fn { background: #f0efe6; font-weight: 700; margin-top: .4rem; border-radius: 3px; border-left-color: var(--ink); }
+.stepper .st-crow.hw { background: #e9f7ee; border-left-color: var(--good); }
+.stepper .st-crow.ctx { background: #f2f0fa; border-left-color: #6a4fc4; color: #3c3560; }
+.stepper .st-crow.ph { background: var(--ink); color: #fff; font-weight: 700; margin-top: .5rem; border-radius: 3px; }
+.stepper .st-crow.ph .st-tag { color: #cfcfc5; }
+.stepper.js .st-crow { cursor: pointer; }
+.stepper.js .st-crow:hover { background: #f4f4ee; }
+.stepper.js .st-crow.cur { background: #fff3c4; border-left-color: #a00000; box-shadow: inset 0 0 0 1px #d8b96a; }
+.stepper.js .st-crow.done { opacity: .66; }
+
+.stepper.js .st-crow.ph:hover { background: #3a3a30; }
+.stepper.js .st-crow.ph.cur { background: var(--ink); color: #fff; box-shadow: inset 0 0 0 2px #f0c94a; }
+
+.stepper .st-crow.ph code { background: rgba(255, 255, 255, .16); color: #fff; }
+
+
+.stepper .st-world { position: sticky; top: 3.4rem; align-self: start; border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: .5rem .6rem; font-size: .82rem; height: calc(100vh - 7.6rem); height: calc(100dvh - 7.6rem); overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+.stepper .st-world::-webkit-scrollbar { display: none; }
+
+.stepper .st-world .st-chg { animation: stChgPulse 1.8s ease-out 1; }
+@keyframes stChgPulse {
+  0% { background: #fff3c4; box-shadow: 0 0 0 3px rgba(160, 0, 0, .45); }
+  60% { background: #fff8dd; box-shadow: 0 0 0 3px rgba(160, 0, 0, .18); }
+  100% { box-shadow: 0 0 0 3px rgba(160, 0, 0, 0); }
+}
+.stepper .stw-ring { margin: .35rem 0 .6rem; }
+.stepper .stw-rhead { display: flex; justify-content: space-between; gap: .4rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.stepper .stw-rhead b { font-size: .84rem; }
+.stepper .stw-own { color: var(--muted); font-size: .7rem; }
+.stepper .stw-cells { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .stw-cell { position: relative; border: 1px dashed var(--line); border-radius: 4px; padding: .35rem .45rem .38rem; min-width: 6.8rem; text-align: center; background: #fff; }
+.stepper .stw-cell b { display: block; color: var(--muted); font-size: .64rem; letter-spacing: .04em; }
+.stepper .stw-cell .stw-t { display: block; font-weight: 600; font-size: .78rem; }
+.stepper .stw-cell .stw-f { display: block; color: #4a4a3f; font-size: .67rem; }
+.stepper .stw-cell .stw-cyc { display: block; color: var(--muted); font-size: .64rem; }
+.stepper .stw-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .stw-cell.st-published { border: 1px solid #1a5fb4; background: #e8f0fb; }
+.stepper .stw-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .stw-ptr { position: absolute; top: -0.6rem; font-size: .6rem; font-style: normal; padding: 0 .25rem; border-radius: 3px; color: #fff; }
+.stepper .stw-ptr.pe { left: .2rem; background: #1a5fb4; }
+.stepper .stw-ptr.pd { right: .2rem; background: var(--good); }
+.stepper .stw-box { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .stw-box > b { display: block; background: #f0efe6; padding: .2rem .5rem; font-size: .8rem; }
+.stepper .stw-box table { margin: 0; font-size: .74rem; width: 100%; }
+.stepper .stw-box th { width: 6em; background: #fbfbf6; }
+
+
+.stepper .st-world .r3 { --r3-drv: #2d5fb3; --r3-xhc: #8a5f14; --r3-dev: #2f7a3d; }
+.stepper .st-world .r3-zone { border: 1px solid var(--line); border-radius: 5px; margin: .4rem 0; overflow: hidden; }
+.stepper .st-world .r3-zhead { display: flex; align-items: baseline; gap: .45rem; flex-wrap: wrap; padding: .25rem .5rem; background: #f0efe6; }
+.stepper .st-world .r3-zhead b { font-size: .86rem; }
+.stepper .st-world .r3-ring-cmd .r3-zhead b, .stepper .st-world .r3-ring-ep0 .r3-zhead b { color: var(--r3-drv); }
+.stepper .st-world .r3-ring-evt .r3-zhead b { color: var(--r3-xhc); }
+.stepper .st-world .r3-devzone .r3-zhead b { color: var(--r3-dev); }
+.stepper .st-world .r3-own { color: var(--muted); font-size: .72rem; margin-left: auto; }
+.stepper .st-world .r3-db { font-size: .74rem; padding: 0 .3rem; border: 1px solid var(--line); border-radius: 3px; background: #fff; }
+.stepper .st-world .r3-cells { display: flex; flex-wrap: wrap; gap: .32rem; padding: .58rem .45rem .45rem; }
+.stepper .st-world .r3-cell { position: relative; min-width: 5.6rem; text-align: center; border: 1px dashed var(--line); border-radius: 4px; background: #fff; padding: .5rem .4rem .42rem; }
+.stepper .st-world .r3-cell .r3-a { display: block; font-size: .88rem; font-weight: 700; letter-spacing: .03em; }
+.stepper .st-world .r3-cell .r3-t { display: block; font-size: .74rem; margin-top: .1rem; }
+.stepper .st-world .r3-cell .r3-f { display: block; color: #4a4a3f; font-size: .7rem; }
+.stepper .st-world .r3-cell .r3-cyc { position: absolute; top: .12rem; right: .22rem; font-size: .7rem; color: var(--muted); font-style: normal; }
+.stepper .st-world .r3-cell.st-written { border: 1px solid #b9b9a8; background: #f7f7ef; }
+.stepper .st-world .r3-cell.st-consumed { border: 1px solid var(--line); background: #f1f1ea; opacity: .75; }
+.stepper .st-world .r3-cell.st-evt { border: 1px solid var(--r3-xhc); background: #faf3e4; }
+.stepper .st-world .r3-ptr { position: absolute; left: 50%; transform: translateX(-50%); font-style: normal; font-size: .72rem; color: #fff; padding: 0 .22rem; border-radius: 3px; }
+.stepper .st-world .r3-ptr.pe { top: -0.62rem; background: var(--r3-drv); }
+.stepper .st-world .r3-ptr.pd { bottom: -0.62rem; background: var(--r3-xhc); }
+.stepper .st-world .r3-ring-evt .r3-ptr.pe { background: var(--r3-xhc); }
+.stepper .st-world .r3-ring-evt .r3-ptr.pd { background: var(--r3-drv); }
+.stepper .st-world .r3-lamps { display: flex; flex-wrap: wrap; gap: .3rem; padding: .45rem .5rem .1rem; }
+.stepper .st-world .r3-lamp { font-style: normal; font-size: .76rem; border: 1px solid var(--line); border-radius: 999px; padding: .05rem .5rem; color: var(--muted); background: #fbfbf6; }
+.stepper .st-world .r3-lamp.on { border-color: var(--r3-dev); background: #e9f4ea; color: var(--r3-dev); font-weight: 700; }
+.stepper .st-world .r3-tickets { display: flex; flex-wrap: wrap; gap: .3rem; padding: .35rem .5rem .5rem; }
+.stepper .st-world .r3-tk { font-size: .74rem; border: 1px dashed var(--r3-dev); border-radius: 4px; padding: .1rem .4rem; background: #fff; }
+.stepper .st-world .r3-tk em { font-style: normal; color: var(--muted); }
+.stepper .st-world .r3-mut { color: var(--muted); font-size: .72rem; }
+.stepper .st-world .r3-regs { display: flex; flex-wrap: wrap; gap: .3rem .55rem; padding: .4rem .5rem .5rem; }
+.stepper .st-world .r3-reg { font-size: .74rem; border: 1px solid var(--line); border-radius: 3px; padding: .05rem .35rem; background: #fbfbf6; }
+.stepper .st-world .r3-reg em { font-style: normal; font-weight: 700; margin-right: .3rem; }
+.stepper .st-note { margin-top: .7rem; padding: .55rem .8rem; background: #faf8f2; border-left: 3px solid var(--accent); font-size: .97rem; min-height: 2.4em; }
+
+.stepper.js .st-note { position: sticky; bottom: 0; z-index: 5; box-shadow: 0 -2px 10px rgba(30,28,18,.07); border-radius: 0 0 4px 4px; }
+.stepper .st-note .st-mut { color: var(--muted); }
+.stepper .st-refs { margin-top: .55rem; }
+.stepper .st-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.stepper .st-chip { font: inherit; font-size: .78rem; padding: .14rem .55rem; border: 1px solid var(--line); border-radius: 10px; background: #fbfbf6; cursor: pointer; }
+.stepper .st-chip.on { border-color: var(--accent); background: #fff3c4; }
+.stepper .st-fref { margin-left: .3rem; }
+.stepper .st-refs details { font-size: .85rem; }
+
+.st-modal { display: none; position: fixed; inset: 0; background: rgba(20,20,15,.45); z-index: 90; padding: 3rem 1rem; }
+.st-modal.show { display: flex; }
+.st-modal .st-mbox { position: relative; margin: auto; max-width: 40rem; max-height: 80vh; overflow-y: auto; background: #fffdf4; border: 1px solid var(--ink); border-radius: 8px; padding: 1rem 1.2rem; }
+.st-modal .st-mclose { position: absolute; top: .5rem; right: .6rem; font: inherit; font-size: .8rem; border: 1px solid var(--line); border-radius: 4px; background: #fbfbf6; cursor: pointer; }
+.st-modal .st-mbody h4 { margin: 0 0 .3rem; }
+.st-modal .st-msrc { color: var(--muted); font-size: .85rem; }
+.st-modal blockquote { margin: .6rem 0; padding: .5rem .8rem; background: #f4f4ee; border-left: 3px solid var(--muted); font-size: .9rem; white-space: pre-wrap; }
+.st-modal .st-mnote { font-size: .88rem; }
+
+
+.stepper { --line: #c9c4b2; --ink: #1f1c14; --muted: #6b675a; --accent: #8a5f14; --good: #2f7a3d;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif);
+  color: #1f1c14; }
+.xsp-walknote { font-family: var(--font-ui); font-size: 14.5px; color: var(--anatomy-muted); margin: 10px 2px 0; }
 </style></head><body class="iso" data-theme="dark"><main class="iso-page"><style>
 
 /* 画面缩放+全屏（2026-11-02 可读性二轮）：1× 布局不变，>1× 出滚动平移 */
@@ -289,20 +420,681 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 </div>
 <p class="xsp-narr" data-status aria-live="polite">总览模式：完整流程图。设备泳道不参与——中断是 xHC 与软件之间的信令。</p><div class="xsp-legend">
 <span><i style="background:var(--xsp-sw)"></i>xHCI 驱动</span><span><i style="background:var(--xsp-hc)"></i>xHC 控制器</span><span><i style="background:var(--xsp-dev)"></i>设备（不参与）</span><span>实线=事件/寄存器流 · 虚线=中断通知</span>
-</div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进</span></div></div><figcaption class="iso-legend"><span class="iso-caption">事件落环→三条件放行（IMODC/IPE/EHB）→按 PCI 机制发通知；跨环不保序是软件必须记住的坑。</span></figcaption></figure>
-<div class="xsp-card"><h2>PCI 三中断机制 × 中断器映射（§4.17 p261–262 · §4.17.3）</h2>
-<table class="xsp-tb">
-<tr><th>机制</th><th>中断器→向量映射</th><th>约束</th><th>IP 清除方式</th></tr>
-<tr><td><b>PCI Pin（INTx#）</b></td><td>仅中断器 0 可用，其余禁用（p261–262）</td><td>PCI 只允许一 function 一引脚；MSI/MSI-X 使能时不用引脚（§4.17.3 p267）</td><td class="mono">软件写 IMAN（p265）</td></tr>
-<tr><td><b>MSI</b></td><td class="mono">向量 = Index MOD Multiple Message Enable</td><td>MaxIntrs&gt;32 时 32–MaxIntrs-1 禁用；Multiple Message Capable ≤ MaxIntrs（p262）</td><td class="mono">PCI 写完成自动清（p265）</td></tr>
-<tr><td><b>MSI-X</b></td><td>Index↔MSI-X Table 条目 <b>1:1</b>（含 PBA Pending Bit）</td><td>Table Size = MaxIntrs；按各中断器 MSI-X Enable 位分配（p262）</td><td class="mono">PCI 写完成自动清（p265）</td></tr>
-</table>
-<p>事件目标三来源（§4.17.4 p267–268）：固定 Primary 中断器 / Transfer TRB 的 Interrupter Target 字段 / Slot Context 的 Interrupter Target 字段——各事件 TRB（§6.4.2）规定用哪一种。</p>
-</div>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——中断四件（MSI-X 表/Interval/INTE/IE）装配；<a href="../../../xhc-machines/fig3-event-ring/index.html">四机课 Fig3 回执登记机</a>——事件环的生产与消费（本节是它的通知出口）。</p>
-<p><a href="../4.13-device-notifications/index.html">§4.13 设备通知</a>——Slot Context Interrupter Target 决定事件环的实例；<a href="../../index.html">§5.5.2 中断器寄存器（第 5 章后续扩展）</a>——IMAN/IMOD/ERDP 位定义。</p></div>
-<p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.17 p261–269 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><script type="module">const AZIMUTH = 45;
+</div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进</span></div></div><figcaption class="iso-legend"><span class="iso-caption">事件落环→三条件放行（IMODC/IPE/EHB）→按 PCI 机制发通知；跨环不保序是软件必须记住的坑。</span></figcaption></figure><p class="xsp-walknote">中断器三方时序图第 3-4 步（ISR 读事件环处理事件）在真实内核代码里的样子——从 MSI-X 向量抵达进入 xhci_irq 起，逐语句走进事件环主循环、Transfer Event 分发与 URB 交还，最后 ERDP 写回解除 EHB（与上方泳道图第 3-4 步对表）。TD 计数口径：规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记；本例 bulk 单阶段传输两个口径重合，控制传输三阶段在内核并成一个 TD。命令环本链无 TRB 流转，右列如实呈现为空。</p>
+<!--STEPPER:X47:BEGIN-->
+  <div class="stepper">
+    <div class="st-intro"><h4>▶ 事件环消费链走读：从 xhci_irq 到 Transfer Event 分发与 ERDP 写回</h4><p>左列＝真实内核调用链逐语句步进（xhci-ring.c 中断入口 xhci_irq → 事件环主循环 xhci_handle_events → 单事件分发 xhci_handle_event_trb → Transfer Event 分支 handle_tx_event → URB 交还 → ERDP 写回）。右列＝命令环 / EP1 传输环 / 事件环与设备端随每帧演进；命令环本链无 TRB 流转（如实呈现），EP1 传输环在链首被 xHC 消费、事件环是主线；设备端全程不动——中断对设备不可见。</p><p class="st-base">代码基线 62f4c998b297（本板块代码走读卡专用声明，与 §4.1/§4.3/§4.4 走读卡同源）；无 JS 时代码全列与初态快照静态可读</p></div>
+    <div class="st-grid">
+      <div class="st-code">
+<div class="st-crow ph" data-id="r0"><span class="st-tag">▶</span><code>MSI-X 到达 → 事件环消费 → Transfer Event 分发 → URB 交还 → ERDP 写回：一次事件回执的完整消费链</code></div>
+<div class="st-crow ctx" data-id="r1"><span class="st-tag">xHCI 驱动</span><code>链前回放：槽 1 的 bulk IN TD 已在 EP1 传输环 0 号槽（驱动的入队与门铃 1 在链外——§4.14 传输环操作、§4.3 走读卡形态同构）</code></div>
+<div class="st-crow hw" data-id="r2"><span class="st-tag">xHC 控制器</span><code>xHC 按传输环取走 TD 的 TRB，在总线上完成 bulk IN 数据阶段（数据被 DMA 直写进驱动给的缓冲）</code></div>
+<div class="st-crow hw" data-id="r3"><span class="st-tag">xHC 控制器</span><code>Transfer Event TRB 写入中断器 0 的事件环 0 号槽（Slot=1 · CC=Success），节流三条件满足（IMODC=0 · IPE=1 · EHB=0）→ IP 置 1 → MSI-X 向量 0 以 posted-write 发出，IP 由 PCI 写完成自动清</code></div>
+<div class="st-crow ctx" data-id="r4"><span class="st-tag">xHCI 驱动</span><code>MSI-X 向量 0 抵达 CPU，内核按 HCD 注册的钩子进入中断入口——xhci_irq（注册于 xhci.c :5605 的 .irq 钩子；PCI 共用包装 xhci_msi_irq :3229 同入）</code></div>
+<div class="st-crow fn" data-id="r5" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 3183-3187</span><code>irqreturn_t xhci_irq(struct usb_hcd *hcd)
+{
+	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+	irqreturn_t ret = IRQ_HANDLED;
+	u32 status;</code></div>
+<div class="st-crow ln" data-id="r6" style="padding-left:0.4em"><code>	status = readl(&amp;xhci-&gt;op_regs-&gt;status);</code></div>
+<div class="st-crow ln" data-id="r7" style="padding-left:0.4em"><code>	if (!(status &amp; STS_EINT)) {
+		ret = IRQ_NONE;
+		goto out;
+	}</code></div>
+<div class="st-crow ln" data-id="r8" style="padding-left:0.4em"><code>	/*
+	 * Clear the op reg interrupt status first,
+	 * so we can receive interrupts from other MSI-X interrupters.
+	 * USBSTS bits are write 1 to clear.
+	 */
+	writel(STS_EINT, &amp;xhci-&gt;op_regs-&gt;status);</code></div>
+<div class="st-crow ln" data-id="r9" style="padding-left:0.4em"><code>	/* This is the handler of the primary interrupter */
+	xhci_handle_events(xhci, xhci-&gt;interrupters[0], false);</code></div>
+<div class="st-crow fn" data-id="r10" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 3092-3094</span><code>static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir,
+			      bool skip_events)
+{</code></div>
+<div class="st-crow ln" data-id="r11" style="padding-left:0.4em"><code>	xhci_clear_interrupt_pending(ir);</code></div>
+<div class="st-crow fn" data-id="r12" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 3074-3075</span><code>static void xhci_clear_interrupt_pending(struct xhci_interrupter *ir)
+{</code></div>
+<div class="st-crow ln" data-id="r13" style="padding-left:0.4em"><code>	if (!ir-&gt;ip_autoclear) {
+		u32 iman;
+
+		iman = readl(&amp;ir-&gt;ir_set-&gt;iman);
+		iman |= IMAN_IP;
+		writel(iman, &amp;ir-&gt;ir_set-&gt;iman);
+
+		/* Read operation to guarantee the write has been flushed from posted buffers */
+		readl(&amp;ir-&gt;ir_set-&gt;iman);
+	}</code></div>
+<div class="st-crow ctx" data-id="r14"><span class="st-tag">xHCI 驱动</span><code>进入事件环循环：环上有没有软件尚未消费的事件？——用 cycle 位判定</code></div>
+<div class="st-crow fn" data-id="r15" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 137-138</span><code>static bool unhandled_event_trb(struct xhci_ring *ring)
+{</code></div>
+<div class="st-crow ln" data-id="r16" style="padding-left:1.5em"><code>	return ((le32_to_cpu(ring-&gt;dequeue-&gt;event_cmd.flags) &amp; TRB_CYCLE) ==
+		ring-&gt;cycle_state);</code></div>
+<div class="st-crow ln" data-id="r17" style="padding-left:0.4em"><code>	/* Process all OS owned event TRBs on this event ring */
+	while (unhandled_event_trb(ir-&gt;event_ring)) {</code></div>
+<div class="st-crow ln" data-id="r18" style="padding-left:0.4em"><code>		if (!skip_events)
+			err = xhci_handle_event_trb(xhci, ir, ir-&gt;event_ring-&gt;dequeue);</code></div>
+<div class="st-crow fn" data-id="r19" style="padding-left:0.4em"><span class="st-file">▸ xhci-ring.c : 2992-2995</span><code>static int xhci_handle_event_trb(struct xhci_hcd *xhci, struct xhci_interrupter *ir,
+				 union xhci_trb *event)
+{
+	u32 trb_type;</code></div>
+<div class="st-crow ln" data-id="r20" style="padding-left:0.4em"><code>	rmb();
+	trb_type = TRB_FIELD_TO_TYPE(le32_to_cpu(event-&gt;event_cmd.flags));</code></div>
+<div class="st-crow ln" data-id="r21" style="padding-left:0.4em"><code>	switch (trb_type) {
+	case TRB_COMPLETION:
+		handle_cmd_completion(xhci, &amp;event-&gt;event_cmd);
+		break;
+	case TRB_PORT_STATUS:
+		handle_port_status(xhci, event);
+		break;
+	case TRB_TRANSFER:
+		handle_tx_event(xhci, ir, &amp;event-&gt;trans_event);
+		break;</code></div>
+<div class="st-crow fn" data-id="r22" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 2632-2635</span><code>static int handle_tx_event(struct xhci_hcd *xhci,
+			   struct xhci_interrupter *ir,
+			   struct xhci_transfer_event *event)
+{</code></div>
+<div class="st-crow ln" data-id="r23" style="padding-left:1.5em"><code>	slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event-&gt;flags));
+	ep_index = TRB_TO_EP_ID(le32_to_cpu(event-&gt;flags)) - 1;
+	trb_comp_code = GET_COMP_CODE(le32_to_cpu(event-&gt;transfer_len));
+	ep_trb_dma = le64_to_cpu(event-&gt;buffer);</code></div>
+<div class="st-crow ln" data-id="r24" style="padding-left:1.5em"><code>	ep = xhci_get_virt_ep(xhci, slot_id, ep_index);
+	if (!ep) {
+		xhci_err(xhci, &quot;ERROR Invalid Transfer event\n&quot;);
+		goto err_out;
+	}
+
+	ep_ring = xhci_dma_to_transfer_ring(ep, ep_trb_dma);</code></div>
+<div class="st-crow ln" data-id="r25" style="padding-left:1.5em"><code>	do {
+		td = list_first_entry(&amp;ep_ring-&gt;td_list, struct xhci_td,
+				      td_list);</code></div>
+<div class="st-crow ln" data-id="r26" style="padding-left:1.5em"><code>	td-&gt;status = status;
+
+	/* update the urb&#x27;s actual_length and give back to the core */
+	if (usb_endpoint_xfer_control(&amp;td-&gt;urb-&gt;ep-&gt;desc))
+		process_ctrl_td(xhci, ep, ep_ring, td, ep_trb, event);
+	else if (usb_endpoint_xfer_isoc(&amp;td-&gt;urb-&gt;ep-&gt;desc))
+		process_isoc_td(xhci, ep, ep_ring, td, ep_trb, event);
+	else
+		process_bulk_intr_td(xhci, ep, ep_ring, td, ep_trb, event);</code></div>
+<div class="st-crow fn" data-id="r27" style="padding-left:2.6em"><span class="st-file">▸ xhci-ring.c : 2505-2508</span><code>static void process_bulk_intr_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,
+				 struct xhci_ring *ep_ring, struct xhci_td *td,
+				 union xhci_trb *ep_trb, struct xhci_transfer_event *event)
+{</code></div>
+<div class="st-crow ln" data-id="r28" style="padding-left:2.6em"><code>finish_td:
+	if (remaining &gt; requested) {
+		xhci_warn(xhci, &quot;bad transfer trb length %d in event trb\n&quot;,
+			  remaining);
+		td-&gt;urb-&gt;actual_length = 0;
+	}
+
+	finish_td(xhci, ep, ep_ring, td, trb_comp_code);</code></div>
+<div class="st-crow fn" data-id="r29" style="padding-left:2.6em"><span class="st-file">▸ xhci-ring.c : 2247-2250</span><code>static void finish_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,
+		      struct xhci_ring *ep_ring, struct xhci_td *td,
+		      u32 trb_comp_code)
+{</code></div>
+<div class="st-crow ln" data-id="r30" style="padding-left:2.6em"><code>	xhci_dequeue_td(xhci, td, ep_ring, td-&gt;status);</code></div>
+<div class="st-crow fn" data-id="r31" style="padding-left:3.7em"><span class="st-file">▸ xhci-ring.c : 924-926</span><code>static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xhci_ring *ring,
+			    u32 status)
+{</code></div>
+<div class="st-crow ln" data-id="r32" style="padding-left:3.7em"><code>	ring-&gt;dequeue = td-&gt;end_trb;
+	ring-&gt;deq_seg = td-&gt;end_seg;
+	inc_deq(xhci, ring);</code></div>
+<div class="st-crow ln" data-id="r33" style="padding-left:3.7em"><code>	xhci_td_cleanup(xhci, td, ring, status);</code></div>
+<div class="st-crow fn" data-id="r34" style="padding-left:3.7em"><span class="st-file">▸ xhci-ring.c : 877-879</span><code>static void xhci_td_cleanup(struct xhci_hcd *xhci, struct xhci_td *td,
+			    struct xhci_ring *ep_ring, int status)
+{</code></div>
+<div class="st-crow ln" data-id="r35" style="padding-left:3.7em"><code>	inc_td_cnt(urb);
+	/* Giveback the urb when all the tds are completed */
+	if (last_td_in_urb(td)) {</code></div>
+<div class="st-crow ln" data-id="r36" style="padding-left:3.7em"><code>		xhci_giveback_urb_in_irq(xhci, td, status);</code></div>
+<div class="st-crow fn" data-id="r37" style="padding-left:4.800000000000001em"><span class="st-file">▸ xhci-ring.c : 807-810</span><code>static void xhci_giveback_urb_in_irq(struct xhci_hcd *xhci,
+				     struct xhci_td *cur_td, int status)
+{
+	struct urb	*urb		= cur_td-&gt;urb;</code></div>
+<div class="st-crow ln" data-id="r38" style="padding-left:4.800000000000001em"><code>	xhci_urb_free_priv(urb_priv);
+	usb_hcd_unlink_urb_from_ep(hcd, urb);
+	trace_xhci_urb_giveback(urb);
+	usb_hcd_giveback_urb(hcd, urb, status);</code></div>
+<div class="st-crow ctx" data-id="r39"><span class="st-tag">xHCI 驱动</span><code>回到 xhci_handle_events 循环体尾：每消化 256 颗事件（TRBS_PER_SEGMENT/2）中途写一次 ERDP 防 Event Ring Full（:3126-3127）——演示环 4 槽走不满半段，此分支不触发，如实注记</code></div>
+<div class="st-crow ln" data-id="r40" style="padding-left:0.4em"><code>		/* Update SW event ring dequeue pointer */
+		inc_deq(xhci, ir-&gt;event_ring);</code></div>
+<div class="st-crow fn" data-id="r41" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 188-190</span><code>void inc_deq(struct xhci_hcd *xhci, struct xhci_ring *ring)
+{
+	unsigned int link_trb_count = 0;</code></div>
+<div class="st-crow ln" data-id="r42" style="padding-left:1.5em"><code>	/* event ring doesn&#x27;t have link trbs, check for last trb */
+	if (ring-&gt;type == TYPE_EVENT) {
+		if (!last_trb_on_seg(ring-&gt;deq_seg, ring-&gt;dequeue)) {
+			ring-&gt;dequeue++;
+			return;
+		}
+		if (last_trb_on_ring(ring, ring-&gt;deq_seg, ring-&gt;dequeue))
+			ring-&gt;cycle_state ^= 1;
+		ring-&gt;deq_seg = ring-&gt;deq_seg-&gt;next;
+		ring-&gt;dequeue = ring-&gt;deq_seg-&gt;trbs;</code></div>
+<div class="st-crow ctx" data-id="r43"><span class="st-tag">xHCI 驱动</span><code>while 再判：槽 1 的 cycle 位与软件 cycle_state 已错开——环空，循环退出</code></div>
+<div class="st-crow ln" data-id="r44" style="padding-left:0.4em"><code>	xhci_update_erst_dequeue(xhci, ir, true);</code></div>
+<div class="st-crow fn" data-id="r45" style="padding-left:1.5em"><span class="st-file">▸ xhci-ring.c : 3044-3047</span><code>void xhci_update_erst_dequeue(struct xhci_hcd *xhci,
+			      struct xhci_interrupter *ir,
+			      bool clear_ehb)
+{</code></div>
+<div class="st-crow ln" data-id="r46" style="padding-left:1.5em"><code>	temp_64 = xhci_read_64(xhci, &amp;ir-&gt;ir_set-&gt;erst_dequeue);
+	deq = xhci_trb_virt_to_dma(ir-&gt;event_ring-&gt;deq_seg,
+				   ir-&gt;event_ring-&gt;dequeue);
+	if (deq == 0)
+		xhci_warn(xhci, &quot;WARN something wrong with SW event ring dequeue ptr\n&quot;);</code></div>
+<div class="st-crow ln" data-id="r47" style="padding-left:1.5em"><code>	if ((temp_64 &amp; ERST_PTR_MASK) == (deq &amp; ERST_PTR_MASK) &amp;&amp; !clear_ehb)
+		return;</code></div>
+<div class="st-crow ln" data-id="r48" style="padding-left:1.5em"><code>	/* Update HC event ring dequeue pointer */
+	temp_64 = ir-&gt;event_ring-&gt;deq_seg-&gt;num &amp; ERST_DESI_MASK;
+	temp_64 |= deq &amp; ERST_PTR_MASK;
+
+	/* Clear the event handler busy flag (RW1C) */
+	if (clear_ehb)
+		temp_64 |= ERST_EHB;
+	xhci_write_64(xhci, temp_64, &amp;ir-&gt;ir_set-&gt;erst_dequeue);</code></div>
+<div class="st-crow ctx" data-id="r49"><span class="st-tag">xHCI 驱动</span><code>xhci_handle_events 返回 0 → xhci_irq 解锁（:3224）→ 返回 IRQ_HANDLED（:3226）——中断再武装收束：MSI-X 的 IP 已由 PCI 写完成自动清，EHB 已随 ERDP 写回归 0</code></div>
+<div class="st-crow hw" data-id="r50"><span class="st-tag">设备</span><code>本链全程：设备端无 USB 请求到达、无状态迁移——中断是 xHC 与软件之间的信令，不占用任何 USB 传输；设备的数据早已随 DMA 直写进内存</code></div>
+      </div>
+      <div class="st-world">
+<div class="r3"><div class="r3-zone r3-ring-cmd"><div class="r3-zhead"><b>命令环 CRCR</b><span class="r3-own">驱动生产 · xHC 消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-ring-ep0"><div class="r3-zhead"><b>传输环 EP1（bulk IN）</b><span class="r3-own">驱动生产 · xHC 消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-ring-evt"><div class="r3-zhead"><b>事件环 ERST/ERDP</b><span class="r3-own">xHC 生产 · 驱动消费</span></div><div class="r3-cells"><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div><div class="r3-cell st-empty"><span class="r3-cyc">c1</span><b class="r3-a">·</b></div></div></div><div class="r3-zone r3-devzone"><div class="r3-zhead"><b>设备端</b></div><div class="r3-lamps"><i class="r3-lamp">Powered</i><i class="r3-lamp">Default</i><i class="r3-lamp">Addressed</i><i class="r3-lamp on">Configured</i></div><div class="r3-tickets"><span class="r3-mut">（无 USB 请求到达——中断对设备不可见）</span></div></div><div class="r3-zone r3-regszone"><div class="r3-zhead"><b>寄存器窗</b></div><div class="r3-regs"><span class="r3-reg"><em>ERDP</em>→ 事件环段 0 首槽</span><span class="r3-reg"><em>IMAN</em>IP=0 · IE=1（向量 0）</span><span class="r3-reg"><em>USBCMD</em>INTE=1</span></div></div></div>
+      </div>
+    </div>
+    <div class="st-note"><span class="st-mut">（JS 开启后此处显示当步解说；静态态见代码行旁注与引用清单）</span></div>
+    <div class="st-refs"><details><summary>📎 §4.17 中断器=管理与通知单位（p261）</summary><p class="st-msrc">xHCI 1.2b §4.17 · p261</p><blockquote>An Interrupter manages events and their notification to the host. The xHCI supports up to 1024 Interrupters.</blockquote><p class="st-mnote">本链消费的就是中断器 0 的事件环——MSI-X 通知到达后，软件把环上的事件逐条取走。</p></details><details><summary>📎 §4.17 每中断器单向量（p261）</summary><p class="st-msrc">xHCI 1.2b §4.17 · p261</p><blockquote>Each Interrupter shall be mapped to a single MSI or MSI-X interrupt vector.</blockquote><p class="st-mnote">中断器与 MSI-X 向量一一绑定——向量 0 的到达即中断器 0 有事，软件无需再猜是哪个环。</p></details><details><summary>📎 §4.17.2 MSI/MSI-X 的 IP 自动清（p265）</summary><p class="st-msrc">xHCI 1.2b §4.17.2 · p265</p><blockquote>If PCI Message Signaled Interrupts (MSI or MSI-X) are enabled, then the assertion of the Interrupt Pending (IP) flag in Figure 4-22 generates a PCI Dword write. The IP flag is automatically cleared by the completion of the PCI write.</blockquote><p class="st-mnote">MSI/MSI-X 形态 IP 由 PCI 写完成自动清——代码形态＝ip_autoclear 为真时跳过软件写。</p></details><details><summary>📎 §4.17.2 INTx# 才软件清 IP（p265）</summary><p class="st-msrc">xHCI 1.2b §4.17.2 · p265</p><blockquote>If the PCI Interrupt Pin mechanism is enabled, then the assertion of Interrupt Pending (IP) asserts the appropriate PCI INTx# pin. And the IP flag is cleared by software writing the IMAN register.</blockquote><p class="st-mnote">引脚中断形态才需要软件写 IMAN 清 IP——xhci_clear_interrupt_pending 软件写 1 分支服务的就是这条。</p></details><details><summary>📎 §4.9.4 ERDP 写回是软件义务（p163）</summary><p class="st-msrc">xHCI 1.2b §4.9.4 · p163</p><blockquote>System software shall advance the Event Ring Dequeue Pointer by writing the address of the last processed Event TRB to the Event Ring Dequeue Pointer (ERDP) register.</blockquote><p class="st-mnote">消费进度必须写回 ERDP——不写回，xHC 会认为事件仍未被处理（EHB 保持 1，不再发新中断）。</p></details><details><summary>📎 §4.9.4 禁止连续写同值（p165）</summary><p class="st-msrc">xHCI 1.2b §4.9.4 · p165</p><blockquote>Software writes to the ERDP register shall always advance the Event Ring Dequeue Pointer value, that is, software shall not write the same value to the ERDP register on two consecutive write operations.</blockquote><p class="st-mnote">连续两次写同值被规范禁止——内核对策＝指针未动且不清 EHB 时干脆不写（:3060）。</p></details><details><summary>📎 §5.5.2.3.3 EHB 写 1 清（RW1C）（p393）</summary><p class="st-msrc">xHCI 1.2b §5.5.2.3.3 · p393</p><blockquote>Event Handler Busy (EHB) - RW1C. Default = ‘0’. This flag shall be set to ‘1’ when the IP bit is set to ‘1’ and cleared to ‘0’ by software when the Dequeue Pointer register is written.</blockquote><p class="st-mnote">IP 置 1 时 EHB 同置（节流三条件第三条「事件处理器不忙」）；软件写 ERDP 即清 EHB——RW1C＝写 1 清。</p></details><details><summary>📎 p69 脚注7 中断可选（p69）</summary><p class="st-msrc">xHCI 1.2b §4.2 · p69</p><blockquote></blockquote><p class="st-mnote">脚注 7：中断是可选机制——软件也可以轮询事件环的方式取完成事件。本链按 MSI-X 形态讲述。</p></details></div>
+    <script type="application/json" class="stepper-data">{"title":"事件环消费链走读：从 xhci_irq 到 Transfer Event 分发与 ERDP 写回","intro":"左列＝真实内核调用链逐语句步进（xhci-ring.c 中断入口 xhci_irq → 事件环主循环 xhci_handle_events → 单事件分发 xhci_handle_event_trb → Transfer Event 分支 handle_tx_event → URB 交还 → ERDP 写回）。右列＝命令环 / EP1 传输环 / 事件环与设备端随每帧演进；命令环本链无 TRB 流转（如实呈现），EP1 传输环在链首被 xHC 消费、事件环是主线；设备端全程不动——中断对设备不可见。","baseline":"代码基线 62f4c998b297（本板块代码走读卡专用声明，与 §4.1/§4.3/§4.4 走读卡同源）","rows":[{"id":"r0","kind":"ph","depth":0,"text":"MSI-X 到达 → 事件环消费 → Transfer Event 分发 → URB 交还 → ERDP 写回：一次事件回执的完整消费链"},{"id":"r1","kind":"ctx","depth":0,"text":"链前回放：槽 1 的 bulk IN TD 已在 EP1 传输环 0 号槽（驱动的入队与门铃 1 在链外——§4.14 传输环操作、§4.3 走读卡形态同构）","tag":"xHCI 驱动"},{"id":"r2","kind":"hw","depth":0,"text":"xHC 按传输环取走 TD 的 TRB，在总线上完成 bulk IN 数据阶段（数据被 DMA 直写进驱动给的缓冲）","tag":"xHC 控制器"},{"id":"r3","kind":"hw","depth":0,"text":"Transfer Event TRB 写入中断器 0 的事件环 0 号槽（Slot=1 · CC=Success），节流三条件满足（IMODC=0 · IPE=1 · EHB=0）→ IP 置 1 → MSI-X 向量 0 以 posted-write 发出，IP 由 PCI 写完成自动清","tag":"xHC 控制器"},{"id":"r4","kind":"ctx","depth":0,"text":"MSI-X 向量 0 抵达 CPU，内核按 HCD 注册的钩子进入中断入口——xhci_irq（注册于 xhci.c :5605 的 .irq 钩子；PCI 共用包装 xhci_msi_irq :3229 同入）","tag":"xHCI 驱动"},{"id":"r5","kind":"fn","depth":0,"text":"irqreturn_t xhci_irq(struct usb_hcd *hcd)\n{\n\tstruct xhci_hcd *xhci = hcd_to_xhci(hcd);\n\tirqreturn_t ret = IRQ_HANDLED;\n\tu32 status;","file":"xhci-ring.c","a":3183,"b":3187},{"id":"r6","kind":"ln","depth":0,"text":"\tstatus = readl(&xhci->op_regs->status);","file":"xhci-ring.c","a":3191,"b":3191},{"id":"r7","kind":"ln","depth":0,"text":"\tif (!(status & STS_EINT)) {\n\t\tret = IRQ_NONE;\n\t\tgoto out;\n\t}","file":"xhci-ring.c","a":3197,"b":3200},{"id":"r8","kind":"ln","depth":0,"text":"\t/*\n\t * Clear the op reg interrupt status first,\n\t * so we can receive interrupts from other MSI-X interrupters.\n\t * USBSTS bits are write 1 to clear.\n\t */\n\twritel(STS_EINT, &xhci->op_regs->status);","file":"xhci-ring.c","a":3214,"b":3219},{"id":"r9","kind":"ln","depth":0,"text":"\t/* This is the handler of the primary interrupter */\n\txhci_handle_events(xhci, xhci->interrupters[0], false);","file":"xhci-ring.c","a":3221,"b":3222},{"id":"r10","kind":"fn","depth":0,"text":"static int xhci_handle_events(struct xhci_hcd *xhci, struct xhci_interrupter *ir,\n\t\t\t      bool skip_events)\n{","file":"xhci-ring.c","a":3092,"b":3094},{"id":"r11","kind":"ln","depth":0,"text":"\txhci_clear_interrupt_pending(ir);","file":"xhci-ring.c","a":3099,"b":3099},{"id":"r12","kind":"fn","depth":1,"text":"static void xhci_clear_interrupt_pending(struct xhci_interrupter *ir)\n{","file":"xhci-ring.c","a":3074,"b":3075},{"id":"r13","kind":"ln","depth":0,"text":"\tif (!ir->ip_autoclear) {\n\t\tu32 iman;\n\n\t\timan = readl(&ir->ir_set->iman);\n\t\timan |= IMAN_IP;\n\t\twritel(iman, &ir->ir_set->iman);\n\n\t\t/* Read operation to guarantee the write has been flushed from posted buffers */\n\t\treadl(&ir->ir_set->iman);\n\t}","file":"xhci-ring.c","a":3076,"b":3085},{"id":"r14","kind":"ctx","depth":0,"text":"进入事件环循环：环上有没有软件尚未消费的事件？——用 cycle 位判定","tag":"xHCI 驱动"},{"id":"r15","kind":"fn","depth":1,"text":"static bool unhandled_event_trb(struct xhci_ring *ring)\n{","file":"xhci-ring.c","a":137,"b":138},{"id":"r16","kind":"ln","depth":1,"text":"\treturn ((le32_to_cpu(ring->dequeue->event_cmd.flags) & TRB_CYCLE) ==\n\t\tring->cycle_state);","file":"xhci-ring.c","a":139,"b":140},{"id":"r17","kind":"ln","depth":0,"text":"\t/* Process all OS owned event TRBs on this event ring */\n\twhile (unhandled_event_trb(ir->event_ring)) {","file":"xhci-ring.c","a":3117,"b":3118},{"id":"r18","kind":"ln","depth":0,"text":"\t\tif (!skip_events)\n\t\t\terr = xhci_handle_event_trb(xhci, ir, ir->event_ring->dequeue);","file":"xhci-ring.c","a":3119,"b":3120},{"id":"r19","kind":"fn","depth":0,"text":"static int xhci_handle_event_trb(struct xhci_hcd *xhci, struct xhci_interrupter *ir,\n\t\t\t\t union xhci_trb *event)\n{\n\tu32 trb_type;","file":"xhci-ring.c","a":2992,"b":2995},{"id":"r20","kind":"ln","depth":0,"text":"\trmb();\n\ttrb_type = TRB_FIELD_TO_TYPE(le32_to_cpu(event->event_cmd.flags));","file":"xhci-ring.c","a":3005,"b":3006},{"id":"r21","kind":"ln","depth":0,"text":"\tswitch (trb_type) {\n\tcase TRB_COMPLETION:\n\t\thandle_cmd_completion(xhci, &event->event_cmd);\n\t\tbreak;\n\tcase TRB_PORT_STATUS:\n\t\thandle_port_status(xhci, event);\n\t\tbreak;\n\tcase TRB_TRANSFER:\n\t\thandle_tx_event(xhci, ir, &event->trans_event);\n\t\tbreak;","file":"xhci-ring.c","a":3009,"b":3018},{"id":"r22","kind":"fn","depth":1,"text":"static int handle_tx_event(struct xhci_hcd *xhci,\n\t\t\t   struct xhci_interrupter *ir,\n\t\t\t   struct xhci_transfer_event *event)\n{","file":"xhci-ring.c","a":2632,"b":2635},{"id":"r23","kind":"ln","depth":1,"text":"\tslot_id = TRB_TO_SLOT_ID(le32_to_cpu(event->flags));\n\tep_index = TRB_TO_EP_ID(le32_to_cpu(event->flags)) - 1;\n\ttrb_comp_code = GET_COMP_CODE(le32_to_cpu(event->transfer_len));\n\tep_trb_dma = le64_to_cpu(event->buffer);","file":"xhci-ring.c","a":2648,"b":2651},{"id":"r24","kind":"ln","depth":1,"text":"\tep = xhci_get_virt_ep(xhci, slot_id, ep_index);\n\tif (!ep) {\n\t\txhci_err(xhci, \"ERROR Invalid Transfer event\\n\");\n\t\tgoto err_out;\n\t}\n\n\tep_ring = xhci_dma_to_transfer_ring(ep, ep_trb_dma);","file":"xhci-ring.c","a":2653,"b":2659},{"id":"r25","kind":"ln","depth":1,"text":"\tdo {\n\t\ttd = list_first_entry(&ep_ring->td_list, struct xhci_td,\n\t\t\t\t      td_list);","file":"xhci-ring.c","a":2847,"b":2849},{"id":"r26","kind":"ln","depth":1,"text":"\ttd->status = status;\n\n\t/* update the urb's actual_length and give back to the core */\n\tif (usb_endpoint_xfer_control(&td->urb->ep->desc))\n\t\tprocess_ctrl_td(xhci, ep, ep_ring, td, ep_trb, event);\n\telse if (usb_endpoint_xfer_isoc(&td->urb->ep->desc))\n\t\tprocess_isoc_td(xhci, ep, ep_ring, td, ep_trb, event);\n\telse\n\t\tprocess_bulk_intr_td(xhci, ep, ep_ring, td, ep_trb, event);","file":"xhci-ring.c","a":2951,"b":2959},{"id":"r27","kind":"fn","depth":2,"text":"static void process_bulk_intr_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,\n\t\t\t\t struct xhci_ring *ep_ring, struct xhci_td *td,\n\t\t\t\t union xhci_trb *ep_trb, struct xhci_transfer_event *event)\n{","file":"xhci-ring.c","a":2505,"b":2508},{"id":"r28","kind":"ln","depth":2,"text":"finish_td:\n\tif (remaining > requested) {\n\t\txhci_warn(xhci, \"bad transfer trb length %d in event trb\\n\",\n\t\t\t  remaining);\n\t\ttd->urb->actual_length = 0;\n\t}\n\n\tfinish_td(xhci, ep, ep_ring, td, trb_comp_code);","file":"xhci-ring.c","a":2563,"b":2570},{"id":"r29","kind":"fn","depth":2,"text":"static void finish_td(struct xhci_hcd *xhci, struct xhci_virt_ep *ep,\n\t\t      struct xhci_ring *ep_ring, struct xhci_td *td,\n\t\t      u32 trb_comp_code)\n{","file":"xhci-ring.c","a":2247,"b":2250},{"id":"r30","kind":"ln","depth":2,"text":"\txhci_dequeue_td(xhci, td, ep_ring, td->status);","file":"xhci-ring.c","a":2286,"b":2286},{"id":"r31","kind":"fn","depth":3,"text":"static void xhci_dequeue_td(struct xhci_hcd *xhci, struct xhci_td *td, struct xhci_ring *ring,\n\t\t\t    u32 status)\n{","file":"xhci-ring.c","a":924,"b":926},{"id":"r32","kind":"ln","depth":3,"text":"\tring->dequeue = td->end_trb;\n\tring->deq_seg = td->end_seg;\n\tinc_deq(xhci, ring);","file":"xhci-ring.c","a":927,"b":929},{"id":"r33","kind":"ln","depth":3,"text":"\txhci_td_cleanup(xhci, td, ring, status);","file":"xhci-ring.c","a":931,"b":931},{"id":"r34","kind":"fn","depth":3,"text":"static void xhci_td_cleanup(struct xhci_hcd *xhci, struct xhci_td *td,\n\t\t\t    struct xhci_ring *ep_ring, int status)\n{","file":"xhci-ring.c","a":877,"b":879},{"id":"r35","kind":"ln","depth":3,"text":"\tinc_td_cnt(urb);\n\t/* Giveback the urb when all the tds are completed */\n\tif (last_td_in_urb(td)) {","file":"xhci-ring.c","a":906,"b":908},{"id":"r36","kind":"ln","depth":3,"text":"\t\txhci_giveback_urb_in_irq(xhci, td, status);","file":"xhci-ring.c","a":919,"b":919},{"id":"r37","kind":"fn","depth":4,"text":"static void xhci_giveback_urb_in_irq(struct xhci_hcd *xhci,\n\t\t\t\t     struct xhci_td *cur_td, int status)\n{\n\tstruct urb\t*urb\t\t= cur_td->urb;","file":"xhci-ring.c","a":807,"b":810},{"id":"r38","kind":"ln","depth":4,"text":"\txhci_urb_free_priv(urb_priv);\n\tusb_hcd_unlink_urb_from_ep(hcd, urb);\n\ttrace_xhci_urb_giveback(urb);\n\tusb_hcd_giveback_urb(hcd, urb, status);","file":"xhci-ring.c","a":821,"b":824},{"id":"r39","kind":"ctx","depth":0,"text":"回到 xhci_handle_events 循环体尾：每消化 256 颗事件（TRBS_PER_SEGMENT/2）中途写一次 ERDP 防 Event Ring Full（:3126-3127）——演示环 4 槽走不满半段，此分支不触发，如实注记","tag":"xHCI 驱动"},{"id":"r40","kind":"ln","depth":0,"text":"\t\t/* Update SW event ring dequeue pointer */\n\t\tinc_deq(xhci, ir->event_ring);","file":"xhci-ring.c","a":3135,"b":3136},{"id":"r41","kind":"fn","depth":1,"text":"void inc_deq(struct xhci_hcd *xhci, struct xhci_ring *ring)\n{\n\tunsigned int link_trb_count = 0;","file":"xhci-ring.c","a":188,"b":190},{"id":"r42","kind":"ln","depth":1,"text":"\t/* event ring doesn't have link trbs, check for last trb */\n\tif (ring->type == TYPE_EVENT) {\n\t\tif (!last_trb_on_seg(ring->deq_seg, ring->dequeue)) {\n\t\t\tring->dequeue++;\n\t\t\treturn;\n\t\t}\n\t\tif (last_trb_on_ring(ring, ring->deq_seg, ring->dequeue))\n\t\t\tring->cycle_state ^= 1;\n\t\tring->deq_seg = ring->deq_seg->next;\n\t\tring->dequeue = ring->deq_seg->trbs;","file":"xhci-ring.c","a":192,"b":201},{"id":"r43","kind":"ctx","depth":0,"text":"while 再判：槽 1 的 cycle 位与软件 cycle_state 已错开——环空，循环退出","tag":"xHCI 驱动"},{"id":"r44","kind":"ln","depth":0,"text":"\txhci_update_erst_dequeue(xhci, ir, true);","file":"xhci-ring.c","a":3142,"b":3142},{"id":"r45","kind":"fn","depth":1,"text":"void xhci_update_erst_dequeue(struct xhci_hcd *xhci,\n\t\t\t      struct xhci_interrupter *ir,\n\t\t\t      bool clear_ehb)\n{","file":"xhci-ring.c","a":3044,"b":3047},{"id":"r46","kind":"ln","depth":1,"text":"\ttemp_64 = xhci_read_64(xhci, &ir->ir_set->erst_dequeue);\n\tdeq = xhci_trb_virt_to_dma(ir->event_ring->deq_seg,\n\t\t\t\t   ir->event_ring->dequeue);\n\tif (deq == 0)\n\t\txhci_warn(xhci, \"WARN something wrong with SW event ring dequeue ptr\\n\");","file":"xhci-ring.c","a":3051,"b":3055},{"id":"r47","kind":"ln","depth":1,"text":"\tif ((temp_64 & ERST_PTR_MASK) == (deq & ERST_PTR_MASK) && !clear_ehb)\n\t\treturn;","file":"xhci-ring.c","a":3060,"b":3061},{"id":"r48","kind":"ln","depth":1,"text":"\t/* Update HC event ring dequeue pointer */\n\ttemp_64 = ir->event_ring->deq_seg->num & ERST_DESI_MASK;\n\ttemp_64 |= deq & ERST_PTR_MASK;\n\n\t/* Clear the event handler busy flag (RW1C) */\n\tif (clear_ehb)\n\t\ttemp_64 |= ERST_EHB;\n\txhci_write_64(xhci, temp_64, &ir->ir_set->erst_dequeue);","file":"xhci-ring.c","a":3063,"b":3070},{"id":"r49","kind":"ctx","depth":0,"text":"xhci_handle_events 返回 0 → xhci_irq 解锁（:3224）→ 返回 IRQ_HANDLED（:3226）——中断再武装收束：MSI-X 的 IP 已由 PCI 写完成自动清，EHB 已随 ERDP 写回归 0","tag":"xHCI 驱动"},{"id":"r50","kind":"hw","depth":0,"text":"本链全程：设备端无 USB 请求到达、无状态迁移——中断是 xHC 与软件之间的信令，不占用任何 USB 传输；设备的数据早已随 DMA 直写进内存","tag":"设备"}],"frames":[{"c":"r0","note":"本链是 §4.17 中断器三方时序图第 3-4 步（ISR 读事件环处理事件）的真实代码形态——每帧一次调用，右列三环与设备端同步演进。","ph":"MSI-X 到达 → 事件环消费 → Transfer Event 分发 → URB 交还 → ERDP 写回：一次事件回执的完整消费链"},{"c":"r1","note":"本链从「传输完成、回执已写环」这一刻接手；右列先把链前状态摆上传输环。","ev":[{"op":"ring_enq","ring":"ep0","slot":0,"trb":{"a":"DATA","t":"Bulk IN TD","f":"Slot=1","cyc":1}}]},{"c":"r2","note":"传输的总线执行在链外；本链主线是「完成之后」的通知与消费。","ev":[{"op":"ring_deq","ring":"ep0","slot":0}]},{"c":"r3","note":"每个中断器一条事件环、绑单个 MSI-X 向量（§4.17 p261）；本链按 MSI-X 形态讲述，中断可选可轮询（p69 脚注 7）。","refs":["r_mgm","r_vec","r_msi","r_poll"],"ev":[{"op":"evt_enq","slot":0,"ev":{"a":"TRFE","t":"Transfer Event","sid":1,"cc":1}}]},{"c":"r4","note":"本链代码主体在 xhci-ring.c（xhci.c 只留钩子注册）——中断上下文执行，不可睡眠。"},{"c":"r5","note":"函数入口。函数头注释原话：先查状态寄存器再取事件环数据——xHC 出错时环上可能是坏数据（§4.10.2.7 判据）。"},{"c":"r6","note":"读 USBSTS——第一步永远是与硬件对状态，不是急着读环。"},{"c":"r7","note":"EINT 位为 0 → 不是本控制器的中断（共享中断判定），返回 IRQ_NONE 让别人处理。本链 EINT=1 继续；:3192 全 1 读数=主机已死、:3202/:3208 两个致命错误位各自提前退出——错误路径本链不走，如实注记。"},{"c":"r8","note":"USBSTS 写 1 清 EINT。注释原话：先清操作寄存器状态，才能收到其它 MSI-X 中断器的中断——每个中断器有自己的向量，别让上一个中断的处理挡住下一个。"},{"c":"r9","note":"主线调用：只处理主中断器（interrupters[0]）的事件环——注释原话 This is the handler of the primary interrupter。非主中断器的环由专属线程/旁路消费者处理，不在本链。","refs":["r_mgm"]},{"c":"r10","note":"xhci_handle_events() 入口（:3222 进入）——一个中断器的事件环主循环，可能在中途放锁。"},{"c":"r11","note":"先清本中断器的中断挂起位——处理事件之前先把「还有中断在挂起」这件事了结。"},{"c":"r12","note":"刚被调用的函数：xhci_clear_interrupt_pending()（:3099 → 此处）——IMAN.IP 的清零动作。"},{"c":"r13","note":"两种中断形态分岔：MSI/MSI-X 时 xhci.c :639 已置 ip_autoclear=true（msi_enabled），PCI 写完成自动清 IP（p265）——本分支不执行；INTx# 引脚形态才走软件写 1 清＋回读冲刷（p265）。本链 MSI-X，如实呈现「跳过」。","refs":["r_msi","r_pin"]},{"c":"r14","note":"xHC 是事件环的生产者、软件是消费者（inc_deq 头注释原话 SW is the consumer for the event ring only）——生产进度只能靠 cycle 位探测。"},{"c":"r15","note":"被调用的判定函数：unhandled_event_trb()（:3118 → 此处）。"},{"c":"r16","note":"事件 TRB 的 cycle 位 == 软件记录的 cycle_state → 这是 xHC 新写入、软件未消费的事件。xHC 回绕段表时会翻转 cycle 位（§4.9.4），软件的 cycle_state 也在段尾跟着翻——两边错开就是「空」。"},{"c":"r17","note":"while 循环头：环上还有未消费事件就继续——一次中断把环清空（批量消化，正是脚注 56 说的省负载之道）。"},{"c":"r18","note":"处理一颗事件（skip_events=false 时）——分发在下一层。"},{"c":"r19","note":"xhci_handle_event_trb() 入口——单事件处理：一颗 TRB 一个动作。"},{"c":"r20","note":"rmb() 读屏障：确保先读到 cycle 位（有效性判定），再读事件的 flags/数据——防乱序投机读。"},{"c":"r21","note":"按事件类型分发四路：TRB_COMPLETION 命令完成（:3011，§4.1/§4.4 走读卡的回执消费端）· TRB_PORT_STATUS 端口状态变化（:3014，§4.19.2）· TRB_TRANSFER 传输完成（:3017，本链走这支）· TRB_DEV_NOTE 设备通知。switch 其余分支本链不走，只演走到的。"},{"c":"r22","note":"刚被调用的函数：handle_tx_event()（:3017 → 此处）——Transfer Event 的消费主体，本链最深处。"},{"c":"r23","note":"事件自带四元组：槽号=1、端点号、完成码（本例 Success）、引发事件的 TRB 的 DMA 地址——回执自带定位，无需回查。"},{"c":"r24","note":"用事件携带的 TRB DMA 地址反查：这是哪条传输环上的事（一槽多端点，各端点各自一条环）。"},{"c":"r25","note":"TD 匹配循环：沿传输环的 td_list 找「这颗事件属于哪个 TD」。计数口径在此分岔——规范按传输阶段记 TD，内核 struct xhci_td 按 URB 记（一个内核 TD 可含多个规范阶段）；本例 bulk 单阶段，两个口径重合。"},{"c":"r26","note":"注释原话：update the urb's actual_length and give back to the core——按端点类型三选一；本例 bulk IN 走 process_bulk_intr_td（:2959）。"},{"c":"r27","note":"被调用的函数：process_bulk_intr_td()（:2959 → 此处）——核对传输长度、更新 URB 实际长度，然后进统一出口。"},{"c":"r28","note":"finish_td 标号（:2563）之后的统一出口：调用 finish_td 收尾——控制/等时/批量三条路径殊途同归到这。"},{"c":"r29","note":"被调用的函数：finish_td()——处理停端点/ halted 类完成码的分支本链不走（本例 Success），直接到尾部。"},{"c":"r30","note":"收尾调用：推进传输环消费进度并交还 URB——两个动作在下一个函数里。"},{"c":"r31","note":"刚被调用的函数：xhci_dequeue_td()（:2286 → 此处）——函数头注释原话 Give back previous TD and move on to the next TD。"},{"c":"r32","note":"传输环软件出队指针跳到 TD 末 TRB 并 inc_deq 前移——xHC 侧的消费在链首桥帧已演过，此处是软件副本与硬件进度对齐（右列不再重复计一次消费）。"},{"c":"r33","note":"移交 xhci_td_cleanup——TD 清尾与 URB 交还判定。"},{"c":"r34","note":"被调用的函数：xhci_td_cleanup()（:931 → 此处）——从 td_list 摘除、长度核对后进入交还判定。"},{"c":"r35","note":"交还判定：URB 的全部 TD 都完成（last_td_in_urb）才交还——注释原话 Giveback the urb when all the tds are completed。控制传输三阶段在一个内核 TD 内（:919 一到即交还），拆成多个内核 TD 的 URB 则要等齐。"},{"c":"r36","note":"满足判定 → 调交还函数（等时 URB 状态清 0 惯例与 EHCU/OHCI 对齐，:916-918）。"},{"c":"r37","note":"刚被调用的函数：xhci_giveback_urb_in_irq()（:919 → 此处）——中断上下文的 URB 交还。"},{"c":"r38","note":"usb_hcd_giveback_urb——URB 交还 USB 核心，驱动的完成回调在这里被调用。事件回执的消费到此闭环，bulk 数据早已被 DMA 直写进 URB 缓冲（数据先于事件到位）。"},{"c":"r39","note":"「尽量多消化再写 ERDP」正是规范 p165 Note 的建议——减少 MMIO 写次数，事件环满时尤其要紧。"},{"c":"r40","note":"事件环软件出队指针前移一颗——刚消费的 Transfer Event 让位。","ev":[{"op":"evt_deq","slot":0}]},{"c":"r41","note":"被调用的函数：inc_deq()（:3136 → 此处）——所有环共用的出队推进器。"},{"c":"r42","note":"事件环专属分支：事件环没有 Link TRB（与命令/传输环不同）——段尾直接跳段表下一段，整环走完才翻转软件 cycle_state（:199）。本例槽 0→槽 1，普通前移（:194-196）。"},{"c":"r43","note":"一颗事件一次中断的轻负载形态；重负载下一次中断可消化多颗（节流与合并见 §4.17.2 Figure 4-23）。"},{"c":"r44","note":"循环收尾（也是 skip_events 路径的出口）：把消费进度写回硬件——clear_ehb=true，写 ERDP 同时清 EHB。"},{"c":"r45","note":"被调用的函数：xhci_update_erst_dequeue()（:3142 → 此处）——ERDP 写回的唯一出口。"},{"c":"r46","note":"读当前 ERDP、算软件出队指针的 DMA 地址——两头比对决定要不要写。"},{"c":"r47","note":"指针未动且不清 EHB → 不写。规范禁止连续两次写同值（p165）；内核的对策＝干脆不写。注释原话引的就是 §4.9.4 这条（:3057-3058）。","refs":["r_adv"]},{"c":"r48","note":"ERDP 写回：段索引（DESI）+出队指针地址，clear_ehb 时再或上 ERST_EHB（:3068-3069，RW1C 写 1 清）。软件消费进度从此对 xHC 可见——EHB 归 0，节流三条件解除占用。","refs":["r_erdp","r_ehb"],"ev":[{"op":"reg_wr","reg":"ERDP","val":"→ 槽 0 后（EHB 写 1 清）"}]},{"c":"r49","note":"下一颗事件入环即可再次触发中断（轻负载即时形态，Figure 4-24）——不需要任何额外的「重新打开中断」动作。"},{"c":"r50","note":"对设备而言，传输在总线上的完成（握手 ACK）就是终点——「通知驱动」是主机侧自己的事（§4.17 泳道图设备泳道不参与的代码侧对应）。"}],"refs":[{"id":"r_mgm","label":"§4.17","title":"中断器=管理与通知单位","src":"xHCI 1.2b §4.17","p":"p261","quote":"An Interrupter manages events and their notification to the host. The xHCI supports up to 1024 Interrupters.","note":"本链消费的就是中断器 0 的事件环——MSI-X 通知到达后，软件把环上的事件逐条取走。"},{"id":"r_vec","label":"§4.17","title":"每中断器单向量","src":"xHCI 1.2b §4.17","p":"p261","quote":"Each Interrupter shall be mapped to a single MSI or MSI-X interrupt vector.","note":"中断器与 MSI-X 向量一一绑定——向量 0 的到达即中断器 0 有事，软件无需再猜是哪个环。"},{"id":"r_msi","label":"§4.17.2","title":"MSI/MSI-X 的 IP 自动清","src":"xHCI 1.2b §4.17.2","p":"p265","quote":"If PCI Message Signaled Interrupts (MSI or MSI-X) are enabled, then the assertion of the Interrupt Pending (IP) flag in Figure 4-22 generates a PCI Dword write. The IP flag is automatically cleared by the completion of the PCI write.","note":"MSI/MSI-X 形态 IP 由 PCI 写完成自动清——代码形态＝ip_autoclear 为真时跳过软件写。"},{"id":"r_pin","label":"§4.17.2","title":"INTx# 才软件清 IP","src":"xHCI 1.2b §4.17.2","p":"p265","quote":"If the PCI Interrupt Pin mechanism is enabled, then the assertion of Interrupt Pending (IP) asserts the appropriate PCI INTx# pin. And the IP flag is cleared by software writing the IMAN register.","note":"引脚中断形态才需要软件写 IMAN 清 IP——xhci_clear_interrupt_pending 软件写 1 分支服务的就是这条。"},{"id":"r_erdp","label":"§4.9.4","title":"ERDP 写回是软件义务","src":"xHCI 1.2b §4.9.4","p":"p163","quote":"System software shall advance the Event Ring Dequeue Pointer by writing the address of the last processed Event TRB to the Event Ring Dequeue Pointer (ERDP) register.","note":"消费进度必须写回 ERDP——不写回，xHC 会认为事件仍未被处理（EHB 保持 1，不再发新中断）。"},{"id":"r_adv","label":"§4.9.4","title":"禁止连续写同值","src":"xHCI 1.2b §4.9.4","p":"p165","quote":"Software writes to the ERDP register shall always advance the Event Ring Dequeue Pointer value, that is, software shall not write the same value to the ERDP register on two consecutive write operations.","note":"连续两次写同值被规范禁止——内核对策＝指针未动且不清 EHB 时干脆不写（:3060）。"},{"id":"r_ehb","label":"§5.5.2.3.3","title":"EHB 写 1 清（RW1C）","src":"xHCI 1.2b §5.5.2.3.3","p":"p393","quote":"Event Handler Busy (EHB) - RW1C. Default = ‘0’. This flag shall be set to ‘1’ when the IP bit is set to ‘1’ and cleared to ‘0’ by software when the Dequeue Pointer register is written.","note":"IP 置 1 时 EHB 同置（节流三条件第三条「事件处理器不忙」）；软件写 ERDP 即清 EHB——RW1C＝写 1 清。"},{"id":"r_poll","label":"p69 脚注7","title":"中断可选","src":"xHCI 1.2b §4.2","p":"p69","quote":"","note":"脚注 7：中断是可选机制——软件也可以轮询事件环的方式取完成事件。本链按 MSI-X 形态讲述。"}],"world0":{"worldKind":"rings3","rings":{"cmd":{"label":"命令环 CRCR","own":"驱动生产 · xHC 消费","db":0,"cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]},"ep0":{"label":"传输环 EP1（bulk IN）","own":"驱动生产 · xHC 消费","db":1,"cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]},"evt":{"label":"事件环 ERST/ERDP","own":"xHC 生产 · 驱动消费","cells":[{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"},{"a":"","t":"","f":"","cyc":"1","st":"empty"}]}},"dev":{"title":"设备端","state":"Configured","states":["Powered","Default","Addressed","Configured"],"tickets":[],"noTkNote":"无 USB 请求到达——中断对设备不可见"},"regs":{"ERDP":"→ 事件环段 0 首槽","IMAN":"IP=0 · IE=1（向量 0）","USBCMD":"INTE=1"}}}</script>
+  </div>
+<!--STEPPER:X47:END-->
+<p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.17 p261–269 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><script type="module">/* codestepper.js — 代码步进放映机（课程族共享，配 course.css 的 .stepper 段）
+ * 数据驱动：宿主 div.stepper 内嵌 <script type="application/json" class="stepper-data">
+ *   { title, intro, baseline, phases[], rows[], frames[], refs[], world0 }
+ * 静态优先：无 JS 时 builder 预渲染的代码全列 + world0 快照 + refs <details> 全部可读；
+ * 本脚本 init 后：当前行高亮 + 世界面板按帧事件回放 + 控制/引用弹窗。
+ * 世界模型=事件溯源：world0 初态 + 每帧 ev[] 增量；任意帧状态 = 重放 f<=idx 的全部事件
+ * （回退安全）。左右布局：左代码清单（fn 行深度缩进=调用父子），右三环+设备+TD 记录。
+ * v3（2026-10-21）：init 后量最宽代码行给 .st-code/.stepper 设定紧致像素宽（宽度自适应）。
+ * v3.2（2026-10-21）：世界面板全高无内滚、与代码列等高（纯 CSS 改动，见 course.css v3.2 注）。
+ * v3.3（2026-10-21 用户裁定）：步进跟随对齐——当前代码行滚到视口垂直居中；世界面板钉
+ *   视口右列、约一屏高、滚动条隐藏（内滚仍在，内容全量在 DOM），每帧把发生变化的
+ *   元素标 .st-chg 脉冲并自动滚到与当前代码行齐平（alignWorld）。
+ * v3.4（2026-10-21 用户报"前几行高亮时导航条要追着点"）：居中滚动加"钉住地板"夹紧
+ *   （stepScroll）——前几行纯居中会把页面滚得让控件条/世界面板的 sticky 不咬合
+ *   （自然位落进视口中带），此后每步"下一行"页面下滚一行高、按钮随内容上移一格格，
+ *   用户被迫追着鼠标向上移。地板=让两件钉住位咬合的最小 scrollY（ctl 自然位以
+ *   零高静止锚点 .st-pinref 量取——sticky 咬合后 ctl 自身 rect 是钉住位，不可用）。
+ * v3.5（2026-10-29，0007 世界面板 anatomy 机器）：world0 可选字段 machine:{svg}——
+ *   存在时世界面板渲染该 SVG 机构替代卡片网格（worldHtml 默认路径零变更）。
+ *   状态应用 machineApply，与卡片 op 语义一致：cell→[data-k=ring:i] 组切 st-* 类并
+ *   更新 .st-ma/.st-mt/.st-mf/.st-mcyc；ptr→组内 .st-menq/.st-mdeq 翻 visibility；
+ *   dev/td→[data-k=dev|td] 组内 [data-f=字段] 改 textContent。脉冲样式内嵌在机构
+ *   SVG 里（.st-chg 走 stroke/fill 动画，SVG 无 box-shadow）；alignWorld 复用不变
+ *   （getBoundingClientRect 对 SVG 元素有效）。机构标注约定见本目录 design.md。
+ * v3.6（2026-11-03，CODE-STEPPER 提案步 1）：world0.worldKind==="rings3" 时世界
+ *   面板渲染「命令环/EP0 传输环/事件环/设备端」四区模板（rings3Html），配套高层
+ *   ev 枚举（ring_enq/ring_deq/ring_link/db/evt_enq/evt_deq/reg_wr/dev_req/dev_state，
+ *   applyEvR3 应用——低级 cell/ptr/dev/td 旧 op 不受影响）。指针着色按生产/消费方
+ *   （cmd/ep0：▲驱动蓝写·▼xHC 金取；evt 反转），槽卡语汇对齐 4.3 机器 TRB 小卡
+ *   （类型缩写+cycle 位角标）。门铃=环头徽标按次数累计亮（闪=当帧 .st-chg 脉冲）。 */
+(function () {
+  'use strict';
+
+  /* ---------- 世界渲染（纯函数：state → HTML 字符串） ---------- */
+  var RING_ORDER = ['xfer', 'cmd', 'evt'];
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function cellHtml(c, ring, i, st) {
+    var cls = 'stw-cell st-' + (c.st || 'empty');
+    var ptr = [];
+    if (st && st.rings[ring].enq === i) ptr.push('<i class="stw-ptr pe">写▸enq</i>');
+    if (st && st.rings[ring].deq === i) ptr.push('<i class="stw-ptr pd">取▸deq</i>');
+    if (ring === 'evt') { /* 事件环指针语义反转，标签在 CSS 里换 */
+    }
+    return '<div class="' + cls + '" data-k="' + ring + ':' + i + '">' + ptr.join('') +
+      '<b>' + esc(c.a) + '</b><span class="stw-t">' + (c.t ? esc(c.t) : '空') + '</span>' +
+      (c.f ? '<span class="stw-f">' + esc(c.f) + '</span>' : '') +
+      '<span class="stw-cyc">cyc=' + esc(c.cyc) + '</span></div>';
+  }
+  function worldHtml(W) {
+    var h = '';
+    RING_ORDER.forEach(function (k) {
+      if (!W.rings[k]) return;
+      var r = W.rings[k];
+      h += '<div class="stw-ring"><div class="stw-rhead"><b>' + esc(r.label) + '</b>' +
+        '<span class="stw-own">' + esc(r.own) + '</span></div><div class="stw-cells">';
+      r.cells.forEach(function (c, i) { h += cellHtml(c, k, i, W); });
+      h += '</div></div>';
+    });
+    ['dev', 'td'].forEach(function (k) {
+      if (!W[k]) return;
+      var b = W[k];
+      h += '<div class="stw-box" data-k="' + k + '"><b>' + esc(b.title) + '</b><table>';
+      Object.keys(b).forEach(function (f) {
+        if (f === 'title') return;
+        h += '<tr><th>' + esc(f) + '</th><td>' + esc(b[f]) + '</td></tr>';
+      });
+      h += '</table></div>';
+    });
+    return h;
+  }
+  function applyEv(W, ev) { /* 就地应用一条事件（深拷贝由调用方保证） */
+    if (!ev) return;
+    if (R3_OPS[ev.op]) return applyEvR3(W, ev); /* v3.6 rings3 高层枚举 */
+    if (ev.op === 'cell') {
+      var c = W.rings[ev.ring].cells[ev.i];
+      Object.keys(ev.set || {}).forEach(function (k) { c[k] = ev.set[k]; });
+    } else if (ev.op === 'ptr') {
+      if (typeof ev.enq === 'number') W.rings[ev.ring].enq = ev.enq;
+      if (typeof ev.deq === 'number') W.rings[ev.ring].deq = ev.deq;
+    } else if (ev.op === 'dev' || ev.op === 'td') {
+      Object.keys(ev.set || {}).forEach(function (k) { W[ev.op][k] = ev.set[k]; });
+    }
+  }
+  /* ---------- v3.5 机构面板状态应用（world0.machine.svg 在场时；语义与卡片一致） ---------- */
+  function mSetText(scope, sel, v) {
+    var t = scope.querySelector(sel);
+    if (t) t.textContent = (v == null ? '' : String(v));
+  }
+  function machineApply(W, box) {
+    Object.keys(W.rings || {}).forEach(function (rk) {
+      var r = W.rings[rk];
+      var slots = {};
+      Array.prototype.forEach.call(box.querySelectorAll('[data-ring="' + rk + '"]'), function (el) {
+        var id = el.getAttribute('data-k');
+        if (id != null) slots[id] = el;
+      });
+      (r.cells || []).forEach(function (c, i) {
+        var el = slots[rk + ':' + i];
+        if (!el) return;
+        el.setAttribute('class', (el.getAttribute('data-base') || 'st-mslot') + ' st-' + (c.st || 'empty'));
+        mSetText(el, '.st-ma', c.a);
+        mSetText(el, '.st-mt', c.t ? c.t : '空');
+        mSetText(el, '.st-mf', c.f || '');
+        mSetText(el, '.st-mcyc', 'cyc=' + c.cyc);
+        var enq = el.querySelector('.st-menq'), deq = el.querySelector('.st-mdeq');
+        if (enq) enq.setAttribute('visibility', r.enq === i ? 'visible' : 'hidden');
+        if (deq) deq.setAttribute('visibility', r.deq === i ? 'visible' : 'hidden');
+      });
+    });
+    ['dev', 'td'].forEach(function (k) {
+      var b = W[k];
+      if (!b) return;
+      Array.prototype.forEach.call(box.querySelectorAll('[data-k="' + k + '"]'), function (el) {
+        Object.keys(b).forEach(function (f) {
+          if (f === 'title') return;
+          mSetText(el, '[data-f="' + f + '"]', b[f]);
+        });
+      });
+    });
+  }
+  /* ---------- v3.6 rings3 四区模板（world0.worldKind==="rings3"；提案 §3.1/§3.2） ----------
+   * world0 形态：{ worldKind, rings:{cmd,ep0,evt}, dev:{title,state,states,tickets}, regs?, dbs? }
+   *   环 cells 元素与卡片面板同构 {st,a,t,f,cyc}；ev 载荷见 applyEvR3 各分支。 */
+  var R3_ORDER = ['cmd', 'ep0', 'evt'];
+  var R3_OPS = { ring_enq: 1, ring_deq: 1, ring_link: 1, db: 1, evt_enq: 1, evt_deq: 1, reg_wr: 1, dev_req: 1, dev_state: 1 };
+  function r3CellHtml(c, ring, i, r) {
+    var ptr = '';
+    if (r.enq === i) ptr += '<i class="r3-ptr pe" title="生产指针 enq">▲</i>';
+    if (r.deq === i) ptr += '<i class="r3-ptr pd" title="消费指针 deq">▼</i>';
+    return '<div class="r3-cell st-' + (c.st || 'empty') + '" data-k="' + ring + ':' + i + '">' + ptr +
+      '<span class="r3-cyc">c' + esc(c.cyc) + '</span>' +
+      '<b class="r3-a">' + esc(c.a || '·') + '</b>' +
+      (c.t ? '<span class="r3-t">' + esc(c.t) + '</span>' : '') +
+      (c.f ? '<span class="r3-f">' + esc(c.f) + '</span>' : '') + '</div>';
+  }
+  function rings3Html(W) {
+    var h = '<div class="r3">';
+    R3_ORDER.forEach(function (k) {
+      var r = W.rings[k];
+      if (!r) return;
+      var dbadge = '';
+      if (typeof r.db === 'number')
+        dbadge = '<span class="r3-db" data-k="db:' + r.db + '" title="门铃 ' + r.db + '">🔔' + r.db +
+          ((W.dbs && W.dbs[r.db]) ? '×' + W.dbs[r.db] : '') + '</span>';
+      h += '<div class="r3-zone r3-ring-' + k + '"><div class="r3-zhead"><b>' + esc(r.label) + '</b>' +
+        dbadge + '<span class="r3-own">' + esc(r.own) + '</span></div>' +
+        '<div class="r3-cells">' +
+        r.cells.map(function (c, i) { return r3CellHtml(c, k, i, r); }).join('') +
+        '</div></div>';
+    });
+    if (W.dev) {
+      var states = W.dev.states || [], cur = W.dev.state || '';
+      h += '<div class="r3-zone r3-devzone"><div class="r3-zhead"><b>' + esc(W.dev.title || '设备端') + '</b></div>' +
+        '<div class="r3-lamps" data-k="dev-state">' +
+        states.map(function (s) { return '<i class="r3-lamp' + (s === cur ? ' on' : '') + '">' + esc(s) + '</i>'; }).join('') +
+        '</div><div class="r3-tickets" data-k="dev-tickets">' +
+        ((W.dev.tickets && W.dev.tickets.length)
+          ? W.dev.tickets.map(function (t) {
+              return '<span class="r3-tk">' + esc(t.req) + (t.dir ? ' <em>' + esc(t.dir) + '</em>' : '') + '</span>';
+            }).join('')
+          : '<span class="r3-mut">（' + esc(W.dev.noTkNote || '无 USB 请求到达——命令环对设备不可见') + '）</span>') +
+        '</div></div>';
+    }
+    if (W.regs && Object.keys(W.regs).length) {
+      h += '<div class="r3-zone r3-regszone"><div class="r3-zhead"><b>寄存器窗</b></div><div class="r3-regs">' +
+        Object.keys(W.regs).map(function (rk) {
+          return '<span class="r3-reg" data-k="reg:' + esc(rk) + '"><em>' + esc(rk) + '</em>' + esc(W.regs[rk]) + '</span>';
+        }).join('') + '</div></div>';
+    }
+    return h + '</div>';
+  }
+  function applyEvR3(W, ev) { /* rings3 高层事件（提案 §3.2 表）；深拷贝由调用方保证 */
+    var R = W.rings;
+    if (ev.op === 'ring_enq') {
+      var r = R[ev.ring], trb = ev.trb || {}, c = r.cells[ev.slot];
+      c.st = trb.st || 'written'; c.a = trb.a || ''; c.t = trb.t || ''; c.f = trb.f || '';
+      if (trb.cyc != null) c.cyc = trb.cyc;
+      r.enq = (ev.slot + 1) % r.cells.length;
+    } else if (ev.op === 'ring_deq') {
+      R[ev.ring].deq = ev.slot;
+    } else if (ev.op === 'ring_link') { /* 回绕：生产指针回 0 槽 + 首槽 cycle 翻转 */
+      var rl = R[ev.ring];
+      rl.cells[0].cyc = rl.cells[0].cyc ? 0 : 1;
+      rl.enq = 0;
+    } else if (ev.op === 'db') {
+      W.dbs = W.dbs || {};
+      W.dbs[ev.target] = (W.dbs[ev.target] || 0) + 1;
+    } else if (ev.op === 'evt_enq') {
+      var re = R.evt, ec = ev.ev || {}, c2 = re.cells[ev.slot];
+      c2.st = 'evt'; c2.a = ec.a || ''; c2.t = ec.t || '';
+      c2.f = [(ec.sid != null ? 'Slot=' + ec.sid : ''), (ec.cc != null ? 'CC=' + ec.cc : '')]
+        .filter(Boolean).join(' · ');
+      re.enq = (ev.slot + 1) % re.cells.length;
+    } else if (ev.op === 'evt_deq') {
+      R.evt.deq = ev.slot;
+    } else if (ev.op === 'reg_wr') {
+      W.regs = W.regs || {};
+      W.regs[ev.reg] = ev.val;
+    } else if (ev.op === 'dev_req') {
+      W.dev.tickets = W.dev.tickets || [];
+      W.dev.tickets.push({ req: ev.req, dir: ev.dir || '' });
+    } else if (ev.op === 'dev_state') {
+      W.dev.state = ev.to;
+    }
+  }
+  function stateAt(D, idx) {
+    var W = JSON.parse(JSON.stringify(D.world0));
+    for (var i = 0; i <= idx && i < D.frames.length; i++)
+      (D.frames[i].ev || []).forEach(function (e) { applyEv(W, e); });
+    return W;
+  }
+
+  /* ---------- 弹窗（全局单例，多 stepper 共用） ---------- */
+  var modal = null;
+  function ensureModal() {
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.className = 'st-modal';
+    modal.innerHTML = '<div class="st-mbox" role="dialog" aria-modal="true">' +
+      '<button type="button" class="st-mclose">✕ 关闭</button><div class="st-mbody"></div></div>';
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal || (e.target.getAttribute && e.target.getAttribute('class') === 'st-mclose'))
+        modal.classList.remove('show');
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') modal.classList.remove('show');
+    });
+    document.body.appendChild(modal);
+    return modal;
+  }
+  function showRef(ref) {
+    var m = ensureModal();
+    m.querySelector('.st-mbody').innerHTML =
+      '<h4>' + esc(ref.label) + ' · ' + esc(ref.title) + '</h4>' +
+      '<p class="st-msrc">' + esc(ref.src) + (ref.p ? ' · ' + esc(ref.p) : '') + '</p>' +
+      (ref.quote ? '<blockquote>' + esc(ref.quote) + '</blockquote>' : '') +
+      (ref.note ? '<p class="st-mnote">' + esc(ref.note) + '</p>' : '');
+    m.classList.add('show');
+  }
+
+  /* ---------- 每台 stepper 的初始化 ---------- */
+  function initStepper(root) {
+    var dataEl = root.querySelector('script.stepper-data');
+    if (!dataEl) return;
+    var D;
+    try { D = JSON.parse(dataEl.textContent); } catch (e) { return; /* 静态内容保留 */ }
+    var rows = {}, rowEls = {};
+    D.rows.forEach(function (r) { rows[r.id] = r; });
+    Array.prototype.forEach.call(root.querySelectorAll('.st-crow'), function (el) {
+      rowEls[el.getAttribute('data-id')] = el;
+    });
+    var codeBox = root.querySelector('.st-code');
+    var worldBox = root.querySelector('.st-world');
+    var noteBox = root.querySelector('.st-note');
+    var refsBox = root.querySelector('.st-refs');
+    var gridBox = root.querySelector('.st-grid');
+    if (!codeBox || !worldBox || !noteBox) return;
+
+    /* 相名表：frames[i].ph 或由行序推导（builder 直接给每帧 ph 字段则用之） */
+    var idx = 0, timer = null, lastWorld = null;
+    var N = D.frames.length;
+    var refMap = {};
+    (D.refs || []).forEach(function (r) { refMap[r.id] = r; });
+
+    /* 控制条 */
+    var ctl = document.createElement('div');
+    ctl.className = 'st-ctl';
+    ctl.innerHTML = '<button type="button" data-a="prev">◀ 上一行</button>' +
+      '<button type="button" data-a="play">播放</button>' +
+      '<button type="button" data-a="next">下一行 ▶</button>' +
+      '<button type="button" data-a="reset">重置</button>' +
+      '<span class="st-count"></span><span class="st-ph"></span>' +
+      '<span class="st-hint">←/→ 键也可步进</span>';
+    root.insertBefore(ctl, root.querySelector('.st-grid'));
+    /* v3.4：ctl 前的零高静止锚点——量 ctl 自然文档位用（见头部 v3.4 注） */
+    var pinRef = document.createElement('div');
+    pinRef.className = 'st-pinref';
+    pinRef.style.height = '0';
+    root.insertBefore(pinRef, ctl);
+    var countEl = ctl.querySelector('.st-count'), phEl = ctl.querySelector('.st-ph');
+    var playBtn = ctl.querySelector('[data-a="play"]');
+
+    /* 引用条（chips） */
+    var chips = document.createElement('div');
+    chips.className = 'st-chips';
+    (D.refs || []).forEach(function (r) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'st-chip'; b.textContent = r.label + ' ' + r.title;
+      b.title = '查看规范原文'; b.setAttribute('data-ref', r.id);
+      b.addEventListener('click', function () { showRef(refMap[r.id]); });
+      chips.appendChild(b);
+    });
+    if (refsBox) { refsBox.innerHTML = ''; refsBox.appendChild(chips); }
+
+    function stop() { if (timer) { clearInterval(timer); timer = null; } playBtn.textContent = '播放'; }
+    /* v3.4 钉住地板（见头部注）：行尽量滚到视口居中，但不低于"控件条与世界面板
+     * 都咬合在钉住位"的最小 scrollY——否则前几行阶段按钮随内容上移、要追着点。 */
+    var ctlStickTop = parseFloat(getComputedStyle(ctl).top) || 0;
+    var worldStickTop = parseFloat(getComputedStyle(worldBox).top) || 0;
+    function stepScroll(cur) {
+      var sy = window.scrollY || window.pageYOffset || 0;
+      var rowR = cur.getBoundingClientRect();
+      var center = sy + rowR.top + rowR.height / 2 - innerHeight / 2;
+      var floor = Math.max(sy + pinRef.getBoundingClientRect().top - ctlStickTop,
+                           sy + gridBox.getBoundingClientRect().top - worldStickTop);
+      var maxS = document.documentElement.scrollHeight - innerHeight;
+      window.scrollTo(0, Math.max(0, Math.min(maxS, Math.max(center, floor))));
+    }
+    /* v3.3 齐平对位：本帧事件命中的世界元素标 .st-chg，并把它们整体滚到与当前代码行
+     * 同一水平线（中线对齐）。无事件帧不动世界（代码行照常居中）。对位夹在
+     * [0, scrollHeight-clientHeight] 内：变化元素贴世界顶/底时贴边即止。 */
+    function alignWorld(fr, cur) {
+      if (!cur) return;
+      var marks = [];
+      (fr.ev || []).forEach(function (e) {
+        var sel = null;
+        if (e.op === 'cell') sel = '[data-k="' + e.ring + ':' + e.i + '"]';
+        else if (e.op === 'ptr') sel = '[data-k="' + e.ring + ':' + (typeof e.enq === 'number' ? e.enq : e.deq) + '"]';
+        else if (e.op === 'dev' || e.op === 'td') sel = '[data-k="' + e.op + '"]';
+        else if (R3_OPS[e.op]) { /* v3.6 rings3 高层枚举的脉冲定位 */
+          if (e.op === 'ring_enq' || e.op === 'ring_deq' || e.op === 'ring_link') sel = '[data-k="' + e.ring + ':' + e.slot + '"]';
+          else if (e.op === 'db') sel = '[data-k="db:' + e.target + '"]';
+          else if (e.op === 'evt_enq' || e.op === 'evt_deq') sel = '[data-k="evt:' + e.slot + '"]';
+          else if (e.op === 'reg_wr') sel = '[data-k="reg:' + e.reg + '"]';
+          else if (e.op === 'dev_req') sel = '[data-k="dev-tickets"]';
+          else if (e.op === 'dev_state') sel = '[data-k="dev-state"]';
+        }
+        if (!sel) return;
+        var el = worldBox.querySelector(sel);
+        if (el && marks.indexOf(el) < 0) { el.classList.add('st-chg'); marks.push(el); }
+      });
+      if (!marks.length) return;
+      var top = Infinity, bot = -Infinity;
+      marks.forEach(function (el) {
+        var rc = el.getBoundingClientRect();
+        top = Math.min(top, rc.top); bot = Math.max(bot, rc.bottom);
+      });
+      var rowR = cur.getBoundingClientRect();
+      var delta = (top + bot) / 2 - (rowR.top + rowR.height / 2);
+      var maxT = worldBox.scrollHeight - worldBox.clientHeight;
+      worldBox.scrollTop = Math.max(0, Math.min(maxT, worldBox.scrollTop + delta));
+    }
+    function go(i, noScroll) {
+      idx = Math.max(0, Math.min(N - 1, i));
+      var fr = D.frames[idx];
+      /* 当前行高亮 + 滚动跟随（v3.3：居中于视口；初始 go(0) 不滚——多台 stepper 各自
+       * go(0) 会连环拽页（最后一台赢，v3.2 起即有的加载跳页），只在用户步进时接管） */
+      Object.keys(rowEls).forEach(function (id) { rowEls[id].classList.remove('cur', 'done'); });
+      var cur = rowEls[fr.c];
+      if (cur) {
+        cur.classList.add('cur');
+        if (!noScroll) stepScroll(cur);
+      }
+      /* 已执行过的同段行打 done（当前行之前出现过的行） */
+      var seen = {};
+      for (var k = 0; k <= idx; k++) seen[D.frames[k].c] = true;
+      Object.keys(seen).forEach(function (id) { if (rowEls[id] && id !== fr.c) rowEls[id].classList.add('done'); });
+      /* 世界面板重放 */
+      var W = stateAt(D, idx);
+      if (D.world0.worldKind === 'rings3') {
+        worldBox.innerHTML = rings3Html(W);
+      } else if (D.world0.machine && D.world0.machine.svg) {
+        worldBox.innerHTML = D.world0.machine.svg;
+        machineApply(W, worldBox);
+      } else {
+        worldBox.innerHTML = worldHtml(W);
+      }
+      worldBox.classList.add('live');
+      lastWorld = W;
+      if (!noScroll) alignWorld(fr, cur);
+      /* 当行解说 + 活跃引用 */
+      noteBox.innerHTML = (fr.note ? fr.note : '<span class="st-mut">（本行无注记）</span>') +
+        (fr.refs && fr.refs.length
+          ? ' <span class="st-fref">' + fr.refs.map(function (id) {
+              var r = refMap[id]; if (!r) return '';
+              return '<button type="button" class="st-chip on" data-ref="' + id + '">📎 ' + esc(r.label) + '</button>';
+            }).join('') + '</span>'
+          : '');
+      Array.prototype.forEach.call(noteBox.querySelectorAll('[data-ref]'), function (b) {
+        b.addEventListener('click', function () { showRef(refMap[b.getAttribute('data-ref')]); });
+      });
+      countEl.textContent = '行 ' + (idx + 1) + ' / ' + N;
+      phEl.textContent = fr.ph ? '· ' + fr.ph : '';
+      if (idx === N - 1) stop();
+    }
+    ctl.addEventListener('click', function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-a');
+      if (!a) return;
+      if (a === 'prev') { stop(); go(idx - 1); }
+      else if (a === 'next') { stop(); go(idx + 1); }
+      else if (a === 'reset') { stop(); go(0); }
+      else if (a === 'play') {
+        if (timer) { stop(); return; }
+        playBtn.textContent = '暂停';
+        if (idx === N - 1) go(0);
+        timer = setInterval(function () {
+          if (idx === N - 1) { stop(); return; }
+          go(idx + 1);
+        }, 2000);
+      }
+    });
+    /* 行点击跳帧：该行最近一次出现的帧 */
+    Object.keys(rowEls).forEach(function (id) {
+      rowEls[id].addEventListener('click', function () {
+        stop();
+        for (var k = idx; k < N; k++) if (D.frames[k].c === id) return go(k);
+        for (k = 0; k < N; k++) if (D.frames[k].c === id) return go(k);
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      /* 2026-11-03 xhci-spec 板块集成：宿主页面的动画台（.iso-stage， tabindex 可聚焦）
+       * 自己接管方向键/空格——焦点在台上时不抢键，否则一台页面两处同键同驱。 */
+      if (t && t.closest && t.closest('.iso-stage')) return;
+      var r = root.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return; /* 只在视野内接管方向键 */
+      if (e.key === 'ArrowRight') { stop(); go(idx + 1); }
+      else if (e.key === 'ArrowLeft') { stop(); go(idx - 1); }
+    });
+
+    /* 宽度自适应（v3 2026-10-21 用户裁定"窗口太大"）：代码窗宽度=实际最宽代码行
+     * （ln/fn）的渲染宽度；prose 行与文字段落不驱动宽度。整台 .stepper 随之紧致，
+     * 上限仍 96vw/1720px（超宽代码回落横向滚动），窄窗堆叠布局下不启用。 */
+    function fitWidth() {
+      if (innerWidth <= 1100) {
+        root.style.width = ''; gridBox.style.gridTemplateColumns = ''; codeBox.style.width = '';
+        return;
+      }
+      var maxW = 0;
+      Array.prototype.forEach.call(root.querySelectorAll('.st-crow.ln, .st-crow.fn'), function (el) {
+        var cs = getComputedStyle(el), cw = 0;
+        var code = el.querySelector('code');
+        if (code) cw = Math.max(cw, code.getBoundingClientRect().width);
+        var file = el.querySelector('.st-file');
+        if (file) { /* 徽标是 block（填满行宽），量文字须用 Range */
+          var rg = document.createRange();
+          rg.selectNodeContents(file);
+          var fr = rg.getBoundingClientRect();
+          if (fr.width) cw = Math.max(cw, fr.width);
+        }
+        var rowW = cw + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0) + 2;
+        if (rowW > maxW) maxW = rowW;
+      });
+      if (!maxW) return;
+      var csR = getComputedStyle(root);
+      var chrome = (parseFloat(csR.paddingLeft) || 0) + (parseFloat(csR.paddingRight) || 0) + 2; /* 容器内边距+边框 */
+      var gap = parseFloat(getComputedStyle(gridBox).columnGap) || 14;
+      var cap = Math.min(document.documentElement.clientWidth * 0.96, 1720);
+      /* 2026-10-30 用户裁定（反馈轮②）：data-world-w=N 时世界面板目标宽 N px（动画侧优先）——
+       * 代码列在 cap 内让位（下限 400，超出回落横向滚动），世界列富余视口可到 900。缺省 0=旧路径。 */
+      var WT = parseFloat(root.getAttribute('data-world-w')) || 0;
+      if (WT > 0) {
+        var avail2 = cap - chrome - gap;
+        var codeW2 = Math.min(Math.ceil(maxW) + 18, Math.max(400, avail2 - WT));
+        var worldW2 = Math.min(Math.max(avail2 - codeW2, 300), 900);
+        codeBox.style.width = codeW2 + 'px';
+        gridBox.style.gridTemplateColumns = codeW2 + 'px minmax(300px, 1fr)';
+        root.style.width = Math.min(codeW2 + worldW2 + gap + chrome, cap) + 'px';
+        return;
+      }
+      var worldW = worldBox.getBoundingClientRect().width || 400;
+      var codeW = Math.min(Math.ceil(maxW) + 18, cap - chrome - gap - 320); /* 18=滚动条与舍入余量 */
+      if (codeW < 320) codeW = 320;
+      codeBox.style.width = codeW + 'px';
+      gridBox.style.gridTemplateColumns = codeW + 'px minmax(300px, 1fr)';
+      var total = codeW + worldW + gap + chrome;
+      root.style.width = Math.max(Math.min(total, cap), Math.min(720, cap)) + 'px';
+    }
+    var fitTimer = null;
+    window.addEventListener('resize', function () {
+      if (fitTimer) clearTimeout(fitTimer);
+      fitTimer = setTimeout(fitWidth, 150);
+    });
+
+    go(0, true);
+    fitWidth();
+  }
+
+  document.querySelectorAll('.stepper').forEach(function (el) {
+    try { el.classList.add('js'); initStepper(el); }
+    catch (e) { /* 静态内容保留，组件自身错误不白屏 */ }
+  });
+})();
+
+const AZIMUTH = 45;
 const ELEVATION = 30;
 const SHADES = 4;
 const RADIANS = Math.PI / 180;
@@ -834,7 +1626,7 @@ function groupSvg(children, extra = {}) {
 }
 function figureSvg({ width, height, label, body, standalone = false, className }) {
     const style = standalone ? `<style>${ISO_CSS}</style>` : "";
-    return `<svg${attrs({
+    return `\x3csvg${attrs({
         xmlns: "http://www.w3.org/2000/svg",
         class: `iso-svg${standalone ? " iso" : ""}${className ? ` ${className}` : ""}`,
         "data-theme": standalone || undefined,

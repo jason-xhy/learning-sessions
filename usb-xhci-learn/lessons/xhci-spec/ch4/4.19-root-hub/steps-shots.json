@@ -1,0 +1,16 @@
+[
+  ["until", "() => !!window.__fig419", 8000],
+  ["scroll", ".fig-wrap .iso-stage"],
+  ["eval", "(window.__fig419.pause(), 'paused')"],
+  ["wait", 1500],
+  ["eval", "(window.__fig419.playTo(1), 'F1')"], ["wait", 7000], ["shot", "shots/frame-01-attach.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(2), 'F2')"], ["wait", 6400], ["shot", "shots/frame-02-readclear.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(3), 'F3')"], ["wait", 9000], ["shot", "shots/frame-03-reset.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(4), 'F4')"], ["wait", 6000], ["shot", "shots/frame-04-usb3.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(5), 'F5')"], ["wait", 7200], ["shot", "shots/frame-05-suspend.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(6), 'F6')"], ["wait", 7200], ["shot", "shots/frame-06-wake.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(7), 'F7')"], ["wait", 7800], ["shot", "shots/frame-07-detach.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(8), 'F8')"], ["wait", 9000], ["shot", "shots/frame-08-overcurrent.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(9), 'F9')"], ["wait", 5800], ["shot", "shots/frame-09-bits.png", ".fig-wrap .iso-plate", 2],
+  ["eval", "(window.__fig419.playTo(10), 'F10')"], ["wait", 4600], ["shot", "shots/frame-10-tour.png", ".fig-wrap .iso-plate", 2]
+]

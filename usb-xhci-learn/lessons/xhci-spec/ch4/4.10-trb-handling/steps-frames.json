@@ -1,0 +1,10 @@
+[
+  ["wait", 1200],
+  ["eval", "window.__fig42.playTo(3); 'ok'"],
+  ["wait", 5800],
+  ["shot", "shots/frame4-stamp-dark.png", ".fig-wrap .iso-plate", 1],
+  ["eval", "window.__fig42.playTo(7); 'ok'"],
+  ["wait", 6900],
+  ["shot", "shots/frame8-halt-dark.png", ".fig-wrap .iso-plate", 1],
+  ["eval", "window.__fig42.stateOf()"]
+]

@@ -80,3 +80,68 @@
 - §4.11.4 命令逐条语义（每条命令干什么）不在本节展开——归 §4.6 命令接口节（并行施工中）；本节总表只列名册+页码。
 - 中途语言门咬词 7 处（钥匙×2/实收×3/提单×2），当轮改写——见门输出 2。
 - 390px 下表格卡内文字最小 13px（td.mono）且需卡内横滚——表格节窄幅形态如实登记，未做响应式重排（4.9 同口径）。
+
+---
+
+# 2026-11-05 自含化改造：原生小件「TRB 装配卡座」（arf411）+ 正文三处外借改板块内自含
+
+板块自含化（SELFCONTAIN-PLAN §二：互链卡已停渲染）后，本节原「机制课 0006 先认零件／互链卡 Fig1 装配几何」两处外借讲解改由节内原生 anatomy 小件承担：构建期补丁把 `<style>+<div>+<script>` 三件套注入 tablePage 产物（照 NARROW_CSS 先例形态，_gen/ 未动）。id/class 全部收敛 `arf411-` 前缀；inline-kit 用 anatomy skill `scripts/inline-kit.mjs` 的 `kitScript()` 内联（34KB，file:// 可开、零 import）。
+
+## 帧清单（4 帧，步进/回退 + ←/→ + reduced-motion 静止）
+
+| 帧 | 画面 | narr 要义 | pg 角标 |
+|---|---|---|---|
+| F1 模板四字 | 主卡从卡槽立起：DW0–DW3 四行卡＋行标（Parameter/Status/Control）＋DW3 位号标尺（bit0 在右）＋空位槽丝印 | 16 字节四双字＝三组件；模板印死 Cycle=bit0、TRB Type=bits10-15（+ENT bit1/ISP bit2） | p188 · Figure 4-13（Cycle=bit0 见 p189） |
+| F2 字段落位 | 11 颗字段芯片按「先 Parameter→Status→Control」顺序滑入位槽（p189 Note 写序纪律）；TRB Type 芯片点亮为 F2 主体 | C=bit0/CH=bit4/IOC=bit5/IDT=bit6/BEI=bit9/TRB Type=bits10-15；Length=bits16:0/TD Size=21:17/Int Target=31:22；指针 64 位占 DW0+DW1 | p427-429 · Figure 6-8 / Table 6-20~6-22 |
+| F3 拼装 TD | 三颗小卡上导轨：前两颗 CH=1 链夹相连、末颗 CH=0+IOC 旗升起、事件灯亮 | TD＝1 颗以上 TRB；Chain 置于除末颗外全部；末颗 IOC=1 完成生成 Transfer Event 回执 | p211 · §4.11.7 |
+| F4 入环视角 | TD token 鱼贯进环段托盘槽序列；段尾 LINK token＋回绕线指回段首（0 号槽头） | 段尾必是 Link TRB，Ring Segment Pointer 指回段首/下一段；Toggle Cycle 至少一颗置起；环机制详见 §4.9（板块内导航） | p206-207 · §4.11.5.1 |
+
+## 真值表（卡座读数 ↔ 规范条文，位号全部现场核自 /tmp/spec-audit-txt/xhci-1.2b.txt）
+
+| 卡座读数 | 规范条文（页码机核 needle 见门输出 1） |
+|---|---|
+| 四字布局：Parameter=03-00H+07-04H（DW0+DW1）、Status=0B-08H（DW2）、Control=0F-0CH（DW3） | Figure 4-13 §4.11.1 p188（三组件句＝本节引文②） |
+| Cycle bit＝Control bit0（卡面标尺 0 位） | §4.11.1.1 p189「Cycle bit shall always reside in bit 0 of the Control component」 |
+| TRB Type＝Control bits 10-15 | §4.11.1.1 p188「TRB Type field shall always reside in bits 10-15 of the Control component」 |
+| ENT=bit1、ISP=bit2（模板丝印） | Figure 4-13 位号行 p188 + Table 6-22 p428 |
+| CH=bit4、IOC=bit5、IDT=bit6、BEI=bit9、NS=bit3、RsvdZ=8:7 与 31:16 | Table 6-22（Offset 0Ch）p428-429 |
+| TRB Transfer Length=bits16:0、TD Size=bits21:17、Interrupter Target=bits31:22 | Table 6-21（Offset 08h）p427-428 |
+| Data Buffer Pointer 64 位占 DW0+DW1（Lo=31:0/Hi=63:32） | Table 6-20（Offset 00h/04h）p427「bits 63:0」 |
+| 芯片落位顺序＝先 Parameter/Status 后 Control | p189 Note（非原子写序纪律，prose 第 3 段同源） |
+| TD＝1+ TRB、Chain 除末颗全置 1、末颗 IOC 生成事件 | §4.11.7 p211（本节引文⑥）+ p212 |
+| Link TRB 恒为段尾、指针回绕段首 | §4.11.5.1 p206；Toggle Cycle 至少一颗 p207 |
+
+## 正文改写三处（其余 cfg 逐字不动）
+
+1. prose[0] 尾句：原「归第 6 章 §6.4 与机制课 0006（先认零件：TRB、TD 与环的几何）」→「位级骨架本节自含：……见下方『TRB 装配卡座』的机器演示……取值表仍归第 6 章 §6.4」。
+2. prose[2] 尾句：原「（三环运转见互链卡的 4.9 节）」→「（TD 拼装与入环画面见本节装配卡座 F3/F4；三环指针细节见 §4.9）」+ 新增 F2 落位顺序＝p189 Note 写序半句。
+3. cards[2] 表尾注：原「图 4-16/4-17/4-18 的拼装几何未作画面，机器演示见互链卡 Fig1」→「图 4-16/4-17/4-18 的拼装几何见本节装配卡座 F3」（p212 排版伪影半句保留）。
+4. footLine 生成日期 2026-11-04→2026-11-05；头部注释同步。
+
+## 门输出（逐条实测，2026-11-05）
+
+1. 构建：`node build.mjs && node build.mjs --light` → `wrote index.html 162 KB | arf411 anchors ok (card x1, body x1, script 1/1)` ×2 主题。
+2. 页码机核：`python3 scripts/xhci_spec_pagecheck.py 188 "4.11 TRBs" 188 "TRB Template" 189 "Cycle bit shall always reside in bit 0" 427 "Data Buffer Pointer Hi and Lo" 428 "Chain bit (CH)" 429 "TRB Type. This shall be set to Normal TRB type" 429 "Immediate Data (IDT)" 211 "TRBs of a TD except the last" 206 "A Link TRB shall be the last TRB of each Transfer or Command Ring" 207 "Toggle Cycle flag should be set in at least one Link TRB"` → 末行 **PAGECHECK-PASS**（needle `Chain flag is set in all the TRBs of a TD except the last` 首轮因 PDF 断行 all↵the MISS，换断行后短 needle 通过——与本文件 2026-11-04 段教训同型）。
+3. 语言门：`scan_words.py retired index.html / index-light.html` → `total=5 {'回执': 5}` ×2 ⊆ 豁免表，**PASS**。
+4. console 清点（锚点安全实证）：playwright channel="chrome" 双主题加载＋四帧步进＋回退一支 → `console/pageerror total: 0` **ARF411-PROBE-PASS**（=验收门 4；锚点唯一性另由构建期断言机检：家族总表卡头 ×1、真 `</body>` lastIndexOf ×1、注入体零未转义 `</script>`）。
+5. anatomy 线端检查（skill 自带）：`node …/scripts/lines.mjs index.html / index-light.html` → `line ends: 0 of 254 ends on 50 lines float` ×2（3 轮收敛：卡槽缝贴块缘 0.4 / 托盘槽位改闭合槽形 / 小卡行线延到卡缘）。
+6. 文本几何审计（自建探针，同变换组内平面坐标两两比＋出界查，四帧全测）→ **TEXT-AUDIT-PASS**（曾抓出组内文本双重变换真 bug，见坑 3）。
+7. 遮挡：官方 `xhci_spec_occlusion_probe.py` 对本页输出 `PROBE-FAIL: 无机器驱动接口（__fig49/__fig412/__fig42/__fig43 均不在场）` + 空转 `OCCLUSION-PASS`（候选驱动表硬编码、scripts/ 禁改——如实记录，不算逐帧实证）；等价审计（照抄该脚本 EXTRACT_JS/rect_overlap/0.15 阈值/画家序判据，按钮驱动四帧＋滚动入场）→ **OCCLUSION-PASS**（0 findings；首轮 17 条，逐类归因修复后归零，见坑 4）。
+8. 自包含：`grep -c 'http://\|https://'` → index.html=2、index-light.html=2，命中均 `http://www.w3.org/2000/svg`（figureSvg xmlns + kit 内联 pageHtml 模板串字面量）——**≤2 且全为 xmlns PASS**（2026-11-04 段的 0 已被本件 SVG 顶替，口径更新）。
+9. 互链存在性：`check_lesson_links.py lessons/xhci-spec/ch4/4.11-trbs` → `VERDICT: ok=2 missing=0 outside=2 -> PASS`。
+
+## shots 增量（playwright chrome，本轮新增 6 张）
+
+- shots/arf411-dark-full.png / arf411-light-full.png —— 全页全景（full_page，双主题）
+- shots/arf411-390-dark.png —— 390px 窄幅全景
+- shots/arf411-reduced-dark.png —— prefers-reduced-motion 下卡座区（四帧内容全在、无动画）
+- shots/arf411-closeup-dark.png / arf411-closeup-light.png —— 卡座特写（F3 态，deviceScaleFactor=2）
+
+## 坑实录（2026-11-05）
+
+1. **kitScript() 源含字面 `</script>` / `<script>`**（inline-kit 输出的 kit 源里 pageHtml 模板串原样带标签）：裸拼 `<script>` 会提前终止解析。pageHtml 内部本有 `</script → <\/` 转义，照抄该转义；同时构建期机检改为真不变量——注入前基线（真 `</body>`/`</html>` 各恰 1、零 `<script>`）＋注入体零未转义闭标签＋注入后真闭合居页尾。教训：给 tablePage 产物外挂 script 时，开标签计数会被源内字面量污染，闭标签转义+基线断言才是可机检的不变量。
+2. **roundedPlan 缺 r 字段＝NaN 路径**：TRAY 平面少 `r`，`Math.min(undefined,…)=NaN` 产出 `MNaN NaN…`（console error 2 条/页）。教训：kit 的 plan 对象 r 必填，构建后 grep NaN 应入自检。
+3. **plane 组内文本双重变换**：卡面文本各自带整面 sideMatrix 又嵌在 `<g transform=plane>` 内→变换复合两遍，文字飞出画布（路径全对、只有文字漂移；自建文本审计以屏幕坐标抓出）。组内文本改平面坐标 `translate(x,-z)`，组外铭牌才用全矩阵。教训：sideMatrix 惯用法（desk-computer 的 planeOf）是给「组」的，元素级锚点文本不能与其叠用。
+4. **遮挡探针两类结构性假阳**：①探针只看元素自身 computed opacity，组级 opacity:0 的隐藏芯片仍算可见形状→隐藏态改用 `visibility:hidden`（可继承，探针 vis() 能看到）；②剪切平面里宽元素（87 世界单位宽的指针芯片）的屏幕 AABB 覆盖整片卡面，排在窄文本之后即误判遮挡→卡面发射序重排为「底槽几何→芯片实体→全部文本」，且芯片 body 路径独立携带 data-enter/--arf-d 先发（同款隐藏变换，与组同步滑动）；③铭牌从卡槽正面迁到底板左前角（主卡面大 AABB 假阳）。归零后官方判据复跑 OCCLUSION-PASS。
+5. **官方遮挡探针无驱动接口即空转 PASS**：本件无 `__figNN` API、候选表硬编码、scripts/ 禁改——空转 PASS 不算实证，已按同判据自建等价审计补上（坑 4 的修复即由它驱动）。教训：借官方探针先读源码确认驱动面，无驱动面时等价复刻判据并如实记录差异。
+6. **视觉模型 QC 通道不可用**（analyze_image 对签名 CDN URL 报错/限流、Read 不内联渲染）：本轮质量核验全部程序化（console=0／线端 0／文本平面+屏幕双坐标审计／遮挡 0／布局分区包围盒／帧可见性），未做模型看图复核——如实记录为已知边界。

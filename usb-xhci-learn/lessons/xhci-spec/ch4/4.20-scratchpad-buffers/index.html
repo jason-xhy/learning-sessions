@@ -289,9 +289,6 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 <p class="xsp-narr" data-status aria-live="polite">总览模式：完整流程图。设备泳道不参与——scratchpad 是 xHC 的私有内存。</p><div class="xsp-legend">
 <span><i style="background:var(--xsp-sw)"></i>xHCI 驱动</span><span><i style="background:var(--xsp-hc)"></i>xHC 控制器</span><span><i style="background:var(--xsp-dev)"></i>设备（不参与）</span><span>实线=内存/寄存器写 · 本图无事件流</span>
 </div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进</span></div></div><figcaption class="iso-legend"><span class="iso-caption">页数由 HCSPARAMS2 声明、数组挂 DCBAA 槽 0、逐页清 0 装指针；R/S=1 前必须全部就位。</span></figcaption></figure>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.2-host-controller-init/index.html">§4.2 主机控制器初始化</a>——R/S=1 终点线与 DCBAA 装载（scratchpad 数组走 DCBAA 槽 0，与 §4.2 的 DCBAAP 步同域）。</p>
-<p><a href="../4.3-usb-device-init/index.html">§4.3 USB 设备初始化</a>——DCBAA 设备槽表项（槽 1 起）的装载；<a href="../../index.html">§4.23 电源管理（待建）</a>——SPR/D3.cold 的功耗域。</p></div>
 <p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.20 p304–306 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><script type="module">const AZIMUTH = 45;
 const ELEVATION = 30;
 const SHADES = 4;
@@ -824,7 +821,7 @@ function groupSvg(children, extra = {}) {
 }
 function figureSvg({ width, height, label, body, standalone = false, className }) {
     const style = standalone ? `<style>${ISO_CSS}</style>` : "";
-    return `<svg${attrs({
+    return `\x3csvg${attrs({
         xmlns: "http://www.w3.org/2000/svg",
         class: `iso-svg${standalone ? " iso" : ""}${className ? ` ${className}` : ""}`,
         "data-theme": standalone || undefined,

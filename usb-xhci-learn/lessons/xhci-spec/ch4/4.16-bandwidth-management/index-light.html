@@ -295,9 +295,6 @@ body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px
 <p class="xsp-narr" data-status aria-live="polite">总览模式：完整流程图。设备泳道在重新配置时才被波及——带宽评估本身对设备不可见。</p><div class="xsp-legend">
 <span><i style="background:var(--xsp-sw)"></i>xHCI 驱动</span><span><i style="background:var(--xsp-hc)"></i>xHC 控制器</span><span><i style="background:var(--xsp-dev)"></i>设备（仅被重新配置）</span><span>实线=命令流 · 虚线=事件流</span>
 </div><div class="iso-zoombar" role="toolbar" aria-label="画面缩放与全屏"><button type="button" data-zoom="1" aria-pressed="true">1×</button><button type="button" data-zoom="1.6" aria-pressed="false">1.6×</button><button type="button" data-zoom="2.4" aria-pressed="false">2.4×</button><button type="button" data-zoom="3.2" aria-pressed="false">3.2×</button><button type="button" data-fs aria-pressed="false">⛶ 全屏</button><span class="iso-zoomhint">放大看框内文字 / 全屏后滚轮上下看 · 键盘 + − 0 F 缩放全屏 · 空格步进</span></div></div><figcaption class="iso-legend"><span class="iso-caption">Configure Endpoint 问一句、xHC 按实例评估；失败后 Negotiate Bandwidth 广撒请求，让带宽全凭自愿。</span></figcaption></figure>
-<div class="xsp-card"><h2>相关</h2>
-<p><a href="../4.1-command-operation/index.html">§4.1 命令操作</a>——两条命令的投递与回执模型；<a href="../4.4-device-detach/index.html">§4.4 设备拔出</a>——Disable Slot 释放带宽的回收项。</p>
-<p><a href="../../index.html">§4.6.6 Configure Endpoint / §4.6.13 Negotiate Bandwidth（待建）</a>——逐命令展开；<a href="../../index.html">§4.5.4.3 SET_INTERFACE（待建）</a>——备选接口切换。</p></div>
 <p class="xsp-foot">判据：xHCI 1.2b（625472 Rev 1.2b）§4.16 p258–261 · 引文逐字核对，证据见 <a href="EVIDENCE.md">EVIDENCE.md</a> · 生成于 2026-11-04</p></main><script type="module">const AZIMUTH = 45;
 const ELEVATION = 30;
 const SHADES = 4;
@@ -830,7 +827,7 @@ function groupSvg(children, extra = {}) {
 }
 function figureSvg({ width, height, label, body, standalone = false, className }) {
     const style = standalone ? `<style>${ISO_CSS}</style>` : "";
-    return `<svg${attrs({
+    return `\x3csvg${attrs({
         xmlns: "http://www.w3.org/2000/svg",
         class: `iso-svg${standalone ? " iso" : ""}${className ? ` ${className}` : ""}`,
         "data-theme": standalone || undefined,
