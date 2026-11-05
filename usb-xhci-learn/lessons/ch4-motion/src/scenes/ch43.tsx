@@ -166,6 +166,7 @@ export default makeScene2D(function* (view) {
   yield* stage.say(
     '示例：全速（FS）设备插入 USB2 根端口 1——这条分支步骤最全。设备此刻只感到上电（Powered）。',
   );
+  yield* waitFor(8.0); // pace R3: 拍#2 1.1s→9.1s（阈值9.0）
 
   /* ===== B0 前提与分叉 ===== */
   const fork = makeNote(
@@ -208,6 +209,7 @@ export default makeScene2D(function* (view) {
   yield* evt.deqTo(0);
   yield* evt.consume(0);
   yield* evt.deqTo(1);
+  yield* waitFor(5.9); // pace R3: 拍#4 2.6s→8.5s（阈值8.4）
 
   /* ===== B2 查端口 ===== */
   const rdArrow = makeArrow(
@@ -219,6 +221,7 @@ export default makeScene2D(function* (view) {
   yield* rdArrow().opacity(0.85, 0.3);
   yield* stage.say('B2 驱动读 PORTSC：CSC=1——连接事件。USB2 端口要软件发起端口复位（p71–72）。', 'B2 / 11');
   yield* all(psc[3].on(C.warn), psc[3].set('1'));
+  yield* waitFor(6.7); // pace R3: 拍#5 0.9s→7.6s（阈值7.5）
   yield* stage.say('写 PORTSC.PR=1，发起端口复位（§4.3.1 p75 步1）。', 'B2 / 11');
   yield* waitFor(6.0);
 
@@ -233,6 +236,7 @@ export default makeScene2D(function* (view) {
   );
   yield* devState().fill(C.dev, 0.2);
   devState().text('Default');
+  yield* waitFor(8.2); // pace R3: 拍#7 0.9s→9.1s（阈值9.0）
   yield* stage.say('复位把设备送入 Default 态——备好收 SET_ADDRESS（p72）。', 'B3 / 11');
   yield* waitFor(7.1);
   yield* rdArrow().opacity(0, 0.2);
@@ -265,6 +269,7 @@ export default makeScene2D(function* (view) {
   yield* evt.fill(1, 'CCE', C.evt);
   yield* evt.enqTo(2);
   yield* cardIn(slotEvt, new Vector2(TLx(1600), TLy(570)));
+  yield* waitFor(2.7); // pace R3: 拍#9 4.0s→6.7s（阈值6.6）
   yield* stage.say(
     '完成事件带回 Slot ID=1——由 xHC 自选（§4.3.2 p75）。设备槽进入 Enabled。',
     'B4 / 11',
@@ -276,6 +281,7 @@ export default makeScene2D(function* (view) {
   yield* evt.deqTo(1);
   yield* evt.consume(1);
   yield* evt.deqTo(2);
+  yield* waitFor(4.1); // pace R3: 拍#10 2.8s→6.9s（阈值6.8）
 
   /* ===== B5 槽初始化 ===== */
   const ic = makeCard({
@@ -338,6 +344,7 @@ export default makeScene2D(function* (view) {
   yield* cmd.deqTo(1);
   yield* cmd.consume(1);
   yield* cmd.deqTo(2);
+  yield* waitFor(2.5); // pace R3: 拍#12 3.1s→5.6s（阈值5.5）
   yield* stage.say(
     'xHC 执行：在总线上代发 SET_ADDRESS（地址 1）——设备第一次收到 USB 请求，发请求的是 xHC，不是驱动。',
     'B6 / 11',
@@ -351,6 +358,7 @@ export default makeScene2D(function* (view) {
   yield* panel.highlight(11);
   yield* evt.fill(2, 'CCE', C.evt);
   yield* evt.enqTo(3);
+  yield* waitFor(6.3); // pace R3: 拍#13 3.2s→9.5s（阈值9.4）
   yield* stage.say(
     '设备 Default→Address，槽 Enabled→Addressed（BSR=0 成功路径，p76–77）。',
     'B6 / 11',
@@ -415,6 +423,7 @@ export default makeScene2D(function* (view) {
   }
   yield* bell.ring('1');
   yield* panel.highlight(8);
+  yield* waitFor(2.0); // pace R3: 拍#15 7.6s→9.6s（阈值9.5）
   yield* stage.say(
     '三段式控制传输上 EP0 环，敲门铃 DB Target=1——EP0 入环指针更新（p73–74）。',
     'B7 / 11',
@@ -426,6 +435,7 @@ export default makeScene2D(function* (view) {
   yield* ep0.deqTo(1);
   yield* evt.fill(3, 'XferEvt', C.evt);
   yield* evt.enqTo(4);
+  yield* waitFor(2.6); // pace R3: 拍#16 4.7s→7.3s（阈值7.2）
   yield* stage.say(
     'Status 段的 Transfer Event 回来，带回 bMaxPacketSize0=8（p74）。',
     'B7 / 11',
@@ -433,6 +443,7 @@ export default makeScene2D(function* (view) {
   yield* evt.deqTo(3);
   yield* evt.consume(3);
   yield* evt.deqTo(4);
+  yield* waitFor(4.2); // pace R3: 拍#17 2.2s→6.4s（阈值6.3）
 
   /* ===== B8 更新上下文 ===== */
   const cmd3 = makeCard({
@@ -460,6 +471,7 @@ export default makeScene2D(function* (view) {
   yield* evt.deqTo(4);
   yield* evt.consume(4);
   yield* evt.deqTo(5);
+  yield* waitFor(0.8); // pace R3: 拍#18 7.6s→8.4s（阈值8.3）
 
   /* ===== B9 读档案 ===== */
   const docs = makeCard({
@@ -527,6 +539,7 @@ export default makeScene2D(function* (view) {
   yield* slot.ref().opacity(0, 0.15);
   slot.row(0)().text('Configured');
   yield* slot.ref().opacity(1, 0.2);
+  yield* waitFor(3.5); // pace R3: 拍#20 5.0s→8.5s（阈值8.4）
   yield* stage.say(
     '双绿：设备 Address→Configured、槽 Addressed→Configured（§4.3.5 p77–78）。',
     'B10 / 11',
@@ -534,6 +547,7 @@ export default makeScene2D(function* (view) {
   yield* all(cfg1.ref().opacity(0, 0.3), cfg2.ref().opacity(0, 0.3), rule().opacity(0, 0.3));
   cfg1.ref().remove();
   cfg2.ref().remove();
+  yield* waitFor(6.0); // pace R3: 拍#21 1.0s→7.0s（阈值6.9）
 
   /* ===== B11 完工 ===== */
   yield* stage.say(
@@ -541,6 +555,7 @@ export default makeScene2D(function* (view) {
     'B11 / 11',
   );
   yield* flash(ep0.group, 2);
+  yield* waitFor(5.7); // pace R3: 拍#22 1.5s→7.2s（阈值7.1）
 
   /* ===== 收束：设备视角（outro 清场后总结卡进设备泳道） ===== */
   const sum = makeCard({
@@ -577,7 +592,7 @@ export default makeScene2D(function* (view) {
   );
   yield* panel.ref().opacity(0, 0.3);
   yield* hubNote().opacity(0.85, 0.3);
-  yield* waitFor(7.8);
+  yield* waitFor(8.9); // pace R3: 拍#23 10.1s→11.2s（阈值11.2，7.8→8.9）
   yield* all(
     hubNote().opacity(0, 0.3),
     sum.ref().opacity(0, 0.5),

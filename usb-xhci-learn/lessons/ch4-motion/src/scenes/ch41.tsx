@@ -136,6 +136,7 @@ export default makeScene2D(function* (view) {
   );
   cmd.markLink();
   evt.markLink();
+  yield* waitFor(8.0); // pace R3: 拍#2 2.1s→10.1s（阈值10.0）
 
   /* 断言一：唯一命令环 */
   const q1 = makeChip(
@@ -247,6 +248,7 @@ export default makeScene2D(function* (view) {
     yield* execDot().fill(C.faint, 0.18);
   }
   execDot().fill(C.ok);
+  yield* waitFor(5.5); // pace R3: 拍#7 3.0s→8.5s（阈值8.4）
 
   /* ===== ⑤ 完成事件上事件环 ===== */
   const evtCard = makeCard({
@@ -321,6 +323,7 @@ export default makeScene2D(function* (view) {
   yield* waitFor(12.6);
 
   yield* stage.say('命令模型三步走完：上环 → 敲门铃 → 等完成事件。');
+  yield* waitFor(4.1); // pace R3: 拍#11 0.7s→4.8s（阈值4.7）
 
   /* ===== 快放回放 ===== */
   yield* stage.say('快放回放一遍完整闭环。', '回放');
@@ -348,6 +351,7 @@ export default makeScene2D(function* (view) {
   // 回放段 exec 挪右下空袋（原位 1600,545 已被 ⑦ 收执卡 recv 长驻占用）
   exec().position(new Vector2(TLx(1750), TLy(640)));
   yield* exec().opacity(1, 0.25);
+  yield* waitFor(2.2); // pace R3: 拍#12 0.9s→3.1s（阈值3.0）
   for (let i = 0; i < cap.length; i++) {
     stage.caption().text(cap[i]);
     stage.step().text(`回放 ${i + 1}/7`);

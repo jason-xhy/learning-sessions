@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <title>xhci-ch4 分帧播放器</title>
+    <style>
+      /* 主题令牌回退值，与 src/lib/theme.ts 保持一致；运行时 player.ts 会用 theme 令牌覆写（单一事实源） */
+      :root {
+        --bg: #0b0f15;
+        --panel: #111823;
+        --panel-hi: #18222f;
+        --edge: #2a3849;
+        --edge-hi: #3b4d63;
+        --ink: #eaf1f8;
+        --dim: #9db0c4;
+        --faint: #5f7186;
+        --driver: #7c9ff0;
+        --hc: #d9a860;
+        --dev: #86bd7a;
+        --evt: #7fd0b2;
+        --chip: #0e141d;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; padding: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+      }
+      #app { display: flex; flex-direction: column; height: 100vh; }
+      header {
+        display: flex; align-items: baseline; gap: 16px;
+        padding: 10px 20px 6px;
+        border-bottom: 1px solid var(--edge);
+        background: var(--panel);
+      }
+      #title { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
+      #scene-name { font-size: 13px; color: var(--hc); font-family: Menlo, "SF Mono", monospace; }
+      #holder {
+        flex: 1; min-height: 0;
+        display: flex; justify-content: center; align-items: center;
+        padding: 8px 16px;
+      }
+      #holder canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; }
+      #controls {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 20px 14px;
+        background: var(--panel);
+        border-top: 1px solid var(--edge);
+      }
+      button {
+        background: var(--panel-hi);
+        color: var(--ink);
+        border: 1px solid var(--edge-hi);
+        border-radius: 6px;
+        padding: 7px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      button:hover:not(:disabled) { border-color: var(--driver); color: var(--driver); }
+      button:disabled { opacity: 0.4; cursor: default; }
+      button.primary { border-color: var(--driver); color: var(--driver); min-width: 76px; }
+      #seek { flex: 1; accent-color: var(--driver); cursor: pointer; }
+      #frame-label {
+        font-family: Menlo, "SF Mono", monospace;
+        font-size: 14px;
+        color: var(--dim);
+        white-space: nowrap;
+      }
+      #frame-label .cur { color: var(--ink); font-weight: 600; }
+      #status {
+        position: fixed; left: 8px; bottom: 8px;
+        font: 12px Menlo, "SF Mono", monospace;
+        color: var(--faint);
+        pointer-events: none;
+      }
+      #missing {
+        position: absolute; left: 50%; top: 46%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: var(--dim);
+        background: var(--panel);
+        border: 1px solid var(--edge);
+        border-radius: 10px;
+        padding: 28px 44px;
+      }
+      #missing .big { font-size: 20px; color: var(--hc); margin-bottom: 8px; }
+      #missing .hint { font-size: 13px; color: var(--faint); font-family: Menlo, "SF Mono", monospace; }
+    </style>
+    <script type="module" crossorigin src="../player-092c744c.js"></script>
+    <link rel="modulepreload" crossorigin href="../theme-10e9e35b.js">
+    <link rel="modulepreload" crossorigin href="../getContext-9041dc5c.js">
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div id="title">xHCI 规范第4章 · 分帧播放器</div>
+        <div id="scene-name" data-field="scene-name">…</div>
+      </header>
+      <div id="holder"></div>
+      <div id="missing" data-field="missing" hidden>
+        <div class="big">场景开发中</div>
+        <div class="hint" data-field="missing-hint"></div>
+      </div>
+      <div id="controls">
+        <button id="btn-prev" data-act="prev" title="上一帧（←）" disabled>上一帧</button>
+        <button id="btn-play" data-act="play" class="primary" title="播放 / 暂停（空格）" disabled>播放</button>
+        <button id="btn-next" data-act="next" title="下一帧（→）" disabled>下一帧</button>
+        <input id="seek" data-act="seek" type="range" min="0" max="0" step="1" value="0" disabled />
+        <div id="frame-label">frame <span class="cur" data-field="frame">0</span> / <span data-field="total">0</span></div>
+      </div>
+    </div>
+    <div id="status" data-field="status">booting…</div>
+    
+  </body>
+</html>

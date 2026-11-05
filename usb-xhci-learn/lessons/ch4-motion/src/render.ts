@@ -16,6 +16,10 @@ import {Txt, Rect, Line, Circle, Node as N2} from '@motion-canvas/2d';
 import ch41 from './scenes/ch41?scene';
 import ch42 from './scenes/ch42?scene';
 import ch43 from './scenes/ch43?scene';
+// R3 P4：补丁分帧场景接入探针链（TrackA；纯追加，供 render.html?scene=3/4/5 与 P6 全门 probe）
+import ch41p from './scenes/ch41p?scene';
+import ch42p from './scenes/ch42p?scene';
+import ch43p from './scenes/ch43p?scene';
 
 /* ---------- 全帧重叠探针 ---------- */
 function worldPos(n: any): {x: number; y: number} {
@@ -174,7 +178,7 @@ function probeFrame(root: any, frame: number): any[] {
   });
 }
 
-const scenes = [ch41, ch42, ch43];
+const scenes = [ch41, ch42, ch43, ch41p, ch42p, ch43p];
 
 const q = new URLSearchParams(location.search);
 const sceneIdx = Math.max(0, Math.min(scenes.length - 1, Number(q.get('scene') ?? 0)));

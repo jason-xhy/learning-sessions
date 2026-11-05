@@ -1,0 +1,597 @@
+{
+  "_schema": "code-quiz v1 —— 交互模块三·代码解读题库（R3-SPEC 面4）。base_commit=内核摘录基线，与 drafts/code-excerpts.json 同源同 commit。sections[]: key=小节键（cmd/init/dev），num/title=展示用，excerpt_ref=code-excerpts.json 组名，items[]=题：idx=组内摘录下标（0 基，高亮该行）；line/file/func=摘录冗余字段（展示与核对）；type=choice|blank；prompt=题干；choice 题 options=4 选项、answer=正确选项下标；blank 题 accept=可接受答案（trim 后大小写不敏感全等）、code_blank=该行代码挖空展示态；explain=一句解析；spec={file,quote,page}=规范锚点——quote 为 evidence/spec-4x.txt 的逐字切片（builder 断言 in 原文），page 为切片所在规范页码（由页标推算并断言）。出题原则：考机制映射（规范条目/寄存器/字段/TRB 类型），不考语法；干扰项=机制上似是而非的表述。",
+  "base_commit": "d9008e061539",
+  "sections": [
+    {
+      "key": "cmd",
+      "num": "4.1",
+      "title": "命令操作 · 三拍闭环（上环→门铃→完成事件）",
+      "excerpt_ref": "cmd",
+      "items": [
+        {
+          "idx": 0,
+          "line": 4354,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "queue_command",
+          "type": "choice",
+          "prompt": "「queue_command」这行函数签名，在命令机制里的定位是？",
+          "explain": "所有命令统一走 queue_command 入命令环（§4.1 p68：All xHC commands are issued by placing…on the Command Ring）；B 混淆了传输环组装（xhci_queue_ctrl_tx），C 是 handle_cmd_completion，D 是 xhci_ring_cmd_db。",
+          "spec": {
+            "file": "spec-41.txt",
+            "quote": "There is only one Command Ring that is used for issuing xHC specific \ncommands or commands related to Device Slots.",
+            "page": 68
+          },
+          "options": [
+            "所有 xHC 命令（编址/配置端点等）入命令环的统一入口——命令 TRB 只上命令环这一条环",
+            "控制传输专用入口——只有 EP0 的 Setup/Data/Status TD 从这里组装",
+            "完成事件处理入口——xHC 把命令完成事件写上事件环后由它消费",
+            "门铃封装——把 DB Target=0 的写动作包成函数供各命令调用"
+          ],
+          "answer": 0
+        },
+        {
+          "idx": 1,
+          "line": 4377,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "queue_command",
+          "type": "choice",
+          "prompt": "入环前先调 prepare_ring（查 EP_STATE_RUNNING、为必须成功的命令预留 TRB）——它保证的是机制里的哪件事？",
+          "explain": "prepare_ring 是「腾位置」——环满或状态不对就拒绝入环；Cycle 翻转只发生在绕回 Link 时，completion 分配在更外层，DCBAAP 属初始化动作（§4.2 p69）。",
+          "spec": {
+            "file": "spec-41.txt",
+            "quote": "All xHC commands are issued by placing the desired Command TRB(s) (Section \n6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command \nDoorbell register, that is, writing the Host Controller Command code to the DB \nTarget field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).",
+            "page": 68
+          },
+          "options": [
+            "把命令 TRB 的 Cycle bit 翻转成 CCS",
+            "给命令分配 completion 等待队列",
+            "敲门铃前先把 DCBAAP 写好",
+            "命令 TRB 上环前确认环上有可写格（含预留位），不会覆盖还没被 xHC 取走的 TRB"
+          ],
+          "answer": 3
+        },
+        {
+          "idx": 3,
+          "line": 4397,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "queue_command",
+          "type": "choice",
+          "prompt": "queue_trb 把命令四个字段写进命令环 enqueue 指向的 TRB——对应规范哪句话？",
+          "explain": "写 TRB 入环=「placing」；敲门铃与 DB Target=0 是下一步 xhci_ring_cmd_db 的动作；完成事件是 xHC 侧的产出。",
+          "spec": {
+            "file": "spec-41.txt",
+            "quote": "All xHC commands are issued by placing the desired Command TRB(s) (Section \n6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command \nDoorbell register, that is, writing the Host Controller Command code to the DB \nTarget field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).",
+            "page": 68
+          },
+          "options": [
+            "generation of a Command Completion Event TRB on the Event Ring",
+            "writing the Host Controller Command code to the DB Target field",
+            "placing the desired Command TRB(s) on the Command Ring",
+            "ringing the xHC command Doorbell register"
+          ],
+          "answer": 2
+        },
+        {
+          "idx": 4,
+          "line": 438,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "xhci_ring_cmd_db",
+          "type": "choice",
+          "prompt": "writel(DB_VALUE_HOST, &xhci->dba->doorbell[0]) 敲的是哪个门铃、DB Target 是什么？",
+          "explain": "「writing the Host Controller Command code to the DB Target field of Doorbell register 0」（§4.1 p68）；设备槽门铃 DB Target=1 是 EP0 传输环用的（§4.3 p74 viii）；事件环由 xHC 写、驱动不敲。",
+          "spec": {
+            "file": "spec-41.txt",
+            "quote": "All xHC commands are issued by placing the desired Command TRB(s) (Section \n6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command \nDoorbell register, that is, writing the Host Controller Command code to the DB \nTarget field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).",
+            "page": 68
+          },
+          "options": [
+            "根集线器端口门铃，DB Target = 端口号",
+            "门铃寄存器 0，DB Target = Host Controller Command code——命令环专用",
+            "设备槽门铃，DB Target = Control EP 0 Enqueue Pointer Update",
+            "事件环门铃，DB Target = 中断器编号"
+          ],
+          "answer": 1
+        },
+        {
+          "idx": 5,
+          "line": 3013,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "xhci_handle_event_trb",
+          "type": "choice",
+          "prompt": "事件环读到哪类 TRB 会分派给 handle_cmd_completion？",
+          "explain": "「All commands result in the generation of a Command Completion Event TRB on the Event Ring」（§4.1 p68）；Transfer Event 是传输环产出（§4.3 p74 ix），端口事件走 §4.19.2。",
+          "spec": {
+            "file": "spec-41.txt",
+            "quote": "All commands result in the generation of a Command Completion Event TRB \n(Section 6.4.3 Command TRBs) on the Event Ring.",
+            "page": 68
+          },
+          "options": [
+            "Command Completion Event TRB（TRB_COMPLETION）",
+            "Transfer Event TRB",
+            "Port Status Change Event TRB",
+            "Doorbell Event TRB"
+          ],
+          "answer": 0
+        },
+        {
+          "idx": 9,
+          "line": 1718,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "xhci_complete_del_and_free_cmd",
+          "type": "choice",
+          "prompt": "xhci_complete_del_and_free_cmd 里的 complete(cmd->completion) 唤醒的是谁？",
+          "explain": "发令线程把 command->completion 交给命令路径后睡眠；完成事件处理到这条命令时 complete() 把它叫醒——「System software shall wait for the Command Completion Event…before issuing any more commands to the slot」（§4.3.2 p75）的软件侧实现。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "System software executes the Slot Assignment process by successfully \ncompleting an Enable Slot Command as described in section 4.11.4.2. \nSystem software shall wait for the Command Completion Event associated with \nthe Enable Slot Command before issuing any more commands to the slot.",
+            "page": 75
+          },
+          "options": [
+            "xHC 的硬件中断下半部（tasklet）",
+            "端口复位工作队列（port reset work）",
+            "事件环轮询定时器回调",
+            "正在 wait_for_completion 等这条命令的发令线程（如 xhci_setup_device 里的等待者）"
+          ],
+          "answer": 3
+        },
+        {
+          "idx": 10,
+          "line": 1947,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "handle_cmd_completion",
+          "type": "choice",
+          "prompt": "handle_cmd_completion 收尾处 inc_deq(xhci, xhci->cmd_ring) 的机制作用？",
+          "explain": "消费侧推进 deq；enqueue 由下次 queue_command 推进（方向反了）；CCS 只在绕回 Link 时翻转；CRCR 重写是 xHC 停止/恢复路径的事。",
+          "spec": {
+            "file": "spec-41.txt",
+            "quote": "All xHC commands are issued by placing the desired Command TRB(s) (Section \n6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command \nDoorbell register, that is, writing the Host Controller Command code to the DB \nTarget field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).",
+            "page": 68
+          },
+          "options": [
+            "翻转命令环 CCS——cycle 状态切换",
+            "重写 CRCR——把命令环基址重新报给 xHC",
+            "命令环 dequeue 前移一格——这条命令消费完毕，环回到可发下一条的状态",
+            "命令环 enqueue 前移一格——为下一条命令腾位"
+          ],
+          "answer": 2
+        },
+        {
+          "idx": 2,
+          "line": 4387,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "queue_command",
+          "type": "blank",
+          "prompt": "填空（字段名）：完成事件回来要按环上位置配对命令——下面这行里填入的环字段是？",
+          "explain": "记下入环位置；Command Completion Event 的 Completion Parameter 回带该 TRB 指针，处理端据此配对是哪条命令完成了（§4.1 p68）。",
+          "spec": {
+            "file": "spec-41.txt",
+            "quote": "All commands result in the generation of a Command Completion Event TRB \n(Section 6.4.3 Command TRBs) on the Event Ring.",
+            "page": 68
+          },
+          "accept": [
+            "enqueue"
+          ],
+          "code_blank": "\tcmd->command_trb = xhci->cmd_ring->______"
+        },
+        {
+          "idx": 7,
+          "line": 1832,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "handle_cmd_completion",
+          "type": "blank",
+          "prompt": "填空（字段名）：完成码从完成事件的哪个字段解出？（看下行代码空位）",
+          "explain": "完成事件 TRB 的 status 字段含 Completion Code（SUCCESS=1 等），GET_COMP_CODE 按位掩码取出，决定命令成败判定（§4.1 p68 完成事件机制）。",
+          "spec": {
+            "file": "spec-41.txt",
+            "quote": "All commands result in the generation of a Command Completion Event TRB \n(Section 6.4.3 Command TRBs) on the Event Ring.",
+            "page": 68
+          },
+          "accept": [
+            "status"
+          ],
+          "code_blank": "\tcmd_comp_code = GET_COMP_CODE(le32_to_cpu(______));"
+        }
+      ]
+    },
+    {
+      "key": "init",
+      "num": "4.2",
+      "title": "控制器初始化 · 寄存器编程清单",
+      "excerpt_ref": "init",
+      "items": [
+        {
+          "idx": 0,
+          "line": 5431,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_gen_setup",
+          "type": "choice",
+          "prompt": "「xhci_gen_setup」是各宿主驱动（PCI/平台）setup 主线的公共汇合点——它对应规范的哪个过程？",
+          "explain": "控制器初始化起点：规范开篇「When the system boots, the host controller is enumerated, assigned a base address for the xHC register space…」（§4.2 p68）。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "When the system boots, the host controller is enumerated, assigned a base \naddress for the xHC register space, and the system software sets the Frame \nLength Adjustment (FLADJ) register to a system-specific value.",
+            "page": 68
+          },
+          "options": [
+            "§4.2 Host Controller Initialization——xHC 被枚举、分配寄存器空间，软件按清单初始化",
+            "§4.3 USB Device Initialization——设备插上根端口后的枚举过程",
+            "§4.1 Command Operation——命令经命令环与门铃发出",
+            "§4.6.3 Enable Slot 命令的字段定义"
+          ],
+          "answer": 0
+        },
+        {
+          "idx": 1,
+          "line": 229,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_reset",
+          "type": "choice",
+          "prompt": "复位后 xhci_handshake 轮询 CNR 清零——规范为什么要求这一步？",
+          "explain": "「After Chip Hardware Reset wait until the Controller Not Ready (CNR) flag in the USBSTS is 0 before writing any xHC Operational or Runtime registers」（§4.2 p69）——这是全部 Operational/Runtime 写的总闸门，门铃/中断器寄存器自然也被覆盖。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "After Chip Hardware Reset6 wait until the Controller Not Ready (CNR) flag \nin the USBSTS is ‘0’ before writing any xHC Operational or Runtime \nregisters.",
+            "page": 69
+          },
+          "options": [
+            "CNR=1 期间事件环不可读",
+            "CNR=0 表示设备槽已使能",
+            "CNR 清零后才允许发门铃",
+            "控制器未就绪（CNR=1）前不允许写任何 xHC Operational/Runtime 寄存器"
+          ],
+          "answer": 3
+        },
+        {
+          "idx": 3,
+          "line": 487,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_enable_max_dev_slots",
+          "type": "choice",
+          "prompt": "writel(config_reg, &xhci->op_regs->config_reg) 在初始化清单里是哪一步？",
+          "explain": "§4.2 p69 清单：先使能软件要用的设备槽（MaxSlotsEn）；DCBAAP/CRCR 是随后的第 2/3 步；R/S=1 是最后的开机动作。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "Program the Max Device Slots Enabled (MaxSlotsEn) field in the CONFIG \nregister (5.4.7) to enable the device slots that system software is going to",
+            "page": 69
+          },
+          "options": [
+            "Define the Command Ring Dequeue Pointer (CRCR)",
+            "Write USBCMD R/S=1",
+            "Program the Max Device Slots Enabled (MaxSlotsEn) field in the CONFIG register",
+            "Program the DCBAAP register"
+          ],
+          "answer": 2
+        },
+        {
+          "idx": 4,
+          "line": 506,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_set_cmd_ring_deq",
+          "type": "choice",
+          "prompt": "xhci_write_64(crcr, &xhci->op_regs->cmd_ring) 对应清单哪一步？",
+          "explain": "CRCR=命令环控制寄存器：基址+Cycle 位，指向命令环首 TRB（§4.2 p69 第 3 步）；DCBAAP 是设备上下文数组指针；ERSTBA 属事件环初始化。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "Define the Command Ring Dequeue Pointer by programming the Command \nRing Control Register (Section 5.4.5 Command Ring Control Register \n(CRCR)) with a 64-bit address pointing to the starting address of the first \nTRB of the Command Ring.",
+            "page": 69
+          },
+          "options": [
+            "Enable Interrupter (IE=1)",
+            "Define the Command Ring Dequeue Pointer by programming CRCR…starting address of the first TRB of the Command Ring",
+            "Program the DCBAAP with a 64-bit address",
+            "Program ERSTBA with the segment table base"
+          ],
+          "answer": 1
+        },
+        {
+          "idx": 5,
+          "line": 555,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_init",
+          "type": "choice",
+          "prompt": "写 DCBAAP 寄存器的作用？",
+          "explain": "「Program the DCBAAP register…with a 64-bit address pointing to where the Device Context Base Address Array is located」（§4.2 p69 第 2 步）；输入上下文经 Address Device 命令参数传递，段表基址是 ERSTBA。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "Program the Device Context Base Address Array Pointer (DCBAAP) register \n(Section 5.4.6 Device Context Base Address Array Pointer Register \n(DCBAAP)) with a 64-bit address pointing to where the Device Context \nBase Address Array is located.",
+            "page": 69
+          },
+          "options": [
+            "告诉 xHC Device Context Base Address Array 在哪——按 Slot ID 索引取设备上下文",
+            "告诉 xHC 输入上下文（Input Context）在哪",
+            "告诉 xHC 事件环段表在哪",
+            "告诉 xHC Scratchpad 缓冲在哪"
+          ],
+          "answer": 0
+        },
+        {
+          "idx": 6,
+          "line": 2311,
+          "file": "drivers/usb/host/xhci-mem.c",
+          "func": "xhci_alloc_interrupter",
+          "type": "choice",
+          "prompt": "ir->event_ring = xhci_ring_alloc(…, TYPE_EVENT, …) 分配的环在机制里承载什么？",
+          "explain": "§4.2 清单「Defining the Event Ring…Allocate and initialize the Event Ring Segment(s)」（p69）——事件环是完成事件唯一通道，命令完成事件也写这里（§4.1 p68）。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "Defining the Event Ring: (refer to Section 4.9.4 Event Ring \nManagement for a discussion of Event Ring Management.) \n• \nAllocate and initialize the Event Ring Segment(s).",
+            "page": 69
+          },
+          "options": [
+            "驱动发给 xHC 的命令 TRB",
+            "EP0 的 Setup/Data/Status TD",
+            "带宽计算用的带宽上下文",
+            "命令完成事件与传输完成事件等——xHC 写、驱动读"
+          ],
+          "answer": 3
+        },
+        {
+          "idx": 10,
+          "line": 154,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_start",
+          "type": "choice",
+          "prompt": "writel(temp, &xhci->op_regs->command)（temp 已置 CMD_RUN）——写 USBCMD R/S=1 的效果是？",
+          "explain": "「…to turn the host controller ON via setting the Run/Stop (R/S) bit to 1. This operation allows the xHC to begin accepting doorbell references.」（§4.2 p70）——注意是「允许门铃」，不是复位（那是 HCRST/CMD_RESET 路径）。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "Write the USBCMD (5.4.1) to turn the host controller ON via setting the \nRun/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin accepting \ndoorbell references.",
+            "page": 70
+          },
+          "options": [
+            "停止命令环等待软件重配",
+            "使能 Max Device Slots",
+            "主机控制器开机——xHC 开始接受门铃引用",
+            "触发芯片硬件复位（HCRST）"
+          ],
+          "answer": 2
+        },
+        {
+          "idx": 11,
+          "line": 605,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_run_finished",
+          "type": "choice",
+          "prompt": "xhci->cmd_ring_state = CMD_RING_STATE_RUNNING——软件侧这道闸门与规范哪句对应？",
+          "explain": "驱动把「允许门铃」做成显式状态位：xhci_run_finished 后命令环置 RUNNING，此后 ring_cmd_db 才敲钟——对映规范 R/S=1 开始接受门铃引用（§4.2 p70）。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "Write the USBCMD (5.4.1) to turn the host controller ON via setting the \nRun/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin accepting \ndoorbell references.",
+            "page": 70
+          },
+          "options": [
+            "MaxSlotsEn 使能后槽位才可用",
+            "R/S=1 之后「the xHC to begin accepting doorbell references」——命令环就绪才允许 ring_cmd_db 真正敲钟",
+            "CNR=0 之后才可写 Operational 寄存器",
+            "ERSTBA 写入即启用事件环"
+          ],
+          "answer": 1
+        },
+        {
+          "idx": 7,
+          "line": 2343,
+          "file": "drivers/usb/host/xhci-mem.c",
+          "func": "xhci_add_interrupter",
+          "type": "blank",
+          "prompt": "填空（寄存器名）：代码行 writel(erst_size, &ir->ir_set->erst_size) 写的是事件环段表项数寄存器——规范缩写是？",
+          "explain": "「Program the Interrupter Event Ring Segment Table Size (ERSTSZ) register…with the number of segments described by the Event Ring Segment Table」（§4.2 p70）。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "Program the Interrupter Event Ring Segment Table Size \n(ERSTSZ) register (Section 5.5.2.3.1 Event Ring Segment Table \nSize Register (ERSTSZ)) with the number of segments",
+            "page": 70
+          },
+          "accept": [
+            "ERSTSZ"
+          ]
+        },
+        {
+          "idx": 8,
+          "line": 2351,
+          "file": "drivers/usb/host/xhci-mem.c",
+          "func": "xhci_add_interrupter",
+          "type": "blank",
+          "prompt": "填空（寄存器名）：代码行 xhci_write_64(xhci, erst_base, &ir->ir_set->erst_base) 写的是事件环段表基址寄存器——规范缩写是？",
+          "explain": "「Program the…Event Ring Segment Table Base Address (ERSTBA) register…」；且规范加注「writing the ERSTBA enables the Event Ring」（§4.2 p70）——写它即启用事件环。",
+          "spec": {
+            "file": "spec-42.txt",
+            "quote": "Program the Interrupter Event Ring Segment Table Base \nAddress (ERSTBA) register (Section 5.5.2.3.2 Event Ring \nSegment Table Base Address Register (ERSTBA)) with a 64-bit \naddress pointer to where the Event Ring Segment Table is \nlocated.",
+            "page": 70
+          },
+          "accept": [
+            "ERSTBA"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "dev",
+      "num": "4.3",
+      "title": "设备初始化 · EP0 控制传输与 Address Device",
+      "excerpt_ref": "dev",
+      "items": [
+        {
+          "idx": 0,
+          "line": 150,
+          "file": "drivers/usb/core/message.c",
+          "func": "usb_control_msg",
+          "type": "choice",
+          "prompt": "「usb_control_msg」在设备初始化机制里的位置？",
+          "explain": "动画起点：FS 设备先经它发 GET_DESCRIPTOR 读前 8 字节取 bMaxPacketSize0（§4.3 p72 步7 / p73 a）；命令环入口是 queue_command，端口轮询读 PORTSC。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "For FS devices, system software should initially read the first 8 bytes of the \nUSB Device Descriptor to retrieve the value of the bMaxPacketSize0 field and \ndetermine the actual Max Packet Size for the Default Control Endpoint, by \nissuing a USB GET_DESCRIPTOR request to the device, update the Default \nControl Endpoint Context with the actual Max Packet Size and inform the xHC \nof the context change. Step a describes this operation.",
+            "page": 72
+          },
+          "options": [
+            "USB 核同步控制传输入口——GET_DESCRIPTOR/SET_ADDRESS 等控制请求由它构造 URB 提交并等完成",
+            "xHC 命令环的命令提交入口",
+            "Root Hub 端口状态轮询入口",
+            "描述符解析与类驱动绑定入口"
+          ],
+          "answer": 0
+        },
+        {
+          "idx": 1,
+          "line": 1698,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_urb_enqueue",
+          "type": "choice",
+          "prompt": "控制传输的 URB 到了 xHCI 驱动会走哪条分派？",
+          "explain": "URB 是内核侧单位，xHC 不认识；三段结构出自「The USB GET_DESCRIPTOR request requires a Data Stage, so the Setup Stage TD shall be followed by a Data Stage TD, then a Status Stage TD.」（§4.3 p73 a）。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "The USB GET_DESCRIPTOR request requires a Data Stage, so the \nSetup Stage TD shall be followed by a Data Stage TD, then a Status \nStage TD.",
+            "page": 73
+          },
+          "options": [
+            "一律转成 Address Device 命令上命令环",
+            "直接写事件环唤醒等待者",
+            "交给类驱动解析描述符",
+            "urb_enqueue 按端点类型分派——控制传输走 xhci_queue_ctrl_tx，拆成 Setup/Data/Status 三段 TRB"
+          ],
+          "answer": 3
+        },
+        {
+          "idx": 3,
+          "line": 3856,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "xhci_queue_ctrl_tx",
+          "type": "choice",
+          "prompt": "Setup TRB 入 EP0 传输环后，Data、Status 依次入环——这个顺序的规范依据？",
+          "explain": "三段顺序是 shall 要求（§4.3 p73 a）；DIR/Cycle 是字段级约束不是段序；D 与 shall 相悖。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "The USB GET_DESCRIPTOR request requires a Data Stage, so the \nSetup Stage TD shall be followed by a Data Stage TD, then a Status \nStage TD.",
+            "page": 73
+          },
+          "options": [
+            "「Cycle bit = Current Producer Cycle State」",
+            "顺序不限，只要门铃最后敲一次",
+            "「the Setup Stage TD shall be followed by a Data Stage TD, then a Status Stage TD」",
+            "「Direction (DIR) = 1」（Data 段在 Status 段之前）"
+          ],
+          "answer": 2
+        },
+        {
+          "idx": 4,
+          "line": 3866,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "xhci_queue_ctrl_tx",
+          "type": "choice",
+          "prompt": "Data 段 TRB 的类型与数据携带方式（本例 IN 8 字节）？",
+          "explain": "TRT=3 是 Setup 段专属字段；IDT=1 内联是 Setup 段的做法（8 字节 SETUP 包随 TRB 走），Data 段走缓冲：「Data Buffer Pointer = The address of the Device Descriptor receive buffer」（§4.3 p73 iv）。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "TRB Type = Data Stage TRB. \n•  \nDirection (DIR) = ‘1’. \n•  \nTRB Transfer Length = 8. \n•  \nChain bit (CH) = 0. \n•  \nInterrupt On Completion (IOC) = 0. \n•  \nImmediate Data (IDT) = 0.",
+            "page": 73
+          },
+          "options": [
+            "TRB_TYPE=Status Stage；DIR=0",
+            "TRB_TYPE=Data Stage；DIR=1（IN）；IDT=0——数据走 Data Buffer Pointer 指向的缓冲",
+            "TRB_TYPE=Data Stage；IDT=1——8 字节内联在 TRB 里",
+            "TRB_TYPE=Setup Stage；TRT=IN Data Stage (3)"
+          ],
+          "answer": 1
+        },
+        {
+          "idx": 6,
+          "line": 3914,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "xhci_queue_ctrl_tx",
+          "type": "choice",
+          "prompt": "Status 段 TRB 带 TRB_IOC 的机制意义？",
+          "explain": "「Interrupt On Completion (IOC) = 1」（§4.3 p73 vi）——状态段是 TD 末尾，其成功 Transfer Event 触发软件后续动作（按回票更新 EP0 MPS，§4.3 p74 ix）；ISP/IDT/CH 各是独立位。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "TRB Type = Status Stage TRB. \n•  \nDirection (DIR) = ‘0’. \n•  \nTRB Transfer Length = 0. \n•  \nChain bit (CH) = 0. \n•  \nInterrupt On Completion (IOC) = 1.",
+            "page": 73
+          },
+          "options": [
+            "状态段完成时产生 Transfer Event 回事件环——驱动据此收尾整个控制传输",
+            "让短包立即上报（Short Packet，ISP）",
+            "让 8 字节 Setup 包内联随 TRB 走",
+            "把 TD 链接到下一个 TD（Chain）"
+          ],
+          "answer": 0
+        },
+        {
+          "idx": 9,
+          "line": 4404,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_setup_device",
+          "type": "choice",
+          "prompt": "xhci_queue_address_device 把 Address Device 命令入命令环——命令参数指向什么？",
+          "explain": "「Issue an Address Device Command for the Device Slot, where the command points to the Input Context data structure described above.」（§4.3.3 p76）；A0/A1=1 见 p75 步5；输出上下文经 DCBAA 表项装载（p76 步10）。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "Issue an Address Device Command for the Device Slot, where the \ncommand points to the Input Context data structure described above. Refer to \nsections 3.3.4 and 6.4.3.4 for more information on the Address Device \nCommand.",
+            "page": 76
+          },
+          "options": [
+            "Output Device Context——设备真实上下文",
+            "DCBAA——设备上下文基址数组",
+            "事件环 ERST 表",
+            "Input Context（in_ctx->dma）——A0/A1=1 声明 Slot 与 EP0 上下文受这条命令影响"
+          ],
+          "answer": 3
+        },
+        {
+          "idx": 11,
+          "line": 4416,
+          "file": "drivers/usb/host/xhci.c",
+          "func": "xhci_setup_device",
+          "type": "choice",
+          "prompt": "wait_for_completion(command->completion) 在等什么？",
+          "explain": "「System software shall wait for Address Device Command completion event on the Event Ring before issuing any more commands to the slot.」（§4.3.4 p76）；成功后设备 Default→Address、槽 Enabled→Addressed（p77）。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "System software shall wait for Address Device Command completion event on \nthe Event Ring before issuing any more commands to the slot.",
+            "page": 76
+          },
+          "options": [
+            "GET_DESCRIPTOR 的 Transfer Event",
+            "门铃寄存器的写回执",
+            "Address Device 命令的 Command Completion Event（事件环上出现、handle_cmd_completion 处理到时被唤醒）",
+            "端口复位完成的 PRC 事件"
+          ],
+          "answer": 2
+        },
+        {
+          "idx": 2,
+          "line": 3842,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "xhci_queue_ctrl_tx",
+          "type": "blank",
+          "prompt": "填空（TRB 类型常量）：Setup 段 TRB 的类型编码——看下行代码空位。",
+          "explain": "对映「TRB Type = Setup Stage TRB」（§4.3 p73 ii）；IDT=1 让 8 字节 SETUP 包（bmRequestType=80h…wLength=8）作立即数据随 TRB 走。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "Initialize the Setup Stage TD (a single Setup Stage TRB) on the \nEndpoint 0 Transfer Ring. \n•  TRB Type = Setup Stage TRB. \n•  Transfer Type (TRT) = IN Data Stage (3). \n•  TRB Transfer Length = 8. \n•  Interrupt On Completion (IOC) = 0. \n•  Immediate Data (IDT) = 1.",
+            "page": 73
+          },
+          "accept": [
+            "TRB_SETUP"
+          ],
+          "code_blank": "\tfield |= TRB_IDT | TRB_TYPE(______);"
+        },
+        {
+          "idx": 8,
+          "line": 579,
+          "file": "drivers/usb/host/xhci-ring.c",
+          "func": "xhci_ring_ep_doorbell",
+          "type": "blank",
+          "prompt": "填空（字段值）：该行敲设备槽门铃——EP0（ep_index=0）时 DB Target = Control EP 0 Enqueue Pointer Update，数值是？",
+          "explain": "「Ring the Device Slots Doorbell with DB Target = Control EP 0 Enqueue Pointer Update」（§4.3 p74 viii）——DB Target=1 对应 EP0；命令环门铃才是 DB Target=0（§4.1 p68）。",
+          "spec": {
+            "file": "spec-43.txt",
+            "quote": "Ring the Device Slots’ Doorbell with DB Target = Control EP 0 \nEnqueue Pointer Update.",
+            "page": 74
+          },
+          "accept": [
+            "1"
+          ]
+        }
+      ]
+    }
+  ]
+}

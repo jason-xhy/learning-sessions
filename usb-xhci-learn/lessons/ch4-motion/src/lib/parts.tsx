@@ -912,3 +912,158 @@ export function* popIn(ref: Ref<Node>): ThreadGenerator {
   ref().scale(0.7);
   yield* all(ref().opacity(1, 0.2), ref().scale(1, 0.35, easeOutBack));
 }
+
+/* ---------- diff 代码面板（R3 P4 增量：补丁前/后对照，行级红绿底） ----------
+   结构与 makeCodePanel 同族（窗口滚动 + highlight 走读），行内容 = git show 原文逐字，
+   kind: 'add' 绿底(+号) / 'del' 红底(−号) / 缺省 上下文行。 */
+
+export interface DiffLine {
+  no: string;
+  code: string;
+  kind?: 'add' | 'del';
+}
+
+export interface DiffPanelApi {
+  ref: Ref<Rect>;
+  highlight(i: number): ThreadGenerator;
+}
+
+export function makeDiffPanel(
+  view: View2D,
+  o: {
+    x: number;
+    y: number;
+    w: number;
+    title: string;
+    lines: DiffLine[];
+    maxVisible?: number;
+  },
+): DiffPanelApi {
+  const K = Math.max(1, o.maxVisible ?? 3);
+  const inner = o.w - 28;
+  const noRefs: Ref<Txt>[] = [];
+  const signRefs: Ref<Txt>[] = [];
+  const codeRefs: Ref<Txt>[] = [];
+  const rowRefs: Ref<Rect>[] = [];
+  for (let r = 0; r < K; r++) {
+    noRefs.push(createRef<Txt>());
+    signRefs.push(createRef<Txt>());
+    codeRefs.push(createRef<Txt>());
+    rowRefs.push(createRef<Rect>());
+  }
+  const ref = createRef<Rect>();
+  let scroll = 0;
+  const rowSrc: number[] = new Array(K).fill(-1);
+  const BG_CTX = '#0a0f16';
+  const BG_ADD = '#152b1d';
+  const BG_DEL = '#341712';
+
+  function apply(): void {
+    for (let r = 0; r < K; r++) {
+      const src = scroll + r;
+      const ok = src >= 0 && src < o.lines.length;
+      rowSrc[r] = ok ? src : -1;
+      const L = ok ? o.lines[src] : null;
+      noRefs[r]().text(L ? L.no : '');
+      signRefs[r]().text(
+        L ? (L.kind === 'add' ? '+' : L.kind === 'del' ? '−' : ' ') : '',
+      );
+      codeRefs[r]().text(L ? L.code : '');
+      rowRefs[r]().fill(
+        L ? (L.kind === 'add' ? BG_ADD : L.kind === 'del' ? BG_DEL : BG_CTX) : BG_CTX,
+      );
+      signRefs[r]().fill(
+        L ? (L.kind === 'add' ? C.dev : L.kind === 'del' ? C.warn : C.faint) : C.faint,
+      );
+    }
+  }
+
+  view.add(
+    <Rect
+      ref={ref}
+      position={[o.x, o.y]}
+      width={o.w}
+      radius={12}
+      fill={'#0a0f16'}
+      stroke={C.edgeHi}
+      lineWidth={1.4}
+      padding={[10, 12]}
+      layout
+      direction={'column'}
+      gap={3}
+      opacity={0}
+    >
+      <Txt
+        text={o.title}
+        width={inner}
+        textWrap
+        lineHeight={19}
+        fontFamily={FONT.mono}
+        fontSize={16}
+        fill={C.dim}
+      />
+      {Array.from({length: K}, (_, r) => (
+        <Rect
+          ref={rowRefs[r]}
+          layout
+          gap={8}
+          height={36}
+          width={inner}
+          alignItems={'center'}
+          radius={6}
+          fill={BG_CTX}
+        >
+          <Txt
+            ref={noRefs[r]}
+            width={40}
+            fontFamily={FONT.mono}
+            fontSize={13}
+            fill={C.faint}
+            opacity={0.8}
+          />
+          <Txt
+            ref={signRefs[r]}
+            width={14}
+            fontFamily={FONT.mono}
+            fontSize={15}
+            fill={C.faint}
+          />
+          <Txt
+            ref={codeRefs[r]}
+            width={inner - 66}
+            textWrap
+            lineHeight={17}
+            fontFamily={FONT.mono}
+            fontSize={14.5}
+            fill={C.ink}
+            opacity={0.9}
+          />
+        </Rect>
+      ))}
+    </Rect>,
+  );
+  apply();
+
+  return {
+    ref,
+    *highlight(i) {
+      if (i < scroll || i >= scroll + K) {
+        scroll = Math.max(0, Math.min(i, o.lines.length - K));
+        apply();
+      }
+      const tgt = rowSrc.indexOf(i);
+      for (let r = 0; r < K; r++) {
+        const on = r === tgt;
+        noRefs[r]().fill(on ? '#d9a860' : C.faint);
+        codeRefs[r]().fill(on ? '#d9a860' : C.ink);
+        rowRefs[r]().stroke(on ? '#d9a860' : BG_CTX);
+        rowRefs[r]().lineWidth(on ? 1.5 : 1);
+      }
+      yield* all(
+        ...noRefs.map((nr, r) => nr().opacity(r === tgt ? 1 : 0.45, 0.2)),
+        ...signRefs.map((sr, r) => sr().opacity(r === tgt ? 1 : 0.45, 0.2)),
+        ...codeRefs.map((cr, r) => cr().opacity(r === tgt ? 1 : 0.45, 0.2)),
+      );
+    },
+  };
+}

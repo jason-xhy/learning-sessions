@@ -3,7 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>xHCI 第 4 章视频课件 · R2 评审版</title>
+<title>xHCI 第 4 章视频课件 · R3 四段式</title>
+<!-- data-ck 锚点块书写约定（机检 scripts/check_landing_code.py 依赖）：
+     1) data-ck 必须是开标签的最后一个属性；
+     2) 闭合标签紧贴内容末字符，中间不留任何空白；
+     3) 多行块（blockquote/pre）的第 2 行起内容顶格（零缩进）。
+     锚点 schema：
+     excerpts:<组>:<json下标>   → drafts/code-excerpts.json 对应行逐字
+     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止）
+     diff:<hash>:<路径>:<hunk序号> → git show <hash> -- <路径> 输出切片 -->
 <style>
   :root {
     --bg: #0b0f15;
@@ -30,82 +38,528 @@
   h1 .tag { color: var(--amber); font-size: 15px; font-weight: 600; margin-left: 10px; }
   .meta { color: var(--muted); font-size: 13px; }
   .meta b { color: var(--green); font-weight: 600; }
-  h2 { font-size: 17px; margin: 34px 0 14px; }
+  .lead { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+  .toc { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 4px; }
+  .toc a {
+    display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--text); text-decoration: none; font-size: 13.5px; background: var(--panel);
+  }
+  .toc a:hover { border-color: var(--blue); color: var(--blue); }
+  h2 { font-size: 19px; margin: 40px 0 14px; }
   h2 .no { color: var(--amber); margin-right: 8px; font-family: ui-monospace, Menlo, monospace; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .card.b1 { border-left: 3px solid var(--blue); }
+  .card.b2 { border-left: 3px solid var(--teal); }
+  .card.b3 { border-left: 3px solid var(--green); }
+  .card.b4 { border-left: 3px solid var(--amber); }
+  .bhead { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .badge {
+    display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
+    border-radius: 6px; background: #18212f; color: var(--amber); font-size: 13px; font-weight: 700; flex: none;
+  }
+  h3 { font-size: 14px; margin: 16px 0 8px; color: var(--blue); }
+  h3 .cmt { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .qtitle { margin: 14px 0 0; font-size: 13.5px; font-weight: 600; }
+  blockquote {
+    margin: 8px 0 4px; padding: 10px 14px; border-left: 3px solid var(--blue); background: #0d1420;
+    border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap;
+  }
+  .qsrc { margin: 0 0 6px 17px; color: var(--muted); font-size: 12px; }
+  .exrow { margin: 0 0 12px; }
+  .exhead { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin-bottom: 4px; }
+  pre.code, pre.diffblock {
+    margin: 0 0 4px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.55; color: #c7d3e6;
+  }
+  .exnote { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .foot-note { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .vhead .name { font-size: 16px; font-weight: 600; font-family: ui-monospace, Menlo, monospace; }
+  .vhead .spec { color: var(--muted); font-size: 12.5px; }
   .card video { width: 100%; border-radius: 6px; background: #000; display: block; }
-  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
-  .vhead .name { font-size: 16px; font-weight: 600; }
-  .vhead .dur { color: var(--muted); font-size: 13px; font-family: ui-monospace, Menlo, monospace; }
-  .vhead .spec { margin-left: auto; color: var(--muted); font-size: 12px; }
-  .int-links { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
   .btn {
-    display: inline-block; padding: 9px 18px; border-radius: 8px; text-decoration: none;
-    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 14px;
+    display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 13.5px;
   }
   .btn:hover { filter: brightness(1.1); }
-  .int-note { color: var(--muted); font-size: 13.5px; margin: 6px 0 0; }
+  .btn.ghost { background: transparent; border: 1px solid var(--teal); color: var(--teal); }
+  .act { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .act .note { color: var(--muted); font-size: 12.5px; }
+  .int-note { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
   .int-note b { color: var(--teal); font-weight: 600; }
-  ul.points { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: 13.5px; }
-  ul.points b { color: var(--text); font-weight: 600; }
-  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
+  .phead {
+    font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px;
+    background: #0d1420; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px;
+    margin-bottom: 10px; overflow-wrap: anywhere;
+  }
+  .ph { font-size: 13.5px; color: var(--amber); margin: 14px 0 4px; font-weight: 600; }
+  .pbody { margin: 0 0 6px; font-size: 13.5px; color: var(--text); }
+  .dhead { font-family: ui-monospace, Menlo, monospace; color: var(--muted); font-size: 12px; margin: 14px 0 6px; }
+  .d-meta { color: #67788f; }
+  .d-hunk { color: var(--blue); }
+  .d-add { color: var(--green); background: rgba(134, 189, 122, 0.12); }
+  .d-del { color: #e08c8c; background: rgba(224, 140, 140, 0.12); }
+  .d-ctx { color: #a8b6ca; }
   code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>xHCI 第 4 章视频课件<span class="tag">R2 评审版 · 2026-11-05</span></h1>
+    <h1>xHCI 第 4 章视频课件<span class="tag">R3 四段式 · 2026-11-06</span></h1>
+    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化三节，每节四版块：① 规范与代码分析 → ② 动画（mp4 + 分帧步进） → ③ 交互操作台 → ④ 真实上游补丁收尾（含补丁分帧动画）。</p>
     <div class="meta">
-      1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 违例</b>（三场景全帧，非抽样）·
-      终片 2:16 / 2:00 / 2:12 · 判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
+      1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 持续违例</b>（三主片+三补丁片，全帧非抽样）·
+      判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
     </div>
+    <nav class="toc">
+      <a href="#s41">§4.1 命令操作</a>
+      <a href="#s42">§4.2 主机控制器初始化</a>
+      <a href="#s43">§4.3 USB 设备初始化</a>
+    </nav>
+    <p class="meta">贴码/引文/diff 均带 <code>data-ck</code> 机检锚点，逐字比对见项目仓 <code>scripts/check_landing_code.py</code>。</p>
   </header>
 
-  <h2><span class="no">§4.1</span>命令操作</h2>
-  <div class="card">
-    <div class="vhead">
-      <span class="name">41-command-operation</span>
-      <span class="dur">2:16</span>
-      <span class="spec">命令路径：xhci_submit_command → 命令 TRB 入环 → 门铃 writel</span>
-    </div>
-    <video controls preload="metadata" src="41-command-operation.mp4"></video>
-  </div>
+  <section id="s41">
+    <h2><span class="no">§4.1</span>命令操作</h2>
 
-  <h2><span class="no">§4.2</span>主机控制器初始化</h2>
-  <div class="card">
-    <div class="vhead">
-      <span class="name">42-host-controller-init</span>
-      <span class="dur">2:00</span>
-      <span class="spec">初始化链：xhci_setup / xhci_run 主线寄存器写序列</span>
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>规范要点（xHCI 规范 §4.1 · p68）</h3>
+      <p class="qtitle">要点 1 · 只有一条命令环，所有 xHC 命令都走它</p>
+      <blockquote data-ck="spec:spec-41.txt:L2">There is only one Command Ring that is used for issuing xHC specific 
+commands or commands related to Device Slots.</blockquote>
+      <div class="qsrc">—— evidence/spec-41.txt L2（p68）</div>
+      <p class="qtitle">要点 2 · 发出三拍：TRB 上环 → 敲门铃寄存器 0（DB Target=0）→ xHC 执行</p>
+      <blockquote data-ck="spec:spec-41.txt:L8-L10">All xHC commands are issued by placing the desired Command TRB(s) (Section 
+6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).</blockquote>
+      <div class="qsrc">—— evidence/spec-41.txt L8-L10（p68）</div>
+      <p class="qtitle">要点 3 · 一切命令必产 Command Completion Event TRB 上事件环</p>
+      <blockquote data-ck="spec:spec-41.txt:L19">All commands result in the generation of a Command Completion Event TRB 
+(Section 6.4.3 Command TRBs) on the Event Ring.</blockquote>
+      <div class="qsrc">—— evidence/spec-41.txt L19（p68）</div>
+      <p class="qtitle">要点 4 · CRCR（命令环控制寄存器）属 Operational 寄存器空间（§5.4.5）</p>
+      <blockquote data-ck="spec:spec-41.txt:L3">The Command Ring Control 
+Register is defined in the Operational Register space</blockquote>
+      <div class="qsrc">—— evidence/spec-41.txt L3（p68）</div>
+      <h3>调用链贴码 <span class="cmt">commit d9008e061539 · drafts/code-excerpts.json cmd 组逐字</span></h3>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:4354 · queue_command · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:0">static int queue_command(struct xhci_hcd *xhci, struct xhci_command *cmd,</pre>
+        <p class="exnote">组装命令 TRB 入命令环的通用函数：所有 xHCI 命令（编址/配置端点等）都经它入环</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:4377 · queue_command · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:1">	ret = prepare_ring(xhci, xhci->cmd_ring, EP_STATE_RUNNING,</pre>
+        <p class="exnote">先 prepare_ring 检查命令环有空位（含必须成功命令的预留 TRB），动画中“腾位置”动作</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:4387 · queue_command · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:2">	cmd->command_trb = xhci->cmd_ring->enqueue;</pre>
+        <p class="exnote">记下本命令 TRB 的环上位置，完成事件回来按它配对命令</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:4397 · queue_command · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:3">	queue_trb(xhci, xhci->cmd_ring, false, field1, field2, field3,</pre>
+        <p class="exnote">queue_trb 把命令四个字段写进命令环 enqueue 指向的 TRB</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:438 · xhci_ring_cmd_db · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:4">	writel(DB_VALUE_HOST, &xhci->dba->doorbell[0]);</pre>
+        <p class="exnote">敲主机门铃：写 doorbell[0]，DB Target=0（DB_VALUE_HOST），通知 xHC 命令环有新命令</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:3013 · xhci_handle_event_trb · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:5">		handle_cmd_completion(xhci, &event->event_cmd);</pre>
+        <p class="exnote">事件环读到 TRB_COMPLETION（命令完成事件），分派给 handle_cmd_completion</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:1810 · handle_cmd_completion · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:6">static void handle_cmd_completion(struct xhci_hcd *xhci,</pre>
+        <p class="exnote">命令完成事件处理函数入口（形参就是事件环上的 event_cmd）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:1832 · handle_cmd_completion · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:7">	cmd_comp_code = GET_COMP_CODE(le32_to_cpu(event->status));</pre>
+        <p class="exnote">从事件 status 里解出完成码：动画里的“回执”（成功/失败判定）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:1945 · handle_cmd_completion · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:8">	xhci_complete_del_and_free_cmd(cmd, cmd_comp_code, COMP_PARAM(status));</pre>
+        <p class="exnote">event_handled 收尾：把命令从 cmd_list 摘除并触发唤醒</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:1718 · xhci_complete_del_and_free_cmd · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:9">		complete(cmd->completion);</pre>
+        <p class="exnote">complete() 唤醒正在 wait_for_completion 的发令线程，命令路径闭环</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:1947 · handle_cmd_completion · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:cmd:10">	inc_deq(xhci, xhci->cmd_ring);</pre>
+        <p class="exnote">命令环 dequeue 指针前移一格，环回到可发下一条的状态</p>
+      </div>
     </div>
-    <video controls preload="metadata" src="42-host-controller-init.mp4"></video>
-  </div>
 
-  <h2><span class="no">§4.3</span>USB 设备初始化</h2>
-  <div class="card">
-    <div class="vhead">
-      <span class="name">43-usb-device-init</span>
-      <span class="dur">2:12</span>
-      <span class="spec">设备初始化：usb_control_msg → xhci_address_device / setup_device → URB enqueue</span>
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">41-command-operation</span>
+        <span class="spec">命令路径：xhci_submit_command → 命令 TRB 入环 → 门铃 writel</span>
+      </div>
+      <video controls preload="metadata" src="41-command-operation.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=0">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
     </div>
-    <video controls preload="metadata" src="43-usb-device-init.mp4"></video>
-  </div>
 
-  <h2>交互操作台</h2>
-  <div class="card">
-    <div class="int-links">
-      <a class="btn" href="interactive/index.html">打开交互操作台 →</a>
-      <span class="spec" style="color:var(--muted);font-size:12px;">单文件自包含 · SMOKE 29 项 PASS</span>
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html">打开交互操作台 →</a>
+        <span class="note">单文件自包含 · SMOKE 全 PASS（含模块三）· 模块一=三环操作台 · 模块二=URB→TRB→TD 组装 · 模块三=代码解读</span>
+      </div>
+      <p class="int-note"><b>模块一 · 三环操作台：</b>传输环 / 事件环 / 命令环手动 enq · deq 推进、cycle bit 翻转、Link 回绕、门铃 DB 写、事件产生/消费——对应本节“上环 → 门铃 → 事件回执”节拍</p>
+      <p class="int-note"><b>模块三 · 代码解读：</b>4.1 命令操作题组（贴码行可点 + 规范锚点卡）</p>
     </div>
-    <p class="int-note"><b>三环操作台：</b>传输环 / 事件环 / 命令环手动 enq · deq 推进、cycle bit 翻转、Link 回绕、门铃 DB 写、事件产生/消费</p>
-    <p class="int-note"><b>组装练习：</b>URB→TRB→TD 手动组装（GET_DESCRIPTOR 8B，Setup/Data/Status 三段 TRB 字段逐项核对）</p>
-    <p class="int-note"><b>代码调用栈：</b>驱动（内核 xhci*.c 真实调用链）/ xHC 控制器（寄存器动作）/ 设备（USB 请求）三视角，与动画节拍同步</p>
-  </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit 576667bad341516edc4e18eb85acb0a2b4c9c9d9 · 2021-01-15 · Mathias Nyman（Intel） · drivers/usb/host/xhci-ring.c +2 行 · hunk @@ -2931,6 +2931,8 @@（queue_trb）</div>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2021 年 1 月，xHCI 子系统维护者 Mathias Nyman（Intel）合入这枚补丁。问题发现于压力测试：多个 USB 设备同时在线、反复取消 URB 的场景——两条「Set TR Dequeue Pointer」命令背靠背进入命令环，第二条命令 TRB 还没写完就被控制器取走解析。硬件本身没有缺陷，这是纯软件侧的内存序问题：门铃敲响后 xHC 会立即回来解析命令环上 cycle 位已就绪的命令 TRB（§4.1 p68 的发出节拍），而驱动「先写完 TRB、再敲门铃」这个顺序在写缓冲与多核环境下并没有任何机制保证。对应课程 4.1 的三拍：上环→敲门铃→xHC 取指执行，补丁保证第一拍真正先于第二拍对硬件生效。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：压力测试中反复出现 "Mismatch between completed Set TR Deq Ptr command &amp; xHCI internal state" 告警，出环指针被设成 bogus 值。机制：命令 TRB 长 16 字节，驱动分四个 32 位分片写入，含 cycle bit 的分片安排在最后写——但这只是程序顺序，普通 store 不保证实际落盘次序；当前一条命令完成、硬件立刻回来取下一条时，可能读到只写了一半、而 cycle bit 恰好已置位的 TRB，于是照常执行。规范背景（§4.1 p68）：命令的发出流程是「把命令 TRB 放上命令环，然后敲命令门铃寄存器 0」——“放完才敲”的语义在 SMP 下必须由写屏障兑现，否则门铃会抢在 TRB 完整之前通知 xHC。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，§4.1 p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
+      <div class="dhead">diff 逐字切片 · git show 576667bad341 · drivers/usb/host/xhci-ring.c @@ -2931,6 +2931,8 @@</div>
+      <pre class="diffblock" data-ck="diff:576667bad341516edc4e18eb85acb0a2b4c9c9d9:drivers/usb/host/xhci-ring.c:1"><span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index 5677b81c0915..cf0c93a90200 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -2931,6 +2931,8 @@ static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,</span>
+<span class="d-ctx"> 	trb-&gt;field[0] = cpu_to_le32(field1);</span>
+<span class="d-ctx"> 	trb-&gt;field[1] = cpu_to_le32(field2);</span>
+<span class="d-ctx"> 	trb-&gt;field[2] = cpu_to_le32(field3);</span>
+<span class="d-add">+	/* make sure TRB is fully written before giving it to the controller */</span>
+<span class="d-add">+	wmb();</span>
+<span class="d-ctx"> 	trb-&gt;field[3] = cpu_to_le32(field4);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	trace_xhci_queue_trb(ring, trb);</span></pre>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=3">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="s42">
+    <h2><span class="no">§4.2</span>主机控制器初始化</h2>
+
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>规范要点（xHCI 规范 §4.2 · p69-70）</h3>
+      <p class="qtitle">要点 1 · 复位后等 USBSTS.CNR 清零，才能写任何 Operational/Runtime 寄存器</p>
+      <blockquote data-ck="spec:spec-42.txt:L18-L19">After Chip Hardware Reset6 wait until the Controller Not Ready (CNR) flag 
+in the USBSTS is ‘0’ before writing any xHC Operational or Runtime 
+registers.</blockquote>
+      <div class="qsrc">—— evidence/spec-42.txt L18-L19（p69）</div>
+      <p class="qtitle">要点 2 · 各步顺序不强制，但必须在 USBCMD R/S=1 之前全部完成</p>
+      <blockquote data-ck="spec:spec-42.txt:L21-L22">Note: This text does not imply a specific order for the following operations, however 
+these operations shall be completed before setting the USBCMD register 
+Run/Stop (R/S) bit</blockquote>
+      <div class="qsrc">—— evidence/spec-42.txt L21-L22（p69）</div>
+      <p class="qtitle">要点 3 · CONFIG.MaxSlotsEn 使能软件要用的设备槽</p>
+      <blockquote data-ck="spec:spec-42.txt:L25">Program the Max Device Slots Enabled (MaxSlotsEn) field in the CONFIG 
+register (5.4.7) to enable the device slots that system software is going to</blockquote>
+      <div class="qsrc">—— evidence/spec-42.txt L25（p69）</div>
+      <p class="qtitle">要点 4 · CRCR=命令环首 TRB 地址（含 Cycle 位）</p>
+      <blockquote data-ck="spec:spec-42.txt:L34-L36">Define the Command Ring Dequeue Pointer by programming the Command 
+Ring Control Register (Section 5.4.5 Command Ring Control Register 
+(CRCR)) with a 64-bit address pointing to the starting address of the first 
+TRB of the Command Ring.</blockquote>
+      <div class="qsrc">—— evidence/spec-42.txt L34-L36（p69）</div>
+      <p class="qtitle">要点 5 · R/S=1 开机——xHC 从此开始接受门铃引用</p>
+      <blockquote data-ck="spec:spec-42.txt:L115-L116">Write the USBCMD (5.4.1) to turn the host controller ON via setting the 
+Run/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin accepting 
+doorbell references.</blockquote>
+      <div class="qsrc">—— evidence/spec-42.txt L115-L116（p70）</div>
+      <p class="foot-note">补充（见引文卡）：DCBAAP 指向 Device Context Base Address Array——evidence/spec-42.txt L29-32（p69）；写 ERSTBA 即启用事件环——evidence/spec-42.txt L96-98（p70）。</p>
+      <h3>调用链贴码 <span class="cmt">commit d9008e061539 · drafts/code-excerpts.json init 组逐字</span></h3>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:5431 · xhci_gen_setup · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:0">int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)</pre>
+        <p class="exnote">各宿主驱动（PCI/平台）setup 主线的公共汇合点，对应规范 §4.2 控制器初始化的起点</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:229 · xhci_reset · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:1">	ret = xhci_handshake(&xhci->op_regs->status, STS_CNR, 0, timeout_us);</pre>
+        <p class="exnote">复位后轮询 USBSTS 等 CNR=0：控制器就绪前不允许写其它寄存器（§4.2 的就绪等待）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:5565 · xhci_gen_setup · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:2">	xhci_init(hcd);</pre>
+        <p class="exnote">本树新拆出的 xhci_init：基础寄存器编程总入口（mem_init 分配内存后调用）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:487 · xhci_enable_max_dev_slots · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:3">	writel(config_reg, &xhci->op_regs->config_reg);</pre>
+        <p class="exnote">写 CONFIG 寄存器 MaxSlotsEn=设备槽数上限（§4.2 第 1 步）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:506 · xhci_set_cmd_ring_deq · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:4">	xhci_write_64(xhci, crcr, &xhci->op_regs->cmd_ring);</pre>
+        <p class="exnote">写 CRCR：命令环基址 + Cycle 位（§4.2 命令环定义）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:555 · xhci_init · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:5">	xhci_write_64(xhci, xhci->dcbaa.dma, &xhci->op_regs->dcbaa_ptr);</pre>
+        <p class="exnote">写 DCBAAP：设备上下文基址数组指针（§4.2 第 2 步）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-mem.c:2311 · xhci_alloc_interrupter · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:6">	ir->event_ring = xhci_ring_alloc(xhci, segs, TYPE_EVENT, 0, flags);</pre>
+        <p class="exnote">分配事件环：命令/传输完成事件都写到这个环</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-mem.c:2343 · xhci_add_interrupter · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:7">	writel(erst_size, &ir->ir_set->erst_size);</pre>
+        <p class="exnote">写 ERSTSZ：事件环段表项数（中断器初始化）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-mem.c:2351 · xhci_add_interrupter · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:8">		xhci_write_64(xhci, erst_base, &ir->ir_set->erst_base);</pre>
+        <p class="exnote">写 ERSTBA：事件环段表基址（事件环与中断器绑定）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:627 · xhci_run · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:9">int xhci_run(struct usb_hcd *hcd)</pre>
+        <p class="exnote">hc_driver .start 钩子：主机由停止态转入运行态的入口</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:154 · xhci_start · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:10">	writel(temp, &xhci->op_regs->command);</pre>
+        <p class="exnote">R/S=1 写入 USBCMD（151 行 temp |= CMD_RUN；经 xhci_run-&gt;xhci_run_finished-&gt;xhci_start 调到这里）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:605 · xhci_run_finished · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:init:11">	xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;</pre>
+        <p class="exnote">命令环状态置 RUNNING：此后 ring_cmd_db 才真正敲钟，即“允许门铃”</p>
+      </div>
+    </div>
+
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">42-host-controller-init</span>
+        <span class="spec">初始化链：xhci_setup / xhci_run 主线寄存器写序列</span>
+      </div>
+      <video controls preload="metadata" src="42-host-controller-init.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=1">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
+    </div>
+
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html">打开交互操作台 →</a>
+        <span class="note">单文件自包含 · SMOKE 全 PASS（含模块三）· 模块一=三环操作台 · 模块二=URB→TRB→TD 组装 · 模块三=代码解读</span>
+      </div>
+      <p class="int-note"><b>模块三 · 代码解读：</b>4.2 控制器初始化题组（寄存器清单：CNR 等待 / MaxSlotsEn / CRCR / DCBAAP / ERSTSZ / ERSTBA / R/S=1，贴码行可点 + 规范锚点卡）</p>
+    </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit 24d2a690fb83c40913c0b3f38151ae3997a5898f · 2026-10-09 · Henry Tseng（QNAP） · drivers/usb/host/xhci.c 1 行 · hunk @@ -195,7 +195,7 @@（xhci_reset）</div>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2026 年 10 月，QNAP（NAS 存储厂商）的 Henry Tseng 报告并提交：<code>xhci_reset()</code> 在主机控制器未 halted（未停机）时直接中止复位路径，却不写 CMD_RESET、也不返回错误。触发场景是主机未停机就有路径对控制器调用复位（驱动探测/恢复流程）。硬件无关——这是纯软件状态机的返回值语义缺陷。对应课程 4.2 的 halt→reset 握手节拍：复位的前提（主机已停机）与完成（CNR 清零）都要靠状态位逐级确认，前提不满足时必须把失败如实上抛，而不是伪装成功。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：调用方检查 <code>xhci_reset()</code> 返回值时被告知「复位成功」，而复位实际上根本没有执行——这是全部复位失败路径里唯一一个「失败却返回 0」的分支。机制：<code>xhci_reset()</code> 开头读 USBSTS 状态，若 <code>(state &amp; STS_HALT) == 0</code>（主机未 halted），按语义复位应当中止；补丁前这个分支 <code>return 0</code>，与后续「写 CMD_RESET → handshake 等 CNR 清零 → 失败返回超时错误」的其他路径语义不一致。规范背景（§4.2 p69）：复位不是瞬时动作，而是带握手的流程——芯片硬件复位后要等 <code>USBSTS.CNR</code> 清零才允许写其它 Operational/Runtime 寄存器；前提不满足就应报错，让调用链不至于在「复位已完成」的假象上继续初始化。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">单行改动（<code>drivers/usb/host/xhci.c</code>，<code>xhci_reset</code>）：未 halted 中止分支 <code>return 0</code> → <code>return -EBUSY</code>。补丁前：中止复位被当成成功，调用方在错误状态下继续走初始化。补丁后：-EBUSY 把「主机忙、未停机」如实上抛，调用方走错误处理——<code>xhci_reset</code> 的所有失败出口（未 halted / handshake 超时）语义一致。与代码摘录（drafts/code-excerpts.json init 组 L229，同函数内 <code>xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us)</code>）对读：那条握手失败会返回超时错误，本补丁让“没进入复位”同样返回错误；凡依赖返回值判断复位成败的调用方（探测、休眠恢复、错误恢复路径）从此拿到一致语义，验收时可直接对 -EBUSY 分支验证未停机场景。</p>
+      <div class="dhead">diff 逐字切片 · git show 24d2a690fb83 · drivers/usb/host/xhci.c @@ -195,7 +195,7 @@</div>
+      <pre class="diffblock" data-ck="diff:24d2a690fb83c40913c0b3f38151ae3997a5898f:drivers/usb/host/xhci.c:1"><span class="d-meta">diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c</span>
+<span class="d-meta">index a9e47e178c28..2af6a7b91e55 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.c</span>
+<span class="d-hunk">@@ -195,7 +195,7 @@ int xhci_reset(struct xhci_hcd *xhci, u64 timeout_us)</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	if ((state &amp; STS_HALT) == 0) {</span>
+<span class="d-ctx"> 		xhci_warn(xhci, "Host controller not halted, aborting reset.\n");</span>
+<span class="d-del">-		return 0;</span>
+<span class="d-add">+		return -EBUSY;</span>
+<span class="d-ctx"> 	}</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "// Reset the HC");</span></pre>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=4">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="s43">
+    <h2><span class="no">§4.3</span>USB 设备初始化</h2>
+
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>规范要点（xHCI 规范 §4.3 · p71-80）</h3>
+      <p class="qtitle">要点 1 · FS 设备先经 EP0 读 Device Descriptor 前 8 字节取 bMaxPacketSize0</p>
+      <blockquote data-ck="spec:spec-43.txt:L103-L107">For FS devices, system software should initially read the first 8 bytes of the 
+USB Device Descriptor to retrieve the value of the bMaxPacketSize0 field and 
+determine the actual Max Packet Size for the Default Control Endpoint, by 
+issuing a USB GET_DESCRIPTOR request to the device, update the Default 
+Control Endpoint Context with the actual Max Packet Size and inform the xHC 
+of the context change. Step a describes this operation.</blockquote>
+      <div class="qsrc">—— evidence/spec-43.txt L103-L107（p72）</div>
+      <p class="qtitle">要点 2 · 控制传输三段顺序：Setup → Data → Status（shall 要求）</p>
+      <blockquote data-ck="spec:spec-43.txt:L115-L116">The USB GET_DESCRIPTOR request requires a Data Stage, so the 
+Setup Stage TD shall be followed by a Data Stage TD, then a Status 
+Stage TD.</blockquote>
+      <div class="qsrc">—— evidence/spec-43.txt L115-L116（p73）</div>
+      <p class="qtitle">要点 3 · Setup Stage TRB 字段：TRT=IN Data Stage(3)/Length=8/IOC=0/IDT=1/bmRequestType=80h/bRequest=6/wValue=0100h/wLength=8</p>
+      <blockquote data-ck="spec:spec-43.txt:L120-L125">Initialize the Setup Stage TD (a single Setup Stage TRB) on the 
+Endpoint 0 Transfer Ring. 
+•  TRB Type = Setup Stage TRB. 
+•  Transfer Type (TRT) = IN Data Stage (3). 
+•  TRB Transfer Length = 8. 
+•  Interrupt On Completion (IOC) = 0. 
+•  Immediate Data (IDT) = 1.</blockquote>
+      <div class="qsrc">—— evidence/spec-43.txt L120-L125（p73）</div>
+      <p class="qtitle">要点 4 · 三段就绪后敲设备槽门铃：DB Target = Control EP 0 Enqueue Pointer Update</p>
+      <blockquote data-ck="spec:spec-43.txt:L181">Ring the Device Slots’ Doorbell with DB Target = Control EP 0 
+Enqueue Pointer Update.</blockquote>
+      <div class="qsrc">—— evidence/spec-43.txt L181（p74）</div>
+      <p class="qtitle">要点 5 · Address Device 命令完成后才能对该槽发更多命令（等待语义）</p>
+      <blockquote data-ck="spec:spec-43.txt:L346">System software shall wait for Address Device Command completion event on 
+the Event Ring before issuing any more commands to the slot.</blockquote>
+      <div class="qsrc">—— evidence/spec-43.txt L346（p76）</div>
+      <p class="foot-note">补充（见引文卡）：Data/Status Stage TRB 字段——evidence/spec-43.txt L136-154 / L156-173（p73）；Address Device 命令指向 Input Context——evidence/spec-43.txt L331-334（p76）。</p>
+      <h3>调用链贴码 <span class="cmt">commit d9008e061539 · drafts/code-excerpts.json dev 组逐字</span></h3>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/core/message.c:150 · usb_control_msg · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:0">int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request,</pre>
+        <p class="exnote">USB 核同步控制传输入口：构造控制 URB、提交并等完成（动画起点，SET_ADDRESS 等由此发出）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:1698 · xhci_urb_enqueue · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:1">		ret = xhci_queue_ctrl_tx(xhci, GFP_ATOMIC, urb,</pre>
+        <p class="exnote">hc_driver urb_enqueue 按端点类型分派，控制传输走 xhci_queue_ctrl_tx（现名仍叫此）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:3842 · xhci_queue_ctrl_tx · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:2">	field |= TRB_IDT | TRB_TYPE(TRB_SETUP);</pre>
+        <p class="exnote">Setup 段 TRB：TRB_SETUP + TRB_IDT（8 字节 SETUP 包作为立即数据随 TRB 走）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:3856 · xhci_queue_ctrl_tx · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:3">	queue_trb(xhci, ep_ring, true,</pre>
+        <p class="exnote">Setup TRB 入 EP0 传输环（bRequestType/wValue 等打包成 TRB 前两个字段）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:3866 · xhci_queue_ctrl_tx · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:4">		field = TRB_ISP | TRB_TYPE(TRB_DATA);</pre>
+        <p class="exnote">Data 段 TRB 类型：TRB_DATA（IN 方向带 ISP 短包中断）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:3892 · xhci_queue_ctrl_tx · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:5">		queue_trb(xhci, ep_ring, true,</pre>
+        <p class="exnote">Data TRB 入环：数据缓冲 DMA 地址 + 长度</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:3914 · xhci_queue_ctrl_tx · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:6">			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring->cycle_state);</pre>
+        <p class="exnote">Status 段 TRB：TRB_STATUS + TRB_IOC，传输结束时产生完成事件</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:3916 · xhci_queue_ctrl_tx · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:7">	giveback_first_trb(xhci, slot_id, ep_index, 0,</pre>
+        <p class="exnote">giveback_first_trb：三段齐后翻转首 TRB 的 Cycle 位，整个 TD 一次性移交硬件</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci-ring.c:579 · xhci_ring_ep_doorbell · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:8">	writel(DB_VALUE(ep_index, stream_id), db_addr);</pre>
+        <p class="exnote">敲设备门铃：writel DB_VALUE(ep_index=0)——EP0 时 DB Target=ep+1=1（宏见 xhci.h:313）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:4404 · xhci_setup_device · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:9">	ret = xhci_queue_address_device(xhci, command, virt_dev->in_ctx->dma,</pre>
+        <p class="exnote">设备编址：xhci_queue_address_device 把 Address Device 命令 TRB 入命令环（入口是 .address_device=xhci_address_device）</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:4412 · xhci_setup_device · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:10">	xhci_ring_cmd_db(xhci);</pre>
+        <p class="exnote">敲命令门铃 DB Target=0，xHC 开始处理编址命令</p>
+      </div>
+      <div class="exrow">
+        <div class="exhead">drivers/usb/host/xhci.c:4416 · xhci_setup_device · d9008e061539</div>
+        <pre class="code" data-ck="excerpts:dev:11">	wait_for_completion(command->completion);</pre>
+        <p class="exnote">等命令完成事件：handle_cmd_completion 里 complete() 唤醒本行，设备拿到地址</p>
+      </div>
+    </div>
+
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">43-usb-device-init</span>
+        <span class="spec">设备初始化：usb_control_msg → xhci_address_device / setup_device → URB enqueue</span>
+      </div>
+      <video controls preload="metadata" src="43-usb-device-init.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=2">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
+    </div>
+
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html">打开交互操作台 →</a>
+        <span class="note">单文件自包含 · SMOKE 全 PASS（含模块三）· 模块一=三环操作台 · 模块二=URB→TRB→TD 组装 · 模块三=代码解读</span>
+      </div>
+      <p class="int-note"><b>模块二 · URB→TRB→TD 组装：</b>GET_DESCRIPTOR 8B 手动组装（Setup/Data/Status 三段 TRB 字段逐项核对）</p>
+      <p class="int-note"><b>模块三 · 代码解读：</b>4.3 设备初始化题组（贴码行可点 + 规范锚点卡）</p>
+    </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit（正文引用）f72b9aa821a2bfe4b6dfec4be19f264d0673b008 · 2025-07-17 · Jay Chen · drivers/usb/host/xhci-mem.c +2 行 · hunk @@ -1195,6 +1195,8 @@（xhci_setup_addressable_virt_dev） · 本地核验件 dabf502ee893（stable 回移，diff 同）</div>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2025 年 7 月，Jay Chen 报告：其公司正在开发一个严格遵循 xHCI 规范的自研虚拟 xHC 硬件平台，验证阶段设备枚举失败——Address Device 命令回 TRB Completion Code = 5（Parameter Error），bug 单在 kernel bugzilla 220033。根因不在虚拟平台自身，而是 Linux 驱动对规范两处条文的取舍：初始化输入端点上下文时全字段清零，其中 Average TRB Length（avg_trb_len）= 0，而严格按规范实现的控制器会判定该参数非法。主流真实硬件恰好不校验这个字段，问题因此在真机上从未暴露——虚拟平台反而成了规范的忠实裁判。对应课程 4.3 的 Address Device 输入上下文节拍。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：严格按规范实现的（虚拟）xHC 在 EP0 编址时返回 Parameter Error（完成码 5），设备枚举失败。机制：规范 §4.8.2（Endpoint Context Initialization）要求输入端点上下文所有字段初始化为 0；§6.2.3（Endpoint Context）却规定 Average TRB Length 应大于 0，且明确「Software shall set Average TRB Length to 8 for control endpoints」——两条条文在全 0 初始化面前互相矛盾。avg_trb_len 用于带宽计算，对控制端点填 0 没有意义。驱动此前按 §4.8.2 字面义把 EP0 的 avg_trb_len 留成 0：宽容的硬件忽略它，严格的硬件判错。课程侧对应证据：§4.3.3（p76）「Allocate an Input Context data structure (6.2.5) and initialize all fields to 0」之后逐字段初始化 EP0 Context——补丁即在这条全 0 路径上为控制端点开例外。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（§4.3.3 p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
+      <div class="dhead">diff 逐字切片 · git show f72b9aa821a2（主线） · drivers/usb/host/xhci-mem.c @@ -1195,6 +1195,8 @@</div>
+      <pre class="diffblock" data-ck="diff:f72b9aa821a2bfe4b6dfec4be19f264d0673b008:drivers/usb/host/xhci-mem.c:1"><span class="d-meta">diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c</span>
+<span class="d-meta">index 6680afa4f596..07289333a1e8 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-mem.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-mem.c</span>
+<span class="d-hunk">@@ -1195,6 +1195,8 @@ int xhci_setup_addressable_virt_dev(struct xhci_hcd *xhci, struct usb_device *ud</span>
+<span class="d-ctx"> 	ep0_ctx-&gt;deq = cpu_to_le64(dev-&gt;eps[0].ring-&gt;first_seg-&gt;dma |</span>
+<span class="d-ctx"> 				   dev-&gt;eps[0].ring-&gt;cycle_state);</span>
+<span class="d-ctx"> </span>
+<span class="d-add">+	ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</span>
+<span class="d-add">+</span>
+<span class="d-ctx"> 	trace_xhci_setup_addressable_virt_device(dev);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	/* Steps 7 and 8 were done in xhci_alloc_virt_device() */</span></pre>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=5">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
 
   <footer>
-    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与草稿）· <code>evidence/</code>（规范切片与上屏断言对照）。
-    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。评审反馈请按 §4.1 / §4.2 / §4.3 / 交互 分项。
+    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。贴码/引文/diff 均带 <code>data-ck</code> 机检锚点，逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。评审反馈请按 §4.1 / §4.2 / §4.3 四版块分项。
   </footer>
 </div>
 </body>

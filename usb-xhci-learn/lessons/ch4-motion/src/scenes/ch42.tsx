@@ -82,6 +82,7 @@ export default makeScene2D(function* (view) {
   yield* stage.say(
     '系统启动，xHC 就位。本节四个阶段：等就绪、自由组五步、合闸、端口上报。',
   );
+  yield* waitFor(6.0); // pace R3: 拍#2 1.4s→7.4s（阈值7.3）
 
   /* ===== 0) 开机三件事 ===== */
   const boot = makeCard({
@@ -172,6 +173,7 @@ export default makeScene2D(function* (view) {
   yield* panel.highlight(3);
   yield* stage.say('S1：配 CONFIG.MaxSlotsEn，定设备槽数量上限（p69）。', '②·S1 自由组');
   yield* s1.row(2)().text('✓ 已配置');
+  yield* waitFor(3.9); // pace R3: 拍#5 1.7s→5.6s（阈值5.5）
   yield* s1.ref().opacity(0, 0.3);
   s1.ref().remove();
 
@@ -192,6 +194,7 @@ export default makeScene2D(function* (view) {
   yield* panel.highlight(5);
   yield* stage.say('S2：DCBAAP 指向 DCBAA——每个设备槽的输出上下文指针由软件装表（p69）。', '②·S2 自由组');
   yield* s2.row(3)().text('✓ 已装载');
+  yield* waitFor(5.6); // pace R3: 拍#6 1.7s→7.3s（阈值7.2）
   yield* s2.ref().opacity(0, 0.3);
   s2.ref().remove();
 
@@ -211,6 +214,7 @@ export default makeScene2D(function* (view) {
   yield* panel.highlight(4);
   yield* stage.say('S3：CRCR 写入命令环首 TRB 地址——§4.1 的命令通道从这里开始（p69）。', '②·S3 自由组');
   yield* s3.row(2)().text('✓ 已写入');
+  yield* waitFor(5.1); // pace R3: 拍#7 1.7s→6.8s（阈值6.7）
   yield* s3.ref().opacity(0, 0.3);
   s3.ref().remove();
 
