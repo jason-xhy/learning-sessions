@@ -70,6 +70,12 @@
         white-space: nowrap;
       }
       #frame-label .cur { color: var(--ink); font-weight: 600; }
+      #mode-chip {
+        font-size: 11px;
+        color: var(--faint);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
       #status {
         position: fixed; left: 8px; bottom: 8px;
         font: 12px Menlo, "SF Mono", monospace;
@@ -89,7 +95,7 @@
       #missing .big { font-size: 20px; color: var(--hc); margin-bottom: 8px; }
       #missing .hint { font-size: 13px; color: var(--faint); font-family: Menlo, "SF Mono", monospace; }
     </style>
-    <script type="module" crossorigin src="../player-092c744c.js"></script>
+    <script type="module" crossorigin src="../player-98d1b236.js"></script>
     <link rel="modulepreload" crossorigin href="../theme-10e9e35b.js">
     <link rel="modulepreload" crossorigin href="../getContext-9041dc5c.js">
   </head>
@@ -109,7 +115,8 @@
         <button id="btn-play" data-act="play" class="primary" title="播放 / 暂停（空格）" disabled>播放</button>
         <button id="btn-next" data-act="next" title="下一帧（→）" disabled>下一帧</button>
         <input id="seek" data-act="seek" type="range" min="0" max="0" step="1" value="0" disabled />
-        <div id="frame-label">frame <span class="cur" data-field="frame">0</span> / <span data-field="total">0</span></div>
+        <div id="frame-label"><span data-field="stepwrap" hidden>拍 <span class="cur" data-field="step">0</span>/<span data-field="steps">0</span> · </span>帧 <span class="cur" data-field="frame">0</span> / <span data-field="total">0</span></div>
+        <div id="mode-chip" data-field="mode">逐帧</div>
       </div>
     </div>
     <div id="status" data-field="status">booting…</div>

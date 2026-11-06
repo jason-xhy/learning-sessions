@@ -3,15 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>xHCI 第 4 章视频课件 · R3 四段式</title>
+<title>xHCI 第 4 章视频课件 · R4 四段式</title>
 <!-- data-ck 锚点块书写约定（机检 scripts/check_landing_code.py 依赖）：
      1) data-ck 必须是开标签的最后一个属性；
      2) 闭合标签紧贴内容末字符，中间不留任何空白；
      3) 多行块（blockquote/pre）的第 2 行起内容顶格（零缩进）。
      锚点 schema：
-     excerpts:<组>:<json下标>   → drafts/code-excerpts.json 对应行逐字
-     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止）
-     diff:<hash>:<路径>:<hunk序号> → git show <hash> -- <路径> 输出切片 -->
+     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止；
+                                  同一锚点值允许多次出现，按 EXPECTED_SPEC 多重集对账）
+     patch:<hash>               → git show <hash> 完整 stdout（不加路径过滤；diff 部分
+                                  逐行 d-meta/d-hunk/d-add/d-del/d-ctx 着色 span）
+     贴码段走 data-src 通道（pre.codeseg，data-src="短文件名:起始行:结束行"），
+     机检按段校验（行内容 == git show d9008e061539:<路径> 切片）+ 摘录覆盖 35/35；
+     摘录行 class="cl hot" + data-hot="组:下标"，tooltip 引文在页尾 #tipdocs。-->
 <style>
   :root {
     --bg: #0b0f15;
@@ -65,9 +69,7 @@
     border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap;
   }
   .qsrc { margin: 0 0 6px 17px; color: var(--muted); font-size: 12px; }
-  .exrow { margin: 0 0 12px; }
-  .exhead { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin-bottom: 4px; }
-  pre.code, pre.diffblock {
+  pre.diffblock {
     margin: 0 0 4px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
     padding: 9px 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
     font-size: 12px; line-height: 1.55; color: #c7d3e6;
@@ -95,12 +97,33 @@
   }
   .ph { font-size: 13.5px; color: var(--amber); margin: 14px 0 4px; font-weight: 600; }
   .pbody { margin: 0 0 6px; font-size: 13.5px; color: var(--text); }
-  .dhead { font-family: ui-monospace, Menlo, monospace; color: var(--muted); font-size: 12px; margin: 14px 0 6px; }
   .d-meta { color: #67788f; }
   .d-hunk { color: var(--blue); }
   .d-add { color: var(--green); background: rgba(134, 189, 122, 0.12); }
   .d-del { color: #e08c8c; background: rgba(224, 140, 140, 0.12); }
   .d-ctx { color: #a8b6ca; }
+  .exhead2 { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin: 14px 0 4px; }
+  pre.codeseg {
+    margin: 0 0 10px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 0; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.5; color: #c7d3e6; white-space: normal;
+  }
+  .codeseg .cl { display: flex; padding: 0 12px; }
+  .codeseg .cl:hover { background: rgba(124, 159, 240, 0.06); }
+  .codeseg .ln { flex: none; width: 4.2em; text-align: right; padding-right: 14px; color: #51617a; user-select: none; }
+  .codeseg .cd { white-space: pre; flex: 1 1 auto; }
+  .codeseg .cl.hot { background: rgba(217, 168, 96, 0.09); box-shadow: inset 3px 0 0 var(--amber); cursor: pointer; }
+  .codeseg .cl.hot .ln { color: var(--amber); font-weight: 600; }
+  #tipdocs { display: none; }
+  #codetip {
+    position: absolute; z-index: 60; left: 0; top: 0; max-width: 660px; min-width: 300px;
+    background: var(--panel); border: 1px solid var(--blue); border-radius: 10px;
+    padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-height: 70vh; overflow: auto;
+  }
+  #codetip[hidden] { display: none; }
+  .tipdoc .tipnote { margin: 0 0 6px; font-size: 13px; color: var(--text); }
+  .tipdoc blockquote { margin: 6px 0 4px; font-size: 12.5px; }
   code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
   footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
 </style>
@@ -108,8 +131,8 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>xHCI 第 4 章视频课件<span class="tag">R3 四段式 · 2026-11-06</span></h1>
-    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化三节，每节四版块：① 规范与代码分析 → ② 动画（mp4 + 分帧步进） → ③ 交互操作台 → ④ 真实上游补丁收尾（含补丁分帧动画）。</p>
+    <h1>xHCI 第 4 章视频课件<span class="tag">R4 四段式 · 2026-11-06</span></h1>
+    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化三节，每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m4） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 四幕分帧走读）。</p>
     <div class="meta">
       1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 持续违例</b>（三主片+三补丁片，全帧非抽样）·
       判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
@@ -119,7 +142,7 @@
       <a href="#s42">§4.2 主机控制器初始化</a>
       <a href="#s43">§4.3 USB 设备初始化</a>
     </nav>
-    <p class="meta">贴码/引文/diff 均带 <code>data-ck</code> 机检锚点，逐字比对见项目仓 <code>scripts/check_landing_code.py</code>。</p>
+    <p class="meta">引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），比对见项目仓 <code>scripts/check_landing_code.py</code>。</p>
   </header>
 
   <section id="s41">
@@ -146,62 +169,269 @@ Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).</
       <blockquote data-ck="spec:spec-41.txt:L3">The Command Ring Control 
 Register is defined in the Operational Register space</blockquote>
       <div class="qsrc">—— evidence/spec-41.txt L3（p68）</div>
-      <h3>调用链贴码 <span class="cmt">commit d9008e061539 · drafts/code-excerpts.json cmd 组逐字</span></h3>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:4354 · queue_command · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:0">static int queue_command(struct xhci_hcd *xhci, struct xhci_command *cmd,</pre>
-        <p class="exnote">组装命令 TRB 入命令环的通用函数：所有 xHCI 命令（编址/配置端点等）都经它入环</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:4377 · queue_command · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:1">	ret = prepare_ring(xhci, xhci->cmd_ring, EP_STATE_RUNNING,</pre>
-        <p class="exnote">先 prepare_ring 检查命令环有空位（含必须成功命令的预留 TRB），动画中“腾位置”动作</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:4387 · queue_command · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:2">	cmd->command_trb = xhci->cmd_ring->enqueue;</pre>
-        <p class="exnote">记下本命令 TRB 的环上位置，完成事件回来按它配对命令</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:4397 · queue_command · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:3">	queue_trb(xhci, xhci->cmd_ring, false, field1, field2, field3,</pre>
-        <p class="exnote">queue_trb 把命令四个字段写进命令环 enqueue 指向的 TRB</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:438 · xhci_ring_cmd_db · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:4">	writel(DB_VALUE_HOST, &xhci->dba->doorbell[0]);</pre>
-        <p class="exnote">敲主机门铃：写 doorbell[0]，DB Target=0（DB_VALUE_HOST），通知 xHC 命令环有新命令</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:3013 · xhci_handle_event_trb · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:5">		handle_cmd_completion(xhci, &event->event_cmd);</pre>
-        <p class="exnote">事件环读到 TRB_COMPLETION（命令完成事件），分派给 handle_cmd_completion</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:1810 · handle_cmd_completion · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:6">static void handle_cmd_completion(struct xhci_hcd *xhci,</pre>
-        <p class="exnote">命令完成事件处理函数入口（形参就是事件环上的 event_cmd）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:1832 · handle_cmd_completion · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:7">	cmd_comp_code = GET_COMP_CODE(le32_to_cpu(event->status));</pre>
-        <p class="exnote">从事件 status 里解出完成码：动画里的“回执”（成功/失败判定）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:1945 · handle_cmd_completion · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:8">	xhci_complete_del_and_free_cmd(cmd, cmd_comp_code, COMP_PARAM(status));</pre>
-        <p class="exnote">event_handled 收尾：把命令从 cmd_list 摘除并触发唤醒</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:1718 · xhci_complete_del_and_free_cmd · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:9">		complete(cmd->completion);</pre>
-        <p class="exnote">complete() 唤醒正在 wait_for_completion 的发令线程，命令路径闭环</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:1947 · handle_cmd_completion · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:cmd:10">	inc_deq(xhci, xhci->cmd_ring);</pre>
-        <p class="exnote">命令环 dequeue 指针前移一格，环回到可发下一条的状态</p>
-      </div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:4354-4400 · queue_command · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:4354:4400"><div class="cl hot" data-line="4354" data-hot="cmd:0"><span class="ln">4354</span><span class="cd">static int queue_command(struct xhci_hcd *xhci, struct xhci_command *cmd,</span></div>
+<div class="cl" data-line="4355"><span class="ln">4355</span><span class="cd">			 u32 field1, u32 field2,</span></div>
+<div class="cl" data-line="4356"><span class="ln">4356</span><span class="cd">			 u32 field3, u32 field4, bool command_must_succeed)</span></div>
+<div class="cl" data-line="4357"><span class="ln">4357</span><span class="cd">{</span></div>
+<div class="cl" data-line="4358"><span class="ln">4358</span><span class="cd">	int reserved_trbs = xhci-&gt;cmd_ring_reserved_trbs;</span></div>
+<div class="cl" data-line="4359"><span class="ln">4359</span><span class="cd">	struct usb_hcd *hcd = xhci_to_hcd(xhci);</span></div>
+<div class="cl" data-line="4360"><span class="ln">4360</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="4361"><span class="ln">4361</span><span class="cd"></span></div>
+<div class="cl" data-line="4362"><span class="ln">4362</span><span class="cd">	if ((xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) ||</span></div>
+<div class="cl" data-line="4363"><span class="ln">4363</span><span class="cd">		(xhci-&gt;xhc_state &amp; XHCI_STATE_HALTED)) {</span></div>
+<div class="cl" data-line="4364"><span class="ln">4364</span><span class="cd">		xhci_dbg(xhci, "xHCI dying or halted, can't queue_command. state: 0x%x\n",</span></div>
+<div class="cl" data-line="4365"><span class="ln">4365</span><span class="cd">			 xhci-&gt;xhc_state);</span></div>
+<div class="cl" data-line="4366"><span class="ln">4366</span><span class="cd">		return -ESHUTDOWN;</span></div>
+<div class="cl" data-line="4367"><span class="ln">4367</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4368"><span class="ln">4368</span><span class="cd"></span></div>
+<div class="cl" data-line="4369"><span class="ln">4369</span><span class="cd">	if (!HCD_HW_ACCESSIBLE(hcd)) {</span></div>
+<div class="cl" data-line="4370"><span class="ln">4370</span><span class="cd">		xhci_warn(xhci, "Can't queue command, xHC not accessible\n");</span></div>
+<div class="cl" data-line="4371"><span class="ln">4371</span><span class="cd">		return -ESHUTDOWN;</span></div>
+<div class="cl" data-line="4372"><span class="ln">4372</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4373"><span class="ln">4373</span><span class="cd"></span></div>
+<div class="cl" data-line="4374"><span class="ln">4374</span><span class="cd">	if (!command_must_succeed)</span></div>
+<div class="cl" data-line="4375"><span class="ln">4375</span><span class="cd">		reserved_trbs++;</span></div>
+<div class="cl" data-line="4376"><span class="ln">4376</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4377" data-hot="cmd:1"><span class="ln">4377</span><span class="cd">	ret = prepare_ring(xhci, xhci-&gt;cmd_ring, EP_STATE_RUNNING,</span></div>
+<div class="cl" data-line="4378"><span class="ln">4378</span><span class="cd">			reserved_trbs, GFP_ATOMIC);</span></div>
+<div class="cl" data-line="4379"><span class="ln">4379</span><span class="cd">	if (ret &lt; 0) {</span></div>
+<div class="cl" data-line="4380"><span class="ln">4380</span><span class="cd">		xhci_err(xhci, "ERR: No room for command on command ring\n");</span></div>
+<div class="cl" data-line="4381"><span class="ln">4381</span><span class="cd">		if (command_must_succeed)</span></div>
+<div class="cl" data-line="4382"><span class="ln">4382</span><span class="cd">			xhci_err(xhci, "ERR: Reserved TRB counting for "</span></div>
+<div class="cl" data-line="4383"><span class="ln">4383</span><span class="cd">					"unfailable commands failed.\n");</span></div>
+<div class="cl" data-line="4384"><span class="ln">4384</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="4385"><span class="ln">4385</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4386"><span class="ln">4386</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4387" data-hot="cmd:2"><span class="ln">4387</span><span class="cd">	cmd-&gt;command_trb = xhci-&gt;cmd_ring-&gt;enqueue;</span></div>
+<div class="cl" data-line="4388"><span class="ln">4388</span><span class="cd"></span></div>
+<div class="cl" data-line="4389"><span class="ln">4389</span><span class="cd">	/* if there are no other commands queued we start the timeout timer */</span></div>
+<div class="cl" data-line="4390"><span class="ln">4390</span><span class="cd">	if (list_empty(&amp;xhci-&gt;cmd_list)) {</span></div>
+<div class="cl" data-line="4391"><span class="ln">4391</span><span class="cd">		xhci-&gt;current_cmd = cmd;</span></div>
+<div class="cl" data-line="4392"><span class="ln">4392</span><span class="cd">		xhci_mod_cmd_timer(xhci);</span></div>
+<div class="cl" data-line="4393"><span class="ln">4393</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4394"><span class="ln">4394</span><span class="cd"></span></div>
+<div class="cl" data-line="4395"><span class="ln">4395</span><span class="cd">	list_add_tail(&amp;cmd-&gt;cmd_list, &amp;xhci-&gt;cmd_list);</span></div>
+<div class="cl" data-line="4396"><span class="ln">4396</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4397" data-hot="cmd:3"><span class="ln">4397</span><span class="cd">	queue_trb(xhci, xhci-&gt;cmd_ring, false, field1, field2, field3,</span></div>
+<div class="cl" data-line="4398"><span class="ln">4398</span><span class="cd">			field4 | xhci-&gt;cmd_ring-&gt;cycle_state);</span></div>
+<div class="cl" data-line="4399"><span class="ln">4399</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="4400"><span class="ln">4400</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:429-441 · xhci_ring_cmd_db · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:429:441"><div class="cl" data-line="429"><span class="ln">429</span><span class="cd">void xhci_ring_cmd_db(struct xhci_hcd *xhci)</span></div>
+<div class="cl" data-line="430"><span class="ln">430</span><span class="cd">{</span></div>
+<div class="cl" data-line="431"><span class="ln">431</span><span class="cd">	if (!(xhci-&gt;cmd_ring_state &amp; CMD_RING_STATE_RUNNING))</span></div>
+<div class="cl" data-line="432"><span class="ln">432</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="433"><span class="ln">433</span><span class="cd"></span></div>
+<div class="cl" data-line="434"><span class="ln">434</span><span class="cd">	xhci_dbg(xhci, "// Ding dong!\n");</span></div>
+<div class="cl" data-line="435"><span class="ln">435</span><span class="cd"></span></div>
+<div class="cl" data-line="436"><span class="ln">436</span><span class="cd">	trace_xhci_ring_host_doorbell(0, DB_VALUE_HOST);</span></div>
+<div class="cl" data-line="437"><span class="ln">437</span><span class="cd"></span></div>
+<div class="cl hot" data-line="438" data-hot="cmd:4"><span class="ln">438</span><span class="cd">	writel(DB_VALUE_HOST, &amp;xhci-&gt;dba-&gt;doorbell[0]);</span></div>
+<div class="cl" data-line="439"><span class="ln">439</span><span class="cd">	/* Flush PCI posted writes */</span></div>
+<div class="cl" data-line="440"><span class="ln">440</span><span class="cd">	readl(&amp;xhci-&gt;dba-&gt;doorbell[0]);</span></div>
+<div class="cl" data-line="441"><span class="ln">441</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:2994-3039 · xhci_handle_event_trb · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:2994:3039"><div class="cl" data-line="2994"><span class="ln">2994</span><span class="cd">static int xhci_handle_event_trb(struct xhci_hcd *xhci, struct xhci_interrupter *ir,</span></div>
+<div class="cl" data-line="2995"><span class="ln">2995</span><span class="cd">				 union xhci_trb *event)</span></div>
+<div class="cl" data-line="2996"><span class="ln">2996</span><span class="cd">{</span></div>
+<div class="cl" data-line="2997"><span class="ln">2997</span><span class="cd">	u32 trb_type;</span></div>
+<div class="cl" data-line="2998"><span class="ln">2998</span><span class="cd"></span></div>
+<div class="cl" data-line="2999"><span class="ln">2999</span><span class="cd">	trace_xhci_handle_event(ir-&gt;event_ring, &amp;event-&gt;generic,</span></div>
+<div class="cl" data-line="3000"><span class="ln">3000</span><span class="cd">				xhci_trb_virt_to_dma(ir-&gt;event_ring-&gt;deq_seg,</span></div>
+<div class="cl" data-line="3001"><span class="ln">3001</span><span class="cd">						     ir-&gt;event_ring-&gt;dequeue));</span></div>
+<div class="cl" data-line="3002"><span class="ln">3002</span><span class="cd"></span></div>
+<div class="cl" data-line="3003"><span class="ln">3003</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3004"><span class="ln">3004</span><span class="cd">	 * Barrier between reading the TRB_CYCLE (valid) flag before, and any</span></div>
+<div class="cl" data-line="3005"><span class="ln">3005</span><span class="cd">	 * speculative reads of the event's flags/data below.</span></div>
+<div class="cl" data-line="3006"><span class="ln">3006</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3007"><span class="ln">3007</span><span class="cd">	rmb();</span></div>
+<div class="cl" data-line="3008"><span class="ln">3008</span><span class="cd">	trb_type = TRB_FIELD_TO_TYPE(le32_to_cpu(event-&gt;event_cmd.flags));</span></div>
+<div class="cl" data-line="3009"><span class="ln">3009</span><span class="cd">	/* FIXME: Handle more event types. */</span></div>
+<div class="cl" data-line="3010"><span class="ln">3010</span><span class="cd"></span></div>
+<div class="cl" data-line="3011"><span class="ln">3011</span><span class="cd">	switch (trb_type) {</span></div>
+<div class="cl" data-line="3012"><span class="ln">3012</span><span class="cd">	case TRB_COMPLETION:</span></div>
+<div class="cl hot" data-line="3013" data-hot="cmd:5"><span class="ln">3013</span><span class="cd">		handle_cmd_completion(xhci, &amp;event-&gt;event_cmd);</span></div>
+<div class="cl" data-line="3014"><span class="ln">3014</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3015"><span class="ln">3015</span><span class="cd">	case TRB_PORT_STATUS:</span></div>
+<div class="cl" data-line="3016"><span class="ln">3016</span><span class="cd">		handle_port_status(xhci, event);</span></div>
+<div class="cl" data-line="3017"><span class="ln">3017</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3018"><span class="ln">3018</span><span class="cd">	case TRB_TRANSFER:</span></div>
+<div class="cl" data-line="3019"><span class="ln">3019</span><span class="cd">		handle_tx_event(xhci, ir, &amp;event-&gt;trans_event);</span></div>
+<div class="cl" data-line="3020"><span class="ln">3020</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3021"><span class="ln">3021</span><span class="cd">	case TRB_DEV_NOTE:</span></div>
+<div class="cl" data-line="3022"><span class="ln">3022</span><span class="cd">		handle_device_notification(xhci, event);</span></div>
+<div class="cl" data-line="3023"><span class="ln">3023</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3024"><span class="ln">3024</span><span class="cd">	default:</span></div>
+<div class="cl" data-line="3025"><span class="ln">3025</span><span class="cd">		if (trb_type &gt;= TRB_VENDOR_DEFINED_LOW)</span></div>
+<div class="cl" data-line="3026"><span class="ln">3026</span><span class="cd">			handle_vendor_event(xhci, event, trb_type);</span></div>
+<div class="cl" data-line="3027"><span class="ln">3027</span><span class="cd">		else</span></div>
+<div class="cl" data-line="3028"><span class="ln">3028</span><span class="cd">			xhci_warn(xhci, "ERROR unknown event type %d\n", trb_type);</span></div>
+<div class="cl" data-line="3029"><span class="ln">3029</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3030"><span class="ln">3030</span><span class="cd">	/* Any of the above functions may drop and re-acquire the lock, so check</span></div>
+<div class="cl" data-line="3031"><span class="ln">3031</span><span class="cd">	 * to make sure a watchdog timer didn't mark the host as non-responsive.</span></div>
+<div class="cl" data-line="3032"><span class="ln">3032</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3033"><span class="ln">3033</span><span class="cd">	if (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) {</span></div>
+<div class="cl" data-line="3034"><span class="ln">3034</span><span class="cd">		xhci_dbg(xhci, "xHCI host dying, returning from event handler.\n");</span></div>
+<div class="cl" data-line="3035"><span class="ln">3035</span><span class="cd">		return -ENODEV;</span></div>
+<div class="cl" data-line="3036"><span class="ln">3036</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3037"><span class="ln">3037</span><span class="cd"></span></div>
+<div class="cl" data-line="3038"><span class="ln">3038</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="3039"><span class="ln">3039</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:1810-1948 · handle_cmd_completion · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1810:1948"><div class="cl hot" data-line="1810" data-hot="cmd:6"><span class="ln">1810</span><span class="cd">static void handle_cmd_completion(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="1811"><span class="ln">1811</span><span class="cd">		struct xhci_event_cmd *event)</span></div>
+<div class="cl" data-line="1812"><span class="ln">1812</span><span class="cd">{</span></div>
+<div class="cl" data-line="1813"><span class="ln">1813</span><span class="cd">	unsigned int slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event-&gt;flags));</span></div>
+<div class="cl" data-line="1814"><span class="ln">1814</span><span class="cd">	u32 status = le32_to_cpu(event-&gt;status);</span></div>
+<div class="cl" data-line="1815"><span class="ln">1815</span><span class="cd">	u64 cmd_dma;</span></div>
+<div class="cl" data-line="1816"><span class="ln">1816</span><span class="cd">	dma_addr_t cmd_dequeue_dma;</span></div>
+<div class="cl" data-line="1817"><span class="ln">1817</span><span class="cd">	u32 cmd_comp_code;</span></div>
+<div class="cl" data-line="1818"><span class="ln">1818</span><span class="cd">	union xhci_trb *cmd_trb;</span></div>
+<div class="cl" data-line="1819"><span class="ln">1819</span><span class="cd">	struct xhci_command *cmd;</span></div>
+<div class="cl" data-line="1820"><span class="ln">1820</span><span class="cd">	u32 cmd_type;</span></div>
+<div class="cl" data-line="1821"><span class="ln">1821</span><span class="cd"></span></div>
+<div class="cl" data-line="1822"><span class="ln">1822</span><span class="cd">	if (slot_id &gt; xhci-&gt;max_slots) {</span></div>
+<div class="cl" data-line="1823"><span class="ln">1823</span><span class="cd">		xhci_warn(xhci, "Invalid slot_id %u\n", slot_id);</span></div>
+<div class="cl" data-line="1824"><span class="ln">1824</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1825"><span class="ln">1825</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1826"><span class="ln">1826</span><span class="cd"></span></div>
+<div class="cl" data-line="1827"><span class="ln">1827</span><span class="cd">	cmd_dma = le64_to_cpu(event-&gt;cmd_trb);</span></div>
+<div class="cl" data-line="1828"><span class="ln">1828</span><span class="cd">	cmd_trb = xhci-&gt;cmd_ring-&gt;dequeue;</span></div>
+<div class="cl" data-line="1829"><span class="ln">1829</span><span class="cd"></span></div>
+<div class="cl" data-line="1830"><span class="ln">1830</span><span class="cd">	trace_xhci_handle_command(xhci-&gt;cmd_ring, &amp;cmd_trb-&gt;generic, cmd_dma);</span></div>
+<div class="cl" data-line="1831"><span class="ln">1831</span><span class="cd"></span></div>
+<div class="cl hot" data-line="1832" data-hot="cmd:7"><span class="ln">1832</span><span class="cd">	cmd_comp_code = GET_COMP_CODE(le32_to_cpu(event-&gt;status));</span></div>
+<div class="cl" data-line="1833"><span class="ln">1833</span><span class="cd"></span></div>
+<div class="cl" data-line="1834"><span class="ln">1834</span><span class="cd">	/* If CMD ring stopped we own the trbs between enqueue and dequeue */</span></div>
+<div class="cl" data-line="1835"><span class="ln">1835</span><span class="cd">	if (cmd_comp_code == COMP_COMMAND_RING_STOPPED) {</span></div>
+<div class="cl" data-line="1836"><span class="ln">1836</span><span class="cd">		complete_all(&amp;xhci-&gt;cmd_ring_stop_completion);</span></div>
+<div class="cl" data-line="1837"><span class="ln">1837</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1838"><span class="ln">1838</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1839"><span class="ln">1839</span><span class="cd"></span></div>
+<div class="cl" data-line="1840"><span class="ln">1840</span><span class="cd">	cmd_dequeue_dma = xhci_trb_virt_to_dma(xhci-&gt;cmd_ring-&gt;deq_seg,</span></div>
+<div class="cl" data-line="1841"><span class="ln">1841</span><span class="cd">			cmd_trb);</span></div>
+<div class="cl" data-line="1842"><span class="ln">1842</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="1843"><span class="ln">1843</span><span class="cd">	 * Check whether the completion event is for our internal kept</span></div>
+<div class="cl" data-line="1844"><span class="ln">1844</span><span class="cd">	 * command.</span></div>
+<div class="cl" data-line="1845"><span class="ln">1845</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="1846"><span class="ln">1846</span><span class="cd">	if (!cmd_dequeue_dma || cmd_dma != (u64)cmd_dequeue_dma) {</span></div>
+<div class="cl" data-line="1847"><span class="ln">1847</span><span class="cd">		xhci_warn(xhci,</span></div>
+<div class="cl" data-line="1848"><span class="ln">1848</span><span class="cd">			  "ERROR mismatched command completion event\n");</span></div>
+<div class="cl" data-line="1849"><span class="ln">1849</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1850"><span class="ln">1850</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1851"><span class="ln">1851</span><span class="cd"></span></div>
+<div class="cl" data-line="1852"><span class="ln">1852</span><span class="cd">	cmd = list_first_entry(&amp;xhci-&gt;cmd_list, struct xhci_command, cmd_list);</span></div>
+<div class="cl" data-line="1853"><span class="ln">1853</span><span class="cd"></span></div>
+<div class="cl" data-line="1854"><span class="ln">1854</span><span class="cd">	cancel_delayed_work(&amp;xhci-&gt;cmd_timer);</span></div>
+<div class="cl" data-line="1855"><span class="ln">1855</span><span class="cd"></span></div>
+<div class="cl" data-line="1856"><span class="ln">1856</span><span class="cd">	if (cmd-&gt;command_trb != xhci-&gt;cmd_ring-&gt;dequeue) {</span></div>
+<div class="cl" data-line="1857"><span class="ln">1857</span><span class="cd">		xhci_err(xhci,</span></div>
+<div class="cl" data-line="1858"><span class="ln">1858</span><span class="cd">			 "Command completion event does not match command\n");</span></div>
+<div class="cl" data-line="1859"><span class="ln">1859</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1860"><span class="ln">1860</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1861"><span class="ln">1861</span><span class="cd"></span></div>
+<div class="cl" data-line="1862"><span class="ln">1862</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="1863"><span class="ln">1863</span><span class="cd">	 * Host aborted the command ring, check if the current command was</span></div>
+<div class="cl" data-line="1864"><span class="ln">1864</span><span class="cd">	 * supposed to be aborted, otherwise continue normally.</span></div>
+<div class="cl" data-line="1865"><span class="ln">1865</span><span class="cd">	 * The command ring is stopped now, but the xHC will issue a Command</span></div>
+<div class="cl" data-line="1866"><span class="ln">1866</span><span class="cd">	 * Ring Stopped event which will cause us to restart it.</span></div>
+<div class="cl" data-line="1867"><span class="ln">1867</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="1868"><span class="ln">1868</span><span class="cd">	if (cmd_comp_code == COMP_COMMAND_ABORTED) {</span></div>
+<div class="cl" data-line="1869"><span class="ln">1869</span><span class="cd">		xhci-&gt;cmd_ring_state = CMD_RING_STATE_STOPPED;</span></div>
+<div class="cl" data-line="1870"><span class="ln">1870</span><span class="cd">		if (cmd-&gt;status == COMP_COMMAND_ABORTED) {</span></div>
+<div class="cl" data-line="1871"><span class="ln">1871</span><span class="cd">			if (xhci-&gt;current_cmd == cmd)</span></div>
+<div class="cl" data-line="1872"><span class="ln">1872</span><span class="cd">				xhci-&gt;current_cmd = NULL;</span></div>
+<div class="cl" data-line="1873"><span class="ln">1873</span><span class="cd">			goto event_handled;</span></div>
+<div class="cl" data-line="1874"><span class="ln">1874</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1875"><span class="ln">1875</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1876"><span class="ln">1876</span><span class="cd"></span></div>
+<div class="cl" data-line="1877"><span class="ln">1877</span><span class="cd">	cmd_type = TRB_FIELD_TO_TYPE(le32_to_cpu(cmd_trb-&gt;generic.field[3]));</span></div>
+<div class="cl" data-line="1878"><span class="ln">1878</span><span class="cd">	switch (cmd_type) {</span></div>
+<div class="cl" data-line="1879"><span class="ln">1879</span><span class="cd">	case TRB_ENABLE_SLOT:</span></div>
+<div class="cl" data-line="1880"><span class="ln">1880</span><span class="cd">		xhci_handle_cmd_enable_slot(slot_id, cmd, cmd_comp_code);</span></div>
+<div class="cl" data-line="1881"><span class="ln">1881</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1882"><span class="ln">1882</span><span class="cd">	case TRB_DISABLE_SLOT:</span></div>
+<div class="cl" data-line="1883"><span class="ln">1883</span><span class="cd">		xhci_handle_cmd_disable_slot(xhci, slot_id, cmd_comp_code);</span></div>
+<div class="cl" data-line="1884"><span class="ln">1884</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1885"><span class="ln">1885</span><span class="cd">	case TRB_CONFIG_EP:</span></div>
+<div class="cl" data-line="1886"><span class="ln">1886</span><span class="cd">		if (!cmd-&gt;completion)</span></div>
+<div class="cl" data-line="1887"><span class="ln">1887</span><span class="cd">			xhci_handle_cmd_config_ep(xhci, slot_id);</span></div>
+<div class="cl" data-line="1888"><span class="ln">1888</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1889"><span class="ln">1889</span><span class="cd">	case TRB_EVAL_CONTEXT:</span></div>
+<div class="cl" data-line="1890"><span class="ln">1890</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1891"><span class="ln">1891</span><span class="cd">	case TRB_ADDR_DEV:</span></div>
+<div class="cl" data-line="1892"><span class="ln">1892</span><span class="cd">		xhci_handle_cmd_addr_dev(xhci, slot_id);</span></div>
+<div class="cl" data-line="1893"><span class="ln">1893</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1894"><span class="ln">1894</span><span class="cd">	case TRB_STOP_RING:</span></div>
+<div class="cl" data-line="1895"><span class="ln">1895</span><span class="cd">		WARN_ON(slot_id != TRB_TO_SLOT_ID(</span></div>
+<div class="cl" data-line="1896"><span class="ln">1896</span><span class="cd">				le32_to_cpu(cmd_trb-&gt;generic.field[3])));</span></div>
+<div class="cl" data-line="1897"><span class="ln">1897</span><span class="cd">		if (!cmd-&gt;completion)</span></div>
+<div class="cl" data-line="1898"><span class="ln">1898</span><span class="cd">			xhci_handle_cmd_stop_ep(xhci, slot_id, cmd_trb,</span></div>
+<div class="cl" data-line="1899"><span class="ln">1899</span><span class="cd">						cmd_comp_code);</span></div>
+<div class="cl" data-line="1900"><span class="ln">1900</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1901"><span class="ln">1901</span><span class="cd">	case TRB_SET_DEQ:</span></div>
+<div class="cl" data-line="1902"><span class="ln">1902</span><span class="cd">		WARN_ON(slot_id != TRB_TO_SLOT_ID(</span></div>
+<div class="cl" data-line="1903"><span class="ln">1903</span><span class="cd">				le32_to_cpu(cmd_trb-&gt;generic.field[3])));</span></div>
+<div class="cl" data-line="1904"><span class="ln">1904</span><span class="cd">		xhci_handle_cmd_set_deq(xhci, slot_id, cmd_trb, cmd_comp_code);</span></div>
+<div class="cl" data-line="1905"><span class="ln">1905</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1906"><span class="ln">1906</span><span class="cd">	case TRB_CMD_NOOP:</span></div>
+<div class="cl" data-line="1907"><span class="ln">1907</span><span class="cd">		/* Is this an aborted command turned to NO-OP? */</span></div>
+<div class="cl" data-line="1908"><span class="ln">1908</span><span class="cd">		if (cmd-&gt;status == COMP_COMMAND_RING_STOPPED)</span></div>
+<div class="cl" data-line="1909"><span class="ln">1909</span><span class="cd">			cmd_comp_code = COMP_COMMAND_RING_STOPPED;</span></div>
+<div class="cl" data-line="1910"><span class="ln">1910</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1911"><span class="ln">1911</span><span class="cd">	case TRB_RESET_EP:</span></div>
+<div class="cl" data-line="1912"><span class="ln">1912</span><span class="cd">		WARN_ON(slot_id != TRB_TO_SLOT_ID(</span></div>
+<div class="cl" data-line="1913"><span class="ln">1913</span><span class="cd">				le32_to_cpu(cmd_trb-&gt;generic.field[3])));</span></div>
+<div class="cl" data-line="1914"><span class="ln">1914</span><span class="cd">		xhci_handle_cmd_reset_ep(xhci, slot_id, cmd_trb, cmd_comp_code);</span></div>
+<div class="cl" data-line="1915"><span class="ln">1915</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1916"><span class="ln">1916</span><span class="cd">	case TRB_RESET_DEV:</span></div>
+<div class="cl" data-line="1917"><span class="ln">1917</span><span class="cd">		/* SLOT_ID field in reset device cmd completion event TRB is 0.</span></div>
+<div class="cl" data-line="1918"><span class="ln">1918</span><span class="cd">		 * Use the SLOT_ID from the command TRB instead (xhci 4.6.11)</span></div>
+<div class="cl" data-line="1919"><span class="ln">1919</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="1920"><span class="ln">1920</span><span class="cd">		slot_id = TRB_TO_SLOT_ID(</span></div>
+<div class="cl" data-line="1921"><span class="ln">1921</span><span class="cd">				le32_to_cpu(cmd_trb-&gt;generic.field[3]));</span></div>
+<div class="cl" data-line="1922"><span class="ln">1922</span><span class="cd">		xhci_handle_cmd_reset_dev(xhci, slot_id);</span></div>
+<div class="cl" data-line="1923"><span class="ln">1923</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1924"><span class="ln">1924</span><span class="cd">	case TRB_NEC_GET_FW:</span></div>
+<div class="cl" data-line="1925"><span class="ln">1925</span><span class="cd">		xhci_handle_cmd_nec_get_fw(xhci, event);</span></div>
+<div class="cl" data-line="1926"><span class="ln">1926</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1927"><span class="ln">1927</span><span class="cd">	case TRB_GET_BW:</span></div>
+<div class="cl" data-line="1928"><span class="ln">1928</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1929"><span class="ln">1929</span><span class="cd">	default:</span></div>
+<div class="cl" data-line="1930"><span class="ln">1930</span><span class="cd">		/* Skip over unknown commands on the event ring */</span></div>
+<div class="cl" data-line="1931"><span class="ln">1931</span><span class="cd">		xhci_info(xhci, "INFO unknown command type %d\n", cmd_type);</span></div>
+<div class="cl" data-line="1932"><span class="ln">1932</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1933"><span class="ln">1933</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1934"><span class="ln">1934</span><span class="cd"></span></div>
+<div class="cl" data-line="1935"><span class="ln">1935</span><span class="cd">	/* restart timer if this wasn't the last command */</span></div>
+<div class="cl" data-line="1936"><span class="ln">1936</span><span class="cd">	if (!list_is_singular(&amp;xhci-&gt;cmd_list)) {</span></div>
+<div class="cl" data-line="1937"><span class="ln">1937</span><span class="cd">		xhci-&gt;current_cmd = list_first_entry(&amp;cmd-&gt;cmd_list,</span></div>
+<div class="cl" data-line="1938"><span class="ln">1938</span><span class="cd">						struct xhci_command, cmd_list);</span></div>
+<div class="cl" data-line="1939"><span class="ln">1939</span><span class="cd">		xhci_mod_cmd_timer(xhci);</span></div>
+<div class="cl" data-line="1940"><span class="ln">1940</span><span class="cd">	} else if (xhci-&gt;current_cmd == cmd) {</span></div>
+<div class="cl" data-line="1941"><span class="ln">1941</span><span class="cd">		xhci-&gt;current_cmd = NULL;</span></div>
+<div class="cl" data-line="1942"><span class="ln">1942</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1943"><span class="ln">1943</span><span class="cd"></span></div>
+<div class="cl" data-line="1944"><span class="ln">1944</span><span class="cd">event_handled:</span></div>
+<div class="cl hot" data-line="1945" data-hot="cmd:8"><span class="ln">1945</span><span class="cd">	xhci_complete_del_and_free_cmd(cmd, cmd_comp_code, COMP_PARAM(status));</span></div>
+<div class="cl" data-line="1946"><span class="ln">1946</span><span class="cd"></span></div>
+<div class="cl hot" data-line="1947" data-hot="cmd:10"><span class="ln">1947</span><span class="cd">	inc_deq(xhci, xhci-&gt;cmd_ring);</span></div>
+<div class="cl" data-line="1948"><span class="ln">1948</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:1711-1722 · xhci_complete_del_and_free_cmd · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1711:1722"><div class="cl" data-line="1711"><span class="ln">1711</span><span class="cd">static void xhci_complete_del_and_free_cmd(struct xhci_command *cmd, u32 comp_code, u32 comp_param)</span></div>
+<div class="cl" data-line="1712"><span class="ln">1712</span><span class="cd">{</span></div>
+<div class="cl" data-line="1713"><span class="ln">1713</span><span class="cd">	list_del(&amp;cmd-&gt;cmd_list);</span></div>
+<div class="cl" data-line="1714"><span class="ln">1714</span><span class="cd"></span></div>
+<div class="cl" data-line="1715"><span class="ln">1715</span><span class="cd">	if (cmd-&gt;completion) {</span></div>
+<div class="cl" data-line="1716"><span class="ln">1716</span><span class="cd">		cmd-&gt;status = comp_code;</span></div>
+<div class="cl" data-line="1717"><span class="ln">1717</span><span class="cd">		cmd-&gt;comp_param = comp_param;</span></div>
+<div class="cl hot" data-line="1718" data-hot="cmd:9"><span class="ln">1718</span><span class="cd">		complete(cmd-&gt;completion);</span></div>
+<div class="cl" data-line="1719"><span class="ln">1719</span><span class="cd">	} else {</span></div>
+<div class="cl" data-line="1720"><span class="ln">1720</span><span class="cd">		kfree(cmd);</span></div>
+<div class="cl" data-line="1721"><span class="ln">1721</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1722"><span class="ln">1722</span><span class="cd">}</span></div></pre>
     </div>
 
     <div class="card b2">
@@ -220,24 +450,53 @@ Register is defined in the Operational Register space</blockquote>
     <div class="card b3">
       <div class="bhead"><span class="badge">③</span>交互</div>
       <div class="act" style="margin-top:0;">
-        <a class="btn ghost" href="interactive/index.html">打开交互操作台 →</a>
-        <span class="note">单文件自包含 · SMOKE 全 PASS（含模块三）· 模块一=三环操作台 · 模块二=URB→TRB→TD 组装 · 模块三=代码解读</span>
+        <a class="btn ghost" href="interactive/index.html#m1">模块一 · 三环操作台 →</a>
+        <span class="note">单文件自包含 · 交互台四模块分节锚定（#m1-#m4）</span>
       </div>
-      <p class="int-note"><b>模块一 · 三环操作台：</b>传输环 / 事件环 / 命令环手动 enq · deq 推进、cycle bit 翻转、Link 回绕、门铃 DB 写、事件产生/消费——对应本节“上环 → 门铃 → 事件回执”节拍</p>
-      <p class="int-note"><b>模块三 · 代码解读：</b>4.1 命令操作题组（贴码行可点 + 规范锚点卡）</p>
+      <p class="int-note"><b>模块一 · 三环操作台：</b>传输环 / 事件环 / 命令环手动 enq · deq 推进、cycle bit 翻转、Link 回绕、门铃 DB 写、事件产生/消费——对应本节“上环 → 门铃 → 事件回执”三拍</p>
+      <p class="int-note"><b>模块四 · 代码解读：</b>4.1 命令操作题组（贴码行可点 + 规范锚点卡），入口 <a href="interactive/index.html#m4">interactive/index.html#m4</a></p>
     </div>
 
     <div class="card b4">
       <div class="bhead"><span class="badge">④</span>补丁收尾</div>
       <div class="phead">上游 commit 576667bad341516edc4e18eb85acb0a2b4c9c9d9 · 2021-01-15 · Mathias Nyman（Intel） · drivers/usb/host/xhci-ring.c +2 行 · hunk @@ -2931,6 +2931,8 @@（queue_trb）</div>
-      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
-      <p class="pbody">2021 年 1 月，xHCI 子系统维护者 Mathias Nyman（Intel）合入这枚补丁。问题发现于压力测试：多个 USB 设备同时在线、反复取消 URB 的场景——两条「Set TR Dequeue Pointer」命令背靠背进入命令环，第二条命令 TRB 还没写完就被控制器取走解析。硬件本身没有缺陷，这是纯软件侧的内存序问题：门铃敲响后 xHC 会立即回来解析命令环上 cycle 位已就绪的命令 TRB（§4.1 p68 的发出节拍），而驱动「先写完 TRB、再敲门铃」这个顺序在写缓冲与多核环境下并没有任何机制保证。对应课程 4.1 的三拍：上环→敲门铃→xHC 取指执行，补丁保证第一拍真正先于第二拍对硬件生效。</p>
-      <p class="ph">要解决的问题（症状 + 机制）</p>
-      <p class="pbody">症状：压力测试中反复出现 "Mismatch between completed Set TR Deq Ptr command &amp; xHCI internal state" 告警，出环指针被设成 bogus 值。机制：命令 TRB 长 16 字节，驱动分四个 32 位分片写入，含 cycle bit 的分片安排在最后写——但这只是程序顺序，普通 store 不保证实际落盘次序；当前一条命令完成、硬件立刻回来取下一条时，可能读到只写了一半、而 cycle bit 恰好已置位的 TRB，于是照常执行。规范背景（§4.1 p68）：命令的发出流程是「把命令 TRB 放上命令环，然后敲命令门铃寄存器 0」——“放完才敲”的语义在 SMP 下必须由写屏障兑现，否则门铃会抢在 TRB 完整之前通知 xHC。</p>
-      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，§4.1 p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
-      <div class="dhead">diff 逐字切片 · git show 576667bad341 · drivers/usb/host/xhci-ring.c @@ -2931,6 +2931,8 @@</div>
-      <pre class="diffblock" data-ck="diff:576667bad341516edc4e18eb85acb0a2b4c9c9d9:drivers/usb/host/xhci-ring.c:1"><span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:576667bad341516edc4e18eb85acb0a2b4c9c9d9">commit 576667bad341516edc4e18eb85acb0a2b4c9c9d9
+Author: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+Date:   Fri Jan 15 18:19:06 2021 +0200
+
+    xhci: make sure TRB is fully written before giving it to the controller
+    
+    Once the command ring doorbell is rung the xHC controller will parse all
+    command TRBs on the command ring that have the cycle bit set properly.
+    
+    If the driver just started writing the next command TRB to the ring when
+    hardware finished the previous TRB, then HW might fetch an incomplete TRB
+    as long as its cycle bit set correctly.
+    
+    A command TRB is 16 bytes (128 bits) long.
+    Driver writes the command TRB in four 32 bit chunks, with the chunk
+    containing the cycle bit last. This does however not guarantee that
+    chunks actually get written in that order.
+    
+    This was detected in stress testing when canceling URBs with several
+    connected USB devices.
+    Two consecutive "Set TR Dequeue pointer" commands got queued right
+    after each other, and the second one was only partially written when
+    the controller parsed it, causing the dequeue pointer to be set
+    to bogus values. This was seen as error messages:
+    
+    "Mismatch between completed Set TR Deq Ptr command &amp; xHCI internal state"
+    
+    Solution is to add a write memory barrier before writing the cycle bit.
+    
+    Cc: &lt;stable@vger.kernel.org&gt;
+    Tested-by: Ross Zwisler &lt;zwisler@google.com&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20210115161907.2875631-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
 <span class="d-meta">index 5677b81c0915..cf0c93a90200 100644</span>
 <span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
 <span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
@@ -250,6 +509,12 @@ Register is defined in the Operational Register space</blockquote>
 <span class="d-ctx"> 	trb-&gt;field[3] = cpu_to_le32(field4);</span>
 <span class="d-ctx"> </span>
 <span class="d-ctx"> 	trace_xhci_queue_trb(ring, trb);</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2021 年 1 月，xHCI 子系统维护者 Mathias Nyman（Intel）合入这枚补丁。问题发现于压力测试：多个 USB 设备同时在线、反复取消 URB 的场景——两条「Set TR Dequeue Pointer」命令背靠背进入命令环，第二条命令 TRB 还没写完就被控制器取走解析。硬件本身没有缺陷，这是纯软件侧的内存序问题：门铃敲响后 xHC 会立即回来解析命令环上 cycle 位已就绪的命令 TRB（§4.1 p68 的发出节拍），而驱动「先写完 TRB、再敲门铃」这个顺序在写缓冲与多核环境下并没有任何机制保证。对应课程 4.1 的三拍：上环→敲门铃→xHC 取指执行，补丁保证第一拍真正先于第二拍对硬件生效。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：压力测试中反复出现 "Mismatch between completed Set TR Deq Ptr command &amp; xHCI internal state" 告警，出环指针被设成 bogus 值。机制：命令 TRB 长 16 字节，驱动分四个 32 位分片写入，含 cycle bit 的分片安排在最后写——但这只是程序顺序，普通 store 不保证实际落盘次序；当前一条命令完成、硬件立刻回来取下一条时，可能读到只写了一半、而 cycle bit 恰好已置位的 TRB，于是照常执行。规范背景（§4.1 p68）：命令的发出流程是「把命令 TRB 放上命令环，然后敲命令门铃寄存器 0」——“放完才敲”的语义在 SMP 下必须由写屏障兑现，否则门铃会抢在 TRB 完整之前通知 xHC。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，§4.1 p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
       <div class="act">
         <a class="btn" href="player/index.html?scene=3">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
@@ -289,67 +554,473 @@ Run/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin accepting
 doorbell references.</blockquote>
       <div class="qsrc">—— evidence/spec-42.txt L115-L116（p70）</div>
       <p class="foot-note">补充（见引文卡）：DCBAAP 指向 Device Context Base Address Array——evidence/spec-42.txt L29-32（p69）；写 ERSTBA 即启用事件环——evidence/spec-42.txt L96-98（p70）。</p>
-      <h3>调用链贴码 <span class="cmt">commit d9008e061539 · drafts/code-excerpts.json init 组逐字</span></h3>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:5431 · xhci_gen_setup · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:0">int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)</pre>
-        <p class="exnote">各宿主驱动（PCI/平台）setup 主线的公共汇合点，对应规范 §4.2 控制器初始化的起点</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:229 · xhci_reset · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:1">	ret = xhci_handshake(&xhci->op_regs->status, STS_CNR, 0, timeout_us);</pre>
-        <p class="exnote">复位后轮询 USBSTS 等 CNR=0：控制器就绪前不允许写其它寄存器（§4.2 的就绪等待）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:5565 · xhci_gen_setup · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:2">	xhci_init(hcd);</pre>
-        <p class="exnote">本树新拆出的 xhci_init：基础寄存器编程总入口（mem_init 分配内存后调用）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:487 · xhci_enable_max_dev_slots · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:3">	writel(config_reg, &xhci->op_regs->config_reg);</pre>
-        <p class="exnote">写 CONFIG 寄存器 MaxSlotsEn=设备槽数上限（§4.2 第 1 步）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:506 · xhci_set_cmd_ring_deq · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:4">	xhci_write_64(xhci, crcr, &xhci->op_regs->cmd_ring);</pre>
-        <p class="exnote">写 CRCR：命令环基址 + Cycle 位（§4.2 命令环定义）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:555 · xhci_init · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:5">	xhci_write_64(xhci, xhci->dcbaa.dma, &xhci->op_regs->dcbaa_ptr);</pre>
-        <p class="exnote">写 DCBAAP：设备上下文基址数组指针（§4.2 第 2 步）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-mem.c:2311 · xhci_alloc_interrupter · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:6">	ir->event_ring = xhci_ring_alloc(xhci, segs, TYPE_EVENT, 0, flags);</pre>
-        <p class="exnote">分配事件环：命令/传输完成事件都写到这个环</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-mem.c:2343 · xhci_add_interrupter · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:7">	writel(erst_size, &ir->ir_set->erst_size);</pre>
-        <p class="exnote">写 ERSTSZ：事件环段表项数（中断器初始化）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-mem.c:2351 · xhci_add_interrupter · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:8">		xhci_write_64(xhci, erst_base, &ir->ir_set->erst_base);</pre>
-        <p class="exnote">写 ERSTBA：事件环段表基址（事件环与中断器绑定）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:627 · xhci_run · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:9">int xhci_run(struct usb_hcd *hcd)</pre>
-        <p class="exnote">hc_driver .start 钩子：主机由停止态转入运行态的入口</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:154 · xhci_start · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:10">	writel(temp, &xhci->op_regs->command);</pre>
-        <p class="exnote">R/S=1 写入 USBCMD（151 行 temp |= CMD_RUN；经 xhci_run-&gt;xhci_run_finished-&gt;xhci_start 调到这里）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:605 · xhci_run_finished · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:init:11">	xhci->cmd_ring_state = CMD_RING_STATE_RUNNING;</pre>
-        <p class="exnote">命令环状态置 RUNNING：此后 ring_cmd_db 才真正敲钟，即“允许门铃”</p>
-      </div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+      <div class="exhead2">drivers/usb/host/xhci.c:5431-5576 · xhci_gen_setup · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:5431:5576"><div class="cl hot" data-line="5431" data-hot="init:0"><span class="ln">5431</span><span class="cd">int xhci_gen_setup(struct usb_hcd *hcd, xhci_get_quirks_t get_quirks)</span></div>
+<div class="cl" data-line="5432"><span class="ln">5432</span><span class="cd">{</span></div>
+<div class="cl" data-line="5433"><span class="ln">5433</span><span class="cd">	struct xhci_hcd		*xhci;</span></div>
+<div class="cl" data-line="5434"><span class="ln">5434</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="5435"><span class="ln">5435</span><span class="cd">	 * TODO: Check with DWC3 clients for sysdev according to</span></div>
+<div class="cl" data-line="5436"><span class="ln">5436</span><span class="cd">	 * quirks</span></div>
+<div class="cl" data-line="5437"><span class="ln">5437</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="5438"><span class="ln">5438</span><span class="cd">	struct device		*dev = hcd-&gt;self.sysdev;</span></div>
+<div class="cl" data-line="5439"><span class="ln">5439</span><span class="cd">	int			retval;</span></div>
+<div class="cl" data-line="5440"><span class="ln">5440</span><span class="cd">	u32			hcs_params1;</span></div>
+<div class="cl" data-line="5441"><span class="ln">5441</span><span class="cd">	u32			hc_capbase;</span></div>
+<div class="cl" data-line="5442"><span class="ln">5442</span><span class="cd"></span></div>
+<div class="cl" data-line="5443"><span class="ln">5443</span><span class="cd">	/* Accept arbitrarily long scatter-gather lists */</span></div>
+<div class="cl" data-line="5444"><span class="ln">5444</span><span class="cd">	hcd-&gt;self.sg_tablesize = ~0;</span></div>
+<div class="cl" data-line="5445"><span class="ln">5445</span><span class="cd"></span></div>
+<div class="cl" data-line="5446"><span class="ln">5446</span><span class="cd">	/* support to build packet from discontinuous buffers */</span></div>
+<div class="cl" data-line="5447"><span class="ln">5447</span><span class="cd">	hcd-&gt;self.no_sg_constraint = 1;</span></div>
+<div class="cl" data-line="5448"><span class="ln">5448</span><span class="cd"></span></div>
+<div class="cl" data-line="5449"><span class="ln">5449</span><span class="cd">	/* XHCI controllers don't stop the ep queue on short packets :| */</span></div>
+<div class="cl" data-line="5450"><span class="ln">5450</span><span class="cd">	hcd-&gt;self.no_stop_on_short = 1;</span></div>
+<div class="cl" data-line="5451"><span class="ln">5451</span><span class="cd"></span></div>
+<div class="cl" data-line="5452"><span class="ln">5452</span><span class="cd">	xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="5453"><span class="ln">5453</span><span class="cd"></span></div>
+<div class="cl" data-line="5454"><span class="ln">5454</span><span class="cd">	if (!usb_hcd_is_primary_hcd(hcd)) {</span></div>
+<div class="cl" data-line="5455"><span class="ln">5455</span><span class="cd">		xhci_hcd_init_usb3_data(xhci, hcd);</span></div>
+<div class="cl" data-line="5456"><span class="ln">5456</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="5457"><span class="ln">5457</span><span class="cd">	}</span></div>
+<div class="cl" data-line="5458"><span class="ln">5458</span><span class="cd"></span></div>
+<div class="cl" data-line="5459"><span class="ln">5459</span><span class="cd">	mutex_init(&amp;xhci-&gt;mutex);</span></div>
+<div class="cl" data-line="5460"><span class="ln">5460</span><span class="cd">	xhci-&gt;main_hcd = hcd;</span></div>
+<div class="cl" data-line="5461"><span class="ln">5461</span><span class="cd">	xhci-&gt;cap_regs = hcd-&gt;regs;</span></div>
+<div class="cl" data-line="5462"><span class="ln">5462</span><span class="cd">	hc_capbase = readl(&amp;xhci-&gt;cap_regs-&gt;hc_capbase);</span></div>
+<div class="cl" data-line="5463"><span class="ln">5463</span><span class="cd">	if (hc_capbase == U32_MAX) {</span></div>
+<div class="cl" data-line="5464"><span class="ln">5464</span><span class="cd">		xhci_warn(xhci, "Host controller not accessible, removed?\n");</span></div>
+<div class="cl" data-line="5465"><span class="ln">5465</span><span class="cd">		return -ENODEV;</span></div>
+<div class="cl" data-line="5466"><span class="ln">5466</span><span class="cd">	}</span></div>
+<div class="cl" data-line="5467"><span class="ln">5467</span><span class="cd">	xhci-&gt;op_regs = hcd-&gt;regs + FIELD_GET(HC_LENGTH, hc_capbase);</span></div>
+<div class="cl" data-line="5468"><span class="ln">5468</span><span class="cd"></span></div>
+<div class="cl" data-line="5469"><span class="ln">5469</span><span class="cd">	xhci-&gt;run_regs = hcd-&gt;regs +</span></div>
+<div class="cl" data-line="5470"><span class="ln">5470</span><span class="cd">		(readl(&amp;xhci-&gt;cap_regs-&gt;run_regs_off) &amp; RTSOFF_MASK);</span></div>
+<div class="cl" data-line="5471"><span class="ln">5471</span><span class="cd">	/* Cache read-only capability registers */</span></div>
+<div class="cl" data-line="5472"><span class="ln">5472</span><span class="cd">	hcs_params1 = readl(&amp;xhci-&gt;cap_regs-&gt;hcs_params1);</span></div>
+<div class="cl" data-line="5473"><span class="ln">5473</span><span class="cd">	xhci-&gt;hcs_params2 = readl(&amp;xhci-&gt;cap_regs-&gt;hcs_params2);</span></div>
+<div class="cl" data-line="5474"><span class="ln">5474</span><span class="cd">	xhci-&gt;hcs_params3 = readl(&amp;xhci-&gt;cap_regs-&gt;hcs_params3);</span></div>
+<div class="cl" data-line="5475"><span class="ln">5475</span><span class="cd">	xhci-&gt;hci_version = FIELD_GET(HC_VERSION, hc_capbase);</span></div>
+<div class="cl" data-line="5476"><span class="ln">5476</span><span class="cd">	xhci-&gt;hcc_params = readl(&amp;xhci-&gt;cap_regs-&gt;hcc_params);</span></div>
+<div class="cl" data-line="5477"><span class="ln">5477</span><span class="cd">	if (xhci-&gt;hci_version &gt; 0x100)</span></div>
+<div class="cl" data-line="5478"><span class="ln">5478</span><span class="cd">		xhci-&gt;hcc_params2 = readl(&amp;xhci-&gt;cap_regs-&gt;hcc_params2);</span></div>
+<div class="cl" data-line="5479"><span class="ln">5479</span><span class="cd"></span></div>
+<div class="cl" data-line="5480"><span class="ln">5480</span><span class="cd">	xhci-&gt;dma_mask_bits = 64;</span></div>
+<div class="cl" data-line="5481"><span class="ln">5481</span><span class="cd">	xhci-&gt;max_slots = min(FIELD_GET(HCS_SLOTS_MASK, hcs_params1), MAX_HC_SLOTS);</span></div>
+<div class="cl" data-line="5482"><span class="ln">5482</span><span class="cd">	xhci-&gt;max_ports = min(FIELD_GET(HCS_MAX_PORTS, hcs_params1), MAX_HC_PORTS);</span></div>
+<div class="cl" data-line="5483"><span class="ln">5483</span><span class="cd"></span></div>
+<div class="cl" data-line="5484"><span class="ln">5484</span><span class="cd">	/* xhci-plat or xhci-pci might have set max_interrupters already */</span></div>
+<div class="cl" data-line="5485"><span class="ln">5485</span><span class="cd">	if (!xhci-&gt;max_interrupters)</span></div>
+<div class="cl" data-line="5486"><span class="ln">5486</span><span class="cd">		xhci-&gt;max_interrupters = min(FIELD_GET(HCS_MAX_INTRS, hcs_params1), MAX_HC_INTRS);</span></div>
+<div class="cl" data-line="5487"><span class="ln">5487</span><span class="cd">	else if (xhci-&gt;max_interrupters &gt; FIELD_GET(HCS_MAX_INTRS, hcs_params1))</span></div>
+<div class="cl" data-line="5488"><span class="ln">5488</span><span class="cd">		xhci-&gt;max_interrupters = FIELD_GET(HCS_MAX_INTRS, hcs_params1);</span></div>
+<div class="cl" data-line="5489"><span class="ln">5489</span><span class="cd"></span></div>
+<div class="cl" data-line="5490"><span class="ln">5490</span><span class="cd">	xhci-&gt;quirks |= quirks;</span></div>
+<div class="cl" data-line="5491"><span class="ln">5491</span><span class="cd"></span></div>
+<div class="cl" data-line="5492"><span class="ln">5492</span><span class="cd">	if (get_quirks)</span></div>
+<div class="cl" data-line="5493"><span class="ln">5493</span><span class="cd">		get_quirks(dev, xhci);</span></div>
+<div class="cl" data-line="5494"><span class="ln">5494</span><span class="cd"></span></div>
+<div class="cl" data-line="5495"><span class="ln">5495</span><span class="cd">	/* In xhci controllers which follow xhci 1.0 spec gives a spurious</span></div>
+<div class="cl" data-line="5496"><span class="ln">5496</span><span class="cd">	 * success event after a short transfer. This quirk will ignore such</span></div>
+<div class="cl" data-line="5497"><span class="ln">5497</span><span class="cd">	 * spurious event.</span></div>
+<div class="cl" data-line="5498"><span class="ln">5498</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="5499"><span class="ln">5499</span><span class="cd">	if (xhci-&gt;hci_version &gt; 0x96)</span></div>
+<div class="cl" data-line="5500"><span class="ln">5500</span><span class="cd">		xhci-&gt;quirks |= XHCI_SPURIOUS_SUCCESS;</span></div>
+<div class="cl" data-line="5501"><span class="ln">5501</span><span class="cd"></span></div>
+<div class="cl" data-line="5502"><span class="ln">5502</span><span class="cd">	if (xhci-&gt;hci_version == 0x95 &amp;&amp; link_quirk) {</span></div>
+<div class="cl" data-line="5503"><span class="ln">5503</span><span class="cd">		xhci_dbg(xhci, "QUIRK: Not clearing Link TRB chain bits");</span></div>
+<div class="cl" data-line="5504"><span class="ln">5504</span><span class="cd">		xhci-&gt;quirks |= XHCI_LINK_TRB_QUIRK;</span></div>
+<div class="cl" data-line="5505"><span class="ln">5505</span><span class="cd">	}</span></div>
+<div class="cl" data-line="5506"><span class="ln">5506</span><span class="cd"></span></div>
+<div class="cl" data-line="5507"><span class="ln">5507</span><span class="cd">	/* Make sure the HC is halted. */</span></div>
+<div class="cl" data-line="5508"><span class="ln">5508</span><span class="cd">	retval = xhci_halt(xhci);</span></div>
+<div class="cl" data-line="5509"><span class="ln">5509</span><span class="cd">	if (retval)</span></div>
+<div class="cl" data-line="5510"><span class="ln">5510</span><span class="cd">		return retval;</span></div>
+<div class="cl" data-line="5511"><span class="ln">5511</span><span class="cd"></span></div>
+<div class="cl" data-line="5512"><span class="ln">5512</span><span class="cd">	xhci_zero_64b_regs(xhci);</span></div>
+<div class="cl" data-line="5513"><span class="ln">5513</span><span class="cd"></span></div>
+<div class="cl" data-line="5514"><span class="ln">5514</span><span class="cd">	xhci_dbg(xhci, "Resetting HCD\n");</span></div>
+<div class="cl" data-line="5515"><span class="ln">5515</span><span class="cd">	/* Reset the internal HC memory state and registers. */</span></div>
+<div class="cl" data-line="5516"><span class="ln">5516</span><span class="cd">	retval = xhci_reset(xhci, XHCI_RESET_LONG_USEC);</span></div>
+<div class="cl" data-line="5517"><span class="ln">5517</span><span class="cd">	if (retval)</span></div>
+<div class="cl" data-line="5518"><span class="ln">5518</span><span class="cd">		return retval;</span></div>
+<div class="cl" data-line="5519"><span class="ln">5519</span><span class="cd">	xhci_dbg(xhci, "Reset complete\n");</span></div>
+<div class="cl" data-line="5520"><span class="ln">5520</span><span class="cd"></span></div>
+<div class="cl" data-line="5521"><span class="ln">5521</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="5522"><span class="ln">5522</span><span class="cd">	 * On some xHCI controllers (e.g. R-Car SoCs), the AC64 bit (bit 0)</span></div>
+<div class="cl" data-line="5523"><span class="ln">5523</span><span class="cd">	 * of HCCPARAMS1 is set to 1. However, the xHCs don't support 64-bit</span></div>
+<div class="cl" data-line="5524"><span class="ln">5524</span><span class="cd">	 * address memory pointers actually. So, this driver clears the AC64</span></div>
+<div class="cl" data-line="5525"><span class="ln">5525</span><span class="cd">	 * bit of xhci-&gt;hcc_params to call dma_set_coherent_mask(dev,</span></div>
+<div class="cl" data-line="5526"><span class="ln">5526</span><span class="cd">	 * DMA_BIT_MASK(32)) in this xhci_gen_setup().</span></div>
+<div class="cl" data-line="5527"><span class="ln">5527</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="5528"><span class="ln">5528</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_NO_64BIT_SUPPORT)</span></div>
+<div class="cl" data-line="5529"><span class="ln">5529</span><span class="cd">		xhci-&gt;hcc_params &amp;= ~HCC_64BIT_ADDR;</span></div>
+<div class="cl" data-line="5530"><span class="ln">5530</span><span class="cd"></span></div>
+<div class="cl" data-line="5531"><span class="ln">5531</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="5532"><span class="ln">5532</span><span class="cd">	 * Set dma_mask and coherent_dma_mask to 64-bits if xHC supports</span></div>
+<div class="cl" data-line="5533"><span class="ln">5533</span><span class="cd">	 * 64-bit addressing, unless a controller-specific quirk callback</span></div>
+<div class="cl" data-line="5534"><span class="ln">5534</span><span class="cd">	 * limits the usable address width.</span></div>
+<div class="cl" data-line="5535"><span class="ln">5535</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="5536"><span class="ln">5536</span><span class="cd">	if ((xhci-&gt;hcc_params &amp; HCC_64BIT_ADDR) &amp;&amp;</span></div>
+<div class="cl" data-line="5537"><span class="ln">5537</span><span class="cd">	    !dma_set_mask(dev, DMA_BIT_MASK(xhci-&gt;dma_mask_bits))) {</span></div>
+<div class="cl" data-line="5538"><span class="ln">5538</span><span class="cd">		xhci_dbg(xhci, "Enabling %u-bit DMA addresses.\n",</span></div>
+<div class="cl" data-line="5539"><span class="ln">5539</span><span class="cd">			 xhci-&gt;dma_mask_bits);</span></div>
+<div class="cl" data-line="5540"><span class="ln">5540</span><span class="cd">		dma_set_coherent_mask(dev, DMA_BIT_MASK(xhci-&gt;dma_mask_bits));</span></div>
+<div class="cl" data-line="5541"><span class="ln">5541</span><span class="cd">	} else {</span></div>
+<div class="cl" data-line="5542"><span class="ln">5542</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="5543"><span class="ln">5543</span><span class="cd">		 * This is to avoid error in cases where a 32-bit USB</span></div>
+<div class="cl" data-line="5544"><span class="ln">5544</span><span class="cd">		 * controller is used on a 64-bit capable system.</span></div>
+<div class="cl" data-line="5545"><span class="ln">5545</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="5546"><span class="ln">5546</span><span class="cd">		retval = dma_set_mask(dev, DMA_BIT_MASK(32));</span></div>
+<div class="cl" data-line="5547"><span class="ln">5547</span><span class="cd">		if (retval)</span></div>
+<div class="cl" data-line="5548"><span class="ln">5548</span><span class="cd">			return retval;</span></div>
+<div class="cl" data-line="5549"><span class="ln">5549</span><span class="cd">		xhci_dbg(xhci, "Enabling 32-bit DMA addresses.\n");</span></div>
+<div class="cl" data-line="5550"><span class="ln">5550</span><span class="cd">		dma_set_coherent_mask(dev, DMA_BIT_MASK(32));</span></div>
+<div class="cl" data-line="5551"><span class="ln">5551</span><span class="cd">	}</span></div>
+<div class="cl" data-line="5552"><span class="ln">5552</span><span class="cd"></span></div>
+<div class="cl" data-line="5553"><span class="ln">5553</span><span class="cd">	spin_lock_init(&amp;xhci-&gt;lock);</span></div>
+<div class="cl" data-line="5554"><span class="ln">5554</span><span class="cd">	INIT_LIST_HEAD(&amp;xhci-&gt;cmd_list);</span></div>
+<div class="cl" data-line="5555"><span class="ln">5555</span><span class="cd">	INIT_DELAYED_WORK(&amp;xhci-&gt;cmd_timer, xhci_handle_command_timeout);</span></div>
+<div class="cl" data-line="5556"><span class="ln">5556</span><span class="cd">	init_completion(&amp;xhci-&gt;cmd_ring_stop_completion);</span></div>
+<div class="cl" data-line="5557"><span class="ln">5557</span><span class="cd">	xhci_hcd_page_size(xhci);</span></div>
+<div class="cl" data-line="5558"><span class="ln">5558</span><span class="cd"></span></div>
+<div class="cl" data-line="5559"><span class="ln">5559</span><span class="cd">	/* Allocate xHCI data structures */</span></div>
+<div class="cl" data-line="5560"><span class="ln">5560</span><span class="cd">	retval = xhci_mem_init(xhci, GFP_KERNEL);</span></div>
+<div class="cl" data-line="5561"><span class="ln">5561</span><span class="cd">	if (retval)</span></div>
+<div class="cl" data-line="5562"><span class="ln">5562</span><span class="cd">		return retval;</span></div>
+<div class="cl" data-line="5563"><span class="ln">5563</span><span class="cd"></span></div>
+<div class="cl" data-line="5564"><span class="ln">5564</span><span class="cd">	/* Initialize HCD and host controller data structures */</span></div>
+<div class="cl hot" data-line="5565" data-hot="init:2"><span class="ln">5565</span><span class="cd">	xhci_init(hcd);</span></div>
+<div class="cl" data-line="5566"><span class="ln">5566</span><span class="cd"></span></div>
+<div class="cl" data-line="5567"><span class="ln">5567</span><span class="cd">	if (xhci_hcd_is_usb3(hcd))</span></div>
+<div class="cl" data-line="5568"><span class="ln">5568</span><span class="cd">		xhci_hcd_init_usb3_data(xhci, hcd);</span></div>
+<div class="cl" data-line="5569"><span class="ln">5569</span><span class="cd">	else</span></div>
+<div class="cl" data-line="5570"><span class="ln">5570</span><span class="cd">		xhci_hcd_init_usb2_data(xhci, hcd);</span></div>
+<div class="cl" data-line="5571"><span class="ln">5571</span><span class="cd"></span></div>
+<div class="cl" data-line="5572"><span class="ln">5572</span><span class="cd">	xhci_info(xhci, "hcc params 0x%08x hci version 0x%x quirks 0x%016llx\n",</span></div>
+<div class="cl" data-line="5573"><span class="ln">5573</span><span class="cd">		  xhci-&gt;hcc_params, xhci-&gt;hci_version, xhci-&gt;quirks);</span></div>
+<div class="cl" data-line="5574"><span class="ln">5574</span><span class="cd"></span></div>
+<div class="cl" data-line="5575"><span class="ln">5575</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="5576"><span class="ln">5576</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:182-239 · xhci_reset · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:182:239"><div class="cl" data-line="182"><span class="ln">182</span><span class="cd">int xhci_reset(struct xhci_hcd *xhci, u64 timeout_us)</span></div>
+<div class="cl" data-line="183"><span class="ln">183</span><span class="cd">{</span></div>
+<div class="cl" data-line="184"><span class="ln">184</span><span class="cd">	u32 command;</span></div>
+<div class="cl" data-line="185"><span class="ln">185</span><span class="cd">	u32 state;</span></div>
+<div class="cl" data-line="186"><span class="ln">186</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="187"><span class="ln">187</span><span class="cd"></span></div>
+<div class="cl" data-line="188"><span class="ln">188</span><span class="cd">	state = readl(&amp;xhci-&gt;op_regs-&gt;status);</span></div>
+<div class="cl" data-line="189"><span class="ln">189</span><span class="cd"></span></div>
+<div class="cl" data-line="190"><span class="ln">190</span><span class="cd">	if (state == ~(u32)0) {</span></div>
+<div class="cl" data-line="191"><span class="ln">191</span><span class="cd">		if (!(xhci-&gt;xhc_state &amp; XHCI_STATE_DYING))</span></div>
+<div class="cl" data-line="192"><span class="ln">192</span><span class="cd">			xhci_warn(xhci, "Host not accessible, reset failed.\n");</span></div>
+<div class="cl" data-line="193"><span class="ln">193</span><span class="cd">		return -ENODEV;</span></div>
+<div class="cl" data-line="194"><span class="ln">194</span><span class="cd">	}</span></div>
+<div class="cl" data-line="195"><span class="ln">195</span><span class="cd"></span></div>
+<div class="cl" data-line="196"><span class="ln">196</span><span class="cd">	if ((state &amp; STS_HALT) == 0) {</span></div>
+<div class="cl" data-line="197"><span class="ln">197</span><span class="cd">		xhci_warn(xhci, "Host controller not halted, aborting reset.\n");</span></div>
+<div class="cl" data-line="198"><span class="ln">198</span><span class="cd">		return -EBUSY;</span></div>
+<div class="cl" data-line="199"><span class="ln">199</span><span class="cd">	}</span></div>
+<div class="cl" data-line="200"><span class="ln">200</span><span class="cd"></span></div>
+<div class="cl" data-line="201"><span class="ln">201</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "// Reset the HC");</span></div>
+<div class="cl" data-line="202"><span class="ln">202</span><span class="cd">	command = readl(&amp;xhci-&gt;op_regs-&gt;command);</span></div>
+<div class="cl" data-line="203"><span class="ln">203</span><span class="cd">	command |= CMD_RESET;</span></div>
+<div class="cl" data-line="204"><span class="ln">204</span><span class="cd">	writel(command, &amp;xhci-&gt;op_regs-&gt;command);</span></div>
+<div class="cl" data-line="205"><span class="ln">205</span><span class="cd"></span></div>
+<div class="cl" data-line="206"><span class="ln">206</span><span class="cd">	/* Existing Intel xHCI controllers require a delay of 1 mS,</span></div>
+<div class="cl" data-line="207"><span class="ln">207</span><span class="cd">	 * after setting the CMD_RESET bit, and before accessing any</span></div>
+<div class="cl" data-line="208"><span class="ln">208</span><span class="cd">	 * HC registers. This allows the HC to complete the</span></div>
+<div class="cl" data-line="209"><span class="ln">209</span><span class="cd">	 * reset operation and be ready for HC register access.</span></div>
+<div class="cl" data-line="210"><span class="ln">210</span><span class="cd">	 * Without this delay, the subsequent HC register access,</span></div>
+<div class="cl" data-line="211"><span class="ln">211</span><span class="cd">	 * may result in a system hang very rarely.</span></div>
+<div class="cl" data-line="212"><span class="ln">212</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="213"><span class="ln">213</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_INTEL_HOST)</span></div>
+<div class="cl" data-line="214"><span class="ln">214</span><span class="cd">		udelay(1000);</span></div>
+<div class="cl" data-line="215"><span class="ln">215</span><span class="cd"></span></div>
+<div class="cl" data-line="216"><span class="ln">216</span><span class="cd">	ret = xhci_handshake(&amp;xhci-&gt;op_regs-&gt;command, CMD_RESET, 0, timeout_us);</span></div>
+<div class="cl" data-line="217"><span class="ln">217</span><span class="cd">	if (ret)</span></div>
+<div class="cl" data-line="218"><span class="ln">218</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="219"><span class="ln">219</span><span class="cd"></span></div>
+<div class="cl" data-line="220"><span class="ln">220</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_ASMEDIA_MODIFY_FLOWCONTROL)</span></div>
+<div class="cl" data-line="221"><span class="ln">221</span><span class="cd">		usb_asmedia_modifyflowcontrol(to_pci_dev(xhci_to_hcd(xhci)-&gt;self.controller));</span></div>
+<div class="cl" data-line="222"><span class="ln">222</span><span class="cd"></span></div>
+<div class="cl" data-line="223"><span class="ln">223</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init,</span></div>
+<div class="cl" data-line="224"><span class="ln">224</span><span class="cd">			 "Wait for controller to be ready for doorbell rings");</span></div>
+<div class="cl" data-line="225"><span class="ln">225</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="226"><span class="ln">226</span><span class="cd">	 * xHCI cannot write to any doorbells or operational registers other</span></div>
+<div class="cl" data-line="227"><span class="ln">227</span><span class="cd">	 * than status until the "Controller Not Ready" flag is cleared.</span></div>
+<div class="cl" data-line="228"><span class="ln">228</span><span class="cd">	 */</span></div>
+<div class="cl hot" data-line="229" data-hot="init:1"><span class="ln">229</span><span class="cd">	ret = xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us);</span></div>
+<div class="cl" data-line="230"><span class="ln">230</span><span class="cd"></span></div>
+<div class="cl" data-line="231"><span class="ln">231</span><span class="cd">	xhci-&gt;usb2_rhub.bus_state.port_c_suspend = 0;</span></div>
+<div class="cl" data-line="232"><span class="ln">232</span><span class="cd">	xhci-&gt;usb2_rhub.bus_state.suspended_ports = 0;</span></div>
+<div class="cl" data-line="233"><span class="ln">233</span><span class="cd">	xhci-&gt;usb2_rhub.bus_state.resuming_ports = 0;</span></div>
+<div class="cl" data-line="234"><span class="ln">234</span><span class="cd">	xhci-&gt;usb3_rhub.bus_state.port_c_suspend = 0;</span></div>
+<div class="cl" data-line="235"><span class="ln">235</span><span class="cd">	xhci-&gt;usb3_rhub.bus_state.suspended_ports = 0;</span></div>
+<div class="cl" data-line="236"><span class="ln">236</span><span class="cd">	xhci-&gt;usb3_rhub.bus_state.resuming_ports = 0;</span></div>
+<div class="cl" data-line="237"><span class="ln">237</span><span class="cd"></span></div>
+<div class="cl" data-line="238"><span class="ln">238</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="239"><span class="ln">239</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:474-488 · xhci_enable_max_dev_slots · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:474:488"><div class="cl" data-line="474"><span class="ln">474</span><span class="cd">static void xhci_enable_max_dev_slots(struct xhci_hcd *xhci)</span></div>
+<div class="cl" data-line="475"><span class="ln">475</span><span class="cd">{</span></div>
+<div class="cl" data-line="476"><span class="ln">476</span><span class="cd">	u32 config_reg;</span></div>
+<div class="cl" data-line="477"><span class="ln">477</span><span class="cd"></span></div>
+<div class="cl" data-line="478"><span class="ln">478</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "xHC can handle at most %d device slots",</span></div>
+<div class="cl" data-line="479"><span class="ln">479</span><span class="cd">		       xhci-&gt;max_slots);</span></div>
+<div class="cl" data-line="480"><span class="ln">480</span><span class="cd"></span></div>
+<div class="cl" data-line="481"><span class="ln">481</span><span class="cd">	config_reg = readl(&amp;xhci-&gt;op_regs-&gt;config_reg);</span></div>
+<div class="cl" data-line="482"><span class="ln">482</span><span class="cd">	config_reg &amp;= ~HCS_SLOTS_MASK;</span></div>
+<div class="cl" data-line="483"><span class="ln">483</span><span class="cd">	config_reg |= xhci-&gt;max_slots;</span></div>
+<div class="cl" data-line="484"><span class="ln">484</span><span class="cd"></span></div>
+<div class="cl" data-line="485"><span class="ln">485</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "Setting Max device slots reg = 0x%x",</span></div>
+<div class="cl" data-line="486"><span class="ln">486</span><span class="cd">		       config_reg);</span></div>
+<div class="cl hot" data-line="487" data-hot="init:3"><span class="ln">487</span><span class="cd">	writel(config_reg, &amp;xhci-&gt;op_regs-&gt;config_reg);</span></div>
+<div class="cl" data-line="488"><span class="ln">488</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:490-507 · xhci_set_cmd_ring_deq · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:490:507"><div class="cl" data-line="490"><span class="ln">490</span><span class="cd">static void xhci_set_cmd_ring_deq(struct xhci_hcd *xhci)</span></div>
+<div class="cl" data-line="491"><span class="ln">491</span><span class="cd">{</span></div>
+<div class="cl" data-line="492"><span class="ln">492</span><span class="cd">	dma_addr_t deq_dma;</span></div>
+<div class="cl" data-line="493"><span class="ln">493</span><span class="cd">	u64 crcr;</span></div>
+<div class="cl" data-line="494"><span class="ln">494</span><span class="cd"></span></div>
+<div class="cl" data-line="495"><span class="ln">495</span><span class="cd">	deq_dma = xhci_trb_virt_to_dma(xhci-&gt;cmd_ring-&gt;deq_seg, xhci-&gt;cmd_ring-&gt;dequeue);</span></div>
+<div class="cl" data-line="496"><span class="ln">496</span><span class="cd">	deq_dma &amp;= CMD_RING_PTR_MASK;</span></div>
+<div class="cl" data-line="497"><span class="ln">497</span><span class="cd"></span></div>
+<div class="cl" data-line="498"><span class="ln">498</span><span class="cd">	crcr = xhci_read_64(xhci, &amp;xhci-&gt;op_regs-&gt;cmd_ring);</span></div>
+<div class="cl" data-line="499"><span class="ln">499</span><span class="cd">	crcr &amp;= ~CMD_RING_PTR_MASK;</span></div>
+<div class="cl" data-line="500"><span class="ln">500</span><span class="cd">	crcr |= deq_dma;</span></div>
+<div class="cl" data-line="501"><span class="ln">501</span><span class="cd"></span></div>
+<div class="cl" data-line="502"><span class="ln">502</span><span class="cd">	crcr &amp;= ~CMD_RING_CYCLE;</span></div>
+<div class="cl" data-line="503"><span class="ln">503</span><span class="cd">	crcr |= xhci-&gt;cmd_ring-&gt;cycle_state;</span></div>
+<div class="cl" data-line="504"><span class="ln">504</span><span class="cd"></span></div>
+<div class="cl" data-line="505"><span class="ln">505</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "Setting command ring address to 0x%llx", crcr);</span></div>
+<div class="cl hot" data-line="506" data-hot="init:4"><span class="ln">506</span><span class="cd">	xhci_write_64(xhci, crcr, &amp;xhci-&gt;op_regs-&gt;cmd_ring);</span></div>
+<div class="cl" data-line="507"><span class="ln">507</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:534-575 · xhci_init · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:534:575"><div class="cl" data-line="534"><span class="ln">534</span><span class="cd">static void xhci_init(struct usb_hcd *hcd)</span></div>
+<div class="cl" data-line="535"><span class="ln">535</span><span class="cd">{</span></div>
+<div class="cl" data-line="536"><span class="ln">536</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="537"><span class="ln">537</span><span class="cd"></span></div>
+<div class="cl" data-line="538"><span class="ln">538</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "Starting %s", __func__);</span></div>
+<div class="cl" data-line="539"><span class="ln">539</span><span class="cd"></span></div>
+<div class="cl" data-line="540"><span class="ln">540</span><span class="cd">	/* Set the Number of Device Slots Enabled to the maximum supported value */</span></div>
+<div class="cl" data-line="541"><span class="ln">541</span><span class="cd">	xhci_enable_max_dev_slots(xhci);</span></div>
+<div class="cl" data-line="542"><span class="ln">542</span><span class="cd"></span></div>
+<div class="cl" data-line="543"><span class="ln">543</span><span class="cd">	/* Initialize the Command ring */</span></div>
+<div class="cl" data-line="544"><span class="ln">544</span><span class="cd">	xhci_ring_init(xhci, xhci-&gt;cmd_ring);</span></div>
+<div class="cl" data-line="545"><span class="ln">545</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="546"><span class="ln">546</span><span class="cd">	 * Reserve one command ring TRB for disabling LPM.</span></div>
+<div class="cl" data-line="547"><span class="ln">547</span><span class="cd">	 * Since the USB core grabs the shared usb_bus bandwidth mutex before</span></div>
+<div class="cl" data-line="548"><span class="ln">548</span><span class="cd">	 * disabling LPM, we only need to reserve one TRB for all devices.</span></div>
+<div class="cl" data-line="549"><span class="ln">549</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="550"><span class="ln">550</span><span class="cd">	xhci-&gt;cmd_ring_reserved_trbs = 1;</span></div>
+<div class="cl" data-line="551"><span class="ln">551</span><span class="cd">	/* Set the address in the Command Ring Control register */</span></div>
+<div class="cl" data-line="552"><span class="ln">552</span><span class="cd">	xhci_set_cmd_ring_deq(xhci);</span></div>
+<div class="cl" data-line="553"><span class="ln">553</span><span class="cd"></span></div>
+<div class="cl" data-line="554"><span class="ln">554</span><span class="cd">	/* Set Device Context Base Address Array pointer */</span></div>
+<div class="cl hot" data-line="555" data-hot="init:5"><span class="ln">555</span><span class="cd">	xhci_write_64(xhci, xhci-&gt;dcbaa.dma, &amp;xhci-&gt;op_regs-&gt;dcbaa_ptr);</span></div>
+<div class="cl" data-line="556"><span class="ln">556</span><span class="cd"></span></div>
+<div class="cl" data-line="557"><span class="ln">557</span><span class="cd">	/* Set Doorbell array pointer */</span></div>
+<div class="cl" data-line="558"><span class="ln">558</span><span class="cd">	xhci_set_doorbell_ptr(xhci);</span></div>
+<div class="cl" data-line="559"><span class="ln">559</span><span class="cd"></span></div>
+<div class="cl" data-line="560"><span class="ln">560</span><span class="cd">	/* Set USB 3.0 device notifications for function remote wake */</span></div>
+<div class="cl" data-line="561"><span class="ln">561</span><span class="cd">	xhci_set_dev_notifications(xhci);</span></div>
+<div class="cl" data-line="562"><span class="ln">562</span><span class="cd"></span></div>
+<div class="cl" data-line="563"><span class="ln">563</span><span class="cd">	/* Initialize the Primary interrupter */</span></div>
+<div class="cl" data-line="564"><span class="ln">564</span><span class="cd">	xhci_ring_init(xhci, xhci-&gt;interrupters[0]-&gt;event_ring);</span></div>
+<div class="cl" data-line="565"><span class="ln">565</span><span class="cd">	xhci_add_interrupter(xhci, 0);</span></div>
+<div class="cl" data-line="566"><span class="ln">566</span><span class="cd">	xhci-&gt;interrupters[0]-&gt;isoc_bei_interval = AVOID_BEI_INTERVAL_MAX;</span></div>
+<div class="cl" data-line="567"><span class="ln">567</span><span class="cd"></span></div>
+<div class="cl" data-line="568"><span class="ln">568</span><span class="cd">	/* Initializing Compliance Mode Recovery Data If Needed */</span></div>
+<div class="cl" data-line="569"><span class="ln">569</span><span class="cd">	if (xhci_compliance_mode_recovery_timer_quirk_check()) {</span></div>
+<div class="cl" data-line="570"><span class="ln">570</span><span class="cd">		xhci-&gt;quirks |= XHCI_COMP_MODE_QUIRK;</span></div>
+<div class="cl" data-line="571"><span class="ln">571</span><span class="cd">		compliance_mode_recovery_timer_init(xhci);</span></div>
+<div class="cl" data-line="572"><span class="ln">572</span><span class="cd">	}</span></div>
+<div class="cl" data-line="573"><span class="ln">573</span><span class="cd"></span></div>
+<div class="cl" data-line="574"><span class="ln">574</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "Finished %s", __func__);</span></div>
+<div class="cl" data-line="575"><span class="ln">575</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-mem.c:2294-2327 · xhci_alloc_interrupter · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:2294:2327"><div class="cl" data-line="2294"><span class="ln">2294</span><span class="cd">xhci_alloc_interrupter(struct xhci_hcd *xhci, unsigned int segs, gfp_t flags)</span></div>
+<div class="cl" data-line="2295"><span class="ln">2295</span><span class="cd">{</span></div>
+<div class="cl" data-line="2296"><span class="ln">2296</span><span class="cd">	struct device *dev = xhci_to_hcd(xhci)-&gt;self.sysdev;</span></div>
+<div class="cl" data-line="2297"><span class="ln">2297</span><span class="cd">	struct xhci_interrupter *ir;</span></div>
+<div class="cl" data-line="2298"><span class="ln">2298</span><span class="cd">	unsigned int max_segs;</span></div>
+<div class="cl" data-line="2299"><span class="ln">2299</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="2300"><span class="ln">2300</span><span class="cd"></span></div>
+<div class="cl" data-line="2301"><span class="ln">2301</span><span class="cd">	if (!segs)</span></div>
+<div class="cl" data-line="2302"><span class="ln">2302</span><span class="cd">		segs = ERST_DEFAULT_SEGS;</span></div>
+<div class="cl" data-line="2303"><span class="ln">2303</span><span class="cd"></span></div>
+<div class="cl" data-line="2304"><span class="ln">2304</span><span class="cd">	max_segs = BIT(FIELD_GET(HCS_ERST_MAX, xhci-&gt;hcs_params2));</span></div>
+<div class="cl" data-line="2305"><span class="ln">2305</span><span class="cd">	segs = min(segs, max_segs);</span></div>
+<div class="cl" data-line="2306"><span class="ln">2306</span><span class="cd"></span></div>
+<div class="cl" data-line="2307"><span class="ln">2307</span><span class="cd">	ir = kzalloc_node(sizeof(*ir), flags, dev_to_node(dev));</span></div>
+<div class="cl" data-line="2308"><span class="ln">2308</span><span class="cd">	if (!ir)</span></div>
+<div class="cl" data-line="2309"><span class="ln">2309</span><span class="cd">		return NULL;</span></div>
+<div class="cl" data-line="2310"><span class="ln">2310</span><span class="cd"></span></div>
+<div class="cl hot" data-line="2311" data-hot="init:6"><span class="ln">2311</span><span class="cd">	ir-&gt;event_ring = xhci_ring_alloc(xhci, segs, TYPE_EVENT, 0, flags);</span></div>
+<div class="cl" data-line="2312"><span class="ln">2312</span><span class="cd">	if (!ir-&gt;event_ring) {</span></div>
+<div class="cl" data-line="2313"><span class="ln">2313</span><span class="cd">		xhci_warn(xhci, "Failed to allocate interrupter event ring\n");</span></div>
+<div class="cl" data-line="2314"><span class="ln">2314</span><span class="cd">		kfree(ir);</span></div>
+<div class="cl" data-line="2315"><span class="ln">2315</span><span class="cd">		return NULL;</span></div>
+<div class="cl" data-line="2316"><span class="ln">2316</span><span class="cd">	}</span></div>
+<div class="cl" data-line="2317"><span class="ln">2317</span><span class="cd"></span></div>
+<div class="cl" data-line="2318"><span class="ln">2318</span><span class="cd">	ret = xhci_alloc_erst(xhci, ir-&gt;event_ring, &amp;ir-&gt;erst, flags);</span></div>
+<div class="cl" data-line="2319"><span class="ln">2319</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="2320"><span class="ln">2320</span><span class="cd">		xhci_warn(xhci, "Failed to allocate interrupter erst\n");</span></div>
+<div class="cl" data-line="2321"><span class="ln">2321</span><span class="cd">		xhci_ring_free(xhci, ir-&gt;event_ring);</span></div>
+<div class="cl" data-line="2322"><span class="ln">2322</span><span class="cd">		kfree(ir);</span></div>
+<div class="cl" data-line="2323"><span class="ln">2323</span><span class="cd">		return NULL;</span></div>
+<div class="cl" data-line="2324"><span class="ln">2324</span><span class="cd">	}</span></div>
+<div class="cl" data-line="2325"><span class="ln">2325</span><span class="cd"></span></div>
+<div class="cl" data-line="2326"><span class="ln">2326</span><span class="cd">	return ir;</span></div>
+<div class="cl" data-line="2327"><span class="ln">2327</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-mem.c:2329-2355 · xhci_add_interrupter · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:2329:2355"><div class="cl" data-line="2329"><span class="ln">2329</span><span class="cd">void xhci_add_interrupter(struct xhci_hcd *xhci, unsigned int intr_num)</span></div>
+<div class="cl" data-line="2330"><span class="ln">2330</span><span class="cd">{</span></div>
+<div class="cl" data-line="2331"><span class="ln">2331</span><span class="cd">	struct xhci_interrupter *ir;</span></div>
+<div class="cl" data-line="2332"><span class="ln">2332</span><span class="cd">	u64 erst_base;</span></div>
+<div class="cl" data-line="2333"><span class="ln">2333</span><span class="cd">	u32 erst_size;</span></div>
+<div class="cl" data-line="2334"><span class="ln">2334</span><span class="cd"></span></div>
+<div class="cl" data-line="2335"><span class="ln">2335</span><span class="cd">	ir = xhci-&gt;interrupters[intr_num];</span></div>
+<div class="cl" data-line="2336"><span class="ln">2336</span><span class="cd">	ir-&gt;intr_num = intr_num;</span></div>
+<div class="cl" data-line="2337"><span class="ln">2337</span><span class="cd">	ir-&gt;ir_set = &amp;xhci-&gt;run_regs-&gt;ir_set[intr_num];</span></div>
+<div class="cl" data-line="2338"><span class="ln">2338</span><span class="cd"></span></div>
+<div class="cl" data-line="2339"><span class="ln">2339</span><span class="cd">	/* set ERST count with the number of entries in the segment table */</span></div>
+<div class="cl" data-line="2340"><span class="ln">2340</span><span class="cd">	erst_size = readl(&amp;ir-&gt;ir_set-&gt;erst_size);</span></div>
+<div class="cl" data-line="2341"><span class="ln">2341</span><span class="cd">	erst_size &amp;= ~ERST_SIZE_MASK;</span></div>
+<div class="cl" data-line="2342"><span class="ln">2342</span><span class="cd">	erst_size |= ir-&gt;event_ring-&gt;num_segs;</span></div>
+<div class="cl hot" data-line="2343" data-hot="init:7"><span class="ln">2343</span><span class="cd">	writel(erst_size, &amp;ir-&gt;ir_set-&gt;erst_size);</span></div>
+<div class="cl" data-line="2344"><span class="ln">2344</span><span class="cd"></span></div>
+<div class="cl" data-line="2345"><span class="ln">2345</span><span class="cd">	erst_base = xhci_read_64(xhci, &amp;ir-&gt;ir_set-&gt;erst_base);</span></div>
+<div class="cl" data-line="2346"><span class="ln">2346</span><span class="cd">	erst_base &amp;= ~ERST_BASE_ADDRESS_MASK;</span></div>
+<div class="cl" data-line="2347"><span class="ln">2347</span><span class="cd">	erst_base |= ir-&gt;erst.erst_dma_addr &amp; ERST_BASE_ADDRESS_MASK;</span></div>
+<div class="cl" data-line="2348"><span class="ln">2348</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_WRITE_64_HI_LO)</span></div>
+<div class="cl" data-line="2349"><span class="ln">2349</span><span class="cd">		hi_lo_writeq(erst_base, &amp;ir-&gt;ir_set-&gt;erst_base);</span></div>
+<div class="cl" data-line="2350"><span class="ln">2350</span><span class="cd">	else</span></div>
+<div class="cl hot" data-line="2351" data-hot="init:8"><span class="ln">2351</span><span class="cd">		xhci_write_64(xhci, erst_base, &amp;ir-&gt;ir_set-&gt;erst_base);</span></div>
+<div class="cl" data-line="2352"><span class="ln">2352</span><span class="cd"></span></div>
+<div class="cl" data-line="2353"><span class="ln">2353</span><span class="cd">	/* Set the event ring dequeue address of this interrupter */</span></div>
+<div class="cl" data-line="2354"><span class="ln">2354</span><span class="cd">	xhci_set_hc_event_deq(xhci, ir);</span></div>
+<div class="cl" data-line="2355"><span class="ln">2355</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:627-678 · xhci_run · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:627:678"><div class="cl hot" data-line="627" data-hot="init:9"><span class="ln">627</span><span class="cd">int xhci_run(struct usb_hcd *hcd)</span></div>
+<div class="cl" data-line="628"><span class="ln">628</span><span class="cd">{</span></div>
+<div class="cl" data-line="629"><span class="ln">629</span><span class="cd">	u64 temp_64;</span></div>
+<div class="cl" data-line="630"><span class="ln">630</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="631"><span class="ln">631</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="632"><span class="ln">632</span><span class="cd">	struct xhci_interrupter *ir = xhci-&gt;interrupters[0];</span></div>
+<div class="cl" data-line="633"><span class="ln">633</span><span class="cd">	/* Start the xHCI host controller running only after the USB 2.0 roothub</span></div>
+<div class="cl" data-line="634"><span class="ln">634</span><span class="cd">	 * is setup.</span></div>
+<div class="cl" data-line="635"><span class="ln">635</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="636"><span class="ln">636</span><span class="cd"></span></div>
+<div class="cl" data-line="637"><span class="ln">637</span><span class="cd">	hcd-&gt;uses_new_polling = 1;</span></div>
+<div class="cl" data-line="638"><span class="ln">638</span><span class="cd">	if (hcd-&gt;msi_enabled)</span></div>
+<div class="cl" data-line="639"><span class="ln">639</span><span class="cd">		ir-&gt;ip_autoclear = true;</span></div>
+<div class="cl" data-line="640"><span class="ln">640</span><span class="cd"></span></div>
+<div class="cl" data-line="641"><span class="ln">641</span><span class="cd">	if (!usb_hcd_is_primary_hcd(hcd))</span></div>
+<div class="cl" data-line="642"><span class="ln">642</span><span class="cd">		return xhci_run_finished(xhci);</span></div>
+<div class="cl" data-line="643"><span class="ln">643</span><span class="cd"></span></div>
+<div class="cl" data-line="644"><span class="ln">644</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "xhci_run");</span></div>
+<div class="cl" data-line="645"><span class="ln">645</span><span class="cd"></span></div>
+<div class="cl" data-line="646"><span class="ln">646</span><span class="cd">	temp_64 = xhci_read_64(xhci, &amp;ir-&gt;ir_set-&gt;erst_dequeue);</span></div>
+<div class="cl" data-line="647"><span class="ln">647</span><span class="cd">	temp_64 &amp;= ERST_PTR_MASK;</span></div>
+<div class="cl" data-line="648"><span class="ln">648</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init,</span></div>
+<div class="cl" data-line="649"><span class="ln">649</span><span class="cd">			"ERST deq = 64'h%0lx", (long unsigned int) temp_64);</span></div>
+<div class="cl" data-line="650"><span class="ln">650</span><span class="cd"></span></div>
+<div class="cl" data-line="651"><span class="ln">651</span><span class="cd">	xhci_set_interrupter_moderation(ir, xhci-&gt;imod_interval);</span></div>
+<div class="cl" data-line="652"><span class="ln">652</span><span class="cd"></span></div>
+<div class="cl" data-line="653"><span class="ln">653</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_NEC_HOST) {</span></div>
+<div class="cl" data-line="654"><span class="ln">654</span><span class="cd">		struct xhci_command *command;</span></div>
+<div class="cl" data-line="655"><span class="ln">655</span><span class="cd"></span></div>
+<div class="cl" data-line="656"><span class="ln">656</span><span class="cd">		command = xhci_alloc_command(xhci, false, GFP_KERNEL);</span></div>
+<div class="cl" data-line="657"><span class="ln">657</span><span class="cd">		if (!command)</span></div>
+<div class="cl" data-line="658"><span class="ln">658</span><span class="cd">			return -ENOMEM;</span></div>
+<div class="cl" data-line="659"><span class="ln">659</span><span class="cd"></span></div>
+<div class="cl" data-line="660"><span class="ln">660</span><span class="cd">		ret = xhci_queue_vendor_command(xhci, command, 0, 0, 0,</span></div>
+<div class="cl" data-line="661"><span class="ln">661</span><span class="cd">				TRB_TYPE(TRB_NEC_GET_FW));</span></div>
+<div class="cl" data-line="662"><span class="ln">662</span><span class="cd">		if (ret)</span></div>
+<div class="cl" data-line="663"><span class="ln">663</span><span class="cd">			xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="664"><span class="ln">664</span><span class="cd">	}</span></div>
+<div class="cl" data-line="665"><span class="ln">665</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init,</span></div>
+<div class="cl" data-line="666"><span class="ln">666</span><span class="cd">			"Finished %s for main hcd", __func__);</span></div>
+<div class="cl" data-line="667"><span class="ln">667</span><span class="cd"></span></div>
+<div class="cl" data-line="668"><span class="ln">668</span><span class="cd">	xhci_create_dbc_dev(xhci);</span></div>
+<div class="cl" data-line="669"><span class="ln">669</span><span class="cd"></span></div>
+<div class="cl" data-line="670"><span class="ln">670</span><span class="cd">	xhci_debugfs_init(xhci);</span></div>
+<div class="cl" data-line="671"><span class="ln">671</span><span class="cd"></span></div>
+<div class="cl" data-line="672"><span class="ln">672</span><span class="cd">	if (xhci_has_one_roothub(xhci))</span></div>
+<div class="cl" data-line="673"><span class="ln">673</span><span class="cd">		return xhci_run_finished(xhci);</span></div>
+<div class="cl" data-line="674"><span class="ln">674</span><span class="cd"></span></div>
+<div class="cl" data-line="675"><span class="ln">675</span><span class="cd">	set_bit(HCD_FLAG_DEFER_RH_REGISTER, &amp;hcd-&gt;flags);</span></div>
+<div class="cl" data-line="676"><span class="ln">676</span><span class="cd"></span></div>
+<div class="cl" data-line="677"><span class="ln">677</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="678"><span class="ln">678</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:579-613 · xhci_run_finished · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:579:613"><div class="cl" data-line="579"><span class="ln">579</span><span class="cd">static int xhci_run_finished(struct xhci_hcd *xhci)</span></div>
+<div class="cl" data-line="580"><span class="ln">580</span><span class="cd">{</span></div>
+<div class="cl" data-line="581"><span class="ln">581</span><span class="cd">	struct xhci_interrupter *ir = xhci-&gt;interrupters[0];</span></div>
+<div class="cl" data-line="582"><span class="ln">582</span><span class="cd">	unsigned long	flags;</span></div>
+<div class="cl" data-line="583"><span class="ln">583</span><span class="cd">	u32		temp;</span></div>
+<div class="cl" data-line="584"><span class="ln">584</span><span class="cd"></span></div>
+<div class="cl" data-line="585"><span class="ln">585</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="586"><span class="ln">586</span><span class="cd">	 * Enable interrupts before starting the host (xhci 4.2 and 5.5.2).</span></div>
+<div class="cl" data-line="587"><span class="ln">587</span><span class="cd">	 * Protect the short window before host is running with a lock</span></div>
+<div class="cl" data-line="588"><span class="ln">588</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="589"><span class="ln">589</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="590"><span class="ln">590</span><span class="cd"></span></div>
+<div class="cl" data-line="591"><span class="ln">591</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "Enable interrupts");</span></div>
+<div class="cl" data-line="592"><span class="ln">592</span><span class="cd">	temp = readl(&amp;xhci-&gt;op_regs-&gt;command);</span></div>
+<div class="cl" data-line="593"><span class="ln">593</span><span class="cd">	temp |= (CMD_EIE);</span></div>
+<div class="cl" data-line="594"><span class="ln">594</span><span class="cd">	writel(temp, &amp;xhci-&gt;op_regs-&gt;command);</span></div>
+<div class="cl" data-line="595"><span class="ln">595</span><span class="cd"></span></div>
+<div class="cl" data-line="596"><span class="ln">596</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "Enable primary interrupter");</span></div>
+<div class="cl" data-line="597"><span class="ln">597</span><span class="cd">	xhci_enable_interrupter(ir);</span></div>
+<div class="cl" data-line="598"><span class="ln">598</span><span class="cd"></span></div>
+<div class="cl" data-line="599"><span class="ln">599</span><span class="cd">	if (xhci_start(xhci)) {</span></div>
+<div class="cl" data-line="600"><span class="ln">600</span><span class="cd">		xhci_halt(xhci);</span></div>
+<div class="cl" data-line="601"><span class="ln">601</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="602"><span class="ln">602</span><span class="cd">		return -ENODEV;</span></div>
+<div class="cl" data-line="603"><span class="ln">603</span><span class="cd">	}</span></div>
+<div class="cl" data-line="604"><span class="ln">604</span><span class="cd"></span></div>
+<div class="cl hot" data-line="605" data-hot="init:11"><span class="ln">605</span><span class="cd">	xhci-&gt;cmd_ring_state = CMD_RING_STATE_RUNNING;</span></div>
+<div class="cl" data-line="606"><span class="ln">606</span><span class="cd"></span></div>
+<div class="cl" data-line="607"><span class="ln">607</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_NEC_HOST)</span></div>
+<div class="cl" data-line="608"><span class="ln">608</span><span class="cd">		xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="609"><span class="ln">609</span><span class="cd"></span></div>
+<div class="cl" data-line="610"><span class="ln">610</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="611"><span class="ln">611</span><span class="cd"></span></div>
+<div class="cl" data-line="612"><span class="ln">612</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="613"><span class="ln">613</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:145-173 · xhci_start · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:145:173"><div class="cl" data-line="145"><span class="ln">145</span><span class="cd">int xhci_start(struct xhci_hcd *xhci)</span></div>
+<div class="cl" data-line="146"><span class="ln">146</span><span class="cd">{</span></div>
+<div class="cl" data-line="147"><span class="ln">147</span><span class="cd">	u32 temp;</span></div>
+<div class="cl" data-line="148"><span class="ln">148</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="149"><span class="ln">149</span><span class="cd"></span></div>
+<div class="cl" data-line="150"><span class="ln">150</span><span class="cd">	temp = readl(&amp;xhci-&gt;op_regs-&gt;command);</span></div>
+<div class="cl" data-line="151"><span class="ln">151</span><span class="cd">	temp |= (CMD_RUN);</span></div>
+<div class="cl" data-line="152"><span class="ln">152</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "// Turn on HC, cmd = 0x%x.",</span></div>
+<div class="cl" data-line="153"><span class="ln">153</span><span class="cd">			temp);</span></div>
+<div class="cl hot" data-line="154" data-hot="init:10"><span class="ln">154</span><span class="cd">	writel(temp, &amp;xhci-&gt;op_regs-&gt;command);</span></div>
+<div class="cl" data-line="155"><span class="ln">155</span><span class="cd"></span></div>
+<div class="cl" data-line="156"><span class="ln">156</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="157"><span class="ln">157</span><span class="cd">	 * Wait for the HCHalted Status bit to be 0 to indicate the host is</span></div>
+<div class="cl" data-line="158"><span class="ln">158</span><span class="cd">	 * running.</span></div>
+<div class="cl" data-line="159"><span class="ln">159</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="160"><span class="ln">160</span><span class="cd">	ret = xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status,</span></div>
+<div class="cl" data-line="161"><span class="ln">161</span><span class="cd">			STS_HALT, 0, XHCI_MAX_HALT_USEC);</span></div>
+<div class="cl" data-line="162"><span class="ln">162</span><span class="cd">	if (ret == -ETIMEDOUT)</span></div>
+<div class="cl" data-line="163"><span class="ln">163</span><span class="cd">		xhci_err(xhci, "Host took too long to start, "</span></div>
+<div class="cl" data-line="164"><span class="ln">164</span><span class="cd">				"waited %u microseconds.\n",</span></div>
+<div class="cl" data-line="165"><span class="ln">165</span><span class="cd">				XHCI_MAX_HALT_USEC);</span></div>
+<div class="cl" data-line="166"><span class="ln">166</span><span class="cd">	if (!ret) {</span></div>
+<div class="cl" data-line="167"><span class="ln">167</span><span class="cd">		/* clear state flags. Including dying, halted or removing */</span></div>
+<div class="cl" data-line="168"><span class="ln">168</span><span class="cd">		xhci-&gt;xhc_state = 0;</span></div>
+<div class="cl" data-line="169"><span class="ln">169</span><span class="cd">		xhci-&gt;run_graceperiod = jiffies + msecs_to_jiffies(500);</span></div>
+<div class="cl" data-line="170"><span class="ln">170</span><span class="cd">	}</span></div>
+<div class="cl" data-line="171"><span class="ln">171</span><span class="cd"></span></div>
+<div class="cl" data-line="172"><span class="ln">172</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="173"><span class="ln">173</span><span class="cd">}</span></div></pre>
     </div>
 
     <div class="card b2">
@@ -368,23 +1039,36 @@ doorbell references.</blockquote>
     <div class="card b3">
       <div class="bhead"><span class="badge">③</span>交互</div>
       <div class="act" style="margin-top:0;">
-        <a class="btn ghost" href="interactive/index.html">打开交互操作台 →</a>
-        <span class="note">单文件自包含 · SMOKE 全 PASS（含模块三）· 模块一=三环操作台 · 模块二=URB→TRB→TD 组装 · 模块三=代码解读</span>
+        <a class="btn ghost" href="interactive/index.html#m2">模块二 · 控制器初始化台 →</a>
+        <span class="note">单文件自包含 · 交互台四模块分节锚定（#m1-#m4）</span>
       </div>
-      <p class="int-note"><b>模块三 · 代码解读：</b>4.2 控制器初始化题组（寄存器清单：CNR 等待 / MaxSlotsEn / CRCR / DCBAAP / ERSTSZ / ERSTBA / R/S=1，贴码行可点 + 规范锚点卡）</p>
+      <p class="int-note"><b>模块二 · 控制器初始化台：</b>复位 → 寄存器编程 → R/S=1 开机顺序练习（CNR 等待 / MaxSlotsEn / CRCR / DCBAAP / ERSTSZ / ERSTBA / R/S=1 寄存器清单逐项核对）</p>
+      <p class="int-note"><b>模块四 · 代码解读：</b>4.2 控制器初始化题组（贴码行可点 + 规范锚点卡），入口 <a href="interactive/index.html#m4">interactive/index.html#m4</a></p>
     </div>
 
     <div class="card b4">
       <div class="bhead"><span class="badge">④</span>补丁收尾</div>
       <div class="phead">上游 commit 24d2a690fb83c40913c0b3f38151ae3997a5898f · 2026-10-09 · Henry Tseng（QNAP） · drivers/usb/host/xhci.c 1 行 · hunk @@ -195,7 +195,7 @@（xhci_reset）</div>
-      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
-      <p class="pbody">2026 年 10 月，QNAP（NAS 存储厂商）的 Henry Tseng 报告并提交：<code>xhci_reset()</code> 在主机控制器未 halted（未停机）时直接中止复位路径，却不写 CMD_RESET、也不返回错误。触发场景是主机未停机就有路径对控制器调用复位（驱动探测/恢复流程）。硬件无关——这是纯软件状态机的返回值语义缺陷。对应课程 4.2 的 halt→reset 握手节拍：复位的前提（主机已停机）与完成（CNR 清零）都要靠状态位逐级确认，前提不满足时必须把失败如实上抛，而不是伪装成功。</p>
-      <p class="ph">要解决的问题（症状 + 机制）</p>
-      <p class="pbody">症状：调用方检查 <code>xhci_reset()</code> 返回值时被告知「复位成功」，而复位实际上根本没有执行——这是全部复位失败路径里唯一一个「失败却返回 0」的分支。机制：<code>xhci_reset()</code> 开头读 USBSTS 状态，若 <code>(state &amp; STS_HALT) == 0</code>（主机未 halted），按语义复位应当中止；补丁前这个分支 <code>return 0</code>，与后续「写 CMD_RESET → handshake 等 CNR 清零 → 失败返回超时错误」的其他路径语义不一致。规范背景（§4.2 p69）：复位不是瞬时动作，而是带握手的流程——芯片硬件复位后要等 <code>USBSTS.CNR</code> 清零才允许写其它 Operational/Runtime 寄存器；前提不满足就应报错，让调用链不至于在「复位已完成」的假象上继续初始化。</p>
-      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">单行改动（<code>drivers/usb/host/xhci.c</code>，<code>xhci_reset</code>）：未 halted 中止分支 <code>return 0</code> → <code>return -EBUSY</code>。补丁前：中止复位被当成成功，调用方在错误状态下继续走初始化。补丁后：-EBUSY 把「主机忙、未停机」如实上抛，调用方走错误处理——<code>xhci_reset</code> 的所有失败出口（未 halted / handshake 超时）语义一致。与代码摘录（drafts/code-excerpts.json init 组 L229，同函数内 <code>xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us)</code>）对读：那条握手失败会返回超时错误，本补丁让“没进入复位”同样返回错误；凡依赖返回值判断复位成败的调用方（探测、休眠恢复、错误恢复路径）从此拿到一致语义，验收时可直接对 -EBUSY 分支验证未停机场景。</p>
-      <div class="dhead">diff 逐字切片 · git show 24d2a690fb83 · drivers/usb/host/xhci.c @@ -195,7 +195,7 @@</div>
-      <pre class="diffblock" data-ck="diff:24d2a690fb83c40913c0b3f38151ae3997a5898f:drivers/usb/host/xhci.c:1"><span class="d-meta">diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c</span>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:24d2a690fb83c40913c0b3f38151ae3997a5898f">commit 24d2a690fb83c40913c0b3f38151ae3997a5898f
+Author: Henry Tseng &lt;henrytseng@qnap.com&gt;
+Date:   Fri Oct 9 18:16:14 2026 +0300
+
+    usb: xhci: return an error if the host is not halted
+    
+    xhci_reset() returns 0 when the host is not halted, without ever writing
+    CMD_RESET. Every other path that fails to reset the host returns an
+    error, so callers that check the return value are told the reset
+    succeeded on the one path where it did not happen.
+    
+    Return -EBUSY when the reset is aborted because the host is not halted.
+    
+    Signed-off-by: Henry Tseng &lt;henrytseng@qnap.com&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://patch.msgid.link/20261009151624.618967-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c</span>
 <span class="d-meta">index a9e47e178c28..2af6a7b91e55 100644</span>
 <span class="d-meta">--- a/drivers/usb/host/xhci.c</span>
 <span class="d-meta">+++ b/drivers/usb/host/xhci.c</span>
@@ -397,6 +1081,12 @@ doorbell references.</blockquote>
 <span class="d-ctx"> 	}</span>
 <span class="d-ctx"> </span>
 <span class="d-ctx"> 	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "// Reset the HC");</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2026 年 10 月，QNAP（NAS 存储厂商）的 Henry Tseng 报告并提交：<code>xhci_reset()</code> 在主机控制器未 halted（未停机）时直接中止复位路径，却不写 CMD_RESET、也不返回错误。触发场景是主机未停机就有路径对控制器调用复位（驱动探测/恢复流程）。硬件无关——这是纯软件状态机的返回值语义缺陷。对应课程 4.2 的 halt→reset 握手节拍：复位的前提（主机已停机）与完成（CNR 清零）都要靠状态位逐级确认，前提不满足时必须把失败如实上抛，而不是伪装成功。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：调用方检查 <code>xhci_reset()</code> 返回值时被告知「复位成功」，而复位实际上根本没有执行——这是全部复位失败路径里唯一一个「失败却返回 0」的分支。机制：<code>xhci_reset()</code> 开头读 USBSTS 状态，若 <code>(state &amp; STS_HALT) == 0</code>（主机未 halted），按语义复位应当中止；补丁前这个分支 <code>return 0</code>，与后续「写 CMD_RESET → handshake 等 CNR 清零 → 失败返回超时错误」的其他路径语义不一致。规范背景（§4.2 p69）：复位不是瞬时动作，而是带握手的流程——芯片硬件复位后要等 <code>USBSTS.CNR</code> 清零才允许写其它 Operational/Runtime 寄存器；前提不满足就应报错，让调用链不至于在「复位已完成」的假象上继续初始化。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">单行改动（<code>drivers/usb/host/xhci.c</code>，<code>xhci_reset</code>）：未 halted 中止分支 <code>return 0</code> → <code>return -EBUSY</code>。补丁前：中止复位被当成成功，调用方在错误状态下继续走初始化。补丁后：-EBUSY 把「主机忙、未停机」如实上抛，调用方走错误处理——<code>xhci_reset</code> 的所有失败出口（未 halted / handshake 超时）语义一致。与代码摘录（drafts/code-excerpts.json init 组 L229，同函数内 <code>xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us)</code>）对读：那条握手失败会返回超时错误，本补丁让“没进入复位”同样返回错误；凡依赖返回值判断复位成败的调用方（探测、休眠恢复、错误恢复路径）从此拿到一致语义，验收时可直接对 -EBUSY 分支验证未停机场景。</p>
       <div class="act">
         <a class="btn" href="player/index.html?scene=4">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
@@ -441,67 +1131,345 @@ Enqueue Pointer Update.</blockquote>
 the Event Ring before issuing any more commands to the slot.</blockquote>
       <div class="qsrc">—— evidence/spec-43.txt L346（p76）</div>
       <p class="foot-note">补充（见引文卡）：Data/Status Stage TRB 字段——evidence/spec-43.txt L136-154 / L156-173（p73）；Address Device 命令指向 Input Context——evidence/spec-43.txt L331-334（p76）。</p>
-      <h3>调用链贴码 <span class="cmt">commit d9008e061539 · drafts/code-excerpts.json dev 组逐字</span></h3>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/core/message.c:150 · usb_control_msg · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:0">int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request,</pre>
-        <p class="exnote">USB 核同步控制传输入口：构造控制 URB、提交并等完成（动画起点，SET_ADDRESS 等由此发出）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:1698 · xhci_urb_enqueue · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:1">		ret = xhci_queue_ctrl_tx(xhci, GFP_ATOMIC, urb,</pre>
-        <p class="exnote">hc_driver urb_enqueue 按端点类型分派，控制传输走 xhci_queue_ctrl_tx（现名仍叫此）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:3842 · xhci_queue_ctrl_tx · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:2">	field |= TRB_IDT | TRB_TYPE(TRB_SETUP);</pre>
-        <p class="exnote">Setup 段 TRB：TRB_SETUP + TRB_IDT（8 字节 SETUP 包作为立即数据随 TRB 走）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:3856 · xhci_queue_ctrl_tx · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:3">	queue_trb(xhci, ep_ring, true,</pre>
-        <p class="exnote">Setup TRB 入 EP0 传输环（bRequestType/wValue 等打包成 TRB 前两个字段）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:3866 · xhci_queue_ctrl_tx · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:4">		field = TRB_ISP | TRB_TYPE(TRB_DATA);</pre>
-        <p class="exnote">Data 段 TRB 类型：TRB_DATA（IN 方向带 ISP 短包中断）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:3892 · xhci_queue_ctrl_tx · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:5">		queue_trb(xhci, ep_ring, true,</pre>
-        <p class="exnote">Data TRB 入环：数据缓冲 DMA 地址 + 长度</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:3914 · xhci_queue_ctrl_tx · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:6">			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring->cycle_state);</pre>
-        <p class="exnote">Status 段 TRB：TRB_STATUS + TRB_IOC，传输结束时产生完成事件</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:3916 · xhci_queue_ctrl_tx · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:7">	giveback_first_trb(xhci, slot_id, ep_index, 0,</pre>
-        <p class="exnote">giveback_first_trb：三段齐后翻转首 TRB 的 Cycle 位，整个 TD 一次性移交硬件</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci-ring.c:579 · xhci_ring_ep_doorbell · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:8">	writel(DB_VALUE(ep_index, stream_id), db_addr);</pre>
-        <p class="exnote">敲设备门铃：writel DB_VALUE(ep_index=0)——EP0 时 DB Target=ep+1=1（宏见 xhci.h:313）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:4404 · xhci_setup_device · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:9">	ret = xhci_queue_address_device(xhci, command, virt_dev->in_ctx->dma,</pre>
-        <p class="exnote">设备编址：xhci_queue_address_device 把 Address Device 命令 TRB 入命令环（入口是 .address_device=xhci_address_device）</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:4412 · xhci_setup_device · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:10">	xhci_ring_cmd_db(xhci);</pre>
-        <p class="exnote">敲命令门铃 DB Target=0，xHC 开始处理编址命令</p>
-      </div>
-      <div class="exrow">
-        <div class="exhead">drivers/usb/host/xhci.c:4416 · xhci_setup_device · d9008e061539</div>
-        <pre class="code" data-ck="excerpts:dev:11">	wait_for_completion(command->completion);</pre>
-        <p class="exnote">等命令完成事件：handle_cmd_completion 里 complete() 唤醒本行，设备拿到地址</p>
-      </div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+      <div class="exhead2">drivers/usb/core/message.c:150-176 · usb_control_msg · d9008e061539</div>
+      <pre class="codeseg" data-src="message.c:150:176"><div class="cl hot" data-line="150" data-hot="dev:0"><span class="ln">150</span><span class="cd">int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request,</span></div>
+<div class="cl" data-line="151"><span class="ln">151</span><span class="cd">		    __u8 requesttype, __u16 value, __u16 index, void *data,</span></div>
+<div class="cl" data-line="152"><span class="ln">152</span><span class="cd">		    __u16 size, int timeout)</span></div>
+<div class="cl" data-line="153"><span class="ln">153</span><span class="cd">{</span></div>
+<div class="cl" data-line="154"><span class="ln">154</span><span class="cd">	struct usb_ctrlrequest *dr;</span></div>
+<div class="cl" data-line="155"><span class="ln">155</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="156"><span class="ln">156</span><span class="cd"></span></div>
+<div class="cl" data-line="157"><span class="ln">157</span><span class="cd">	dr = kmalloc_obj(struct usb_ctrlrequest, GFP_NOIO);</span></div>
+<div class="cl" data-line="158"><span class="ln">158</span><span class="cd">	if (!dr)</span></div>
+<div class="cl" data-line="159"><span class="ln">159</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="160"><span class="ln">160</span><span class="cd"></span></div>
+<div class="cl" data-line="161"><span class="ln">161</span><span class="cd">	dr-&gt;bRequestType = requesttype;</span></div>
+<div class="cl" data-line="162"><span class="ln">162</span><span class="cd">	dr-&gt;bRequest = request;</span></div>
+<div class="cl" data-line="163"><span class="ln">163</span><span class="cd">	dr-&gt;wValue = cpu_to_le16(value);</span></div>
+<div class="cl" data-line="164"><span class="ln">164</span><span class="cd">	dr-&gt;wIndex = cpu_to_le16(index);</span></div>
+<div class="cl" data-line="165"><span class="ln">165</span><span class="cd">	dr-&gt;wLength = cpu_to_le16(size);</span></div>
+<div class="cl" data-line="166"><span class="ln">166</span><span class="cd"></span></div>
+<div class="cl" data-line="167"><span class="ln">167</span><span class="cd">	ret = usb_internal_control_msg(dev, pipe, dr, data, size, timeout);</span></div>
+<div class="cl" data-line="168"><span class="ln">168</span><span class="cd"></span></div>
+<div class="cl" data-line="169"><span class="ln">169</span><span class="cd">	/* Linger a bit, prior to the next control message. */</span></div>
+<div class="cl" data-line="170"><span class="ln">170</span><span class="cd">	if (dev-&gt;quirks &amp; USB_QUIRK_DELAY_CTRL_MSG)</span></div>
+<div class="cl" data-line="171"><span class="ln">171</span><span class="cd">		msleep(200);</span></div>
+<div class="cl" data-line="172"><span class="ln">172</span><span class="cd"></span></div>
+<div class="cl" data-line="173"><span class="ln">173</span><span class="cd">	kfree(dr);</span></div>
+<div class="cl" data-line="174"><span class="ln">174</span><span class="cd"></span></div>
+<div class="cl" data-line="175"><span class="ln">175</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="176"><span class="ln">176</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:1620-1721 · xhci_urb_enqueue · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:1620:1721"><div class="cl" data-line="1620"><span class="ln">1620</span><span class="cd">static int xhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flags)</span></div>
+<div class="cl" data-line="1621"><span class="ln">1621</span><span class="cd">{</span></div>
+<div class="cl" data-line="1622"><span class="ln">1622</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="1623"><span class="ln">1623</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="1624"><span class="ln">1624</span><span class="cd">	int ret = 0;</span></div>
+<div class="cl" data-line="1625"><span class="ln">1625</span><span class="cd">	unsigned int slot_id, ep_index;</span></div>
+<div class="cl" data-line="1626"><span class="ln">1626</span><span class="cd">	unsigned int *ep_state;</span></div>
+<div class="cl" data-line="1627"><span class="ln">1627</span><span class="cd">	struct urb_priv	*urb_priv;</span></div>
+<div class="cl" data-line="1628"><span class="ln">1628</span><span class="cd">	int num_tds;</span></div>
+<div class="cl" data-line="1629"><span class="ln">1629</span><span class="cd"></span></div>
+<div class="cl" data-line="1630"><span class="ln">1630</span><span class="cd">	ep_index = xhci_get_endpoint_index(&amp;urb-&gt;ep-&gt;desc);</span></div>
+<div class="cl" data-line="1631"><span class="ln">1631</span><span class="cd"></span></div>
+<div class="cl" data-line="1632"><span class="ln">1632</span><span class="cd">	if (usb_endpoint_xfer_isoc(&amp;urb-&gt;ep-&gt;desc))</span></div>
+<div class="cl" data-line="1633"><span class="ln">1633</span><span class="cd">		num_tds = urb-&gt;number_of_packets;</span></div>
+<div class="cl" data-line="1634"><span class="ln">1634</span><span class="cd">	else if (usb_endpoint_is_bulk_out(&amp;urb-&gt;ep-&gt;desc) &amp;&amp;</span></div>
+<div class="cl" data-line="1635"><span class="ln">1635</span><span class="cd">	    urb-&gt;transfer_buffer_length &gt; 0 &amp;&amp;</span></div>
+<div class="cl" data-line="1636"><span class="ln">1636</span><span class="cd">	    urb-&gt;transfer_flags &amp; URB_ZERO_PACKET &amp;&amp;</span></div>
+<div class="cl" data-line="1637"><span class="ln">1637</span><span class="cd">	    !(urb-&gt;transfer_buffer_length % usb_endpoint_maxp(&amp;urb-&gt;ep-&gt;desc)))</span></div>
+<div class="cl" data-line="1638"><span class="ln">1638</span><span class="cd">		num_tds = 2;</span></div>
+<div class="cl" data-line="1639"><span class="ln">1639</span><span class="cd">	else</span></div>
+<div class="cl" data-line="1640"><span class="ln">1640</span><span class="cd">		num_tds = 1;</span></div>
+<div class="cl" data-line="1641"><span class="ln">1641</span><span class="cd"></span></div>
+<div class="cl" data-line="1642"><span class="ln">1642</span><span class="cd">	urb_priv = kzalloc_flex(*urb_priv, td, num_tds, mem_flags);</span></div>
+<div class="cl" data-line="1643"><span class="ln">1643</span><span class="cd">	if (!urb_priv)</span></div>
+<div class="cl" data-line="1644"><span class="ln">1644</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="1645"><span class="ln">1645</span><span class="cd"></span></div>
+<div class="cl" data-line="1646"><span class="ln">1646</span><span class="cd">	urb_priv-&gt;num_tds = num_tds;</span></div>
+<div class="cl" data-line="1647"><span class="ln">1647</span><span class="cd">	urb_priv-&gt;num_tds_done = 0;</span></div>
+<div class="cl" data-line="1648"><span class="ln">1648</span><span class="cd">	urb-&gt;hcpriv = urb_priv;</span></div>
+<div class="cl" data-line="1649"><span class="ln">1649</span><span class="cd"></span></div>
+<div class="cl" data-line="1650"><span class="ln">1650</span><span class="cd">	trace_xhci_urb_enqueue(urb);</span></div>
+<div class="cl" data-line="1651"><span class="ln">1651</span><span class="cd"></span></div>
+<div class="cl" data-line="1652"><span class="ln">1652</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="1653"><span class="ln">1653</span><span class="cd"></span></div>
+<div class="cl" data-line="1654"><span class="ln">1654</span><span class="cd">	ret = xhci_check_args(hcd, urb-&gt;dev, urb-&gt;ep,</span></div>
+<div class="cl" data-line="1655"><span class="ln">1655</span><span class="cd">			      true, true, __func__);</span></div>
+<div class="cl" data-line="1656"><span class="ln">1656</span><span class="cd">	if (ret &lt;= 0) {</span></div>
+<div class="cl" data-line="1657"><span class="ln">1657</span><span class="cd">		ret = ret ? ret : -EINVAL;</span></div>
+<div class="cl" data-line="1658"><span class="ln">1658</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1659"><span class="ln">1659</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1660"><span class="ln">1660</span><span class="cd"></span></div>
+<div class="cl" data-line="1661"><span class="ln">1661</span><span class="cd">	slot_id = urb-&gt;dev-&gt;slot_id;</span></div>
+<div class="cl" data-line="1662"><span class="ln">1662</span><span class="cd"></span></div>
+<div class="cl" data-line="1663"><span class="ln">1663</span><span class="cd">	if (!HCD_HW_ACCESSIBLE(hcd)) {</span></div>
+<div class="cl" data-line="1664"><span class="ln">1664</span><span class="cd">		ret = -ESHUTDOWN;</span></div>
+<div class="cl" data-line="1665"><span class="ln">1665</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1666"><span class="ln">1666</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1667"><span class="ln">1667</span><span class="cd"></span></div>
+<div class="cl" data-line="1668"><span class="ln">1668</span><span class="cd">	if (xhci-&gt;devs[slot_id]-&gt;rhub_port-&gt;link_inactive) {</span></div>
+<div class="cl" data-line="1669"><span class="ln">1669</span><span class="cd">		xhci_dbg(xhci, "Can't queue urb, port error, link inactive\n");</span></div>
+<div class="cl" data-line="1670"><span class="ln">1670</span><span class="cd">		ret = -ENODEV;</span></div>
+<div class="cl" data-line="1671"><span class="ln">1671</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1672"><span class="ln">1672</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1673"><span class="ln">1673</span><span class="cd"></span></div>
+<div class="cl" data-line="1674"><span class="ln">1674</span><span class="cd">	if (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) {</span></div>
+<div class="cl" data-line="1675"><span class="ln">1675</span><span class="cd">		xhci_dbg(xhci, "Ep 0x%x: URB %p submitted for non-responsive xHCI host.\n",</span></div>
+<div class="cl" data-line="1676"><span class="ln">1676</span><span class="cd">			 urb-&gt;ep-&gt;desc.bEndpointAddress, urb);</span></div>
+<div class="cl" data-line="1677"><span class="ln">1677</span><span class="cd">		ret = -ESHUTDOWN;</span></div>
+<div class="cl" data-line="1678"><span class="ln">1678</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1679"><span class="ln">1679</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1680"><span class="ln">1680</span><span class="cd"></span></div>
+<div class="cl" data-line="1681"><span class="ln">1681</span><span class="cd">	ep_state = &amp;xhci-&gt;devs[slot_id]-&gt;eps[ep_index].ep_state;</span></div>
+<div class="cl" data-line="1682"><span class="ln">1682</span><span class="cd"></span></div>
+<div class="cl" data-line="1683"><span class="ln">1683</span><span class="cd">	if (*ep_state &amp; (EP_GETTING_STREAMS | EP_GETTING_NO_STREAMS)) {</span></div>
+<div class="cl" data-line="1684"><span class="ln">1684</span><span class="cd">		xhci_warn(xhci, "WARN: Can't enqueue URB, ep in streams transition state %x\n",</span></div>
+<div class="cl" data-line="1685"><span class="ln">1685</span><span class="cd">			  *ep_state);</span></div>
+<div class="cl" data-line="1686"><span class="ln">1686</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="1687"><span class="ln">1687</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1688"><span class="ln">1688</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1689"><span class="ln">1689</span><span class="cd">	if (*ep_state &amp; EP_SOFT_CLEAR_TOGGLE) {</span></div>
+<div class="cl" data-line="1690"><span class="ln">1690</span><span class="cd">		xhci_warn(xhci, "Can't enqueue URB while manually clearing toggle\n");</span></div>
+<div class="cl" data-line="1691"><span class="ln">1691</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="1692"><span class="ln">1692</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1693"><span class="ln">1693</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1694"><span class="ln">1694</span><span class="cd"></span></div>
+<div class="cl" data-line="1695"><span class="ln">1695</span><span class="cd">	switch (usb_endpoint_type(&amp;urb-&gt;ep-&gt;desc)) {</span></div>
+<div class="cl" data-line="1696"><span class="ln">1696</span><span class="cd"></span></div>
+<div class="cl" data-line="1697"><span class="ln">1697</span><span class="cd">	case USB_ENDPOINT_XFER_CONTROL:</span></div>
+<div class="cl hot" data-line="1698" data-hot="dev:1"><span class="ln">1698</span><span class="cd">		ret = xhci_queue_ctrl_tx(xhci, GFP_ATOMIC, urb,</span></div>
+<div class="cl" data-line="1699"><span class="ln">1699</span><span class="cd">					 slot_id, ep_index);</span></div>
+<div class="cl" data-line="1700"><span class="ln">1700</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1701"><span class="ln">1701</span><span class="cd">	case USB_ENDPOINT_XFER_BULK:</span></div>
+<div class="cl" data-line="1702"><span class="ln">1702</span><span class="cd">		ret = xhci_queue_bulk_tx(xhci, GFP_ATOMIC, urb,</span></div>
+<div class="cl" data-line="1703"><span class="ln">1703</span><span class="cd">					 slot_id, ep_index);</span></div>
+<div class="cl" data-line="1704"><span class="ln">1704</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1705"><span class="ln">1705</span><span class="cd">	case USB_ENDPOINT_XFER_INT:</span></div>
+<div class="cl" data-line="1706"><span class="ln">1706</span><span class="cd">		ret = xhci_queue_intr_tx(xhci, GFP_ATOMIC, urb,</span></div>
+<div class="cl" data-line="1707"><span class="ln">1707</span><span class="cd">				slot_id, ep_index);</span></div>
+<div class="cl" data-line="1708"><span class="ln">1708</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1709"><span class="ln">1709</span><span class="cd">	case USB_ENDPOINT_XFER_ISOC:</span></div>
+<div class="cl" data-line="1710"><span class="ln">1710</span><span class="cd">		ret = xhci_queue_isoc_tx_prepare(xhci, GFP_ATOMIC, urb,</span></div>
+<div class="cl" data-line="1711"><span class="ln">1711</span><span class="cd">				slot_id, ep_index);</span></div>
+<div class="cl" data-line="1712"><span class="ln">1712</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1713"><span class="ln">1713</span><span class="cd"></span></div>
+<div class="cl" data-line="1714"><span class="ln">1714</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="1715"><span class="ln">1715</span><span class="cd">free_priv:</span></div>
+<div class="cl" data-line="1716"><span class="ln">1716</span><span class="cd">		xhci_urb_free_priv(urb_priv);</span></div>
+<div class="cl" data-line="1717"><span class="ln">1717</span><span class="cd">		urb-&gt;hcpriv = NULL;</span></div>
+<div class="cl" data-line="1718"><span class="ln">1718</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1719"><span class="ln">1719</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="1720"><span class="ln">1720</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="1721"><span class="ln">1721</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:3774-3919 · xhci_queue_ctrl_tx · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:3774:3919"><div class="cl" data-line="3774"><span class="ln">3774</span><span class="cd">int xhci_queue_ctrl_tx(struct xhci_hcd *xhci, gfp_t mem_flags,</span></div>
+<div class="cl" data-line="3775"><span class="ln">3775</span><span class="cd">		struct urb *urb, int slot_id, unsigned int ep_index)</span></div>
+<div class="cl" data-line="3776"><span class="ln">3776</span><span class="cd">{</span></div>
+<div class="cl" data-line="3777"><span class="ln">3777</span><span class="cd">	struct xhci_ring *ep_ring;</span></div>
+<div class="cl" data-line="3778"><span class="ln">3778</span><span class="cd">	int num_trbs;</span></div>
+<div class="cl" data-line="3779"><span class="ln">3779</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="3780"><span class="ln">3780</span><span class="cd">	struct usb_ctrlrequest *setup;</span></div>
+<div class="cl" data-line="3781"><span class="ln">3781</span><span class="cd">	struct xhci_generic_trb *start_trb;</span></div>
+<div class="cl" data-line="3782"><span class="ln">3782</span><span class="cd">	int start_cycle;</span></div>
+<div class="cl" data-line="3783"><span class="ln">3783</span><span class="cd">	u32 field;</span></div>
+<div class="cl" data-line="3784"><span class="ln">3784</span><span class="cd">	struct urb_priv *urb_priv;</span></div>
+<div class="cl" data-line="3785"><span class="ln">3785</span><span class="cd">	struct xhci_td *td;</span></div>
+<div class="cl" data-line="3786"><span class="ln">3786</span><span class="cd"></span></div>
+<div class="cl" data-line="3787"><span class="ln">3787</span><span class="cd">	ep_ring = xhci_urb_to_transfer_ring(xhci, urb);</span></div>
+<div class="cl" data-line="3788"><span class="ln">3788</span><span class="cd">	if (!ep_ring)</span></div>
+<div class="cl" data-line="3789"><span class="ln">3789</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3790"><span class="ln">3790</span><span class="cd"></span></div>
+<div class="cl" data-line="3791"><span class="ln">3791</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3792"><span class="ln">3792</span><span class="cd">	 * Need to copy setup packet into setup TRB, so we can't use the setup</span></div>
+<div class="cl" data-line="3793"><span class="ln">3793</span><span class="cd">	 * DMA address.</span></div>
+<div class="cl" data-line="3794"><span class="ln">3794</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3795"><span class="ln">3795</span><span class="cd">	if (!urb-&gt;setup_packet)</span></div>
+<div class="cl" data-line="3796"><span class="ln">3796</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3797"><span class="ln">3797</span><span class="cd"></span></div>
+<div class="cl" data-line="3798"><span class="ln">3798</span><span class="cd">	if ((xhci-&gt;quirks &amp; XHCI_ETRON_HOST) &amp;&amp;</span></div>
+<div class="cl" data-line="3799"><span class="ln">3799</span><span class="cd">	    urb-&gt;dev-&gt;speed &gt;= USB_SPEED_SUPER) {</span></div>
+<div class="cl" data-line="3800"><span class="ln">3800</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="3801"><span class="ln">3801</span><span class="cd">		 * If next available TRB is the Link TRB in the ring segment then</span></div>
+<div class="cl" data-line="3802"><span class="ln">3802</span><span class="cd">		 * enqueue a No Op TRB, this can prevent the Setup and Data Stage</span></div>
+<div class="cl" data-line="3803"><span class="ln">3803</span><span class="cd">		 * TRB to be broken by the Link TRB.</span></div>
+<div class="cl" data-line="3804"><span class="ln">3804</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3805"><span class="ln">3805</span><span class="cd">		if (last_trb_on_seg(ep_ring-&gt;enq_seg, ep_ring-&gt;enqueue + 1)) {</span></div>
+<div class="cl" data-line="3806"><span class="ln">3806</span><span class="cd">			field = TRB_TYPE(TRB_TR_NOOP) | ep_ring-&gt;cycle_state;</span></div>
+<div class="cl" data-line="3807"><span class="ln">3807</span><span class="cd">			queue_trb(xhci, ep_ring, false, 0, 0,</span></div>
+<div class="cl" data-line="3808"><span class="ln">3808</span><span class="cd">					TRB_INTR_TARGET(0), field);</span></div>
+<div class="cl" data-line="3809"><span class="ln">3809</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3810"><span class="ln">3810</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3811"><span class="ln">3811</span><span class="cd"></span></div>
+<div class="cl" data-line="3812"><span class="ln">3812</span><span class="cd">	/* 1 TRB for setup, 1 for status */</span></div>
+<div class="cl" data-line="3813"><span class="ln">3813</span><span class="cd">	num_trbs = 2;</span></div>
+<div class="cl" data-line="3814"><span class="ln">3814</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3815"><span class="ln">3815</span><span class="cd">	 * Don't need to check if we need additional event data and normal TRBs,</span></div>
+<div class="cl" data-line="3816"><span class="ln">3816</span><span class="cd">	 * since data in control transfers will never get bigger than 16MB</span></div>
+<div class="cl" data-line="3817"><span class="ln">3817</span><span class="cd">	 * XXX: can we get a buffer that crosses 64KB boundaries?</span></div>
+<div class="cl" data-line="3818"><span class="ln">3818</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3819"><span class="ln">3819</span><span class="cd">	if (urb-&gt;transfer_buffer_length &gt; 0)</span></div>
+<div class="cl" data-line="3820"><span class="ln">3820</span><span class="cd">		num_trbs++;</span></div>
+<div class="cl" data-line="3821"><span class="ln">3821</span><span class="cd">	ret = prepare_transfer(xhci, xhci-&gt;devs[slot_id],</span></div>
+<div class="cl" data-line="3822"><span class="ln">3822</span><span class="cd">			ep_index, urb-&gt;stream_id,</span></div>
+<div class="cl" data-line="3823"><span class="ln">3823</span><span class="cd">			num_trbs, urb, 0, mem_flags);</span></div>
+<div class="cl" data-line="3824"><span class="ln">3824</span><span class="cd">	if (ret &lt; 0)</span></div>
+<div class="cl" data-line="3825"><span class="ln">3825</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="3826"><span class="ln">3826</span><span class="cd"></span></div>
+<div class="cl" data-line="3827"><span class="ln">3827</span><span class="cd">	urb_priv = urb-&gt;hcpriv;</span></div>
+<div class="cl" data-line="3828"><span class="ln">3828</span><span class="cd">	td = &amp;urb_priv-&gt;td[0];</span></div>
+<div class="cl" data-line="3829"><span class="ln">3829</span><span class="cd"></span></div>
+<div class="cl" data-line="3830"><span class="ln">3830</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3831"><span class="ln">3831</span><span class="cd">	 * Don't give the first TRB to the hardware (by toggling the cycle bit)</span></div>
+<div class="cl" data-line="3832"><span class="ln">3832</span><span class="cd">	 * until we've finished creating all the other TRBs.  The ring's cycle</span></div>
+<div class="cl" data-line="3833"><span class="ln">3833</span><span class="cd">	 * state may change as we enqueue the other TRBs, so save it too.</span></div>
+<div class="cl" data-line="3834"><span class="ln">3834</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3835"><span class="ln">3835</span><span class="cd">	start_trb = &amp;ep_ring-&gt;enqueue-&gt;generic;</span></div>
+<div class="cl" data-line="3836"><span class="ln">3836</span><span class="cd">	start_cycle = ep_ring-&gt;cycle_state;</span></div>
+<div class="cl" data-line="3837"><span class="ln">3837</span><span class="cd"></span></div>
+<div class="cl" data-line="3838"><span class="ln">3838</span><span class="cd">	/* Queue setup TRB - see section 6.4.1.2.1 */</span></div>
+<div class="cl" data-line="3839"><span class="ln">3839</span><span class="cd">	/* FIXME better way to translate setup_packet into two u32 fields? */</span></div>
+<div class="cl" data-line="3840"><span class="ln">3840</span><span class="cd">	setup = (struct usb_ctrlrequest *) urb-&gt;setup_packet;</span></div>
+<div class="cl" data-line="3841"><span class="ln">3841</span><span class="cd">	field = 0;</span></div>
+<div class="cl hot" data-line="3842" data-hot="dev:2"><span class="ln">3842</span><span class="cd">	field |= TRB_IDT | TRB_TYPE(TRB_SETUP);</span></div>
+<div class="cl" data-line="3843"><span class="ln">3843</span><span class="cd">	if (start_cycle == 0)</span></div>
+<div class="cl" data-line="3844"><span class="ln">3844</span><span class="cd">		field |= 0x1;</span></div>
+<div class="cl" data-line="3845"><span class="ln">3845</span><span class="cd"></span></div>
+<div class="cl" data-line="3846"><span class="ln">3846</span><span class="cd">	/* xHCI 1.0/1.1 6.4.1.2.1: Transfer Type field */</span></div>
+<div class="cl" data-line="3847"><span class="ln">3847</span><span class="cd">	if ((xhci-&gt;hci_version &gt;= 0x100) || (xhci-&gt;quirks &amp; XHCI_MTK_HOST)) {</span></div>
+<div class="cl" data-line="3848"><span class="ln">3848</span><span class="cd">		if (urb-&gt;transfer_buffer_length &gt; 0) {</span></div>
+<div class="cl" data-line="3849"><span class="ln">3849</span><span class="cd">			if (setup-&gt;bRequestType &amp; USB_DIR_IN)</span></div>
+<div class="cl" data-line="3850"><span class="ln">3850</span><span class="cd">				field |= TRB_TX_TYPE(TRB_DATA_IN);</span></div>
+<div class="cl" data-line="3851"><span class="ln">3851</span><span class="cd">			else</span></div>
+<div class="cl" data-line="3852"><span class="ln">3852</span><span class="cd">				field |= TRB_TX_TYPE(TRB_DATA_OUT);</span></div>
+<div class="cl" data-line="3853"><span class="ln">3853</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3854"><span class="ln">3854</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3855"><span class="ln">3855</span><span class="cd"></span></div>
+<div class="cl hot" data-line="3856" data-hot="dev:3"><span class="ln">3856</span><span class="cd">	queue_trb(xhci, ep_ring, true,</span></div>
+<div class="cl" data-line="3857"><span class="ln">3857</span><span class="cd">		  setup-&gt;bRequestType | setup-&gt;bRequest &lt;&lt; 8 | le16_to_cpu(setup-&gt;wValue) &lt;&lt; 16,</span></div>
+<div class="cl" data-line="3858"><span class="ln">3858</span><span class="cd">		  le16_to_cpu(setup-&gt;wIndex) | le16_to_cpu(setup-&gt;wLength) &lt;&lt; 16,</span></div>
+<div class="cl" data-line="3859"><span class="ln">3859</span><span class="cd">		  TRB_LEN(8) | TRB_INTR_TARGET(0),</span></div>
+<div class="cl" data-line="3860"><span class="ln">3860</span><span class="cd">		  /* Immediate data in pointer */</span></div>
+<div class="cl" data-line="3861"><span class="ln">3861</span><span class="cd">		  field);</span></div>
+<div class="cl" data-line="3862"><span class="ln">3862</span><span class="cd"></span></div>
+<div class="cl" data-line="3863"><span class="ln">3863</span><span class="cd">	/* If there's data, queue data TRBs */</span></div>
+<div class="cl" data-line="3864"><span class="ln">3864</span><span class="cd">	/* Only set interrupt on short packet for IN endpoints */</span></div>
+<div class="cl" data-line="3865"><span class="ln">3865</span><span class="cd">	if (usb_urb_dir_in(urb))</span></div>
+<div class="cl hot" data-line="3866" data-hot="dev:4"><span class="ln">3866</span><span class="cd">		field = TRB_ISP | TRB_TYPE(TRB_DATA);</span></div>
+<div class="cl" data-line="3867"><span class="ln">3867</span><span class="cd">	else</span></div>
+<div class="cl" data-line="3868"><span class="ln">3868</span><span class="cd">		field = TRB_TYPE(TRB_DATA);</span></div>
+<div class="cl" data-line="3869"><span class="ln">3869</span><span class="cd"></span></div>
+<div class="cl" data-line="3870"><span class="ln">3870</span><span class="cd">	if (urb-&gt;transfer_buffer_length &gt; 0) {</span></div>
+<div class="cl" data-line="3871"><span class="ln">3871</span><span class="cd">		u32 length_field, remainder;</span></div>
+<div class="cl" data-line="3872"><span class="ln">3872</span><span class="cd">		u64 addr;</span></div>
+<div class="cl" data-line="3873"><span class="ln">3873</span><span class="cd"></span></div>
+<div class="cl" data-line="3874"><span class="ln">3874</span><span class="cd">		if (xhci_urb_suitable_for_idt(urb)) {</span></div>
+<div class="cl" data-line="3875"><span class="ln">3875</span><span class="cd">			memcpy(&amp;addr, urb-&gt;transfer_buffer,</span></div>
+<div class="cl" data-line="3876"><span class="ln">3876</span><span class="cd">			       urb-&gt;transfer_buffer_length);</span></div>
+<div class="cl" data-line="3877"><span class="ln">3877</span><span class="cd">			le64_to_cpus(&amp;addr);</span></div>
+<div class="cl" data-line="3878"><span class="ln">3878</span><span class="cd">			field |= TRB_IDT;</span></div>
+<div class="cl" data-line="3879"><span class="ln">3879</span><span class="cd">		} else {</span></div>
+<div class="cl" data-line="3880"><span class="ln">3880</span><span class="cd">			addr = (u64) urb-&gt;transfer_dma;</span></div>
+<div class="cl" data-line="3881"><span class="ln">3881</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3882"><span class="ln">3882</span><span class="cd"></span></div>
+<div class="cl" data-line="3883"><span class="ln">3883</span><span class="cd">		remainder = xhci_td_remainder(xhci, 0,</span></div>
+<div class="cl" data-line="3884"><span class="ln">3884</span><span class="cd">				urb-&gt;transfer_buffer_length,</span></div>
+<div class="cl" data-line="3885"><span class="ln">3885</span><span class="cd">				urb-&gt;transfer_buffer_length,</span></div>
+<div class="cl" data-line="3886"><span class="ln">3886</span><span class="cd">				urb, 1);</span></div>
+<div class="cl" data-line="3887"><span class="ln">3887</span><span class="cd">		length_field = TRB_LEN(urb-&gt;transfer_buffer_length) |</span></div>
+<div class="cl" data-line="3888"><span class="ln">3888</span><span class="cd">				TRB_TD_SIZE(remainder) |</span></div>
+<div class="cl" data-line="3889"><span class="ln">3889</span><span class="cd">				TRB_INTR_TARGET(0);</span></div>
+<div class="cl" data-line="3890"><span class="ln">3890</span><span class="cd">		if (setup-&gt;bRequestType &amp; USB_DIR_IN)</span></div>
+<div class="cl" data-line="3891"><span class="ln">3891</span><span class="cd">			field |= TRB_DIR_IN;</span></div>
+<div class="cl hot" data-line="3892" data-hot="dev:5"><span class="ln">3892</span><span class="cd">		queue_trb(xhci, ep_ring, true,</span></div>
+<div class="cl" data-line="3893"><span class="ln">3893</span><span class="cd">				lower_32_bits(addr),</span></div>
+<div class="cl" data-line="3894"><span class="ln">3894</span><span class="cd">				upper_32_bits(addr),</span></div>
+<div class="cl" data-line="3895"><span class="ln">3895</span><span class="cd">				length_field,</span></div>
+<div class="cl" data-line="3896"><span class="ln">3896</span><span class="cd">				field | ep_ring-&gt;cycle_state);</span></div>
+<div class="cl" data-line="3897"><span class="ln">3897</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3898"><span class="ln">3898</span><span class="cd"></span></div>
+<div class="cl" data-line="3899"><span class="ln">3899</span><span class="cd">	/* Save the DMA address of the last TRB in the TD */</span></div>
+<div class="cl" data-line="3900"><span class="ln">3900</span><span class="cd">	td-&gt;end_trb = ep_ring-&gt;enqueue;</span></div>
+<div class="cl" data-line="3901"><span class="ln">3901</span><span class="cd">	td-&gt;end_seg = ep_ring-&gt;enq_seg;</span></div>
+<div class="cl" data-line="3902"><span class="ln">3902</span><span class="cd"></span></div>
+<div class="cl" data-line="3903"><span class="ln">3903</span><span class="cd">	/* Queue status TRB - see Table 7 and sections 4.11.2.2 and 6.4.1.2.3 */</span></div>
+<div class="cl" data-line="3904"><span class="ln">3904</span><span class="cd">	/* If the device sent data, the status stage is an OUT transfer */</span></div>
+<div class="cl" data-line="3905"><span class="ln">3905</span><span class="cd">	if (urb-&gt;transfer_buffer_length &gt; 0 &amp;&amp; setup-&gt;bRequestType &amp; USB_DIR_IN)</span></div>
+<div class="cl" data-line="3906"><span class="ln">3906</span><span class="cd">		field = 0;</span></div>
+<div class="cl" data-line="3907"><span class="ln">3907</span><span class="cd">	else</span></div>
+<div class="cl" data-line="3908"><span class="ln">3908</span><span class="cd">		field = TRB_DIR_IN;</span></div>
+<div class="cl" data-line="3909"><span class="ln">3909</span><span class="cd">	queue_trb(xhci, ep_ring, false,</span></div>
+<div class="cl" data-line="3910"><span class="ln">3910</span><span class="cd">			0,</span></div>
+<div class="cl" data-line="3911"><span class="ln">3911</span><span class="cd">			0,</span></div>
+<div class="cl" data-line="3912"><span class="ln">3912</span><span class="cd">			TRB_INTR_TARGET(0),</span></div>
+<div class="cl" data-line="3913"><span class="ln">3913</span><span class="cd">			/* Event on completion */</span></div>
+<div class="cl hot" data-line="3914" data-hot="dev:6"><span class="ln">3914</span><span class="cd">			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring-&gt;cycle_state);</span></div>
+<div class="cl" data-line="3915"><span class="ln">3915</span><span class="cd"></span></div>
+<div class="cl hot" data-line="3916" data-hot="dev:7"><span class="ln">3916</span><span class="cd">	giveback_first_trb(xhci, slot_id, ep_index, 0,</span></div>
+<div class="cl" data-line="3917"><span class="ln">3917</span><span class="cd">			start_cycle, start_trb);</span></div>
+<div class="cl" data-line="3918"><span class="ln">3918</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="3919"><span class="ln">3919</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:558-582 · xhci_ring_ep_doorbell · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:558:582"><div class="cl" data-line="558"><span class="ln">558</span><span class="cd">void xhci_ring_ep_doorbell(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="559"><span class="ln">559</span><span class="cd">		unsigned int slot_id,</span></div>
+<div class="cl" data-line="560"><span class="ln">560</span><span class="cd">		unsigned int ep_index,</span></div>
+<div class="cl" data-line="561"><span class="ln">561</span><span class="cd">		unsigned int stream_id)</span></div>
+<div class="cl" data-line="562"><span class="ln">562</span><span class="cd">{</span></div>
+<div class="cl" data-line="563"><span class="ln">563</span><span class="cd">	__le32 __iomem *db_addr = &amp;xhci-&gt;dba-&gt;doorbell[slot_id];</span></div>
+<div class="cl" data-line="564"><span class="ln">564</span><span class="cd">	struct xhci_virt_ep *ep = &amp;xhci-&gt;devs[slot_id]-&gt;eps[ep_index];</span></div>
+<div class="cl" data-line="565"><span class="ln">565</span><span class="cd">	unsigned int ep_state = ep-&gt;ep_state;</span></div>
+<div class="cl" data-line="566"><span class="ln">566</span><span class="cd"></span></div>
+<div class="cl" data-line="567"><span class="ln">567</span><span class="cd">	/* Don't ring the doorbell for this endpoint if there are pending</span></div>
+<div class="cl" data-line="568"><span class="ln">568</span><span class="cd">	 * cancellations because we don't want to interrupt processing.</span></div>
+<div class="cl" data-line="569"><span class="ln">569</span><span class="cd">	 * We don't want to restart any stream rings if there's a set dequeue</span></div>
+<div class="cl" data-line="570"><span class="ln">570</span><span class="cd">	 * pointer command pending because the device can choose to start any</span></div>
+<div class="cl" data-line="571"><span class="ln">571</span><span class="cd">	 * stream once the endpoint is on the HW schedule.</span></div>
+<div class="cl" data-line="572"><span class="ln">572</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="573"><span class="ln">573</span><span class="cd">	if (ep_state &amp; (EP_STOP_CMD_PENDING | SET_DEQ_PENDING | EP_HALTED |</span></div>
+<div class="cl" data-line="574"><span class="ln">574</span><span class="cd">			EP_CLEARING_TT | EP_DROP_PENDING))</span></div>
+<div class="cl" data-line="575"><span class="ln">575</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="576"><span class="ln">576</span><span class="cd"></span></div>
+<div class="cl" data-line="577"><span class="ln">577</span><span class="cd">	trace_xhci_ring_ep_doorbell(slot_id, DB_VALUE(ep_index, stream_id));</span></div>
+<div class="cl" data-line="578"><span class="ln">578</span><span class="cd"></span></div>
+<div class="cl hot" data-line="579" data-hot="dev:8"><span class="ln">579</span><span class="cd">	writel(DB_VALUE(ep_index, stream_id), db_addr);</span></div>
+<div class="cl" data-line="580"><span class="ln">580</span><span class="cd">	/* flush the write */</span></div>
+<div class="cl" data-line="581"><span class="ln">581</span><span class="cd">	readl(db_addr);</span></div>
+<div class="cl" data-line="582"><span class="ln">582</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:4393-4425 · xhci_setup_device · 节选（全函数 L4318-L4502） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4393:4425"><div class="cl" data-line="4393"><span class="ln">4393</span><span class="cd">	/* Otherwise, update the control endpoint ring enqueue pointer. */</span></div>
+<div class="cl" data-line="4394"><span class="ln">4394</span><span class="cd">	else</span></div>
+<div class="cl" data-line="4395"><span class="ln">4395</span><span class="cd">		xhci_copy_ep0_dequeue_into_input_ctx(xhci, udev);</span></div>
+<div class="cl" data-line="4396"><span class="ln">4396</span><span class="cd">	ctrl_ctx-&gt;add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);</span></div>
+<div class="cl" data-line="4397"><span class="ln">4397</span><span class="cd">	ctrl_ctx-&gt;drop_flags = 0;</span></div>
+<div class="cl" data-line="4398"><span class="ln">4398</span><span class="cd"></span></div>
+<div class="cl" data-line="4399"><span class="ln">4399</span><span class="cd">	trace_xhci_address_ctx(xhci, virt_dev-&gt;in_ctx);</span></div>
+<div class="cl" data-line="4400"><span class="ln">4400</span><span class="cd"></span></div>
+<div class="cl" data-line="4401"><span class="ln">4401</span><span class="cd">	trace_xhci_address_ctrl_ctx(ctrl_ctx);</span></div>
+<div class="cl" data-line="4402"><span class="ln">4402</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4403"><span class="ln">4403</span><span class="cd">	trace_xhci_setup_device(virt_dev);</span></div>
+<div class="cl hot" data-line="4404" data-hot="dev:9"><span class="ln">4404</span><span class="cd">	ret = xhci_queue_address_device(xhci, command, virt_dev-&gt;in_ctx-&gt;dma,</span></div>
+<div class="cl" data-line="4405"><span class="ln">4405</span><span class="cd">					udev-&gt;slot_id, setup);</span></div>
+<div class="cl" data-line="4406"><span class="ln">4406</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="4407"><span class="ln">4407</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4408"><span class="ln">4408</span><span class="cd">		xhci_dbg_trace(xhci, trace_xhci_dbg_address,</span></div>
+<div class="cl" data-line="4409"><span class="ln">4409</span><span class="cd">				"FIXME: allocate a command ring segment");</span></div>
+<div class="cl" data-line="4410"><span class="ln">4410</span><span class="cd">		goto out;</span></div>
+<div class="cl" data-line="4411"><span class="ln">4411</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="4412" data-hot="dev:10"><span class="ln">4412</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="4413"><span class="ln">4413</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4414"><span class="ln">4414</span><span class="cd"></span></div>
+<div class="cl" data-line="4415"><span class="ln">4415</span><span class="cd">	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */</span></div>
+<div class="cl hot" data-line="4416" data-hot="dev:11"><span class="ln">4416</span><span class="cd">	wait_for_completion(command-&gt;completion);</span></div>
+<div class="cl" data-line="4417"><span class="ln">4417</span><span class="cd"></span></div>
+<div class="cl" data-line="4418"><span class="ln">4418</span><span class="cd">	/* FIXME: From section 4.3.4: "Software shall be responsible for timing</span></div>
+<div class="cl" data-line="4419"><span class="ln">4419</span><span class="cd">	 * the SetAddress() "recovery interval" required by USB and aborting the</span></div>
+<div class="cl" data-line="4420"><span class="ln">4420</span><span class="cd">	 * command on a timeout.</span></div>
+<div class="cl" data-line="4421"><span class="ln">4421</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4422"><span class="ln">4422</span><span class="cd">	switch (command-&gt;status) {</span></div>
+<div class="cl" data-line="4423"><span class="ln">4423</span><span class="cd">	case COMP_COMMAND_ABORTED:</span></div>
+<div class="cl" data-line="4424"><span class="ln">4424</span><span class="cd">	case COMP_COMMAND_RING_STOPPED:</span></div>
+<div class="cl" data-line="4425"><span class="ln">4425</span><span class="cd">		xhci_warn(xhci, "Timeout while waiting for setup device command\n");</span></div></pre>
     </div>
 
     <div class="card b2">
@@ -520,24 +1488,56 @@ the Event Ring before issuing any more commands to the slot.</blockquote>
     <div class="card b3">
       <div class="bhead"><span class="badge">③</span>交互</div>
       <div class="act" style="margin-top:0;">
-        <a class="btn ghost" href="interactive/index.html">打开交互操作台 →</a>
-        <span class="note">单文件自包含 · SMOKE 全 PASS（含模块三）· 模块一=三环操作台 · 模块二=URB→TRB→TD 组装 · 模块三=代码解读</span>
+        <a class="btn ghost" href="interactive/index.html#m3">模块三 · URB→TRB→TD 组装 →</a>
+        <span class="note">单文件自包含 · 交互台四模块分节锚定（#m1-#m4）</span>
       </div>
-      <p class="int-note"><b>模块二 · URB→TRB→TD 组装：</b>GET_DESCRIPTOR 8B 手动组装（Setup/Data/Status 三段 TRB 字段逐项核对）</p>
-      <p class="int-note"><b>模块三 · 代码解读：</b>4.3 设备初始化题组（贴码行可点 + 规范锚点卡）</p>
+      <p class="int-note"><b>模块三 · URB→TRB→TD 组装：</b>GET_DESCRIPTOR 8B 手动组装（Setup/Data/Status 三段 TRB 字段逐项核对）——对应本节控制传输三段与 EP0 门铃</p>
+      <p class="int-note"><b>模块四 · 代码解读：</b>4.3 设备初始化题组（贴码行可点 + 规范锚点卡），入口 <a href="interactive/index.html#m4">interactive/index.html#m4</a></p>
     </div>
 
     <div class="card b4">
       <div class="bhead"><span class="badge">④</span>补丁收尾</div>
       <div class="phead">上游 commit（正文引用）f72b9aa821a2bfe4b6dfec4be19f264d0673b008 · 2025-07-17 · Jay Chen · drivers/usb/host/xhci-mem.c +2 行 · hunk @@ -1195,6 +1195,8 @@（xhci_setup_addressable_virt_dev） · 本地核验件 dabf502ee893（stable 回移，diff 同）</div>
-      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
-      <p class="pbody">2025 年 7 月，Jay Chen 报告：其公司正在开发一个严格遵循 xHCI 规范的自研虚拟 xHC 硬件平台，验证阶段设备枚举失败——Address Device 命令回 TRB Completion Code = 5（Parameter Error），bug 单在 kernel bugzilla 220033。根因不在虚拟平台自身，而是 Linux 驱动对规范两处条文的取舍：初始化输入端点上下文时全字段清零，其中 Average TRB Length（avg_trb_len）= 0，而严格按规范实现的控制器会判定该参数非法。主流真实硬件恰好不校验这个字段，问题因此在真机上从未暴露——虚拟平台反而成了规范的忠实裁判。对应课程 4.3 的 Address Device 输入上下文节拍。</p>
-      <p class="ph">要解决的问题（症状 + 机制）</p>
-      <p class="pbody">症状：严格按规范实现的（虚拟）xHC 在 EP0 编址时返回 Parameter Error（完成码 5），设备枚举失败。机制：规范 §4.8.2（Endpoint Context Initialization）要求输入端点上下文所有字段初始化为 0；§6.2.3（Endpoint Context）却规定 Average TRB Length 应大于 0，且明确「Software shall set Average TRB Length to 8 for control endpoints」——两条条文在全 0 初始化面前互相矛盾。avg_trb_len 用于带宽计算，对控制端点填 0 没有意义。驱动此前按 §4.8.2 字面义把 EP0 的 avg_trb_len 留成 0：宽容的硬件忽略它，严格的硬件判错。课程侧对应证据：§4.3.3（p76）「Allocate an Input Context data structure (6.2.5) and initialize all fields to 0」之后逐字段初始化 EP0 Context——补丁即在这条全 0 路径上为控制端点开例外。</p>
-      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（§4.3.3 p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
-      <div class="dhead">diff 逐字切片 · git show f72b9aa821a2（主线） · drivers/usb/host/xhci-mem.c @@ -1195,6 +1195,8 @@</div>
-      <pre class="diffblock" data-ck="diff:f72b9aa821a2bfe4b6dfec4be19f264d0673b008:drivers/usb/host/xhci-mem.c:1"><span class="d-meta">diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c</span>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:f72b9aa821a2bfe4b6dfec4be19f264d0673b008">commit f72b9aa821a2bfe4b6dfec4be19f264d0673b008
+Author: Jay Chen &lt;shawn2000100@gmail.com&gt;
+Date:   Thu Jul 17 10:31:07 2025 +0300
+
+    usb: xhci: Set avg_trb_len = 8 for EP0 during Address Device Command
+    
+    There is a subtle contradiction between sections of the xHCI 1.2 spec
+    regarding the initialization of Input Endpoint Context fields. Section
+    4.8.2 ("Endpoint Context Initialization") states that all fields should
+    be initialized to 0. However, Section 6.2.3 ("Endpoint Context", p.453)
+    specifies that the Average TRB Length (avg_trb_len) field shall be
+    greater than 0, and explicitly notes (p.454): "Software shall set
+    Average TRB Length to '8' for control endpoints."
+    
+    Strictly setting all fields to 0 during initialization conflicts with
+    the specific recommendation for control endpoints. In practice, setting
+    avg_trb_len = 0 is not meaningful for the hardware/firmware, as the
+    value is used for bandwidth calculation.
+    
+    Motivation: Our company is developing a custom Virtual xHC hardware
+    platform that strictly follows the xHCI spec and its recommendations.
+    During validation, we observed that enumeration fails and a parameter
+    error (TRB Completion Code = 5) is reported if avg_trb_len for EP0 is
+    not set to 8 as recommended by Section 6.2.3. This demonstrates the
+    importance of assigning a meaningful, non-zero value to avg_trb_len,
+    even in virtualized or emulated environments.
+    
+    This patch explicitly sets avg_trb_len to 8 for EP0 in
+    xhci_setup_addressable_virt_dev(), as recommended in Section 6.2.3, to
+    prevent potential issues with xHCI host controllers that enforce the
+    spec strictly.
+    
+    Link: https://bugzilla.kernel.org/show_bug.cgi?id=220033
+    Signed-off-by: Jay Chen &lt;shawn2000100@gmail.com&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20250717073107.488599-4-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c</span>
 <span class="d-meta">index 6680afa4f596..07289333a1e8 100644</span>
 <span class="d-meta">--- a/drivers/usb/host/xhci-mem.c</span>
 <span class="d-meta">+++ b/drivers/usb/host/xhci-mem.c</span>
@@ -550,6 +1550,12 @@ the Event Ring before issuing any more commands to the slot.</blockquote>
 <span class="d-ctx"> 	trace_xhci_setup_addressable_virt_device(dev);</span>
 <span class="d-ctx"> </span>
 <span class="d-ctx"> 	/* Steps 7 and 8 were done in xhci_alloc_virt_device() */</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2025 年 7 月，Jay Chen 报告：其公司正在开发一个严格遵循 xHCI 规范的自研虚拟 xHC 硬件平台，验证阶段设备枚举失败——Address Device 命令回 TRB Completion Code = 5（Parameter Error），bug 单在 kernel bugzilla 220033。根因不在虚拟平台自身，而是 Linux 驱动对规范两处条文的取舍：初始化输入端点上下文时全字段清零，其中 Average TRB Length（avg_trb_len）= 0，而严格按规范实现的控制器会判定该参数非法。主流真实硬件恰好不校验这个字段，问题因此在真机上从未暴露——虚拟平台反而成了规范的忠实裁判。对应课程 4.3 的 Address Device 输入上下文节拍。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：严格按规范实现的（虚拟）xHC 在 EP0 编址时返回 Parameter Error（完成码 5），设备枚举失败。机制：规范 §4.8.2（Endpoint Context Initialization）要求输入端点上下文所有字段初始化为 0；§6.2.3（Endpoint Context）却规定 Average TRB Length 应大于 0，且明确「Software shall set Average TRB Length to 8 for control endpoints」——两条条文在全 0 初始化面前互相矛盾。avg_trb_len 用于带宽计算，对控制端点填 0 没有意义。驱动此前按 §4.8.2 字面义把 EP0 的 avg_trb_len 留成 0：宽容的硬件忽略它，严格的硬件判错。课程侧对应证据：§4.3.3（p76）「Allocate an Input Context data structure (6.2.5) and initialize all fields to 0」之后逐字段初始化 EP0 Context——补丁即在这条全 0 路径上为控制端点开例外。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（§4.3.3 p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
       <div class="act">
         <a class="btn" href="player/index.html?scene=5">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
@@ -559,8 +1565,321 @@ the Event Ring before issuing any more commands to the slot.</blockquote>
 
   <footer>
     构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
-    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。贴码/引文/diff 均带 <code>data-ck</code> 机检锚点，逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。评审反馈请按 §4.1 / §4.2 / §4.3 四版块分项。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。评审反馈请按 §4.1 / §4.2 / §4.3 四版块分项。
   </footer>
 </div>
+<div id="tipdocs" hidden>
+<div class="tipdoc" id="tip-cmd-0">
+<p class="tipnote">组装命令 TRB 入命令环的通用函数：所有 xHCI 命令（编址/配置端点等）都经它入环</p>
+<blockquote data-ck="spec:spec-41.txt:L2-L3">There is only one Command Ring that is used for issuing xHC specific 
+commands or commands related to Device Slots.</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L2-L3（p68）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-1">
+<p class="tipnote">先 prepare_ring 检查命令环有空位（含必须成功命令的预留 TRB），动画中“腾位置”动作</p>
+<blockquote data-ck="spec:spec-41.txt:L8-L11">All xHC commands are issued by placing the desired Command TRB(s) (Section 
+6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L8-L11（p68）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-2">
+<p class="tipnote">记下本命令 TRB 的环上位置，完成事件回来按它配对命令</p>
+<blockquote data-ck="spec:spec-41.txt:L19-L20">All commands result in the generation of a Command Completion Event TRB 
+(Section 6.4.3 Command TRBs) on the Event Ring.</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L19-L20（p68）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-3">
+<p class="tipnote">queue_trb 把命令四个字段写进命令环 enqueue 指向的 TRB</p>
+<blockquote data-ck="spec:spec-41.txt:L8-L11">All xHC commands are issued by placing the desired Command TRB(s) (Section 
+6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L8-L11（p68）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-4">
+<p class="tipnote">敲主机门铃：写 doorbell[0]，DB Target=0（DB_VALUE_HOST），通知 xHC 命令环有新命令</p>
+<blockquote data-ck="spec:spec-41.txt:L8-L11">All xHC commands are issued by placing the desired Command TRB(s) (Section 
+6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L8-L11（p68）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-5">
+<p class="tipnote">事件环读到 TRB_COMPLETION（命令完成事件），分派给 handle_cmd_completion</p>
+<blockquote data-ck="spec:spec-41.txt:L19-L20">All commands result in the generation of a Command Completion Event TRB 
+(Section 6.4.3 Command TRBs) on the Event Ring.</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L19-L20（p68）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-6">
+<p class="tipnote">命令完成事件处理函数入口（形参就是事件环上的 event_cmd）</p>
+<blockquote data-ck="spec:spec-41.txt:L19-L20">All commands result in the generation of a Command Completion Event TRB 
+(Section 6.4.3 Command TRBs) on the Event Ring.</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L19-L20（p68）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-7">
+<p class="tipnote">从事件 status 里解出完成码：动画里的“回执”（成功/失败判定）</p>
+<blockquote data-ck="spec:spec-41.txt:L19-L20">All commands result in the generation of a Command Completion Event TRB 
+(Section 6.4.3 Command TRBs) on the Event Ring.</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L19-L20（p68）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-8">
+<p class="tipnote">event_handled 收尾：把命令从 cmd_list 摘除并触发唤醒</p>
+<blockquote data-ck="spec:spec-43.txt:L258-L259">System software shall wait for the Command Completion Event associated with 
+the Enable Slot Command before issuing any more commands to the slot.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L258-L259（p75）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-9">
+<p class="tipnote">complete() 唤醒正在 wait_for_completion 的发令线程，命令路径闭环</p>
+<blockquote data-ck="spec:spec-43.txt:L256-L259">System software executes the Slot Assignment process by successfully 
+completing an Enable Slot Command as described in section 4.11.4.2. 
+System software shall wait for the Command Completion Event associated with 
+the Enable Slot Command before issuing any more commands to the slot.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L256-L259（p75）</div>
+</div>
+<div class="tipdoc" id="tip-cmd-10">
+<p class="tipnote">命令环 dequeue 指针前移一格，环回到可发下一条的状态</p>
+<blockquote data-ck="spec:spec-41.txt:L8-L11">All xHC commands are issued by placing the desired Command TRB(s) (Section 
+6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L8-L11（p68）</div>
+</div>
+<div class="tipdoc" id="tip-init-0">
+<p class="tipnote">各宿主驱动（PCI/平台）setup 主线的公共汇合点，对应规范 §4.2 控制器初始化的起点</p>
+<blockquote data-ck="spec:spec-42.txt:L2-L4">When the system boots, the host controller is enumerated, assigned a base 
+address for the xHC register space, and the system software sets the Frame 
+Length Adjustment (FLADJ) register to a system-specific value.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L2-L4（p68）</div>
+</div>
+<div class="tipdoc" id="tip-init-1">
+<p class="tipnote">复位后轮询 USBSTS 等 CNR=0：控制器就绪前不允许写其它寄存器（§4.2 的就绪等待）</p>
+<blockquote data-ck="spec:spec-42.txt:L18-L20">After Chip Hardware Reset6 wait until the Controller Not Ready (CNR) flag 
+in the USBSTS is ‘0’ before writing any xHC Operational or Runtime 
+registers.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L18-L20（p69）</div>
+</div>
+<div class="tipdoc" id="tip-init-2">
+<p class="tipnote">本树新拆出的 xhci_init：基础寄存器编程总入口（mem_init 分配内存后调用）</p>
+<blockquote data-ck="spec:spec-42.txt:L21-L23">Note: This text does not imply a specific order for the following operations, however 
+these operations shall be completed before setting the USBCMD register 
+Run/Stop (R/S) bit to ‘1’.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L21-L23（p69）</div>
+</div>
+<div class="tipdoc" id="tip-init-3">
+<p class="tipnote">写 CONFIG 寄存器 MaxSlotsEn=设备槽数上限（§4.2 第 1 步）</p>
+<blockquote data-ck="spec:spec-42.txt:L25-L26">Program the Max Device Slots Enabled (MaxSlotsEn) field in the CONFIG 
+register (5.4.7) to enable the device slots that system software is going to</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L25-L26（p69）</div>
+</div>
+<div class="tipdoc" id="tip-init-4">
+<p class="tipnote">写 CRCR：命令环基址 + Cycle 位（§4.2 命令环定义）</p>
+<blockquote data-ck="spec:spec-42.txt:L34-L37">Define the Command Ring Dequeue Pointer by programming the Command 
+Ring Control Register (Section 5.4.5 Command Ring Control Register 
+(CRCR)) with a 64-bit address pointing to the starting address of the first 
+TRB of the Command Ring.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L34-L37（p69）</div>
+</div>
+<div class="tipdoc" id="tip-init-5">
+<p class="tipnote">写 DCBAAP：设备上下文基址数组指针（§4.2 第 2 步）</p>
+<blockquote data-ck="spec:spec-42.txt:L29-L32">Program the Device Context Base Address Array Pointer (DCBAAP) register 
+(Section 5.4.6 Device Context Base Address Array Pointer Register 
+(DCBAAP)) with a 64-bit address pointing to where the Device Context 
+Base Address Array is located.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L29-L32（p69）</div>
+</div>
+<div class="tipdoc" id="tip-init-6">
+<p class="tipnote">分配事件环：命令/传输完成事件都写到这个环</p>
+<blockquote data-ck="spec:spec-42.txt:L58-L61">Defining the Event Ring: (refer to Section 4.9.4 Event Ring 
+Management for a discussion of Event Ring Management.) 
+• 
+Allocate and initialize the Event Ring Segment(s).</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L58-L61（p69）</div>
+</div>
+<div class="tipdoc" id="tip-init-7">
+<p class="tipnote">写 ERSTSZ：事件环段表项数（中断器初始化）</p>
+<blockquote data-ck="spec:spec-42.txt:L80-L82">Program the Interrupter Event Ring Segment Table Size 
+(ERSTSZ) register (Section 5.5.2.3.1 Event Ring Segment Table 
+Size Register (ERSTSZ)) with the number of segments</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L80-L82（p70）</div>
+</div>
+<div class="tipdoc" id="tip-init-8">
+<p class="tipnote">写 ERSTBA：事件环段表基址（事件环与中断器绑定）</p>
+<blockquote data-ck="spec:spec-42.txt:L90-L94">Program the Interrupter Event Ring Segment Table Base 
+Address (ERSTBA) register (Section 5.5.2.3.2 Event Ring 
+Segment Table Base Address Register (ERSTBA)) with a 64-bit 
+address pointer to where the Event Ring Segment Table is 
+located.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L90-L94（p70）</div>
+</div>
+<div class="tipdoc" id="tip-init-9">
+<p class="tipnote">hc_driver .start 钩子：主机由停止态转入运行态的入口</p>
+<blockquote data-ck="spec:spec-42.txt:L115-L117">Write the USBCMD (5.4.1) to turn the host controller ON via setting the 
+Run/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin accepting 
+doorbell references.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L115-L117（p70）</div>
+</div>
+<div class="tipdoc" id="tip-init-10">
+<p class="tipnote">R/S=1 写入 USBCMD（151 行 temp |= CMD_RUN；经 xhci_run-&gt;xhci_run_finished-&gt;xhci_start 调到这里）</p>
+<blockquote data-ck="spec:spec-42.txt:L115-L117">Write the USBCMD (5.4.1) to turn the host controller ON via setting the 
+Run/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin accepting 
+doorbell references.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L115-L117（p70）</div>
+</div>
+<div class="tipdoc" id="tip-init-11">
+<p class="tipnote">命令环状态置 RUNNING：此后 ring_cmd_db 才真正敲钟，即“允许门铃”</p>
+<blockquote data-ck="spec:spec-42.txt:L115-L117">Write the USBCMD (5.4.1) to turn the host controller ON via setting the 
+Run/Stop (R/S) bit to ‘1’. This operation allows the xHC to begin accepting 
+doorbell references.</blockquote>
+<div class="qsrc">—— evidence/spec-42.txt L115-L117（p70）</div>
+</div>
+<div class="tipdoc" id="tip-dev-0">
+<p class="tipnote">USB 核同步控制传输入口：构造控制 URB、提交并等完成（动画起点，SET_ADDRESS 等由此发出）</p>
+<blockquote data-ck="spec:spec-43.txt:L103-L108">For FS devices, system software should initially read the first 8 bytes of the 
+USB Device Descriptor to retrieve the value of the bMaxPacketSize0 field and 
+determine the actual Max Packet Size for the Default Control Endpoint, by 
+issuing a USB GET_DESCRIPTOR request to the device, update the Default 
+Control Endpoint Context with the actual Max Packet Size and inform the xHC 
+of the context change. Step a describes this operation.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L103-L108（p72）</div>
+</div>
+<div class="tipdoc" id="tip-dev-1">
+<p class="tipnote">hc_driver urb_enqueue 按端点类型分派，控制传输走 xhci_queue_ctrl_tx（现名仍叫此）</p>
+<blockquote data-ck="spec:spec-43.txt:L115-L117">The USB GET_DESCRIPTOR request requires a Data Stage, so the 
+Setup Stage TD shall be followed by a Data Stage TD, then a Status 
+Stage TD.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L115-L117（p73）</div>
+</div>
+<div class="tipdoc" id="tip-dev-2">
+<p class="tipnote">Setup 段 TRB：TRB_SETUP + TRB_IDT（8 字节 SETUP 包作为立即数据随 TRB 走）</p>
+<blockquote data-ck="spec:spec-43.txt:L120-L126">Initialize the Setup Stage TD (a single Setup Stage TRB) on the 
+Endpoint 0 Transfer Ring. 
+•  TRB Type = Setup Stage TRB. 
+•  Transfer Type (TRT) = IN Data Stage (3). 
+•  TRB Transfer Length = 8. 
+•  Interrupt On Completion (IOC) = 0. 
+•  Immediate Data (IDT) = 1.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L120-L126（p73）</div>
+</div>
+<div class="tipdoc" id="tip-dev-3">
+<p class="tipnote">Setup TRB 入 EP0 传输环（bRequestType/wValue 等打包成 TRB 前两个字段）</p>
+<blockquote data-ck="spec:spec-43.txt:L115-L117">The USB GET_DESCRIPTOR request requires a Data Stage, so the 
+Setup Stage TD shall be followed by a Data Stage TD, then a Status 
+Stage TD.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L115-L117（p73）</div>
+</div>
+<div class="tipdoc" id="tip-dev-4">
+<p class="tipnote">Data 段 TRB 类型：TRB_DATA（IN 方向带 ISP 短包中断）</p>
+<blockquote data-ck="spec:spec-43.txt:L139-L149">TRB Type = Data Stage TRB. 
+•  
+Direction (DIR) = ‘1’. 
+•  
+TRB Transfer Length = 8. 
+•  
+Chain bit (CH) = 0. 
+•  
+Interrupt On Completion (IOC) = 0. 
+•  
+Immediate Data (IDT) = 0.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L139-L149（p73）</div>
+</div>
+<div class="tipdoc" id="tip-dev-5">
+<p class="tipnote">Data TRB 入环：数据缓冲 DMA 地址 + 长度</p>
+<blockquote data-ck="spec:spec-43.txt:L136-L137">Initialize the Data Stage TD (a single Data Stage TRB) on the 
+Endpoint 0 Transfer Ring.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L136-L137（p73）</div>
+</div>
+<div class="tipdoc" id="tip-dev-6">
+<p class="tipnote">Status 段 TRB：TRB_STATUS + TRB_IOC，传输结束时产生完成事件</p>
+<blockquote data-ck="spec:spec-43.txt:L159-L167">TRB Type = Status Stage TRB. 
+•  
+Direction (DIR) = ‘0’. 
+•  
+TRB Transfer Length = 0. 
+•  
+Chain bit (CH) = 0. 
+•  
+Interrupt On Completion (IOC) = 1.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L159-L167（p73）</div>
+</div>
+<div class="tipdoc" id="tip-dev-7">
+<p class="tipnote">giveback_first_trb：三段齐后翻转首 TRB 的 Cycle 位，整个 TD 一次性移交硬件</p>
+<blockquote data-ck="spec:spec-43.txt:L181-L182">Ring the Device Slots’ Doorbell with DB Target = Control EP 0 
+Enqueue Pointer Update.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L181-L182（p74）</div>
+</div>
+<div class="tipdoc" id="tip-dev-8">
+<p class="tipnote">敲设备门铃：writel DB_VALUE(ep_index=0)——EP0 时 DB Target=ep+1=1（宏见 xhci.h:313）</p>
+<blockquote data-ck="spec:spec-43.txt:L181-L182">Ring the Device Slots’ Doorbell with DB Target = Control EP 0 
+Enqueue Pointer Update.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L181-L182（p74）</div>
+</div>
+<div class="tipdoc" id="tip-dev-9">
+<p class="tipnote">设备编址：xhci_queue_address_device 把 Address Device 命令 TRB 入命令环（入口是 .address_device=xhci_address_device）</p>
+<blockquote data-ck="spec:spec-43.txt:L331-L334">Issue an Address Device Command for the Device Slot, where the 
+command points to the Input Context data structure described above. Refer to 
+sections 3.3.4 and 6.4.3.4 for more information on the Address Device 
+Command.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L331-L334（p76）</div>
+</div>
+<div class="tipdoc" id="tip-dev-10">
+<p class="tipnote">敲命令门铃 DB Target=0，xHC 开始处理编址命令</p>
+<blockquote data-ck="spec:spec-41.txt:L8-L10">All xHC commands are issued by placing the desired Command TRB(s) (Section 
+6.4.3 Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).</blockquote>
+<div class="qsrc">—— evidence/spec-41.txt L8-L10（p68）</div>
+</div>
+<div class="tipdoc" id="tip-dev-11">
+<p class="tipnote">等命令完成事件：handle_cmd_completion 里 complete() 唤醒本行，设备拿到地址</p>
+<blockquote data-ck="spec:spec-43.txt:L346-L347">System software shall wait for Address Device Command completion event on 
+the Event Ring before issuing any more commands to the slot.</blockquote>
+<div class="qsrc">—— evidence/spec-43.txt L346-L347（p76）</div>
+</div>
+</div>
+<div id="codetip" hidden><div class="tipbody"></div></div>
+<script>
+(function () {
+  'use strict';
+  var tip = document.getElementById('codetip');
+  var body = tip ? tip.querySelector('.tipbody') : null;
+  if (!tip || !body) { return; }
+  function show(row, pin) {
+    var key = row.getAttribute('data-hot');
+    var doc = document.getElementById('tip-' + key.replace(':', '-'));
+    if (!doc) { return; }
+    body.innerHTML = '';
+    body.appendChild(doc.cloneNode(true));
+    tip.setAttribute('data-for', key);
+    if (pin) { tip.setAttribute('data-pin', key); }
+    tip.hidden = false;
+    var r = row.getBoundingClientRect();
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = Math.max(8, Math.min(r.left + window.scrollX + (r.width - tw) / 2,
+        document.documentElement.scrollWidth - tw - 8));
+    var y = r.top + window.scrollY - th - 10;
+    if (y < window.scrollY + 4) { y = r.bottom + window.scrollY + 10; }
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  function unpinned() { return !tip.getAttribute('data-pin'); }
+  function hide() { if (unpinned()) { tip.hidden = true; } }
+  function unpin() { tip.removeAttribute('data-pin'); tip.hidden = true; }
+  var rows = document.querySelectorAll('.codeseg .cl.hot');
+  for (var i = 0; i < rows.length; i++) {
+    (function (row) {
+      row.addEventListener('mouseenter', function () { if (unpinned()) { show(row, false); } });
+      row.addEventListener('mouseleave', hide);
+      row.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var key = row.getAttribute('data-hot');
+        if (tip.getAttribute('data-pin') === key) { unpin(); }
+        else { show(row, true); }
+      });
+    })(rows[i]);
+  }
+  document.addEventListener('click', function () { unpin(); });
+})();
+</script>
 </body>
 </html>

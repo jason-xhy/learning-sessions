@@ -240,6 +240,56 @@ async function main() {
     await stage.render(playback.currentScene, playback.previousScene);
   }
 
+  // ---------- 扫描模式（R4 TrackC）：步进全部帧，按画面内容哈希找变化帧 ----------
+  // 每帧 draw 后把 finalBuffer 缩到 480×270 离屏 canvas，对 RGB 字节做 FNV-1a
+  // 32 位哈希；与上一帧不同 → 记入 distinct（f 从 0 计，含第 0 帧）。
+  // 产物经 scripts/render.py --mode scan 落盘 public/frames-N.json，播放器按表步进。
+  if (q.get('scan')) {
+    state.phase = 'scan';
+    const OFF_W = 480, OFF_H = 270;
+    const off = document.createElement('canvas');
+    off.width = OFF_W;
+    off.height = OFF_H;
+    const octx = off.getContext('2d', {willReadFrequently: true})!;
+    const frameHash = (): number => {
+      octx.clearRect(0, 0, OFF_W, OFF_H);
+      octx.drawImage(stage.finalBuffer, 0, 0, OFF_W, OFF_H);
+      const d = octx.getImageData(0, 0, OFF_W, OFF_H).data;
+      let h = 0x811c9dc5 | 0; // FNV-1a offset basis
+      for (let i = 0; i < d.length; i += 4) {
+        h = Math.imul(h ^ d[i], 16777619);
+        h = Math.imul(h ^ d[i + 1], 16777619);
+        h = Math.imul(h ^ d[i + 2], 16777619);
+      }
+      return h | 0;
+    };
+    const distinct: number[] = [];
+    let lastHash: number | null = null;
+    let f = 0;
+    let finished = false;
+    const t0 = performance.now();
+    while (!finished) {
+      finished = await step();
+      await draw();
+      const h = frameHash();
+      if (lastHash === null || h !== lastHash) distinct.push(f);
+      lastHash = h;
+      f++;
+      // 与 probe 同节奏：让出宏任务 + 每 300 帧更新状态行
+      if (f % 4 === 0) await new Promise(r => setTimeout(r, 0));
+      if (f % 300 === 0) {
+        state.frame = f;
+        setStatus(`scan ${f} distinct=${distinct.length}`);
+      }
+    }
+    state.total = f;
+    state.distinct = distinct;
+    state.scanMs = Math.round(performance.now() - t0);
+    state.ready = true;
+    setStatus(`scan done: ${f} frames, ${distinct.length} distinct`);
+    return;
+  }
+
   // ---------- 全检探针模式：步进全部帧收集重叠违例 ----------
   if (q.get('probe')) {
     state.phase = 'probe';
