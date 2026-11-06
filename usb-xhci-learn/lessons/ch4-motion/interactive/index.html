@@ -794,12 +794,19 @@ function updateSelnote(){
   const t = $('#m1-type').value;
   const tn = (TYPE_NOTE[r] && TYPE_NOTE[r][t]) ? TYPE_NOTE[r][t] : '';
   const writable = (r !== 'evt');
+  /* R8：剧本未全完时环选 EP0 = 练习死胡同——注释条常驻解锁条件与回剧本指引，
+     替代原先无休止的「环」下拉闪烁引回（脚本态/No Op 自由练习态同样生效） */
+  const ep0gate = (r === 'ep0' && !scriptAllDone())
+    ? '<br><b>EP0 自由练习在两轮剧本全部完成后解锁</b>——现在敲 DB Target=1 仍会被拦；先把剧本走完（环回「命令环」'
+      + (m1.scriptIdx !== null ? '继续剧本' + scriptCn() : '，类型选 Enable Slot / Address Device') + '）。'
+    : '';
   $('#m1-selnote').innerHTML =
     RING_NOTE[r]
     + '<br>当前类型：<b>' + t + '</b>' + (tn ? ' —— ' + tn : '')
     + (writable
         ? '<br>点 <span class="act">「写 TRB 上环」</span>将把一颗 ' + t + '（Cycle bit=PCS）写入' + (r === 'cmd' ? '命令环' : 'EP0 传输环') + ' enq 指向的格子。'
-        : '<br>事件环不可手动写 TRB——改选「命令环」或「EP0 传输环」。');
+        : '<br>事件环不可手动写 TRB——改选「命令环」或「EP0 传输环」。')
+    + ep0gate;
 }
 
 /* ---- 下一步高亮闪烁：剧本当前步该点的控件 ---- */
@@ -814,9 +821,15 @@ function updateM1Pulse(){
   const k = prog.indexOf(false);
   if (k === -1){ updateEp0GuidePulse(); return; }   // 自由练习/全部完成 → EP0 引导链接管（环选 EP0 时）
   if (k === 0){
-    if ($('#m1-ring').value !== 'cmd') setPulse('#m1-ring', true);
-    else if ($('#m1-type').value !== scriptType()) setPulse('#m1-type', true);
-    else setPulse('[data-act="m1-write"]', true);
+    /* R8：EP0 漫游不再闪「环」下拉——两剧本未完时 EP0 是练习死胡同（DB1 被门拦、
+       第①步只能回命令环推进），持续闪烁与用户正在 EP0 上的操作相冲突（用户报告
+       「后续所有操作一直在环下拉闪」）；引导改由注释条常驻解锁说明承担（updateSelnote）。
+       evt 漫游保持闪烁引回（事件环无可操作控件，闪烁是唯一反馈）。 */
+    if ($('#m1-ring').value === 'evt') setPulse('#m1-ring', true);
+    else if ($('#m1-ring').value === 'cmd'){
+      if ($('#m1-type').value !== scriptType()) setPulse('#m1-type', true);
+      else setPulse('[data-act="m1-write"]', true);
+    }
   } else if (k === 1){
     if (!$('#m1-dbpop').classList.contains('hidden')) setPulse('.dbpop [data-db="0"]', true);
     else setPulse('[data-act="m1-doorbell"]', true);
@@ -1159,8 +1172,8 @@ function syncTypeToScript(){
     $('#m1-type').value = scriptType();
   }
 }
-/* ring 切换：ep0/evt → 剧本绑定保持（面板保留，pulse 指 #m1-ring 引回）；
-   回到 cmd → 同步类型选择器=当前剧本类型。 */
+/* ring 切换：ep0/evt → 剧本绑定保持（面板保留；evt 漫游 pulse 指 #m1-ring 引回，
+   ep0 漫游 R8 起不闪——注释条说明解锁条件）；回到 cmd → 同步类型选择器=当前剧本类型。 */
 $('#m1-ring').addEventListener('change', () => {
   populateTypes();
   syncTypeToScript();
