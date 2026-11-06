@@ -2,6 +2,13 @@
 // R4 TrackC：若 public/frames-N.json（构建期画面去重表）存在且校验通过，
 //   步进控件按表走（相邻步进帧画面必不同，UI 显示 拍 k/m · 帧 x/y）；
 //   无表/校验失败 → 回退逐帧模式（完全旧行为）。播放始终是连续逐帧。
+// R6 意见①：distinct 表之上再推导「教学拍」beats——distinct[i] 为稳定拍 ⟺
+//   distinct[i+1]-distinct[i] >= 2（末项用 total；gap=1 连跑段=动画块）。
+//   首拍强制 0、末拍强制 total-1；beats ⊆ distinct ∪ {total-1}。
+//   「下一拍」一次点击播完当前动画块（位置/缩放/颜色特效不跨点击）：
+//   target 与当前帧距 >1 时置 autoTarget 并播放，onFrameChanged 到点即停；
+//   自动播放中再点一次「下一拍」= 跳过（直达 autoTarget 并暂停）。
+//   beats 推导失败 → 回退 distinct 旧模式（再退逐帧）。
 // 机制（R3-SPEC 面2）：Player 自带 rAF 更新循环（编辑器同款），onRender 订阅里把
 // playback.currentScene 渲染到 Stage；暂停后 requestSeek/requestPreviousFrame/
 // requestNextFrame 触发 playback.seek → 下次循环重算并重绘该帧。
@@ -59,6 +66,11 @@ const state: any = ((window as any).__ts = {
   // distinct=null → 逐帧模式（完全旧行为）；否则按表步进：相邻步进帧画面必不同。
   distinct: null as number[] | null,
   stepIdx: 0,
+  // R6：教学拍表（由 distinct 纯推导，无重扫）。beats=null → 回退 distinct 旧模式。
+  beats: null as number[] | null,
+  beatIdx: 0,
+  // R6：自动播放目标帧（「下一拍」点击后走播当前动画块；null=无自动段）。
+  autoTarget: null as number | null,
   snapshot() {
     return {
       phase: state.phase,
@@ -72,6 +84,9 @@ const state: any = ((window as any).__ts = {
       paused: state.paused,
       distinct: state.distinct ? state.distinct.length : null,
       stepIdx: state.stepIdx,
+      beats: state.beats ? state.beats.length : null,
+      beatIdx: state.beatIdx,
+      autoTarget: state.autoTarget,
     };
   },
   // 画布像素统计（只读）：mean=采样点 RGB 均值，opaque=不透明采样点数，hash=内容指纹
@@ -157,17 +172,64 @@ function stepIndexOf(frame: number): number {
   return ans;
 }
 
-// 上一拍/下一拍：distinct 模式 seek 到 distinct[stepIdx±1]；逐帧模式走原生单帧接口
+// R6：beatIdx = beats 中 ≤frame 的最大下标（beats 严格递增，同款二分）
+function beatIndexOf(frame: number): number {
+  const b = state.beats;
+  if (!b) return 0;
+  let lo = 0, hi = b.length - 1, ans = 0;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (b[mid] <= frame) {
+      ans = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  return ans;
+}
+
+// 上一拍/下一拍。R6 beats 模式：「下一拍」一次点击播完当前动画块（autoTarget 播放
+// 到点即停；自动播放中再点=跳过直达）；「上一拍」清 autoTarget 直跳（生成器不可
+// 回退，倒退本就是头重放快进）。beats=null → distinct 旧模式；再 null → 逐帧。
 function stepBy(player: Player, delta: number) {
   const p = player as any;
-  if (!state.distinct) {
-    if (delta > 0) p.requestNextFrame();
-    else p.requestPreviousFrame();
+  if (!state.beats) {
+    if (!state.distinct) {
+      if (delta > 0) p.requestNextFrame();
+      else p.requestPreviousFrame();
+      return;
+    }
+    const ni = state.stepIdx + delta;
+    if (ni < 0 || ni >= state.distinct.length) return;
+    p.requestSeek(state.distinct[ni]);
     return;
   }
-  const ni = state.stepIdx + delta;
-  if (ni < 0 || ni >= state.distinct.length) return;
-  p.requestSeek(state.distinct[ni]);
+  if (delta > 0) {
+    if (state.autoTarget !== null) {
+      // 再点一次「下一拍」= 跳过：暂停并直达自动段目标
+      const t = state.autoTarget;
+      state.autoTarget = null;
+      p.togglePlayback(false);
+      p.requestSeek(t);
+      return;
+    }
+    const target = state.beats[state.beatIdx + 1];
+    if (target === undefined) return; // 已在末拍
+    if (target - state.frame <= 1) {
+      p.requestSeek(target); // 相邻拍=稳定态直跳
+    } else {
+      state.autoTarget = target; // 播放走完当前动画块，onFrameChanged 到点即停
+      p.togglePlayback(true);
+    }
+  } else {
+    const wasAuto = state.autoTarget !== null;
+    state.autoTarget = null;
+    const prev = state.beats[state.beatIdx - 1];
+    if (prev === undefined) return;
+    if (wasAuto) p.togglePlayback(false); // 自动段被上一拍打断 → 停在直跳落点
+    p.requestSeek(prev);
+  }
 }
 
 // 场景时长已知后拉取去重表；404/校验失败 → 保持 distinct=null（逐帧回退）
@@ -189,7 +251,23 @@ async function loadFramesTable(sceneIdx: number, player: Player) {
     if (d[d.length - 1] !== state.total - 1) d.push(state.total - 1);
     state.distinct = d;
     state.stepIdx = stepIndexOf(state.frame);
-    setStatus(`ready · 去重表 ${d.length} 拍 / ${state.total} 帧`);
+    // R6：教学拍推导（纯表推导，无重扫）——distinct[i] 为稳定拍 ⟺ 下一 distinct
+    // 距 ≥2（gap=1 连跑段=动画块，块内帧不作停点）；首拍强制 0、末拍强制 total-1。
+    const beats: number[] = [];
+    for (let i = 0; i < d.length - 1; i++) {
+      if (d[i + 1] - d[i] >= 2) beats.push(d[i]);
+    }
+    beats.push(state.total - 1); // 末拍强制 total-1（末项 gap 恒 1，不入候选）
+    if (beats[0] !== 0) beats.unshift(0); // 首拍强制 0
+    if (beats.length >= 2) {
+      state.beats = beats;
+      state.beatIdx = beatIndexOf(state.frame);
+      setStatus(`ready · 教学拍 ${beats.length} / 去重表 ${d.length} 拍 / ${state.total} 帧`);
+    } else {
+      state.beats = null;
+      setStatus(`ready · 去重表 ${d.length} 拍 / ${state.total} 帧`);
+      console.log('[player] beats 推导失败（<2 拍），回退 distinct 步进模式');
+    }
   } catch (e) {
     console.log('[player] 去重表不可用，回退逐帧模式：', String(e));
   }
@@ -201,14 +279,31 @@ function syncUI(player: Player) {
   el('[data-field="total"]').textContent = String(state.total);
   const slider = el('[data-act="seek"]') as HTMLInputElement;
   const d = state.distinct;
-  el('[data-field="mode"]').textContent = d ? '已按画面内容去重，相邻步进画面必不同' : '逐帧';
-  el('[data-field="stepwrap"]').hidden = !d;
-  if (d) {
+  const b = state.beats;
+  el('[data-field="mode"]').textContent = b
+    ? '按教学拍步进：一次点击播完当前特效（放大/移动/颜色），停在下一次画面稳定处'
+    : d
+      ? '已按画面内容去重，相邻步进画面必不同'
+      : '逐帧';
+  const note = document.getElementById('beat-note');
+  if (note) note.hidden = !b;
+  el('[data-field="stepwrap"]').hidden = !(b || d);
+  if (b) {
+    el('[data-field="step"]').textContent = String(state.beatIdx);
+    el('[data-field="steps"]').textContent = String(b.length);
+    (el('[data-act="prev"]') as HTMLButtonElement).textContent = '上一拍';
+    (el('[data-act="next"]') as HTMLButtonElement).textContent = '下一拍';
+  } else if (d) {
     el('[data-field="step"]').textContent = String(state.stepIdx);
     el('[data-field="steps"]').textContent = String(d.length);
+    (el('[data-act="prev"]') as HTMLButtonElement).textContent = '上一帧';
+    (el('[data-act="next"]') as HTMLButtonElement).textContent = '下一帧';
   }
   if (!dragging) {
-    if (d) {
+    if (b) {
+      slider.max = String(b.length - 1);
+      slider.value = String(state.beatIdx);
+    } else if (d) {
       slider.max = String(d.length - 1);
       slider.value = String(state.stepIdx);
     } else {
@@ -238,14 +333,18 @@ function wireControls(player: Player) {
   });
   playBtn.addEventListener('click', e => {
     (e.currentTarget as HTMLButtonElement).blur();
+    state.autoTarget = null; // 用户接管播放 → 自动段终止（不再到点即停）
     p.togglePlayback();
   });
 
   // 进度条：拖动 = 连续 requestSeek（input 事件）；change/blur 结束拖动态。
-  // distinct 模式下滑杆值是「拍下标」（0..len-1），映射到 distinct[值]；逐帧模式是帧号。
+  // beats 模式下滑杆值是「教学拍下标」（0..len-1），映射到 beats[值]；
+  // distinct 回退=去重拍下标；逐帧模式=帧号。拖动即用户接管 → 清 autoTarget。
   slider.addEventListener('input', () => {
     dragging = true;
-    if (state.distinct) p.requestSeek(state.distinct[Number(slider.value)]);
+    state.autoTarget = null;
+    if (state.beats) p.requestSeek(state.beats[Number(slider.value)]);
+    else if (state.distinct) p.requestSeek(state.distinct[Number(slider.value)]);
     else p.requestSeek(Number(slider.value));
   });
   const endDrag = () => {
@@ -256,7 +355,7 @@ function wireControls(player: Player) {
   slider.addEventListener('pointerup', endDrag);
   slider.addEventListener('blur', endDrag);
 
-  // 键盘：←→ 单步（distinct 模式=上一拍/下一拍），空格播放/暂停；
+  // 键盘：←→ 单步（beats 模式=上一拍/下一拍，自动段语义同按钮），空格播放/暂停；
   // 焦点在 slider 上时方向键走原生行为（同一路径：滑杆值即拍下标）
   window.addEventListener('keydown', e => {
     const target = e.target as HTMLElement;
@@ -269,6 +368,7 @@ function wireControls(player: Player) {
       stepBy(player, 1);
     } else if (e.code === 'Space' && !['BUTTON', 'INPUT'].includes(target.tagName)) {
       e.preventDefault();
+      state.autoTarget = null; // 用户接管播放
       p.togglePlayback();
     }
   });
@@ -333,6 +433,16 @@ async function main() {
   });
   player.onFrameChanged.subscribe(frame => {
     state.frame = frame;
+    if (state.beats) {
+      state.beatIdx = beatIndexOf(frame);
+      // R6：自动播放段到点即停（frame 可能越过 target → 夹紧回 target）
+      if (state.autoTarget !== null && frame >= state.autoTarget) {
+        const t = state.autoTarget;
+        state.autoTarget = null;
+        player.togglePlayback(false);
+        if (frame > t) player.requestSeek(t);
+      }
+    }
     if (state.distinct) state.stepIdx = stepIndexOf(frame);
     syncUI(player);
   });

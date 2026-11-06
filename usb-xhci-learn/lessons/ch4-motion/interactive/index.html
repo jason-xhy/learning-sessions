@@ -67,6 +67,7 @@
   ol.steps li.now .tip{color:var(--dim)}
   ol.steps li.done{border-color:rgba(134,189,122,.55)}
   ol.steps li.done .chk{color:var(--ok); font-weight:700}
+  ol.steps li.free{border-style:dashed; color:var(--dim)}
   .script-done{
     margin-top:10px; border:1px solid var(--ok); border-radius:10px; padding:8px 12px;
     color:var(--ok); font-weight:600; background:rgba(134,189,122,.08);
@@ -614,9 +615,11 @@ window.addEventListener('hashchange', () => activateTab((location.hash || '').sl
 const LINK = 8;                       // 第 9 格 = Link TRB（尾格虚线）
 const RINGS = {};
 const PTR = {};                       // 指针元素表 {ring:{enq,deq}}
-const m1 = { scriptIdx:0, steps:[false,false,false,false,false], db:null, receipts:[], snaps:[] };
+/* R6 意见②：类型选择即主控。scriptIdx=null → 自由练习面板；
+   每剧本进度独立持久（prog.steps/prog.snaps），穿插练习互不覆盖。 */
+const m1 = { scriptIdx:0, db:null, receipts:[] };
 
-/* 两轮剧本：Enable Slot（§4.3.2）→ Address Device（§4.3.3/§4.3.4）——五步同构，命令类型不同 */
+/* 两轮剧本：Enable Slot（§4.3.2）/ Address Device（§4.3.3/§4.3.4）——五步同构，命令类型不同 */
 const SCRIPTS = [
   {
     type: 'Enable Slot', cn: '一',
@@ -629,6 +632,7 @@ const SCRIPTS = [
       {title: '④ 确认完成事件', tip: '点事件环上出现的「Command Completion Event」卡，查看内容（Slot ID=1）'},
       {title: '⑤ 驱动读事件环', tip: '点「读事件环」：事件环 deq 推进，回执收入回执栏——闭环完成'},
     ],
+    prog: { steps:[false,false,false,false,false], snaps:[] },
   },
   {
     type: 'Address Device', cn: '二',
@@ -641,13 +645,17 @@ const SCRIPTS = [
       {title: '④ 确认完成事件', tip: '点事件环上出现的「Command Completion Event」卡：设备槽 Enabled → Addressed（§4.3.4 p76）'},
       {title: '⑤ 驱动读事件环', tip: '点「读事件环」收回执——编址完成才能对该槽发后续命令（§4.3.4 p76）'},
     ],
+    prog: { steps:[false,false,false,false,false], snaps:[] },
   },
 ];
-const scriptType = () => SCRIPTS[m1.scriptIdx].type;
-const scriptCn  = () => SCRIPTS[m1.scriptIdx].cn;
-/* 全部剧本完成 = 自由练习态（此后 DB Target=1 等自由操作放行） */
+/* 当前剧本访问器（scriptIdx=null → 自由练习，安全返回空/ null） */
+const scriptType  = () => (m1.scriptIdx === null ? null : SCRIPTS[m1.scriptIdx].type);
+const scriptCn    = () => (m1.scriptIdx === null ? ''   : SCRIPTS[m1.scriptIdx].cn);
+const scriptSteps = () => (m1.scriptIdx === null ? []   : SCRIPTS[m1.scriptIdx].prog.steps);
+const scriptSnaps = () => (m1.scriptIdx === null ? []   : SCRIPTS[m1.scriptIdx].prog.snaps);
+/* 全部剧本完成 = 自由练习态（此后 DB Target=1 等自由操作放行）——DB1 门判定不变 */
 function scriptAllDone(){
-  return m1.scriptIdx === SCRIPTS.length - 1 && m1.steps.every(Boolean);
+  return SCRIPTS.every(s => s.prog.steps.every(Boolean));
 }
 
 const TYPES = {
@@ -716,19 +724,32 @@ function renderRing(r){
 }
 
 function renderSteps(){
+  if (m1.scriptIdx === null) return;   // 自由练习面板无步骤清单
+  const steps = scriptSteps();
   let nowSet = false;
   $$('#m1-steps li').forEach((li, i) => {
-    li.classList.toggle('done', m1.steps[i]);
-    li.querySelector('.chk').textContent = m1.steps[i] ? '✓' : '○';
-    const isNow = !m1.steps[i] && !nowSet;
+    li.classList.toggle('done', steps[i]);
+    li.querySelector('.chk').textContent = steps[i] ? '✓' : '○';
+    const isNow = !steps[i] && !nowSet;
     li.classList.toggle('now', isNow);
     if (isNow) nowSet = true;
   });
   $('#m1-script-done').classList.toggle('hidden', !scriptAllDone());
 }
 
-/* 按当前剧本轮次渲染标题/引文/五步清单（步骤 li 由剧本数据生成） */
+/* 按当前剧本轮次渲染标题/引文/五步清单（步骤 li 由剧本数据生成）；
+   scriptIdx=null → 自由练习面板（五步清单区替换为说明卡） */
 function renderScriptPanel(){
+  if (m1.scriptIdx === null){
+    $('#m1-script-title').textContent = '自由练习：命令与传输通路';
+    $('#m1-script-quote').innerHTML = '不在剧本内的自由操作——No Op 也是命令 TRB，同样走「写上环 → 敲门铃 → 执行 → 完成事件 → 读回执」闭环（§4.1 p68）。<em>（选择即主控：类型切回 Enable Slot / Address Device 即回剧本面板，进度保留）</em>';
+    $('#m1-steps').innerHTML =
+      '<li class="free"><b>No Op 也是命令 TRB</b>：<span class="tip">写上环 → DB Target=0 → 执行 → Command Completion Event → 读回执（§4.1 p68）。</span></li>'
+      + '<li class="free"><b>EP0 三段 TD</b>：<span class="tip">环选 EP0 传输环，写 Setup/Data/Status Stage TRB → 门铃 DB Target=1 → Transfer Event。<b>DB1 仍需两轮剧本完成后解锁</b>。</span></li>'
+      + '<li class="free"><b>回剧本</b>：<span class="tip">类型选 Enable Slot / Address Device（各自进度保留，可穿插练习）。</span></li>';
+    $('#m1-script-done').classList.toggle('hidden', !scriptAllDone());
+    return;
+  }
   const s = SCRIPTS[m1.scriptIdx];
   $('#m1-script-title').textContent = s.title;
   $('#m1-script-quote').innerHTML = s.quote;
@@ -789,8 +810,9 @@ function updateM1Pulse(){
   ['#m1-ring', '#m1-type', '[data-act="m1-write"]', '[data-act="m1-doorbell"]',
    '[data-db]', '[data-act="m1-exec"]', '[data-act="m1-readevt"]',
    '.cell[data-ring="evt"] .ccard'].forEach(s => setPulse(s, false));
-  const k = m1.steps.indexOf(false);
-  if (k === -1) return;                       // 剧本完成 → 自由练习，不闪
+  const prog = scriptSteps();
+  const k = prog.indexOf(false);
+  if (k === -1) return;               // 自由练习/全部完成 → 不闪
   if (k === 0){
     if ($('#m1-ring').value !== 'cmd') setPulse('#m1-ring', true);
     else if ($('#m1-type').value !== scriptType()) setPulse('#m1-type', true);
@@ -808,37 +830,59 @@ function updateM1Pulse(){
 }
 
 function stepDone(i, msg){
-  if (m1.steps[i]) return;
-  m1.steps[i] = true;
-  /* 步骤完成边界快照（供「单步重置」回退到当前步起点） */
-  m1.snaps[i] = JSON.parse(JSON.stringify(
+  const steps = scriptSteps();
+  if (!steps.length || steps[i]) return;
+  steps[i] = true;
+  /* 步骤完成边界快照（供「单步重置」回退到当前步起点；按剧本持久） */
+  scriptSnaps()[i] = JSON.parse(JSON.stringify(
     {rings: RINGS, db: m1.db, receipts: m1.receipts}));
-  if (m1.steps.every(Boolean) && m1.scriptIdx < SCRIPTS.length - 1){
-    advanceRound();
+  if (steps.every(Boolean)){
+    onScriptComplete(m1.scriptIdx);
     return;
   }
   if (msg) hint(msg, false);
 }
 
-/* 剧本一闭环 → 剧本二（Address Device）：步进状态归零、面板换剧本；环上状态保留（连续剧情） */
-function advanceRound(){
-  m1.scriptIdx++;
-  m1.steps = [false, false, false, false, false];
-  m1.snaps = [];
+/* 剧本完成流转（R6 意见②，替代 advanceRound）：横幅动态文案；另一剧本未完 →
+   自动切过去（ring=cmd 时同步类型选择器）+ 指路；两剧本全完 → 总横幅+解锁提示。
+   环上状态保留（连续剧情）；两剧本 prog 各自持久。 */
+function onScriptComplete(doneIdx){
+  const other = SCRIPTS.findIndex(s => !s.prog.steps.every(Boolean));
   const rd = $('#m1-round-done');
   rd.classList.remove('hidden');
-  rd.textContent = '✓ 剧本一（Enable Slot 命令闭环）完成——进入剧本二：Address Device（§4.3.3 p76）。';
-  renderScriptPanel();
-  hint('剧本二开始：类型切到「Address Device」→ 点「写 TRB 上环」（命令参数指向软件装配好的 Input Context，§4.3.3 p75 步8-10 / p76 步11）。');
+  rd.textContent = `✓ 剧本${SCRIPTS[doneIdx].cn}（${SCRIPTS[doneIdx].type} 命令闭环）完成——`
+    + (other >= 0 ? `进入剧本${SCRIPTS[other].cn}（${SCRIPTS[other].type}）` : '两轮剧本全部完成');
+  if (other >= 0){
+    m1.scriptIdx = other;
+    syncTypeToScript();               // ring=cmd 时同步类型选择器=剧本类型
+    renderScriptPanel();
+    hint(`剧本${SCRIPTS[other].cn}开始：类型已切到「${SCRIPTS[other].type}」→ 点「写 TRB 上环」`
+      + (other === 1 ? '（命令参数指向软件装配好的 Input Context，§4.3.3 p75 步8-10 / p76 步11）' : '') + '。');
+  } else {
+    renderScriptPanel();
+    hint('两轮剧本全部完成：自由练习解锁——EP0 传输环三段 TD + 门铃 DB Target=1（§4.3 p74 viii），命令环也可自由写 No Op 等命令（§4.1 p68）。');
+  }
   renderAll();
 }
 
-/* ---- 单步重置：回退到当前步起点（保留此前已完成步骤） ---- */
+/* ---- 单步重置：回退到当前步起点（保留此前已完成步骤；按当前剧本 prog 回退） ---- */
 function actStepReset(){
-  let k = m1.steps.indexOf(false);
+  if (m1.scriptIdx === null){
+    /* 自由练习：无步骤可回退 → 清空环现场，指路回剧本 */
+    ['cmd','ep0','evt'].forEach(buildRing);
+    m1.db = null; m1.receipts = [];
+    $('#m1-dbpop').classList.add('hidden');
+    $('#m1-evtinfo').textContent = '（点事件环上的事件卡，这里显示完成事件内容）';
+    renderReceipts();
+    hint('自由练习：环现场已清空。回剧本=类型选 Enable Slot / Address Device。');
+    renderAll();
+    return;
+  }
+  const steps = scriptSteps();
+  let k = steps.indexOf(false);
   if (k === -1) k = 5;                    // 全部完成 → 重做最后一步
   const redo = (k === 5) ? 4 : k;
-  const s = (redo === 0) ? null : m1.snaps[redo - 1];
+  const s = (redo === 0) ? null : scriptSnaps()[redo - 1];
   if (s){
     for (const r of ['cmd','ep0','evt']) RINGS[r] = s.rings[r];
     m1.db = s.db;
@@ -847,11 +891,11 @@ function actStepReset(){
     ['cmd','ep0','evt'].forEach(buildRing);
     m1.db = null; m1.receipts = [];
   }
-  m1.steps = [false,false,false,false,false].map((_, i) => i < redo);
+  for (let i = 0; i < steps.length; i++) steps[i] = i < redo;
   $('#m1-dbpop').classList.add('hidden');
   $('#m1-evtinfo').textContent = '（点事件环上的事件卡，这里显示完成事件内容）';
   renderReceipts();
-  hint(`已回退到第 ${redo + 1} 步起点（此前 ${redo} 步保留）——重做本步。`);
+  hint(`已回退到剧本${scriptCn()}第 ${redo + 1} 步起点（此前 ${redo} 步保留）——重做本步。`);
   renderAll();
 }
 
@@ -879,13 +923,14 @@ function actWrite(){
   g.cells[idx] = { label: type, kind: (r === 'cmd' ? 'cmd' : 'tr'), cyc: g.pcs };
   g.enq = Math.min(g.enq + 1, LINK);                     // 写后推进（最多停在 Link 上）
   hint(`已写入 ${type} → ${r} 环第 ${idx} 格（C=${g.cells[idx].cyc}），enq 推进到 ${g.enq}${g.enq === LINK ? '（Link 格，下次写入绕回并翻转 Cycle bit）' : ''}——Advance the Endpoint 0 Transfer Ring Enqueue Pointer（§4.3 p73 iii/v/vii 同款动作）。`);
-  if (r === 'cmd' && !scriptAllDone()){
+  if (r === 'cmd' && m1.scriptIdx !== null && !scriptAllDone()){
     if (type === scriptType()){
       stepDone(0, `剧本${scriptCn()}①完成：${type} 命令 TRB 已上命令环。下一步敲 DB Target=0。`);
-    } else if (!m1.steps[0]){
+    } else if (!scriptSteps()[0]){
       hint(`已写入 ${type} → ${r} 环第 ${idx} 格——注意：剧本${scriptCn()}①走「${scriptType()}」，先把类型切回来；这颗 ${type} 留在环上，xHC 执行时会一并取走。`);
     }
   }
+  /* scriptIdx=null（自由练习）或两轮全完 → 纯自由写，上方通用文案即回执 */
   renderAll();
 }
 
@@ -909,13 +954,13 @@ function actDb(t){
     renderAll();
     return;
   }
-  if (!scriptAllDone()){
+  if (m1.scriptIdx !== null && !scriptAllDone()){
     const pend = RINGS.cmd.cells.some(c => c && c.label === scriptType());
-    if (m1.steps[0] && pend){
+    if (scriptSteps()[0] && pend){
       m1.db = 0;
       hint('已写门铃寄存器 0：DB Target = 0（Host Controller Command code）——「All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register, that is, writing the Host Controller Command code to the DB Target field of Doorbell register 0.」（§4.1 p68）。xHC 侧「执行」已亮起。');
       stepDone(1, `剧本${scriptCn()}②完成：门铃 0 已敲。下一步点 xHC「执行」。`);
-    } else if (!m1.steps[0]){
+    } else if (!scriptSteps()[0]){
       m1.db = null;
       hint(`顺序不对——先完成剧本${scriptCn()}第①步：把 ${scriptType()} 命令 TRB 写上命令环，再敲门铃（§4.1 p68：先 placing the desired Command TRB(s) on the Command Ring，then ringing）。`, true);
     } else {
@@ -963,11 +1008,13 @@ function actExec(){
   let evLabel, evInfo;
   if (r === 'cmd'){
     const names = taken.map(c => c.label).join(' + ');
-    const stype = scriptType();
-    const hasS = taken.some(c => c.label === stype);
+    const stype = scriptType();          // null（自由练习）→ 跳过剧本注记
+    const hasS = stype !== null && taken.some(c => c.label === stype);
     const note = (stype === 'Enable Slot')
       ? ' · Slot ID=1（Slot ID 由 xHC 自选，「The Enable Slot Command returns a Slot ID that is selected by the host controller.」§4.3.2 p75）'
-      : ' · 设备槽 Enabled → Addressed（「Successful completion of the Address Device Command with BSR = \u2018 0\u2019 shall transition the Device Slot from the Enabled to the Addressed state.」§4.3.4 p76）';
+      : (stype === 'Address Device')
+      ? ' · 设备槽 Enabled → Addressed（「Successful completion of the Address Device Command with BSR = \u2018 0\u2019 shall transition the Device Slot from the Enabled to the Addressed state.」§4.3.4 p76）'
+      : '';
     evLabel = 'Command Completion Event';
     evInfo  = `Command Completion Event TRB · ${names}`
       + (hasS ? note : '')
@@ -984,7 +1031,7 @@ function actExec(){
   }
   m1.db = null;
   hint(`xHC 取指 ${taken.length} 个 TRB（${r} 环 deq 推进到 ${g.deq}），产生「${evLabel}」写入事件环（enq 推进到 ${e.enq}）——§4.1 p68。`);
-  if (r === 'cmd' && taken.some(c => c.label === scriptType()) && m1.steps[1]){
+  if (r === 'cmd' && scriptType() !== null && taken.some(c => c.label === scriptType()) && scriptSteps()[1]){
     stepDone(2, `剧本${scriptCn()}③完成：完成事件已上事件环。下一步点事件环上的事件卡确认。`);
   }
   renderAll();
@@ -1009,7 +1056,8 @@ function actReadEvent(){
       ? '编址完成才能继续配置——「System software shall wait for Address Device Command completion event on the Event Ring before issuing any more commands to the slot.」（§4.3.4 p76）'
       : '';
   hint('已读走「' + c.label + '」（事件环 deq 推进到 ' + e.deq + '），回执见回执栏。' + followup);
-  if (m1.steps[3] && c.label === 'Command Completion Event' && c.info.includes(scriptType())){
+  if (m1.scriptIdx !== null && scriptSteps()[3]
+      && c.label === 'Command Completion Event' && c.info.includes(scriptType())){
     stepDone(4, `剧本${scriptCn()}⑤完成：${scriptType()} 命令闭环走通。`);
   }
   renderAll();
@@ -1053,7 +1101,7 @@ function onCellClick(r, i){
   const c = RINGS.evt.cells[i];
   if (!c || c.kind !== 'evt') return;
   $('#m1-evtinfo').textContent = c.info;
-  if (m1.steps[2] && c.info.includes(scriptType())){
+  if (m1.scriptIdx !== null && scriptSteps()[2] && c.info.includes(scriptType())){
     stepDone(3, `剧本${scriptCn()}④完成：已确认 Command Completion Event${scriptType() === 'Enable Slot' ? '（Slot ID=1）' : '（设备槽已编址）'}。下一步「读事件环」。`);
     renderAll();
   } else {
@@ -1061,7 +1109,7 @@ function onCellClick(r, i){
   }
 }
 
-/* ---- 模块一控件绑定 ---- */
+/* ---- 模块一控件绑定（R6 意见②：类型选择即主控） ---- */
 function populateTypes(){
   const r = $('#m1-ring').value;
   const sel = $('#m1-type');
@@ -1074,18 +1122,43 @@ function populateTypes(){
   updateSelnote();
   updateM1Pulse();
 }
-$('#m1-ring').addEventListener('change', () => { populateTypes(); guideTypeChoice(); });
-$('#m1-type').addEventListener('change', () => { updateSelnote(); updateM1Pulse(); guideTypeChoice(); });
-
-/* 剧本①期间切到别的命令类型：即时指路（Address Device=剧本二的门；No Op=自由练习） */
-function guideTypeChoice(){
-  const r = $('#m1-ring').value, t = $('#m1-type').value;
-  if (r !== 'cmd' || scriptAllDone() || m1.steps[0] || t === scriptType()) return;
-  const other = SCRIPTS.find(s => s.type === t);
-  hint(other
-    ? `「${t}」是剧本${other.cn}的命令——先把剧本${scriptCn()}（${scriptType()}）走完。类型切回「${scriptType()}」再点「写 TRB 上环」。`
-    : `「${t}」是自由练习命令，不在剧本里——剧本${scriptCn()}①请选「${scriptType()}」。`);
+/* ring=cmd 且绑定在剧本上 → 类型选择器同步=剧本类型（防 populateTypes 重建后
+   默认首项与绑定脱钩）；程序化设值不触发 change，无回环。 */
+function syncTypeToScript(){
+  if ($('#m1-ring').value === 'cmd' && m1.scriptIdx !== null){
+    $('#m1-type').value = scriptType();
+  }
 }
+/* ring 切换：ep0/evt → 剧本绑定保持（面板保留，pulse 指 #m1-ring 引回）；
+   回到 cmd → 同步类型选择器=当前剧本类型。 */
+$('#m1-ring').addEventListener('change', () => {
+  populateTypes();
+  syncTypeToScript();
+  updateSelnote();
+  updateM1Pulse();   // 同步后再算闪烁（populateTypes 内那次看到的还是默认首项）
+});
+/* 类型选择即主控（仅 ring=cmd 的类型器变化触发绑定）：
+   Enable Slot → 剧本一 / Address Device → 剧本二（若另一剧本未完给一句剧情
+   顺序提示，不拦截）/ No Op → 自由练习面板（scriptIdx=null）。 */
+$('#m1-type').addEventListener('change', () => {
+  const r = $('#m1-ring').value, t = $('#m1-type').value;
+  if (r === 'cmd'){
+    const hit = SCRIPTS.findIndex(s => s.type === t);
+    if (hit >= 0){
+      const changed = m1.scriptIdx !== hit;
+      m1.scriptIdx = hit;
+      if (changed) renderScriptPanel();
+      if (hit === 1 && !SCRIPTS[0].prog.steps.every(Boolean)){
+        hint('剧情顺序上 Enable Slot 先拿 Slot ID（§4.3.3 p75 步8-10），再 Address Device 编址；本台允许直接练习剧本二——两剧本进度各自保留、可穿插。');
+      }
+    } else {
+      m1.scriptIdx = null;
+      renderScriptPanel();
+    }
+  }
+  updateSelnote();
+  updateM1Pulse();
+});
 $('[data-act="m1-write"]').addEventListener('click', actWrite);
 $('[data-act="m1-doorbell"]').addEventListener('click', actDoorbell);
 $$('[data-db]').forEach(b => b.addEventListener('click', () => actDb(Number(b.dataset.db))));
@@ -1094,13 +1167,17 @@ $('[data-act="m1-exec"]').addEventListener('click', actExec);
 $('[data-act="m1-stepreset"]').addEventListener('click', actStepReset);
 $('[data-act="m1-reset"]').addEventListener('click', () => {
   ['cmd','ep0','evt'].forEach(buildRing);
+  /* 两剧本 prog 全清 + 回剧本一 + 选择器回初始态（ring=cmd · type=Enable Slot） */
+  SCRIPTS.forEach(s => { s.prog.steps = [false,false,false,false,false]; s.prog.snaps = []; });
   m1.scriptIdx = 0;
-  m1.steps = [false,false,false,false,false];
-  m1.db = null; m1.receipts = []; m1.snaps = [];
+  m1.db = null; m1.receipts = [];
   renderReceipts();
   $('#m1-evtinfo').textContent = '（点事件环上的事件卡，这里显示完成事件内容）';
   $('#m1-dbpop').classList.add('hidden');
   $('#m1-round-done').classList.add('hidden');
+  $('#m1-ring').value = 'cmd';
+  populateTypes();
+  $('#m1-type').value = 'Enable Slot';
   renderScriptPanel();
   hint('已重置。从剧本一第①步开始：环选「命令环」、类型选「Enable Slot」，点「写 TRB 上环」。');
   renderAll();
@@ -1798,7 +1875,12 @@ window.__ts = {
       };
     }
     return {
-      m1: { scriptIdx: m1.scriptIdx, scriptType: scriptType(), steps: m1.steps.slice(), rings: rr, done: scriptAllDone(), receipts: m1.receipts.length },
+      m1: {
+        scriptIdx: m1.scriptIdx, scriptType: scriptType(),
+        steps: scriptSteps().slice(),
+        progs: SCRIPTS.map(s => s.prog.steps.slice()),
+        rings: rr, done: scriptAllDone(), receipts: m1.receipts.length,
+      },
       m2: {
         doneCount: m2init.done.length,
         order: m2init.done.slice(),
