@@ -932,6 +932,82 @@ export function* popIn(ref: Ref<Node>): ThreadGenerator {
   );
 }
 
+/* ---------- 格条（DCBAA / 门铃阵列缩略条；R9 ch44/ch45 用） ----------
+   x/y 为首格中心的画布坐标（调用处传 TLx/TLy 变换后的值）；
+   每格=索引标签(上) + 值文本(下)，值由调用方经 value[i]().text() 驱动。 */
+
+export interface CellStripApi {
+  group: Ref<Rect>;
+  cell: Ref<Rect>[];
+  value: Ref<Txt>[];
+  center(i: number): Vector2;
+}
+
+export function makeCellStrip(
+  view: View2D,
+  o: {x: number; y: number; n: number; w?: number; h?: number; gap?: number; tint?: string; labels?: string[]},
+): CellStripApi {
+  const w = o.w ?? 120;
+  const h = o.h ?? 64;
+  const gap = o.gap ?? 10;
+  const tint = o.tint ?? C.hc;
+  const group = createRef<Rect>();
+  const cell: Ref<Rect>[] = [];
+  const value: Ref<Txt>[] = [];
+  view.add(
+    <Rect ref={group} opacity={0}>
+      {Array.from({length: o.n}, (_, i) => {
+        const cr = createRef<Rect>();
+        const vr = createRef<Txt>();
+        cell.push(cr);
+        value.push(vr);
+        return (
+          <Rect
+            ref={cr}
+            position={[o.x + i * (w + gap), o.y]}
+            width={w}
+            height={h}
+            radius={9}
+            fill={C.chip}
+            stroke={C.edge}
+            lineWidth={1.4}
+            layout
+            direction={'column'}
+            gap={3}
+            alignItems={'center'}
+            justifyContent={'center'}
+            padding={[6, 4]}
+          >
+            <Txt
+              text={o.labels ? o.labels[i] : String(i)}
+              fontFamily={FONT.mono}
+              fontSize={17}
+              fill={C.dim}
+            />
+            <Txt
+              ref={vr}
+              text={''}
+              width={w - 8}
+              textWrap
+              fontFamily={FONT.mono}
+              fontSize={14}
+              fill={C.ink}
+            />
+          </Rect>
+        );
+      })}
+    </Rect>,
+  );
+  return {
+    group,
+    cell,
+    value,
+    center(i: number) {
+      return new Vector2(o.x + i * (w + gap), o.y);
+    },
+  };
+}
+
 /* ---------- diff 代码面板（R3 P4 增量：补丁前/后对照，行级红绿底） ----------
    结构与 makeCodePanel 同族（窗口滚动 + highlight 走读），行内容 = git show 原文逐字，
    kind: 'add' 绿底(+号) / 'del' 红底(−号) / 缺省 上下文行。 */

@@ -1,0 +1,9 @@
+Device Detach 
+When the device is detached from a Root Hub port, the PORTSC Current 
+Connection Status (CCS) bit shall be cleared to ‘0’ and the Connect Status 
+Change (CSC) bit shall be set to ‘1’. If a ‘0’ to ‘1’ transition of PSCEG (4.19.2), 
+the xHC shall report the change through a Port Status Change Event. After the 
+detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. 
+4.5 

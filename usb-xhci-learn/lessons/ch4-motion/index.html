@@ -132,7 +132,7 @@
 <div class="wrap">
   <header>
     <h1>xHCI 第 4 章视频课件<span class="tag">R4 四段式 · 2026-11-06</span></h1>
-    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化三节，每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m4） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 四幕分帧走读）。</p>
+    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节，每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m5） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 四幕分帧走读）。</p>
     <div class="meta">
       1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 持续违例</b>（三主片+三补丁片，全帧非抽样）·
       判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
@@ -141,6 +141,8 @@
       <a href="#s41">§4.1 命令操作</a>
       <a href="#s42">§4.2 主机控制器初始化</a>
       <a href="#s43">§4.3 USB 设备初始化</a>
+      <a href="#s44">§4.4 设备拔除</a>
+      <a href="#s45">§4.5 设备槽管理</a>
     </nav>
     <p class="meta">引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），比对见项目仓 <code>scripts/check_landing_code.py</code>。</p>
   </header>
@@ -516,7 +518,7 @@ Date:   Fri Jan 15 18:19:06 2021 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，§4.1 p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=3">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=5">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1088,7 +1090,7 @@ Date:   Fri Oct 9 18:16:14 2026 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">单行改动（<code>drivers/usb/host/xhci.c</code>，<code>xhci_reset</code>）：未 halted 中止分支 <code>return 0</code> → <code>return -EBUSY</code>。补丁前：中止复位被当成成功，调用方在错误状态下继续走初始化。补丁后：-EBUSY 把「主机忙、未停机」如实上抛，调用方走错误处理——<code>xhci_reset</code> 的所有失败出口（未 halted / handshake 超时）语义一致。与代码摘录（drafts/code-excerpts.json init 组 L229，同函数内 <code>xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us)</code>）对读：那条握手失败会返回超时错误，本补丁让“没进入复位”同样返回错误；凡依赖返回值判断复位成败的调用方（探测、休眠恢复、错误恢复路径）从此拿到一致语义，验收时可直接对 -EBUSY 分支验证未停机场景。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=4">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=6">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1557,7 +1559,656 @@ Date:   Thu Jul 17 10:31:07 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（§4.3.3 p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=5">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=7">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="s44">
+    <h2><span class="no">§4.4</span>设备拔除</h2>
+
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:4105-4142 · xhci_free_dev · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4105:4142"><div class="cl" data-line="4105"><span class="ln">4105</span><span class="cd">static void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)</span></div>
+<div class="cl" data-line="4106"><span class="ln">4106</span><span class="cd">{</span></div>
+<div class="cl" data-line="4107"><span class="ln">4107</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="4108"><span class="ln">4108</span><span class="cd">	struct xhci_virt_device *virt_dev;</span></div>
+<div class="cl" data-line="4109"><span class="ln">4109</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="4110"><span class="ln">4110</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="4111"><span class="ln">4111</span><span class="cd">	int i, ret;</span></div>
+<div class="cl" data-line="4112"><span class="ln">4112</span><span class="cd"></span></div>
+<div class="cl" data-line="4113"><span class="ln">4113</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="4114"><span class="ln">4114</span><span class="cd">	 * We called pm_runtime_get_noresume when the device was attached.</span></div>
+<div class="cl" data-line="4115"><span class="ln">4115</span><span class="cd">	 * Decrement the counter here to allow controller to runtime suspend</span></div>
+<div class="cl" data-line="4116"><span class="ln">4116</span><span class="cd">	 * if no devices remain.</span></div>
+<div class="cl" data-line="4117"><span class="ln">4117</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4118"><span class="ln">4118</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_RESET_ON_RESUME)</span></div>
+<div class="cl" data-line="4119"><span class="ln">4119</span><span class="cd">		pm_runtime_put_noidle(hcd-&gt;self.controller);</span></div>
+<div class="cl" data-line="4120"><span class="ln">4120</span><span class="cd"></span></div>
+<div class="cl" data-line="4121"><span class="ln">4121</span><span class="cd">	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);</span></div>
+<div class="cl" data-line="4122"><span class="ln">4122</span><span class="cd">	/* If the host is halted due to driver unload, we still need to free the</span></div>
+<div class="cl" data-line="4123"><span class="ln">4123</span><span class="cd">	 * device.</span></div>
+<div class="cl" data-line="4124"><span class="ln">4124</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4125"><span class="ln">4125</span><span class="cd">	if (ret &lt;= 0 &amp;&amp; ret != -ENODEV)</span></div>
+<div class="cl" data-line="4126"><span class="ln">4126</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="4127"><span class="ln">4127</span><span class="cd"></span></div>
+<div class="cl" data-line="4128"><span class="ln">4128</span><span class="cd">	virt_dev = xhci-&gt;devs[udev-&gt;slot_id];</span></div>
+<div class="cl" data-line="4129"><span class="ln">4129</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="4130"><span class="ln">4130</span><span class="cd">	trace_xhci_free_dev(slot_ctx);</span></div>
+<div class="cl" data-line="4131"><span class="ln">4131</span><span class="cd"></span></div>
+<div class="cl" data-line="4132"><span class="ln">4132</span><span class="cd">	/* Stop any wayward timer functions (which may grab the lock) */</span></div>
+<div class="cl" data-line="4133"><span class="ln">4133</span><span class="cd">	for (i = 0; i &lt; 31; i++)</span></div>
+<div class="cl" data-line="4134"><span class="ln">4134</span><span class="cd">		virt_dev-&gt;eps[i].ep_state &amp;= ~EP_STOP_CMD_PENDING;</span></div>
+<div class="cl" data-line="4135"><span class="ln">4135</span><span class="cd">	virt_dev-&gt;udev = NULL;</span></div>
+<div class="cl hot" data-line="4136" data-hot="det:0"><span class="ln">4136</span><span class="cd">	xhci_disable_slot(xhci, udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="4137"><span class="ln">4137</span><span class="cd"></span></div>
+<div class="cl" data-line="4138"><span class="ln">4138</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl hot" data-line="4139" data-hot="det:7"><span class="ln">4139</span><span class="cd">	xhci_free_virt_device(xhci, virt_dev, udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="4140"><span class="ln">4140</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4141"><span class="ln">4141</span><span class="cd"></span></div>
+<div class="cl" data-line="4142"><span class="ln">4142</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:4144-4186 · xhci_disable_slot · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4144:4186"><div class="cl" data-line="4144"><span class="ln">4144</span><span class="cd">int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)</span></div>
+<div class="cl" data-line="4145"><span class="ln">4145</span><span class="cd">{</span></div>
+<div class="cl" data-line="4146"><span class="ln">4146</span><span class="cd">	struct xhci_command *command;</span></div>
+<div class="cl" data-line="4147"><span class="ln">4147</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="4148"><span class="ln">4148</span><span class="cd">	u32 state;</span></div>
+<div class="cl" data-line="4149"><span class="ln">4149</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="4150"><span class="ln">4150</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4151" data-hot="det:1"><span class="ln">4151</span><span class="cd">	command = xhci_alloc_command(xhci, true, GFP_KERNEL);</span></div>
+<div class="cl" data-line="4152"><span class="ln">4152</span><span class="cd">	if (!command)</span></div>
+<div class="cl" data-line="4153"><span class="ln">4153</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="4154"><span class="ln">4154</span><span class="cd"></span></div>
+<div class="cl" data-line="4155"><span class="ln">4155</span><span class="cd">	xhci_debugfs_remove_slot(xhci, slot_id);</span></div>
+<div class="cl" data-line="4156"><span class="ln">4156</span><span class="cd"></span></div>
+<div class="cl" data-line="4157"><span class="ln">4157</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4158"><span class="ln">4158</span><span class="cd">	/* Don't disable the slot if the host controller is dead. */</span></div>
+<div class="cl" data-line="4159"><span class="ln">4159</span><span class="cd">	state = readl(&amp;xhci-&gt;op_regs-&gt;status);</span></div>
+<div class="cl" data-line="4160"><span class="ln">4160</span><span class="cd">	if (state == 0xffffffff || (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) ||</span></div>
+<div class="cl" data-line="4161"><span class="ln">4161</span><span class="cd">			(xhci-&gt;xhc_state &amp; XHCI_STATE_HALTED)) {</span></div>
+<div class="cl" data-line="4162"><span class="ln">4162</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl hot" data-line="4163" data-hot="det:5"><span class="ln">4163</span><span class="cd">		xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4164"><span class="ln">4164</span><span class="cd">		return -ENODEV;</span></div>
+<div class="cl" data-line="4165"><span class="ln">4165</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4166"><span class="ln">4166</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4167" data-hot="det:2"><span class="ln">4167</span><span class="cd">	ret = xhci_queue_slot_control(xhci, command, TRB_DISABLE_SLOT,</span></div>
+<div class="cl" data-line="4168"><span class="ln">4168</span><span class="cd">				slot_id);</span></div>
+<div class="cl" data-line="4169"><span class="ln">4169</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="4170"><span class="ln">4170</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4171"><span class="ln">4171</span><span class="cd">		xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4172"><span class="ln">4172</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="4173"><span class="ln">4173</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="4174" data-hot="det:3"><span class="ln">4174</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="4175"><span class="ln">4175</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4176"><span class="ln">4176</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4177" data-hot="det:4"><span class="ln">4177</span><span class="cd">	wait_for_completion(command-&gt;completion);</span></div>
+<div class="cl" data-line="4178"><span class="ln">4178</span><span class="cd"></span></div>
+<div class="cl" data-line="4179"><span class="ln">4179</span><span class="cd">	if (command-&gt;status != COMP_SUCCESS)</span></div>
+<div class="cl" data-line="4180"><span class="ln">4180</span><span class="cd">		xhci_warn(xhci, "Unsuccessful disable slot %u command, status %d\n",</span></div>
+<div class="cl" data-line="4181"><span class="ln">4181</span><span class="cd">			  slot_id, command-&gt;status);</span></div>
+<div class="cl" data-line="4182"><span class="ln">4182</span><span class="cd"></span></div>
+<div class="cl" data-line="4183"><span class="ln">4183</span><span class="cd">	xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4184"><span class="ln">4184</span><span class="cd"></span></div>
+<div class="cl" data-line="4185"><span class="ln">4185</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="4186"><span class="ln">4186</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:1614-1634 · xhci_handle_cmd_disable_slot · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1614:1634"><div class="cl" data-line="1614"><span class="ln">1614</span><span class="cd">static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id,</span></div>
+<div class="cl" data-line="1615"><span class="ln">1615</span><span class="cd">					u32 cmd_comp_code)</span></div>
+<div class="cl" data-line="1616"><span class="ln">1616</span><span class="cd">{</span></div>
+<div class="cl" data-line="1617"><span class="ln">1617</span><span class="cd">	struct xhci_virt_device *virt_dev;</span></div>
+<div class="cl" data-line="1618"><span class="ln">1618</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="1619"><span class="ln">1619</span><span class="cd"></span></div>
+<div class="cl" data-line="1620"><span class="ln">1620</span><span class="cd">	virt_dev = xhci-&gt;devs[slot_id];</span></div>
+<div class="cl" data-line="1621"><span class="ln">1621</span><span class="cd">	if (!virt_dev)</span></div>
+<div class="cl" data-line="1622"><span class="ln">1622</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1623"><span class="ln">1623</span><span class="cd"></span></div>
+<div class="cl" data-line="1624"><span class="ln">1624</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="1625"><span class="ln">1625</span><span class="cd">	trace_xhci_handle_cmd_disable_slot(slot_ctx);</span></div>
+<div class="cl" data-line="1626"><span class="ln">1626</span><span class="cd"></span></div>
+<div class="cl" data-line="1627"><span class="ln">1627</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK)</span></div>
+<div class="cl" data-line="1628"><span class="ln">1628</span><span class="cd">		/* Delete default control endpoint resources */</span></div>
+<div class="cl" data-line="1629"><span class="ln">1629</span><span class="cd">		xhci_free_device_endpoint_resources(xhci, virt_dev, true);</span></div>
+<div class="cl" data-line="1630"><span class="ln">1630</span><span class="cd">	if (cmd_comp_code == COMP_SUCCESS) {</span></div>
+<div class="cl hot" data-line="1631" data-hot="det:6"><span class="ln">1631</span><span class="cd">		xhci-&gt;dcbaa.ctx_array[slot_id] = 0;</span></div>
+<div class="cl" data-line="1632"><span class="ln">1632</span><span class="cd">		xhci-&gt;devs[slot_id] = NULL;</span></div>
+<div class="cl" data-line="1633"><span class="ln">1633</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1634"><span class="ln">1634</span><span class="cd">}</span></div></pre>
+    </div>
+
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">44-device-detach</span>
+        <span class="spec">拔除路径：PORTSC 变化事件 → xhci_free_dev → Disable Slot 命令 → 槽位回收</span>
+      </div>
+      <video controls preload="metadata" src="44-device-detach.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=3">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
+    </div>
+
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">单文件自包含 · 交互台分节锚定（#m1-#m5）</span>
+      </div>
+      <p class="int-note"><b>模块五 · 拔除与槽位管理台：</b>设备拔除（PORTSC CCS/CSC 变化 → Disable Slot 命令 → 槽位回收）与设备槽分配（Enable Slot 命令 → Slot ID → DCBAA 装载 → 槽状态机）双剧本走读——对应 §4.4 拔除链与 §4.5 建槽链</p>
+    </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit c1c8550e70401159184130a1afc6261db01fc0ce · 2026-03-05 · Zilin Guan（东南大学，LLVM 静态分析） · drivers/usb/host/xhci.c 1 文件 +2/-2 · hunks @@ -4146,7 +4146,7 @@ / @@ -4154,7 +4154,7 @@（xhci_disable_slot 两条错误路径）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:c1c8550e70401159184130a1afc6261db01fc0ce">commit c1c8550e70401159184130a1afc6261db01fc0ce
+Author: Zilin Guan &lt;zilin@seu.edu.cn&gt;
+Date:   Thu Mar 5 00:36:37 2026 +0200
+
+    usb: xhci: Fix memory leak in xhci_disable_slot()
+    
+    xhci_alloc_command() allocates a command structure and, when the
+    second argument is true, also allocates a completion structure.
+    Currently, the error handling path in xhci_disable_slot() only frees
+    the command structure using kfree(), causing the completion structure
+    to leak.
+    
+    Use xhci_free_command() instead of kfree(). xhci_free_command() correctly
+    frees both the command structure and the associated completion structure.
+    Since the command structure is allocated with zero-initialization,
+    command-&gt;in_ctx is NULL and will not be erroneously freed by
+    xhci_free_command().
+    
+    This bug was found using an experimental static analysis tool we are
+    developing. The tool is based on the LLVM framework and is specifically
+    designed to detect memory management issues. It is currently under
+    active development and not yet publicly available, but we plan to
+    open-source it after our research is published.
+    
+    The bug was originally detected on v6.13-rc1 using our static analysis
+    tool, and we have verified that the issue persists in the latest mainline
+    kernel.
+    
+    We performed build testing on x86_64 with allyesconfig using GCC=11.4.0.
+    Since triggering these error paths in xhci_disable_slot() requires specific
+    hardware conditions or abnormal state, we were unable to construct a test
+    case to reliably trigger these specific error paths at runtime.
+    
+    Fixes: 7faac1953ed1 ("xhci: avoid race between disable slot command and host runtime suspend")
+    CC: stable@vger.kernel.org
+    Signed-off-by: Zilin Guan &lt;zilin@seu.edu.cn&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://patch.msgid.link/20260304223639.3882398-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c</span>
+<span class="d-meta">index c36ab323d68e..ef6d8662adec 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.c</span>
+<span class="d-hunk">@@ -4146,7 +4146,7 @@ int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)</span>
+<span class="d-ctx"> 	if (state == 0xffffffff || (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) ||</span>
+<span class="d-ctx"> 			(xhci-&gt;xhc_state &amp; XHCI_STATE_HALTED)) {</span>
+<span class="d-ctx"> 		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span>
+<span class="d-del">-		kfree(command);</span>
+<span class="d-add">+		xhci_free_command(xhci, command);</span>
+<span class="d-ctx"> 		return -ENODEV;</span>
+<span class="d-ctx"> 	}</span>
+<span class="d-ctx"> </span>
+<span class="d-hunk">@@ -4154,7 +4154,7 @@ int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)</span>
+<span class="d-ctx"> 				slot_id);</span>
+<span class="d-ctx"> 	if (ret) {</span>
+<span class="d-ctx"> 		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span>
+<span class="d-del">-		kfree(command);</span>
+<span class="d-add">+		xhci_free_command(xhci, command);</span>
+<span class="d-ctx"> 		return ret;</span>
+<span class="d-ctx"> 	}</span>
+<span class="d-ctx"> 	xhci_ring_cmd_db(xhci);</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2026 年 3 月，东南大学 Zilin Guan 以基于 LLVM 框架的实验性静态分析工具发现并提交（工具随论文研发中，bug 最初在 v6.13-rc1 检出、主线仍在）；x86_64 allyesconfig、GCC 11.4.0 构建验证。这两条错误路径要求 host 已死或命令入环失败等异常状态才走到，难以构造运行时用例稳定触发，属「静态分析发现 + 构建验证」类交付。对应 §4.4 拔除链的下半程：设备拔除（PORTSC CCS 清 0 / CSC 置 1，p81）→ 端口变化事件 → usbcore 调 <code>xhci_free_dev</code> → <code>xhci_disable_slot</code>——控制器异常时走的正是被修的两条错误返回路径。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：<code>xhci_disable_slot()</code> 的两条错误路径（host 控制器已死 / Disable Slot 命令入环失败）各泄漏一个 completion 结构。机制：L4151 的 <code>xhci_alloc_command(xhci, true, GFP_KERNEL)</code> 第二参为 true 时，除命令结构外还分配 completion 结构；错误路径只用 <code>kfree(command)</code> 释放命令结构本身，completion 结构泄漏。规范背景（§4.4 p81）：检出拔除后软件须对受影响槽发 Disable Slot Command——若控制器恰在此刻死亡，命令发出前就返回，每次异常拔除都留下一个孤儿 completion。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">把两条错误路径的 <code>kfree(command)</code> 改为 <code>xhci_free_command(xhci, command)</code>（+2/-2）：后者同时释放命令结构与关联的 completion 结构；命令结构零初始化使 <code>command-&gt;in_ctx</code> 为 NULL，不会被误释放。补丁前：kfree 只放一半，completion 泄漏；补丁后：错误路径与成功路径（L4183）释放形态统一，任何退出路径都不留孤儿。与贴码对读：det:1 分配行（true=带 completion）、det:5 热行即被改的错误路径之一——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；§4.4 拔除剧本的「异常退出」分支从此与正常分支同构。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=8">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="s45">
+    <h2><span class="no">§4.5</span>设备槽管理</h2>
+
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:1455-1465 · xhci_get_endpoint_index · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:1455:1465"><div class="cl" data-line="1455"><span class="ln">1455</span><span class="cd">unsigned int xhci_get_endpoint_index(struct usb_endpoint_descriptor *desc)</span></div>
+<div class="cl" data-line="1456"><span class="ln">1456</span><span class="cd">{</span></div>
+<div class="cl" data-line="1457"><span class="ln">1457</span><span class="cd">	unsigned int index;</span></div>
+<div class="cl" data-line="1458"><span class="ln">1458</span><span class="cd">	if (usb_endpoint_xfer_control(desc))</span></div>
+<div class="cl hot" data-line="1459" data-hot="slot:0"><span class="ln">1459</span><span class="cd">		index = (unsigned int) (usb_endpoint_num(desc)*2);</span></div>
+<div class="cl" data-line="1460"><span class="ln">1460</span><span class="cd">	else</span></div>
+<div class="cl hot" data-line="1461" data-hot="slot:1"><span class="ln">1461</span><span class="cd">		index = (unsigned int) (usb_endpoint_num(desc)*2) +</span></div>
+<div class="cl" data-line="1462"><span class="ln">1462</span><span class="cd">			(usb_endpoint_dir_in(desc) ? 1 : 0) - 1;</span></div>
+<div class="cl" data-line="1463"><span class="ln">1463</span><span class="cd">	return index;</span></div>
+<div class="cl" data-line="1464"><span class="ln">1464</span><span class="cd">}</span></div>
+<div class="cl" data-line="1465"><span class="ln">1465</span><span class="cd">EXPORT_SYMBOL_GPL(xhci_get_endpoint_index);</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:4225-4306 · xhci_alloc_dev · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4225:4306"><div class="cl" data-line="4225"><span class="ln">4225</span><span class="cd">int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)</span></div>
+<div class="cl" data-line="4226"><span class="ln">4226</span><span class="cd">{</span></div>
+<div class="cl" data-line="4227"><span class="ln">4227</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="4228"><span class="ln">4228</span><span class="cd">	struct xhci_virt_device *vdev;</span></div>
+<div class="cl" data-line="4229"><span class="ln">4229</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="4230"><span class="ln">4230</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="4231"><span class="ln">4231</span><span class="cd">	int ret, slot_id;</span></div>
+<div class="cl" data-line="4232"><span class="ln">4232</span><span class="cd">	struct xhci_command *command;</span></div>
+<div class="cl" data-line="4233"><span class="ln">4233</span><span class="cd"></span></div>
+<div class="cl" data-line="4234"><span class="ln">4234</span><span class="cd">	command = xhci_alloc_command(xhci, true, GFP_KERNEL);</span></div>
+<div class="cl" data-line="4235"><span class="ln">4235</span><span class="cd">	if (!command)</span></div>
+<div class="cl" data-line="4236"><span class="ln">4236</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="4237"><span class="ln">4237</span><span class="cd"></span></div>
+<div class="cl" data-line="4238"><span class="ln">4238</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl hot" data-line="4239" data-hot="slot:2"><span class="ln">4239</span><span class="cd">	ret = xhci_queue_slot_control(xhci, command, TRB_ENABLE_SLOT, 0);</span></div>
+<div class="cl" data-line="4240"><span class="ln">4240</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="4241"><span class="ln">4241</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4242"><span class="ln">4242</span><span class="cd">		xhci_dbg(xhci, "FIXME: allocate a command ring segment\n");</span></div>
+<div class="cl" data-line="4243"><span class="ln">4243</span><span class="cd">		xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4244"><span class="ln">4244</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="4245"><span class="ln">4245</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="4246" data-hot="slot:3"><span class="ln">4246</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="4247"><span class="ln">4247</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4248"><span class="ln">4248</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4249" data-hot="slot:4"><span class="ln">4249</span><span class="cd">	wait_for_completion(command-&gt;completion);</span></div>
+<div class="cl hot" data-line="4250" data-hot="slot:5"><span class="ln">4250</span><span class="cd">	slot_id = command-&gt;slot_id;</span></div>
+<div class="cl" data-line="4251"><span class="ln">4251</span><span class="cd"></span></div>
+<div class="cl" data-line="4252"><span class="ln">4252</span><span class="cd">	if (!slot_id || command-&gt;status != COMP_SUCCESS) {</span></div>
+<div class="cl" data-line="4253"><span class="ln">4253</span><span class="cd">		xhci_err(xhci, "Error while assigning device slot ID: %s\n",</span></div>
+<div class="cl" data-line="4254"><span class="ln">4254</span><span class="cd">			 xhci_trb_comp_code_string(command-&gt;status));</span></div>
+<div class="cl" data-line="4255"><span class="ln">4255</span><span class="cd">		xhci_err(xhci, "Max number of devices this xHCI host supports is %u.\n",</span></div>
+<div class="cl" data-line="4256"><span class="ln">4256</span><span class="cd">			 xhci-&gt;max_slots);</span></div>
+<div class="cl" data-line="4257"><span class="ln">4257</span><span class="cd">		xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4258"><span class="ln">4258</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="4259"><span class="ln">4259</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4260"><span class="ln">4260</span><span class="cd"></span></div>
+<div class="cl" data-line="4261"><span class="ln">4261</span><span class="cd">	xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4262"><span class="ln">4262</span><span class="cd"></span></div>
+<div class="cl" data-line="4263"><span class="ln">4263</span><span class="cd">	if ((xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK)) {</span></div>
+<div class="cl" data-line="4264"><span class="ln">4264</span><span class="cd">		spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4265"><span class="ln">4265</span><span class="cd">		ret = xhci_reserve_host_control_ep_resources(xhci);</span></div>
+<div class="cl" data-line="4266"><span class="ln">4266</span><span class="cd">		if (ret) {</span></div>
+<div class="cl" data-line="4267"><span class="ln">4267</span><span class="cd">			spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4268"><span class="ln">4268</span><span class="cd">			xhci_warn(xhci, "Not enough host resources, "</span></div>
+<div class="cl" data-line="4269"><span class="ln">4269</span><span class="cd">					"active endpoint contexts = %u\n",</span></div>
+<div class="cl" data-line="4270"><span class="ln">4270</span><span class="cd">					xhci-&gt;num_active_eps);</span></div>
+<div class="cl" data-line="4271"><span class="ln">4271</span><span class="cd">			goto disable_slot;</span></div>
+<div class="cl" data-line="4272"><span class="ln">4272</span><span class="cd">		}</span></div>
+<div class="cl" data-line="4273"><span class="ln">4273</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4274"><span class="ln">4274</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4275"><span class="ln">4275</span><span class="cd">	/* Use GFP_NOIO, since this function can be called from</span></div>
+<div class="cl" data-line="4276"><span class="ln">4276</span><span class="cd">	 * xhci_discover_or_reset_device(), which may be called as part of</span></div>
+<div class="cl" data-line="4277"><span class="ln">4277</span><span class="cd">	 * mass storage driver error handling.</span></div>
+<div class="cl" data-line="4278"><span class="ln">4278</span><span class="cd">	 */</span></div>
+<div class="cl hot" data-line="4279" data-hot="slot:6"><span class="ln">4279</span><span class="cd">	if (!xhci_alloc_virt_device(xhci, slot_id, udev, GFP_NOIO)) {</span></div>
+<div class="cl" data-line="4280"><span class="ln">4280</span><span class="cd">		xhci_warn(xhci, "Could not allocate xHCI USB device data structures\n");</span></div>
+<div class="cl" data-line="4281"><span class="ln">4281</span><span class="cd">		goto disable_slot;</span></div>
+<div class="cl" data-line="4282"><span class="ln">4282</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4283"><span class="ln">4283</span><span class="cd">	vdev = xhci-&gt;devs[slot_id];</span></div>
+<div class="cl" data-line="4284"><span class="ln">4284</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, vdev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="4285"><span class="ln">4285</span><span class="cd">	trace_xhci_alloc_dev(slot_ctx);</span></div>
+<div class="cl" data-line="4286"><span class="ln">4286</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4287" data-hot="slot:7"><span class="ln">4287</span><span class="cd">	udev-&gt;slot_id = slot_id;</span></div>
+<div class="cl" data-line="4288"><span class="ln">4288</span><span class="cd"></span></div>
+<div class="cl" data-line="4289"><span class="ln">4289</span><span class="cd">	xhci_debugfs_create_slot(xhci, slot_id);</span></div>
+<div class="cl" data-line="4290"><span class="ln">4290</span><span class="cd"></span></div>
+<div class="cl" data-line="4291"><span class="ln">4291</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="4292"><span class="ln">4292</span><span class="cd">	 * If resetting upon resume, we can't put the controller into runtime</span></div>
+<div class="cl" data-line="4293"><span class="ln">4293</span><span class="cd">	 * suspend if there is a device attached.</span></div>
+<div class="cl" data-line="4294"><span class="ln">4294</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4295"><span class="ln">4295</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_RESET_ON_RESUME)</span></div>
+<div class="cl" data-line="4296"><span class="ln">4296</span><span class="cd">		pm_runtime_get_noresume(hcd-&gt;self.controller);</span></div>
+<div class="cl" data-line="4297"><span class="ln">4297</span><span class="cd"></span></div>
+<div class="cl" data-line="4298"><span class="ln">4298</span><span class="cd">	/* Is this a LS or FS device under a HS hub? */</span></div>
+<div class="cl" data-line="4299"><span class="ln">4299</span><span class="cd">	/* Hub or peripheral? */</span></div>
+<div class="cl" data-line="4300"><span class="ln">4300</span><span class="cd">	return 1;</span></div>
+<div class="cl" data-line="4301"><span class="ln">4301</span><span class="cd"></span></div>
+<div class="cl" data-line="4302"><span class="ln">4302</span><span class="cd">disable_slot:</span></div>
+<div class="cl" data-line="4303"><span class="ln">4303</span><span class="cd">	xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="4304"><span class="ln">4304</span><span class="cd"></span></div>
+<div class="cl" data-line="4305"><span class="ln">4305</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="4306"><span class="ln">4306</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-mem.c:969-1039 · xhci_alloc_virt_device · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:969:1039"><div class="cl" data-line="969"><span class="ln">969</span><span class="cd">int xhci_alloc_virt_device(struct xhci_hcd *xhci, int slot_id,</span></div>
+<div class="cl" data-line="970"><span class="ln">970</span><span class="cd">		struct usb_device *udev, gfp_t flags)</span></div>
+<div class="cl" data-line="971"><span class="ln">971</span><span class="cd">{</span></div>
+<div class="cl" data-line="972"><span class="ln">972</span><span class="cd">	struct xhci_virt_device *dev;</span></div>
+<div class="cl" data-line="973"><span class="ln">973</span><span class="cd">	int i;</span></div>
+<div class="cl" data-line="974"><span class="ln">974</span><span class="cd"></span></div>
+<div class="cl" data-line="975"><span class="ln">975</span><span class="cd">	/* Slot ID 0 is reserved */</span></div>
+<div class="cl hot" data-line="976" data-hot="slot:8"><span class="ln">976</span><span class="cd">	if (slot_id == 0 || xhci-&gt;devs[slot_id]) {</span></div>
+<div class="cl" data-line="977"><span class="ln">977</span><span class="cd">		xhci_warn(xhci, "Bad Slot ID %d\n", slot_id);</span></div>
+<div class="cl" data-line="978"><span class="ln">978</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="979"><span class="ln">979</span><span class="cd">	}</span></div>
+<div class="cl" data-line="980"><span class="ln">980</span><span class="cd"></span></div>
+<div class="cl" data-line="981"><span class="ln">981</span><span class="cd">	dev = kzalloc_obj(*dev, flags);</span></div>
+<div class="cl" data-line="982"><span class="ln">982</span><span class="cd">	if (!dev)</span></div>
+<div class="cl" data-line="983"><span class="ln">983</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="984"><span class="ln">984</span><span class="cd"></span></div>
+<div class="cl" data-line="985"><span class="ln">985</span><span class="cd">	dev-&gt;slot_id = slot_id;</span></div>
+<div class="cl" data-line="986"><span class="ln">986</span><span class="cd"></span></div>
+<div class="cl" data-line="987"><span class="ln">987</span><span class="cd">	/* Allocate the (output) device context that will be used in the HC. */</span></div>
+<div class="cl" data-line="988"><span class="ln">988</span><span class="cd">	dev-&gt;out_ctx = xhci_alloc_container_ctx(xhci, XHCI_CTX_TYPE_DEVICE, flags);</span></div>
+<div class="cl" data-line="989"><span class="ln">989</span><span class="cd">	if (!dev-&gt;out_ctx)</span></div>
+<div class="cl" data-line="990"><span class="ln">990</span><span class="cd">		goto fail;</span></div>
+<div class="cl" data-line="991"><span class="ln">991</span><span class="cd"></span></div>
+<div class="cl" data-line="992"><span class="ln">992</span><span class="cd">	xhci_dbg(xhci, "Slot %d output ctx = %pad (dma)\n", slot_id, &amp;dev-&gt;out_ctx-&gt;dma);</span></div>
+<div class="cl" data-line="993"><span class="ln">993</span><span class="cd"></span></div>
+<div class="cl" data-line="994"><span class="ln">994</span><span class="cd">	/* Allocate the (input) device context for address device command */</span></div>
+<div class="cl" data-line="995"><span class="ln">995</span><span class="cd">	dev-&gt;in_ctx = xhci_alloc_container_ctx(xhci, XHCI_CTX_TYPE_INPUT, flags);</span></div>
+<div class="cl" data-line="996"><span class="ln">996</span><span class="cd">	if (!dev-&gt;in_ctx)</span></div>
+<div class="cl" data-line="997"><span class="ln">997</span><span class="cd">		goto fail;</span></div>
+<div class="cl" data-line="998"><span class="ln">998</span><span class="cd"></span></div>
+<div class="cl" data-line="999"><span class="ln">999</span><span class="cd">	xhci_dbg(xhci, "Slot %d input ctx = %pad (dma)\n", slot_id, &amp;dev-&gt;in_ctx-&gt;dma);</span></div>
+<div class="cl" data-line="1000"><span class="ln">1000</span><span class="cd"></span></div>
+<div class="cl" data-line="1001"><span class="ln">1001</span><span class="cd">	/* Initialize the cancellation and bandwidth list for each ep */</span></div>
+<div class="cl" data-line="1002"><span class="ln">1002</span><span class="cd">	for (i = 0; i &lt; 31; i++) {</span></div>
+<div class="cl" data-line="1003"><span class="ln">1003</span><span class="cd">		dev-&gt;eps[i].ep_index = i;</span></div>
+<div class="cl" data-line="1004"><span class="ln">1004</span><span class="cd">		dev-&gt;eps[i].vdev = dev;</span></div>
+<div class="cl" data-line="1005"><span class="ln">1005</span><span class="cd">		INIT_LIST_HEAD(&amp;dev-&gt;eps[i].cancelled_td_list);</span></div>
+<div class="cl" data-line="1006"><span class="ln">1006</span><span class="cd">		INIT_LIST_HEAD(&amp;dev-&gt;eps[i].bw_endpoint_list);</span></div>
+<div class="cl" data-line="1007"><span class="ln">1007</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1008"><span class="ln">1008</span><span class="cd"></span></div>
+<div class="cl" data-line="1009"><span class="ln">1009</span><span class="cd">	/* Allocate endpoint 0 ring */</span></div>
+<div class="cl" data-line="1010"><span class="ln">1010</span><span class="cd">	dev-&gt;eps[0].ring = xhci_ring_alloc(xhci, 2, TYPE_CTRL, 0, flags);</span></div>
+<div class="cl" data-line="1011"><span class="ln">1011</span><span class="cd">	if (!dev-&gt;eps[0].ring)</span></div>
+<div class="cl" data-line="1012"><span class="ln">1012</span><span class="cd">		goto fail;</span></div>
+<div class="cl" data-line="1013"><span class="ln">1013</span><span class="cd"></span></div>
+<div class="cl" data-line="1014"><span class="ln">1014</span><span class="cd">	xhci_ring_init(xhci, dev-&gt;eps[0].ring);</span></div>
+<div class="cl" data-line="1015"><span class="ln">1015</span><span class="cd"></span></div>
+<div class="cl" data-line="1016"><span class="ln">1016</span><span class="cd">	dev-&gt;udev = udev;</span></div>
+<div class="cl" data-line="1017"><span class="ln">1017</span><span class="cd"></span></div>
+<div class="cl" data-line="1018"><span class="ln">1018</span><span class="cd">	/* Point to output device context in dcbaa. */</span></div>
+<div class="cl hot" data-line="1019" data-hot="slot:9"><span class="ln">1019</span><span class="cd">	xhci-&gt;dcbaa.ctx_array[slot_id] = cpu_to_le64(dev-&gt;out_ctx-&gt;dma);</span></div>
+<div class="cl" data-line="1020"><span class="ln">1020</span><span class="cd">	xhci_dbg(xhci, "Set slot id %d dcbaa entry %p to 0x%llx\n",</span></div>
+<div class="cl" data-line="1021"><span class="ln">1021</span><span class="cd">		 slot_id,</span></div>
+<div class="cl" data-line="1022"><span class="ln">1022</span><span class="cd">		 &amp;xhci-&gt;dcbaa.ctx_array[slot_id],</span></div>
+<div class="cl" data-line="1023"><span class="ln">1023</span><span class="cd">		 le64_to_cpu(xhci-&gt;dcbaa.ctx_array[slot_id]));</span></div>
+<div class="cl" data-line="1024"><span class="ln">1024</span><span class="cd"></span></div>
+<div class="cl" data-line="1025"><span class="ln">1025</span><span class="cd">	trace_xhci_alloc_virt_device(dev);</span></div>
+<div class="cl" data-line="1026"><span class="ln">1026</span><span class="cd"></span></div>
+<div class="cl hot" data-line="1027" data-hot="slot:10"><span class="ln">1027</span><span class="cd">	xhci-&gt;devs[slot_id] = dev;</span></div>
+<div class="cl" data-line="1028"><span class="ln">1028</span><span class="cd"></span></div>
+<div class="cl" data-line="1029"><span class="ln">1029</span><span class="cd">	return 1;</span></div>
+<div class="cl" data-line="1030"><span class="ln">1030</span><span class="cd">fail:</span></div>
+<div class="cl" data-line="1031"><span class="ln">1031</span><span class="cd"></span></div>
+<div class="cl" data-line="1032"><span class="ln">1032</span><span class="cd">	if (dev-&gt;in_ctx)</span></div>
+<div class="cl" data-line="1033"><span class="ln">1033</span><span class="cd">		xhci_free_container_ctx(xhci, dev-&gt;in_ctx);</span></div>
+<div class="cl" data-line="1034"><span class="ln">1034</span><span class="cd">	if (dev-&gt;out_ctx)</span></div>
+<div class="cl" data-line="1035"><span class="ln">1035</span><span class="cd">		xhci_free_container_ctx(xhci, dev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="1036"><span class="ln">1036</span><span class="cd">	kfree(dev);</span></div>
+<div class="cl" data-line="1037"><span class="ln">1037</span><span class="cd"></span></div>
+<div class="cl" data-line="1038"><span class="ln">1038</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="1039"><span class="ln">1039</span><span class="cd">}</span></div></pre>
+    </div>
+
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">45-device-slot-management</span>
+        <span class="spec">建槽路径：Enable Slot 命令 → Slot ID 分配 → 虚拟设备 + DCBAA 装载 → 槽状态机</span>
+      </div>
+      <video controls preload="metadata" src="45-device-slot-management.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=4">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
+    </div>
+
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">单文件自包含 · 交互台分节锚定（#m1-#m5）</span>
+      </div>
+      <p class="int-note"><b>模块五 · 拔除与槽位管理台：</b>设备拔除（PORTSC CCS/CSC 变化 → Disable Slot 命令 → 槽位回收）与设备槽分配（Enable Slot 命令 → Slot ID → DCBAA 装载 → 槽状态机）双剧本走读——对应 §4.4 拔除链与 §4.5 建槽链</p>
+    </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit 2eb03376151bb8585caa23ed2673583107bb5193 · 2025-08-19 · Weitao Wang（Zhaoxin 兆芯） · 5 文件 +35/-23（xhci-ring.c / xhci.c / xhci-mem.c / xhci-hub.c / xhci.h） · 核心 hunks @@ -1592,7 +1592,8 @@（xhci_handle_cmd_disable_slot）+ @@ -1856,7 +1861,7 @@（TRB_DISABLE_SLOT case）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:2eb03376151bb8585caa23ed2673583107bb5193">commit 2eb03376151bb8585caa23ed2673583107bb5193
+Author: Weitao Wang &lt;WeitaoWang-oc@zhaoxin.com&gt;
+Date:   Tue Aug 19 15:58:43 2025 +0300
+
+    usb: xhci: Fix slot_id resource race conflict
+    
+    xHC controller may immediately reuse a slot_id after it's disabled,
+    giving it to a new enumerating device before the xhci driver freed
+    all resources related to the disabled device.
+    
+    In such a scenario, device-A with slot_id equal to 1 is disconnecting
+    while device-B is enumerating, device-B will fail to enumerate in the
+    follow sequence.
+    
+    1.[device-A] send disable slot command
+    2.[device-B] send enable slot command
+    3.[device-A] disable slot command completed and wakeup waiting thread
+    4.[device-B] enable slot command completed with slot_id equal to 1 and
+                 wakeup waiting thread
+    5.[device-B] driver checks that slot_id is still in use (by device-A) in
+                 xhci_alloc_virt_device, and fail to enumerate due to this
+                 conflict
+    6.[device-A] xhci-&gt;devs[slot_id] set to NULL in xhci_free_virt_device
+    
+    To fix driver's slot_id resources conflict, clear xhci-&gt;devs[slot_id] and
+    xhci-&gt;dcbba-&gt;dev_context_ptrs[slot_id] pointers in the interrupt context
+    when disable slot command completes successfully. Simultaneously, adjust
+    function xhci_free_virt_device to accurately handle device release.
+    
+    [minor smatch warning and commit message fix -Mathias]
+    
+    Cc: stable@vger.kernel.org
+    Fixes: 7faac1953ed1 ("xhci: avoid race between disable slot command and host runtime suspend")
+    Signed-off-by: Weitao Wang &lt;WeitaoWang-oc@zhaoxin.com&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20250819125844.2042452-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c</span>
+<span class="d-meta">index 92bb84f8132a..b3a59ce1b3f4 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-hub.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-hub.c</span>
+<span class="d-hunk">@@ -704,8 +704,7 @@ static int xhci_enter_test_mode(struct xhci_hcd *xhci,</span>
+<span class="d-ctx"> 		if (!xhci-&gt;devs[i])</span>
+<span class="d-ctx"> 			continue;</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-		retval = xhci_disable_slot(xhci, i);</span>
+<span class="d-del">-		xhci_free_virt_device(xhci, i);</span>
+<span class="d-add">+		retval = xhci_disable_and_free_slot(xhci, i);</span>
+<span class="d-ctx"> 		if (retval)</span>
+<span class="d-ctx"> 			xhci_err(xhci, "Failed to disable slot %d, %d. Enter test mode anyway\n",</span>
+<span class="d-ctx"> 				 i, retval);</span>
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c</span>
+<span class="d-meta">index 07289333a1e8..81eaad87a3d9 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-mem.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-mem.c</span>
+<span class="d-hunk">@@ -865,21 +865,20 @@ int xhci_alloc_tt_info(struct xhci_hcd *xhci,</span>
+<span class="d-ctx">  * will be manipulated by the configure endpoint, allocate device, or update</span>
+<span class="d-ctx">  * hub functions while this function is removing the TT entries from the list.</span>
+<span class="d-ctx">  */</span>
+<span class="d-del">-void xhci_free_virt_device(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-add">+void xhci_free_virt_device(struct xhci_hcd *xhci, struct xhci_virt_device *dev,</span>
+<span class="d-add">+		int slot_id)</span>
+<span class="d-ctx"> {</span>
+<span class="d-del">-	struct xhci_virt_device *dev;</span>
+<span class="d-ctx"> 	int i;</span>
+<span class="d-ctx"> 	int old_active_eps = 0;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	/* Slot ID 0 is reserved */</span>
+<span class="d-del">-	if (slot_id == 0 || !xhci-&gt;devs[slot_id])</span>
+<span class="d-add">+	if (slot_id == 0 || !dev)</span>
+<span class="d-ctx"> 		return;</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-	dev = xhci-&gt;devs[slot_id];</span>
+<span class="d-del">-</span>
+<span class="d-del">-	xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id] = 0;</span>
+<span class="d-del">-	if (!dev)</span>
+<span class="d-del">-		return;</span>
+<span class="d-add">+	/* If device ctx array still points to _this_ device, clear it */</span>
+<span class="d-add">+	if (dev-&gt;out_ctx &amp;&amp;</span>
+<span class="d-add">+	    xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id] == cpu_to_le64(dev-&gt;out_ctx-&gt;dma))</span>
+<span class="d-add">+		xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id] = 0;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	trace_xhci_free_virt_device(dev);</span>
+<span class="d-ctx"> </span>
+<span class="d-hunk">@@ -920,8 +919,9 @@ void xhci_free_virt_device(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-ctx"> 		dev-&gt;udev-&gt;slot_id = 0;</span>
+<span class="d-ctx"> 	if (dev-&gt;rhub_port &amp;&amp; dev-&gt;rhub_port-&gt;slot_id == slot_id)</span>
+<span class="d-ctx"> 		dev-&gt;rhub_port-&gt;slot_id = 0;</span>
+<span class="d-del">-	kfree(xhci-&gt;devs[slot_id]);</span>
+<span class="d-del">-	xhci-&gt;devs[slot_id] = NULL;</span>
+<span class="d-add">+	if (xhci-&gt;devs[slot_id] == dev)</span>
+<span class="d-add">+		xhci-&gt;devs[slot_id] = NULL;</span>
+<span class="d-add">+	kfree(dev);</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> /*</span>
+<span class="d-hunk">@@ -962,7 +962,7 @@ static void xhci_free_virt_devices_depth_first(struct xhci_hcd *xhci, int slot_i</span>
+<span class="d-ctx"> out:</span>
+<span class="d-ctx"> 	/* we are now at a leaf device */</span>
+<span class="d-ctx"> 	xhci_debugfs_remove_slot(xhci, slot_id);</span>
+<span class="d-del">-	xhci_free_virt_device(xhci, slot_id);</span>
+<span class="d-add">+	xhci_free_virt_device(xhci, vdev, slot_id);</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> int xhci_alloc_virt_device(struct xhci_hcd *xhci, int slot_id,</span>
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index ecd757d482c5..4f8f5aab109d 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -1592,7 +1592,8 @@ static void xhci_handle_cmd_enable_slot(int slot_id, struct xhci_command *comman</span>
+<span class="d-ctx"> 		command-&gt;slot_id = 0;</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-add">+static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id,</span>
+<span class="d-add">+					u32 cmd_comp_code)</span>
+<span class="d-ctx"> {</span>
+<span class="d-ctx"> 	struct xhci_virt_device *virt_dev;</span>
+<span class="d-ctx"> 	struct xhci_slot_ctx *slot_ctx;</span>
+<span class="d-hunk">@@ -1607,6 +1608,10 @@ static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-ctx"> 	if (xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK)</span>
+<span class="d-ctx"> 		/* Delete default control endpoint resources */</span>
+<span class="d-ctx"> 		xhci_free_device_endpoint_resources(xhci, virt_dev, true);</span>
+<span class="d-add">+	if (cmd_comp_code == COMP_SUCCESS) {</span>
+<span class="d-add">+		xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id] = 0;</span>
+<span class="d-add">+		xhci-&gt;devs[slot_id] = NULL;</span>
+<span class="d-add">+	}</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> static void xhci_handle_cmd_config_ep(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-hunk">@@ -1856,7 +1861,7 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,</span>
+<span class="d-ctx"> 		xhci_handle_cmd_enable_slot(slot_id, cmd, cmd_comp_code);</span>
+<span class="d-ctx"> 		break;</span>
+<span class="d-ctx"> 	case TRB_DISABLE_SLOT:</span>
+<span class="d-del">-		xhci_handle_cmd_disable_slot(xhci, slot_id);</span>
+<span class="d-add">+		xhci_handle_cmd_disable_slot(xhci, slot_id, cmd_comp_code);</span>
+<span class="d-ctx"> 		break;</span>
+<span class="d-ctx"> 	case TRB_CONFIG_EP:</span>
+<span class="d-ctx"> 		if (!cmd-&gt;completion)</span>
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c</span>
+<span class="d-meta">index 47151ca527bf..0e03691f03bf 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.c</span>
+<span class="d-hunk">@@ -3932,8 +3932,7 @@ static int xhci_discover_or_reset_device(struct usb_hcd *hcd,</span>
+<span class="d-ctx"> 		 * Obtaining a new device slot to inform the xHCI host that</span>
+<span class="d-ctx"> 		 * the USB device has been reset.</span>
+<span class="d-ctx"> 		 */</span>
+<span class="d-del">-		ret = xhci_disable_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-del">-		xhci_free_virt_device(xhci, udev-&gt;slot_id);</span>
+<span class="d-add">+		ret = xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-ctx"> 		if (!ret) {</span>
+<span class="d-ctx"> 			ret = xhci_alloc_dev(hcd, udev);</span>
+<span class="d-ctx"> 			if (ret == 1)</span>
+<span class="d-hunk">@@ -4090,7 +4089,7 @@ static void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)</span>
+<span class="d-ctx"> 	xhci_disable_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span>
+<span class="d-del">-	xhci_free_virt_device(xhci, udev-&gt;slot_id);</span>
+<span class="d-add">+	xhci_free_virt_device(xhci, virt_dev, udev-&gt;slot_id);</span>
+<span class="d-ctx"> 	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> }</span>
+<span class="d-hunk">@@ -4139,6 +4138,16 @@ int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)</span>
+<span class="d-ctx"> 	return 0;</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-add">+int xhci_disable_and_free_slot(struct xhci_hcd *xhci, u32 slot_id)</span>
+<span class="d-add">+{</span>
+<span class="d-add">+	struct xhci_virt_device *vdev = xhci-&gt;devs[slot_id];</span>
+<span class="d-add">+	int ret;</span>
+<span class="d-add">+</span>
+<span class="d-add">+	ret = xhci_disable_slot(xhci, slot_id);</span>
+<span class="d-add">+	xhci_free_virt_device(xhci, vdev, slot_id);</span>
+<span class="d-add">+	return ret;</span>
+<span class="d-add">+}</span>
+<span class="d-add">+</span>
+<span class="d-ctx"> /*</span>
+<span class="d-ctx">  * Checks if we have enough host controller resources for the default control</span>
+<span class="d-ctx">  * endpoint.</span>
+<span class="d-hunk">@@ -4245,8 +4254,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)</span>
+<span class="d-ctx"> 	return 1;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> disable_slot:</span>
+<span class="d-del">-	xhci_disable_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-del">-	xhci_free_virt_device(xhci, udev-&gt;slot_id);</span>
+<span class="d-add">+	xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	return 0;</span>
+<span class="d-ctx"> }</span>
+<span class="d-hunk">@@ -4382,8 +4390,7 @@ static int xhci_setup_device(struct usb_hcd *hcd, struct usb_device *udev,</span>
+<span class="d-ctx"> 		dev_warn(&amp;udev-&gt;dev, "Device not responding to setup %s.\n", act);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 		mutex_unlock(&amp;xhci-&gt;mutex);</span>
+<span class="d-del">-		ret = xhci_disable_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-del">-		xhci_free_virt_device(xhci, udev-&gt;slot_id);</span>
+<span class="d-add">+		ret = xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-ctx"> 		if (!ret) {</span>
+<span class="d-ctx"> 			if (xhci_alloc_dev(hcd, udev) == 1)</span>
+<span class="d-ctx"> 				xhci_setup_addressable_virt_dev(xhci, udev);</span>
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h</span>
+<span class="d-meta">index a20f4e7cd43a..85d5b964bf1e 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.h</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.h</span>
+<span class="d-hunk">@@ -1791,7 +1791,7 @@ void xhci_dbg_trace(struct xhci_hcd *xhci, void (*trace)(struct va_format *),</span>
+<span class="d-ctx"> /* xHCI memory management */</span>
+<span class="d-ctx"> void xhci_mem_cleanup(struct xhci_hcd *xhci);</span>
+<span class="d-ctx"> int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags);</span>
+<span class="d-del">-void xhci_free_virt_device(struct xhci_hcd *xhci, int slot_id);</span>
+<span class="d-add">+void xhci_free_virt_device(struct xhci_hcd *xhci, struct xhci_virt_device *dev, int slot_id);</span>
+<span class="d-ctx"> int xhci_alloc_virt_device(struct xhci_hcd *xhci, int slot_id, struct usb_device *udev, gfp_t flags);</span>
+<span class="d-ctx"> int xhci_setup_addressable_virt_dev(struct xhci_hcd *xhci, struct usb_device *udev);</span>
+<span class="d-ctx"> void xhci_copy_ep0_dequeue_into_input_ctx(struct xhci_hcd *xhci,</span>
+<span class="d-hunk">@@ -1888,6 +1888,7 @@ void xhci_reset_bandwidth(struct usb_hcd *hcd, struct usb_device *udev);</span>
+<span class="d-ctx"> int xhci_update_hub_device(struct usb_hcd *hcd, struct usb_device *hdev,</span>
+<span class="d-ctx"> 			   struct usb_tt *tt, gfp_t mem_flags);</span>
+<span class="d-ctx"> int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id);</span>
+<span class="d-add">+int xhci_disable_and_free_slot(struct xhci_hcd *xhci, u32 slot_id);</span>
+<span class="d-ctx"> int xhci_ext_cap_init(struct xhci_hcd *xhci);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> int xhci_suspend(struct xhci_hcd *xhci, bool do_wakeup);</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2025 年 8 月，兆芯（Zhaoxin）Weitao Wang 报告并修复；Fixes 追溯 7faac1953ed1（disable slot 与运行时挂起竞态修复引入的形态）。场景：device-A（slot_id=1）正在断开、device-B 正在枚举——xHC 对「同一 slot_id 先 disable 再 enable」的复用没有软件可见的延迟承诺，控制器可以在 disable 完成的瞬间就把刚释放的 slot_id 分给新设备。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">六步竞态时序（补丁信息原文）：① A 发 Disable Slot；② B 发 Enable Slot；③ A 的 Disable 完成并唤醒等待线程；④ B 的 Enable 完成且拿到的正是 slot_id=1；⑤ B 在 <code>xhci_alloc_virt_device</code> 检查 <code>xhci-&gt;devs[1]</code> 仍被 A 占用 → 枚举失败；⑥ A 的 <code>xhci_free_virt_device</code> 才把 devs[1] 置 NULL——永远晚一步。规范背景：Table 4-1（p86）Disabled 态 DCBAA 指针无效、槽不可用——驱动侧软件镜像（devs[] / DCBAA）必须与 xHC 的槽状态同步翻转，而原实现把它们留到进程上下文的慢路径。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">把清理前移到命令完成事件的中断上下文：<code>xhci_handle_cmd_disable_slot</code> 增加 cmd_comp_code 形参（TRB_DISABLE_SLOT case 分派行同步传入），COMP_SUCCESS 时即刻清 <code>xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id]</code> 与 <code>xhci-&gt;devs[slot_id]</code>——DCBAA 指针清零即 Disabled 态的规范形态，此后 B 的 Enable Slot 完成时 devs[1] 已空，枚举照常。配套：<code>xhci_free_virt_device</code> 改为显式传 virt_dev 指针、只在数组仍指向本设备时清指针（防误清新主）；新增 <code>xhci_disable_and_free_slot()</code> 收拢全部「禁槽 + 释放」调用对。与贴码对读：§4.4 段 det:6 热行即本补丁在中断上下文清 DCBAA 指针的新增块（基线形态 <code>xhci-&gt;dcbaa.ctx_array[slot_id] = 0</code>）、§4.5 段 slot:8 冲突检测热行（B 被挡的判定点）与 slot:9 DCBAA 装载热行（装载/清零互为正反操作）——本补丁已在基线 d9008e061539 内，贴码即补丁后形态。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=9">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1565,7 +2216,7 @@ Date:   Thu Jul 17 10:31:07 2025 +0300
 
   <footer>
     构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
-    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。评审反馈请按 §4.1 / §4.2 / §4.3 四版块分项。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。评审反馈请按 §4.1 / §4.2 / §4.3 / §4.4 / §4.5 五节四版块分项。
   </footer>
 </div>
 <div id="tipdocs" hidden>
@@ -1835,6 +2486,142 @@ Target field of Doorbell register 0 (refer to Section 5.6 Doorbell Registers).</
 <blockquote data-ck="spec:spec-43.txt:L346-L347">System software shall wait for Address Device Command completion event on 
 the Event Ring before issuing any more commands to the slot.</blockquote>
 <div class="qsrc">—— evidence/spec-43.txt L346-L347（p76）</div>
+</div>
+<div class="tipdoc" id="tip-det-0">
+<p class="tipnote">拔除断开的软件收口：free_dev 钩子对受影响槽发 Disable Slot Command（规范 §4.4 p81 的 shall 义务）</p>
+<blockquote data-ck="spec:spec-44.txt:L6-L8">detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote>
+<div class="qsrc">—— evidence/spec-44.txt L6-L8（p81）</div>
+</div>
+<div class="tipdoc" id="tip-det-1">
+<p class="tipnote">分配命令结构：第二参 true = 连 completion 一起分配——补丁 c1c8550e7040 修的就是这些错误路径的 completion 泄漏</p>
+<blockquote data-ck="spec:spec-44.txt:L2-L4">When the device is detached from a Root Hub port, the PORTSC Current 
+Connection Status (CCS) bit shall be cleared to ‘0’ and the Connect Status 
+Change (CSC) bit shall be set to ‘1’. If a ‘0’ to ‘1’ transition of PSCEG (4.19.2), </blockquote>
+<div class="qsrc">—— evidence/spec-44.txt L2-L4（p81）</div>
+</div>
+<div class="tipdoc" id="tip-det-2">
+<p class="tipnote">Disable Slot 命令 TRB 入命令环：slot_id 随 TRB 字段带给 xHC</p>
+<blockquote data-ck="spec:spec-44.txt:L7-L8">with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote>
+<div class="qsrc">—— evidence/spec-44.txt L7-L8（p81）</div>
+</div>
+<div class="tipdoc" id="tip-det-3">
+<p class="tipnote">敲主机命令门铃（DB Target=0）：xHC 开始执行 Disable Slot——命令三拍第二拍</p>
+<blockquote data-ck="spec:spec-44.txt:L6-L8">detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote>
+<div class="qsrc">—— evidence/spec-44.txt L6-L8（p81）</div>
+</div>
+<div class="tipdoc" id="tip-det-4">
+<p class="tipnote">等 Disable Slot 完成事件：命令路径通用三拍的第三拍（回执）</p>
+<blockquote data-ck="spec:spec-44.txt:L6-L8">detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote>
+<div class="qsrc">—— evidence/spec-44.txt L6-L8（p81）</div>
+</div>
+<div class="tipdoc" id="tip-det-5">
+<p class="tipnote">host 已死的错误路径释放命令——原为 kfree(command) 只放命令结构不放 completion，补丁后改为 xhci_free_command</p>
+<blockquote data-ck="spec:spec-44.txt:L7-L8">with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote>
+<div class="qsrc">—— evidence/spec-44.txt L7-L8（p81）</div>
+</div>
+<div class="tipdoc" id="tip-det-6">
+<p class="tipnote">Disable Slot 成功（命令完成事件的中断上下文）即清 DCBAA 指针——2eb03376151b 新增行，Disabled 态 DCBAA 指针无效（Table 4-1）的驱动兑现</p>
+<blockquote data-ck="spec:spec-44.txt:L6-L8">detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote>
+<div class="qsrc">—— evidence/spec-44.txt L6-L8（p81）</div>
+</div>
+<div class="tipdoc" id="tip-det-7">
+<p class="tipnote">槽资源软件侧释放（三参形态即 2eb03376151b 之后：传 virt_dev 而非按 slot_id 反查）</p>
+<blockquote data-ck="spec:spec-44.txt:L2-L8">When the device is detached from a Root Hub port, the PORTSC Current 
+Connection Status (CCS) bit shall be cleared to ‘0’ and the Connect Status 
+Change (CSC) bit shall be set to ‘1’. If a ‘0’ to ‘1’ transition of PSCEG (4.19.2), 
+the xHC shall report the change through a Port Status Change Event. After the 
+detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote>
+<div class="qsrc">—— evidence/spec-44.txt L2-L8（p81）</div>
+</div>
+<div class="tipdoc" id="tip-slot-0">
+<p class="tipnote">DCI 公式 Control 分支：index = epnum*2——内核 0 基数组 index = DCI-1，对应规范 DCI = (Endpoint Number * 2) + 1</p>
+<blockquote data-ck="spec:spec-45.txt:L101-L102">For Control type endpoints: 
+           DCI = (Endpoint Number * 2) + 1. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L101-L102（p83）</div>
+</div>
+<div class="tipdoc" id="tip-slot-1">
+<p class="tipnote">非控制端点分支：index = epnum*2 + direction - 1（direction：OUT=0 / IN=1）——规范 §4.5.1 公式 DCI = (Endpoint Number * 2) + Direction</p>
+<blockquote data-ck="spec:spec-45.txt:L96-L99">For Isoch, Interrupt, or Bulk type endpoints the DCI is calculated from the 
+Endpoint Number and Direction with the following formula; 
+          DCI = (Endpoint Number * 2) + Direction, 
+where Direction = ‘0’ for OUT endpoints and ‘1’ for IN endpoints. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L96-L99（p83）</div>
+</div>
+<div class="tipdoc" id="tip-slot-2">
+<p class="tipnote">Enable Slot 命令 TRB 入命令环——Disabled 态唯一允许软件发出的命令（§4.5.3.2 p86）</p>
+<blockquote data-ck="spec:spec-45.txt:L284-L287">In this slot state the Device Slot is disabled, that is, the slot’s Doorbell register 
+is disabled and the pointer to the slot’s Output Device Context in the Device 
+Context Base Address Array is invalid. The only command that software is 
+allowed to issue for the slot in this state is the Enable Slot Command. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L284-L287（p86）</div>
+</div>
+<div class="tipdoc" id="tip-slot-3">
+<p class="tipnote">敲主机命令门铃：DB Target = Host Controller Command（§4.5 p83）</p>
+<blockquote data-ck="spec:spec-45.txt:L82-L84">Ringing the Host Controller Doorbell (Doorbell Register 0) with the DB Target = 
+Host Controller Command, indicates to the xHC that software has defined a 
+command in the Command Ring that it wants executed. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L82-L84（p83）</div>
+</div>
+<div class="tipdoc" id="tip-slot-4">
+<p class="tipnote">等 Enable Slot 完成事件：成功后槽从 Disabled 迁入 Enabled（§4.5.3.2 p86）</p>
+<blockquote data-ck="spec:spec-45.txt:L291-L292">When in the Disabled state, the slot shall transition to the Enabled state due to 
+the successful completion of an Enable Slot Command. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L291-L292（p86）</div>
+</div>
+<div class="tipdoc" id="tip-slot-5">
+<p class="tipnote">从完成事件的命令结构取回 xHC 分配的 Slot ID——它是软件访问 DCBAA 与门铃数组的索引</p>
+<blockquote data-ck="spec:spec-45.txt:L9-L11">The Slot ID is the index that software uses when accessing the Device Context 
+Base Address Array to retrieve a pointer to the Device Context data structure 
+or to access the Doorbell Register associated with a device. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L9-L11（p81）</div>
+</div>
+<div class="tipdoc" id="tip-slot-6">
+<p class="tipnote">按 Slot ID 分配虚拟设备（out/in 上下文 + EP0 传输环）——2eb03376151b 竞态场景里 device-B 被挡住的检测点</p>
+<blockquote data-ck="spec:spec-45.txt:L298-L302">In this slot state the Device Slot has been allocated to software by the Enable 
+Slot Command, however the Doorbell register for the slot is not enabled and 
+the pointer to the slot’s Output Device Context in the Device Context Base 
+Address Array is invalid. The only commands that software is allowed to issue 
+for a slot in this state are the Address Device and Disable Slot. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L298-L302（p86）</div>
+</div>
+<div class="tipdoc" id="tip-slot-7">
+<p class="tipnote">Slot ID 记入 usb_device：此后内核各处都以它索引该设备的槽三件套</p>
+<blockquote data-ck="spec:spec-45.txt:L60-L61">The Slot ID is the index that system software uses when accessing a specific 
+Device Slot in the Device Context Base Address Array and the Doorbell Array. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L60-L61（p82）</div>
+</div>
+<div class="tipdoc" id="tip-slot-8">
+<p class="tipnote">Slot 0 保留 + 槽位占用冲突检测——2eb03376151b：device-A 残留占用时 device-B 在此被拒，枚举失败</p>
+<blockquote data-ck="spec:spec-45.txt:L13-L15">11The total number of USB devices supported by the xHCI architecture is less than 256 (the number of Device Context slots) because 
+some of the Device Context slots are reserved by the xHCI for special purposes and are not available for enumerating USB 
+devices. For example, If virtualization is enabled, slots allocated to one VF will appear to be “reserved” to another VF. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L13-L15（p81）</div>
+</div>
+<div class="tipdoc" id="tip-slot-9">
+<p class="tipnote">DCBAA 装载行：ctx_array[slot_id] = 输出设备上下文 DMA 地址——数组元素是 64 位指针（§4.5 p81）</p>
+<blockquote data-ck="spec:spec-45.txt:L6-L8">The Device Context Base Address Array supports up to 25511 USB devices 
+or hubs, where each element in the array is a 64-bit pointer to the base 
+address of a Device Context data structure. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L6-L8（p81）</div>
+</div>
+<div class="tipdoc" id="tip-slot-10">
+<p class="tipnote">devs[slot_id] = dev：软件侧槽位登记，与 DCBAA 指针、门铃寄存器并列为槽三件套的驱动镜像</p>
+<blockquote data-ck="spec:spec-45.txt:L3-L5">to a Device Slot. Each xHC Device Slot is comprised of 3 major components: an 
+entry in the Device Context Base Address Array, a Device Context data 
+structure, and a Doorbell Register in the Doorbell Array. </blockquote>
+<div class="qsrc">—— evidence/spec-45.txt L3-L5（p81）</div>
 </div>
 </div>
 <div id="codetip" hidden><div class="tipbody"></div></div>

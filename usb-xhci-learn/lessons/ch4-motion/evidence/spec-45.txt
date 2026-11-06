@@ -1,0 +1,464 @@
+Device Slot Management 
+The xHCI supports up to 255 USB devices, where each USB device is assigned 
+to a Device Slot. Each xHC Device Slot is comprised of 3 major components: an 
+entry in the Device Context Base Address Array, a Device Context data 
+structure, and a Doorbell Register in the Doorbell Array. 
+The Device Context Base Address Array supports up to 25511 USB devices 
+or hubs, where each element in the array is a 64-bit pointer to the base 
+address of a Device Context data structure. 
+The Slot ID is the index that software uses when accessing the Device Context 
+Base Address Array to retrieve a pointer to the Device Context data structure 
+or to access the Doorbell Register associated with a device. 
+ 
+11The total number of USB devices supported by the xHCI architecture is less than 256 (the number of Device Context slots) because 
+some of the Device Context slots are reserved by the xHCI for special purposes and are not available for enumerating USB 
+devices. For example, If virtualization is enabled, slots allocated to one VF will appear to be “reserved” to another VF. 
+ 
+
+===== [PAGE 82] =====
+ 
+82 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Figure 4-1: Device Context 
+Slot Context
+Endpoint Context 0
+(Bidirectional, Control EP)
+Endpoint Context 1 OUT
+Endpoint Context 1 IN
+...
+Endpoint Context 15 OUT
+Endpoint Context 15 IN
+Reserved
+Page Size-1
+400h
+3E0h
+3C0h
+...
+080h
+060h
+Offset
+000h
+020h
+040h
+31
+30
+...
+3
+DCI
+0
+1
+2
+ 
+A Device Context data structure describes the characteristics and current 
+state of an individual USB device attached to the host controller. The Device 
+Context is organized as an array of 32 context data structures, consisting of 1 
+Slot Context and 31 Endpoint Context data structures. Figure 4-1 illustrates the 
+Device Context layout. Refer to section 6.2.1 for data structure details. 
+When software allocates a Device Context data structure all fields in all entries 
+shall be initialized to ‘0’. 
+The Slot ID is the index that system software uses when accessing a specific 
+Device Slot in the Device Context Base Address Array and the Doorbell Array. 
+The Slot Context data structure defines information that applies to the slot, 
+the device as whole, or to all Endpoint Contexts. 
+Each Endpoint Context data structure defines the characteristics of the 
+endpoint; type, direction, bandwidth requirements, etc., and points to a 
+Transfer Ring or a Stream Context Array. An Endpoint Context exists for 
+each endpoint of a device. The “enabled12” Endpoint Contexts depend on the 
+Configuration selected by the Device’s Class Driver. Note that Endpoint Context 
+0 is always associated with the Default Control Endpoint of the device. 
+A 32-bit Doorbell Register exists in the Doorbell Array for each Device Slot and 
+is indexed by the Slot ID. The DB Target and DB Stream ID fields in the 
+Doorbell Register indicates the purpose of “ringing” the doorbell. 
+ 
+12An Endpoint Context is “enabled” if it is not in the Disabled state. 
+ 
+
+===== [PAGE 83] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+83 
+Ringing the Host Controller Doorbell (Doorbell Register 0) with the DB Target = 
+Host Controller Command, indicates to the xHC that software has defined a 
+command in the Command Ring that it wants executed. 
+Ringing the Device Slot’s Doorbell Register, indicates to the xHC that software 
+has added work to be executed on the Transfer Ring (pipe) defined by the DB 
+Target and DB Stream ID field values. Refer to section 5.2. 
+4.5.1 
+Device Context Index 
+The term Device Context Index (DCI) is used throughout this document to 
+reference an individual context data structure in the Device Context. The range 
+of DCI values is 0 to 31. 
+The DCI of the Slot Context is 0. 
+For Device Context Indices 1-31, the following rules apply: 
+1. 
+For Isoch, Interrupt, or Bulk type endpoints the DCI is calculated from the 
+Endpoint Number and Direction with the following formula; 
+          DCI = (Endpoint Number * 2) + Direction, 
+where Direction = ‘0’ for OUT endpoints and ‘1’ for IN endpoints. 
+2. 
+For Control type endpoints: 
+           DCI = (Endpoint Number * 2) + 1. 
+4.5.2 
+Slot Context Initialization 
+All fields of an Input Slot Context data structure (including the Reserved fields) 
+shall be initialized to ‘0’ with the following exceptions: 
+For Address Device Command: 
+• 
+Route String = Topology defined. 
+• 
+Root Hub Port Number = Topology defined. 
+• 
+Context Entries = ‘1’. Only the Default Control Endpoint is enabled. 
+• 
+Interrupter Target = System defined. 
+• 
+Speed = Defined by downstream facing port attached to the device. 
+• 
+If the device is a Low-/Full-speed function or hub accessed through a High-
+speed hub, then the following values are derived from the “parent” High-
+speed hub whose downstream facing port isolates the High-speed signaling 
+environment from the Low-/Full-speed signaling environment: 
+o 
+MTT = '1' if the Multi-TT Interface of the hub has been enabled with a 
+Set Interface request, otherwise '0'. Software shall issue a Set Interface 
+request to select the Multi-TT interface of the hub prior to issuing any 
+transactions to devices attached to the hub. 
+o 
+Parent Port Number = The number of the downstream facing port in the 
+parent High-speed hub that the device is accessed through. 
+o 
+Parent Hub Slot ID = The Slot ID of the parent High-speed hub. 
+
+===== [PAGE 84] =====
+ 
+84 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+For Evaluate Context Command: 
+• 
+Max Exit Latency = Topology Defined. Refer to section 4.23.5.2. 
+• 
+Interrupter Target = System defined. 
+For Configure Endpoint Command: 
+• 
+Context Entries = Maximum DCI+1 of configured Endpoint Contexts. 
+• 
+If the device is a hub: 
+o 
+Hub = ‘1’. 
+o 
+Number of Ports = bNbrPorts from the USB Hub Descriptor. 
+o 
+If the device Speed = High-Speed (‘3’): 
+•  
+TT Think Time (TTT) = Value of the TT Think Time sub-field (USB2 spec, Table 
+11-13) in the Hub Descriptor:wHubCharacteristics field. 
+•  
+Multi-TT (MTT) = '1' if the Multi-TT Interface of the hub has been enabled 
+with a Set Interface request, otherwise '0'. 
+Note: The values of the Route String and Root Hub Port Number fields shall be 
+initialized by the first Address Device Command issued to a Device Slot and 
+shall not be modified by any other command. The Interrupter Target field 
+may be modified by an Address Device Command or Evaluate Context 
+Command. 
+ 
+After entering the Addressed state for the first time from the Enabled or Default states, the values 
+of the Output Slot Context hub related fields (Hub, TTT, MTT, and Number of Ports) shall be 
+initialized by the xHC by the first Configure Endpoint Command to transition the Slot from the 
+Addressed to the Configured state. To change the Output Slot Context hub related fields, a Slot 
+must first be transitioned through the Enabled or Default state. 
+4.5.3 
+Slot States 
+The current state of a Device Slot is identified by the Slot State. A subset of 
+the possible Slot States are recorded in the Slot State field in the Slot Context 
+data structure. The xHCI commands referenced in Figure 4-2 cause a Device 
+Slot to transition from one state to another. Table 4-1 defines the Slot State 
+codes. 
+
+===== [PAGE 85] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+85 
+Figure 4-2: Slot State Diagram 
+Default
+Configured
+Addressed
+Disabled
+Enabled
+ 
+Refer to Appendix E for state machine notation. 
+Note: The Enabled, Default, Addressed, and Configured states may transition to the 
+Disabled state due to a Disable Slot Command, as noted by the large bubble. 
+Note: A Device Slot may be referred to as “enabled” if it is not in the Disabled state. 
+Note: Software shall not transition more than one Device Slot to the Default State 
+at a time. 
+Note: When system software initially allocates and initializes the Output Slot 
+Context data structure, it shall set the Slot State field to Disabled (‘0’). All 
+subsequent updates of the Slot State field shall be performed by the xHC. 
+Note: Unless otherwise stated, the unsuccessful completion of a command will not 
+cause a state transition. 
+4.5.3.1 
+Device Slot State Codes 
+The following Slot States are maintained by the Host Controller. Refer to 
+section 9.1 of the USB2 specification for information on the USB Device States. 
+Table 4-1: Device Slot State Code Definitions 
+Definition 
+USB Device 
+State 
+Default Control 
+EP State 
+Other 
+EP 
+State 
+USB Device 
+Address 
+DCBAA 
+Pointer 
+Slot Context Slot 
+State value 
+Disabled 
+N/A 
+Disabled 
+Disabled 
+N/A 
+Not valid 
+Disabled 
+Enabled 
+Default 
+Disabled 
+Disabled 
+0 
+Not valid 
+Disabled 
+
+===== [PAGE 86] =====
+ 
+86 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Definition 
+USB Device 
+State 
+Default Control 
+EP State 
+Other 
+EP 
+State 
+USB Device 
+Address 
+DCBAA 
+Pointer 
+Slot Context Slot 
+State value 
+Default 
+Default 
+Not Disabled 
+Disabled 
+0 
+Valid 
+Default 
+Addressed 
+Address 
+Not Disabled 
+Disabled 
+Assigned 
+Valid 
+Addressed 
+Configured 
+Configured 
+Not Disabled 
+Any13 
+Assigned 
+Valid 
+Configured 
+Refer to Table 6-7 for the numeric encoding of Slot States. 
+Note:  The Slot State field of the Slot Context data structure is used to convey a 
+subset of the possible Slot States maintained by the xHC. The following 
+sections identify the use of the Slot State field. Refer to section 6.2.2 for 
+more information on the Slot Context data structure. 
+4.5.3.2 
+Disabled 
+In this slot state the Device Slot is disabled, that is, the slot’s Doorbell register 
+is disabled and the pointer to the slot’s Output Device Context in the Device 
+Context Base Address Array is invalid. The only command that software is 
+allowed to issue for the slot in this state is the Enable Slot Command. 
+If the Output Slot Context is valid (that is, an Address Device Command has 
+been issued for the slot), the xHC shall set the Slot State field to Disabled upon 
+the completion of a Disable Slot Command. 
+When in the Disabled state, the slot shall transition to the Enabled state due to 
+the successful completion of an Enable Slot Command. 
+Note: Software shall not write to the Doorbell register of slots that are in the 
+Disabled state. 
+Note: A Device Slot shall not generate events when it is in the Disabled state. 
+4.5.3.3 
+Enabled 
+In this slot state the Device Slot has been allocated to software by the Enable 
+Slot Command, however the Doorbell register for the slot is not enabled and 
+the pointer to the slot’s Output Device Context in the Device Context Base 
+Address Array is invalid. The only commands that software is allowed to issue 
+for a slot in this state are the Address Device and Disable Slot. 
+ 
+13Whether a non-Default Control endpoint is Disabled or not is determined by the Configure Endpoint Command. 
+
+===== [PAGE 87] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+87 
+When in the Enabled state, the slot shall transition to the Default state due to 
+the successful completion of an Address Device Command with the Block Set 
+Address Request (BSR) flag set to ‘1’. 
+When in the Enabled state, the slot shall transition to the Addressed state due 
+to the successful completion of an Address Device Command with the Block Set 
+Address Request (BSR) flag cleared to ‘0’. 
+When in the Enabled state, the slot shall transition to the Disabled state due to 
+a Disable Slot Command. 
+Note: The Enabled state is a logical slot state that is maintained internally by the 
+xHC. A unique value for the Enabled state is not defined for the Slot Context 
+Slot State field in Table 6-7, that is, the Slot State field value ‘0’ is overloaded 
+for the Disabled and Enabled states, refer to Slot Context Slot State value 
+column in Table 4-1. Software initializes the Device Context data structure to 
+‘0’, hence Slot State = Disabled. The Device Context is then assigned to the 
+xHC with an Address Device Command. The Address Device Command also 
+transitions the slot to the Default or Addressed state, so there never is a case 
+where the xHC would actually set the Slot State field to Enabled. 
+Note: Software shall not write to the Doorbell register of slots that are in the 
+Enabled state. 
+4.5.3.4 
+Default 
+In this slot state the USB device is in the Default state, the pointer to the 
+Device Slot’s Output Device Context in the Device Context Base Address Array 
+is valid, the Slot Context and Endpoint Context 0 in the Output Device Context 
+have been initialized by the xHC, and the Doorbell register for the slot is 
+enabled only for DB Target = Control EP 0 Enqueue Pointer Update. The only 
+commands that software is allowed to issue for the slot in this state are the 
+Address Device (BSR = 0), Reset Endpoint, Stop Endpoint, Evaluate Context, 
+Set TR Dequeue Pointer, and Disable Slot. 
+When in the Default state, the slot shall transition to the Addressed state due 
+to the successful completion of an Address Device Command with the Block Set 
+Address Request (BSR) flag cleared to ‘0’. 
+When in the Default state, the slot shall transition to the Disabled state due to 
+a Disable Slot Command. 
+Upon the completion of a Evaluate Context, Reset Endpoint, Stop Endpoint, or 
+Set TR Dequeue Pointer Command while in the Default state, the slot shall 
+remain in Default state. 
+The xHC shall set the Output Slot Context Slot State field to Default and the 
+USB Device Address field to ‘0’ when this state is entered. 
+Note: Software shall ensure that only one Device Slot is in the Default state at time, 
+otherwise undefined behavior may occur. 
+
+===== [PAGE 88] =====
+ 
+88 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.5.3.5 
+Addressed 
+In this slot state the USB device is in the Address state, the pointer to the 
+Device Slot’s Output Device Context in the Device Context Base Address Array 
+is valid, the Slot Context and Endpoint Context 0 in the Output Device Context 
+have been initialized by the xHC, and the Doorbell register for the slot is 
+enabled only for DB Target = Control EP 0 Enqueue Pointer Update. The only 
+commands that software is allowed to issue for the slot in this state are the 
+Evaluate Context, Configure Endpoint, Reset Endpoint, Stop Endpoint, 
+Negotiate Bandwidth, Set TR Dequeue Pointer, Reset Device, and Disable Slot. 
+When in the Addressed state, the slot shall transition to the Configured state 
+due to the successful completion of a Configure Endpoint Command and the 
+Deconfigure (DC) flag = ‘0’. 
+When in the Addressed state, the slot shall remain in the Addressed state due 
+to the successful completion of a Configure Endpoint Command and the 
+Deconfigure (DC) flag = ‘1’, that is, the Configure Endpoint Command is 
+treated like a No Op Command. 
+When in the Addressed state, the slot shall transition to the Default state due 
+to a Reset Device Command. 
+The xHC shall set the Output Slot Context Slot State field to Addressed when 
+this state is entered. 
+Upon the completion of an Evaluate Context, Stop Endpoint, or Set TR Dequeue 
+Pointer Command while in the Addressed state, the slot shall remain in 
+Addressed state. 
+While in the Addressed state, the Reset Device Command may be used to 
+transition the slot to the Default state. 
+When in the Addressed state, the slot shall transition to the Disabled state due 
+to the successful completion of a Disable Slot Command. 
+4.5.3.6 
+Configured 
+In this slot state the USB device is in the Configured state, the pointer to the 
+Device Slot’s Output Device Context in the Device Context Base Address Array 
+is valid, the Slot Context, Endpoint Context 0, and enabled IN and OUT 
+Endpoint Contexts between 1 and 15 in the Output Device Context have been 
+initialized by the xHC, and the Device Context doorbell for the slot is enabled 
+for DB Target = Control EP 0 Enqueue Pointer Update and any enabled 
+endpoint. The only commands that software is allowed to issue for the slot in 
+this state are the Configure Endpoint (DC = ‘0’ or ‘1’), Reset Endpoint, Stop 
+Endpoint, Set TR Dequeue Pointer, Evaluate Context, Reset Device, Negotiate 
+Bandwidth, and Disable Slot. 
+The xHC shall set the Output Slot Context Slot State field to Configured when 
+this state is entered. 
+
+===== [PAGE 89] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+89 
+Upon the completion of an Evaluate Context, Configure Endpoint, Reset 
+Endpoint, Stop Endpoint, Negotiate Bandwidth, or Set TR Dequeue Pointer 
+Command while in the Configured state, the slot shall remain in Configured 
+state. 
+Upon the completion of a “deconfigure” Configure Endpoint Command (DC = 
+‘0’) while in the Configured state, the slot shall transition to the Addressed 
+state. 
+When in the Configured state, the Reset Device Command may be used to 
+transition the slot to the Default state. 
+When in the Configured state, the completion of a Disable Slot Command shall 
+transition the slot to the Disabled state. 
+4.5.4 
+USB Standard Device Request to xHCI Command Mapping 
+The Standard Device Requests (as described in section 9.4 of the USB2 spec.) 
+are generated to USB devices using Setup Stage TDs on a device’s Default 
+Control Endpoint. This section discusses the relationship of specific Standard 
+Device Requests to xHCI commands. Refer to the USB or Device Class 
+specifications for the order and timing of all other Standard Device Requests. 
+4.5.4.1 
+SET_ADDRESS Request 
+During the execution of the Address Device Command with BSR = ‘0’, the xHC 
+shall automatically issue a SET_ADDRESS request to a device with the USB 
+Device Address assigned in the Output Slot Context and block any 
+SET_ADDRESS Requests issued by software. Therefore a Setup Stage TD with 
+the bmRequestType field set to Host-to-Device, Standard, and Device (0h), and 
+the bRequest field set to SET_ADDRESS (5h) issued by software on the Default 
+Control Endpoint shall not generate a Setup transaction on the USB and shall 
+complete with a TRB Error Completion Code. 
+4.5.4.2 
+SET_CONFIGURATION Request 
+For a USB device to be successfully configured with new endpoint settings, 
+system software shall complete a successful Configure Endpoint command to 
+the xHC and a successful SET_CONFIGURATION request to a device. Undefined 
+results may occur otherwise. 
+If software wishes to “deconfigure” a device by issuing a SET_CONFIGURATION 
+Setup Stage TD with the Configuration Value (wValue) = ‘0’, and issue a 
+Configure Endpoint Command with all Add Context flags cleared to = ‘0’, and 
+the Drop Context flags of all enabled endpoints set to ‘1’. After both operations 
+are completed successfully, the device is deconfigured. 
+Note: A Configure Endpoint Command is not necessary if a SET_CONFIGURATION 
+request does not change any Endpoint Context parameters. 
+Refer to section 4.6.6 for more details. 
+
+===== [PAGE 90] =====
+ 
+90 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.5.4.3 
+SET_INTERFACE Request 
+For an alternate interface of a USB device to be successfully set, system 
+software shall complete a successful Configure Endpoint Command and a 
+successful SET_INTERFACE Setup request to a USB device. Undefined results 
+may occur otherwise. 
+Note:  
+A Configure Endpoint Command is not necessary if a SET_INTERFACE 
+request does not change any Endpoint Context parameters. 
+Refer to section 4.6.6 for more details. 
+4.6 

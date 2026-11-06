@@ -16,10 +16,16 @@ import {Txt, Rect, Line, Circle, Node as N2} from '@motion-canvas/2d';
 import ch41 from './scenes/ch41?scene';
 import ch42 from './scenes/ch42?scene';
 import ch43 from './scenes/ch43?scene';
-// R3 P4：补丁分帧场景接入探针链（TrackA；纯追加，供 render.html?scene=3/4/5 与 P6 全门 probe）
+import ch44 from './scenes/ch44?scene';
+import ch45 from './scenes/ch45?scene';
+// R3 P4：补丁分帧场景接入探针链（TrackA；纯追加，供 render.html 与 P6 全门 probe）
+// R9：清单扩为十场景——主线在前字典序（ch41..ch45=0..4）、补丁在后字典序
+//（ch41p..ch45p=5..9），与 src/player.ts orderedSceneKeys 比较器语义一致。
 import ch41p from './scenes/ch41p?scene';
 import ch42p from './scenes/ch42p?scene';
 import ch43p from './scenes/ch43p?scene';
+import ch44p from './scenes/ch44p?scene';
+import ch45p from './scenes/ch45p?scene';
 
 /* ---------- 全帧重叠探针 ---------- */
 function worldPos(n: any): {x: number; y: number} {
@@ -178,7 +184,7 @@ function probeFrame(root: any, frame: number): any[] {
   });
 }
 
-const scenes = [ch41, ch42, ch43, ch41p, ch42p, ch43p];
+const scenes = [ch41, ch42, ch43, ch44, ch45, ch41p, ch42p, ch43p, ch44p, ch45p];
 
 const q = new URLSearchParams(location.search);
 const sceneIdx = Math.max(0, Math.min(scenes.length - 1, Number(q.get('scene') ?? 0)));

@@ -250,5 +250,142 @@
       "code": "\twait_for_completion(command->completion);",
       "note": "等命令完成事件：handle_cmd_completion 里 complete() 唤醒本行，设备拿到地址"
     }
+  ],
+  "det": [
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4136,
+      "func": "xhci_free_dev",
+      "code": "\txhci_disable_slot(xhci, udev->slot_id);",
+      "note": "拔除断开的软件收口：free_dev 钩子对受影响槽发 Disable Slot Command（规范 §4.4 p81 的 shall 义务）"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4151,
+      "func": "xhci_disable_slot",
+      "code": "\tcommand = xhci_alloc_command(xhci, true, GFP_KERNEL);",
+      "note": "分配命令结构：第二参 true = 连 completion 一起分配——补丁 c1c8550e7040 修的就是这些错误路径的 completion 泄漏"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4167,
+      "func": "xhci_disable_slot",
+      "code": "\tret = xhci_queue_slot_control(xhci, command, TRB_DISABLE_SLOT,",
+      "note": "Disable Slot 命令 TRB 入命令环：slot_id 随 TRB 字段带给 xHC"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4174,
+      "func": "xhci_disable_slot",
+      "code": "\txhci_ring_cmd_db(xhci);",
+      "note": "敲主机命令门铃（DB Target=0）：xHC 开始执行 Disable Slot——命令三拍第二拍"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4177,
+      "func": "xhci_disable_slot",
+      "code": "\twait_for_completion(command->completion);",
+      "note": "等 Disable Slot 完成事件：命令路径通用三拍的第三拍（回执）"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4163,
+      "func": "xhci_disable_slot",
+      "code": "\t\txhci_free_command(xhci, command);",
+      "note": "host 已死的错误路径释放命令——原为 kfree(command) 只放命令结构不放 completion，补丁后改为 xhci_free_command"
+    },
+    {
+      "file": "drivers/usb/host/xhci-ring.c",
+      "line": 1631,
+      "func": "xhci_handle_cmd_disable_slot",
+      "code": "\t\txhci->dcbaa.ctx_array[slot_id] = 0;",
+      "note": "Disable Slot 成功（命令完成事件的中断上下文）即清 DCBAA 指针——2eb03376151b 新增行，Disabled 态 DCBAA 指针无效（Table 4-1）的驱动兑现"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4139,
+      "func": "xhci_free_dev",
+      "code": "\txhci_free_virt_device(xhci, virt_dev, udev->slot_id);",
+      "note": "槽资源软件侧释放（三参形态即 2eb03376151b 之后：传 virt_dev 而非按 slot_id 反查）"
+    }
+  ],
+  "slot": [
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 1459,
+      "func": "xhci_get_endpoint_index",
+      "code": "\t\tindex = (unsigned int) (usb_endpoint_num(desc)*2);",
+      "note": "DCI 公式 Control 分支：index = epnum*2——内核 0 基数组 index = DCI-1，对应规范 DCI = (Endpoint Number * 2) + 1"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 1461,
+      "func": "xhci_get_endpoint_index",
+      "code": "\t\tindex = (unsigned int) (usb_endpoint_num(desc)*2) +",
+      "note": "非控制端点分支：index = epnum*2 + direction - 1（direction：OUT=0 / IN=1）——规范 §4.5.1 公式 DCI = (Endpoint Number * 2) + Direction"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4239,
+      "func": "xhci_alloc_dev",
+      "code": "\tret = xhci_queue_slot_control(xhci, command, TRB_ENABLE_SLOT, 0);",
+      "note": "Enable Slot 命令 TRB 入命令环——Disabled 态唯一允许软件发出的命令（§4.5.3.2 p86）"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4246,
+      "func": "xhci_alloc_dev",
+      "code": "\txhci_ring_cmd_db(xhci);",
+      "note": "敲主机命令门铃：DB Target = Host Controller Command（§4.5 p83）"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4249,
+      "func": "xhci_alloc_dev",
+      "code": "\twait_for_completion(command->completion);",
+      "note": "等 Enable Slot 完成事件：成功后槽从 Disabled 迁入 Enabled（§4.5.3.2 p86）"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4250,
+      "func": "xhci_alloc_dev",
+      "code": "\tslot_id = command->slot_id;",
+      "note": "从完成事件的命令结构取回 xHC 分配的 Slot ID——它是软件访问 DCBAA 与门铃数组的索引"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4279,
+      "func": "xhci_alloc_dev",
+      "code": "\tif (!xhci_alloc_virt_device(xhci, slot_id, udev, GFP_NOIO)) {",
+      "note": "按 Slot ID 分配虚拟设备（out/in 上下文 + EP0 传输环）——2eb03376151b 竞态场景里 device-B 被挡住的检测点"
+    },
+    {
+      "file": "drivers/usb/host/xhci.c",
+      "line": 4287,
+      "func": "xhci_alloc_dev",
+      "code": "\tudev->slot_id = slot_id;",
+      "note": "Slot ID 记入 usb_device：此后内核各处都以它索引该设备的槽三件套"
+    },
+    {
+      "file": "drivers/usb/host/xhci-mem.c",
+      "line": 976,
+      "func": "xhci_alloc_virt_device",
+      "code": "\tif (slot_id == 0 || xhci->devs[slot_id]) {",
+      "note": "Slot 0 保留 + 槽位占用冲突检测——2eb03376151b：device-A 残留占用时 device-B 在此被拒，枚举失败"
+    },
+    {
+      "file": "drivers/usb/host/xhci-mem.c",
+      "line": 1019,
+      "func": "xhci_alloc_virt_device",
+      "code": "\txhci->dcbaa.ctx_array[slot_id] = cpu_to_le64(dev->out_ctx->dma);",
+      "note": "DCBAA 装载行：ctx_array[slot_id] = 输出设备上下文 DMA 地址——数组元素是 64 位指针（§4.5 p81）"
+    },
+    {
+      "file": "drivers/usb/host/xhci-mem.c",
+      "line": 1027,
+      "func": "xhci_alloc_virt_device",
+      "code": "\txhci->devs[slot_id] = dev;",
+      "note": "devs[slot_id] = dev：软件侧槽位登记，与 DCBAA 指针、门铃寄存器并列为槽三件套的驱动镜像"
+    }
   ]
 }
