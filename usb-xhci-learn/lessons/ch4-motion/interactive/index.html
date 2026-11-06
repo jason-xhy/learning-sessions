@@ -812,7 +812,7 @@ function updateM1Pulse(){
    '.cell[data-ring="evt"] .ccard'].forEach(s => setPulse(s, false));
   const prog = scriptSteps();
   const k = prog.indexOf(false);
-  if (k === -1) return;               // 自由练习/全部完成 → 不闪
+  if (k === -1){ updateEp0GuidePulse(); return; }   // 自由练习/全部完成 → EP0 引导链接管（环选 EP0 时）
   if (k === 0){
     if ($('#m1-ring').value !== 'cmd') setPulse('#m1-ring', true);
     else if ($('#m1-type').value !== scriptType()) setPulse('#m1-type', true);
@@ -827,6 +827,34 @@ function updateM1Pulse(){
   } else if (k === 4){
     setPulse('[data-act="m1-readevt"]', true);
   }
+}
+
+/* ---- EP0 自由练习引导链（R7 意见②）----
+   两剧本全完后控制台邀请练 EP0 三段 TD，但此前选 EP0 传输环后无任何闪烁引导。
+   仅 scriptAllDone() 且环选 EP0 时接管闪烁；无步骤台账，纯状态推导：
+   ① Setup/Data/Status 三段按序上环（缺段→闪类型器，类型已对→闪「写 TRB 上环」）
+   ② 三段齐备未敲铃 → 闪「敲门铃」（弹层展开→闪 DB Target=1）
+   ③ DB1 已敲 → 闪「执行」 ④ Transfer Event 在环未读 → 闪事件卡（已点开→闪「读事件环」）
+   事件读走后自动回到①（可无限重练）；两剧本未全完的自由练习保持不闪（DB1 仍被门拦）。 */
+function updateEp0GuidePulse(){
+  if (!scriptAllDone() || $('#m1-ring').value !== 'ep0') return;
+  const ev = RINGS.evt.cells.find(c => c && c.label === 'Transfer Event');
+  if (ev){
+    /* 上一轮 Transfer Event 未收口：先点事件卡查看，已点开 → 读事件环收回执 */
+    setPulse($('#m1-evtinfo').textContent.includes(ev.info)
+      ? '[data-act="m1-readevt"]' : '.cell[data-ring="evt"] .ccard.evt', true);
+    return;
+  }
+  if (m1.db === 1){ setPulse('[data-act="m1-exec"]', true); return; }
+  const stages = ['Setup Stage TRB', 'Data Stage TRB', 'Status Stage TRB'];
+  const next = stages.find(t => !RINGS.ep0.cells.some(c => c && c.label === t));
+  if (next){
+    if ($('#m1-type').value !== next) setPulse('#m1-type', true);
+    else setPulse('[data-act="m1-write"]', true);
+    return;
+  }
+  if (!$('#m1-dbpop').classList.contains('hidden')) setPulse('.dbpop [data-db="1"]', true);
+  else setPulse('[data-act="m1-doorbell"]', true);
 }
 
 function stepDone(i, msg){
@@ -855,6 +883,7 @@ function onScriptComplete(doneIdx){
   if (other >= 0){
     m1.scriptIdx = other;
     syncTypeToScript();               // ring=cmd 时同步类型选择器=剧本类型
+    updateSelnote();                  // 程序化设值不发 change——注释条须补算（防换轮后仍显示上一剧本类型）
     renderScriptPanel();
     hint(`剧本${SCRIPTS[other].cn}开始：类型已切到「${SCRIPTS[other].type}」→ 点「写 TRB 上环」`
       + (other === 1 ? '（命令参数指向软件装配好的 Input Context，§4.3.3 p75 步8-10 / p76 步11）' : '') + '。');
@@ -1106,6 +1135,7 @@ function onCellClick(r, i){
     renderAll();
   } else {
     hint('事件卡内容见下方事件信息栏。要收回执，点「读事件环」。');
+    renderAll();   // 自由练习态点卡也要重算闪烁（EP0 引导链 事件卡→读事件环 相位推进）
   }
 }
 
