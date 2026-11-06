@@ -62,7 +62,8 @@ export default makeScene2D(function* (view) {
       {no: '1202', code: '  /* Steps 7 and 8 were done in xhci_alloc_virt_device() */'},
     ],
   });
-  yield* panel.ref().opacity(1, 0.5);
+  panel.ref().opacity(1);
+  yield* waitFor(0.5);
   yield* panel.highlight(0);
 
   /* ===== 幕① 背景现场 ===== */
@@ -75,9 +76,11 @@ export default makeScene2D(function* (view) {
     '2025 年 7 月：严格按规范实现的虚拟 xHC 枚举失败——Parameter Error（CC=5）。',
     '① 背景',
   );
-  yield* errChip().opacity(0.95, 0.3);
+  errChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(10.1);
-  yield* errChip().opacity(0, 0.3);
+  errChip().opacity(0);
+  yield* waitFor(0.3);
 
   /* ===== 幕② 补丁前：一对规范矛盾 ===== */
   const ctxChip = makeChip(
@@ -89,9 +92,11 @@ export default makeScene2D(function* (view) {
     '根子是一对规范矛盾：§4.3.3 步4 说——输入上下文"所有字段初始化为 0"（spec-43 p76 原文）。',
     '② 矛盾',
   );
-  yield* ctxChip().opacity(0.95, 0.3);
+  ctxChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(7.8);
-  yield* ctxChip().opacity(0, 0.3);
+  ctxChip().opacity(0);
+  yield* waitFor(0.3);
   const spec62Chip = makeChip(
     view,
     '"Software shall set Average TRB Length to \'8\' for control endpoints."——§6.2.3 p454（commit message 引文）',
@@ -101,9 +106,11 @@ export default makeScene2D(function* (view) {
     '另一边 §6.2.3（p453-454 引文）：Average TRB Length 须 > 0，控制端点须设 8。',
     '② 矛盾',
   );
-  yield* spec62Chip().opacity(0.95, 0.3);
+  spec62Chip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(9.7);
-  yield* spec62Chip().opacity(0, 0.3);
+  spec62Chip().opacity(0);
+  yield* waitFor(0.3);
   yield* stage.say(
     'avg_trb_len=0 对硬件没有意义（它用于带宽计算）——严格 xHC 报 Parameter Error，枚举失败。',
     '② 补丁前',
@@ -137,9 +144,11 @@ export default makeScene2D(function* (view) {
     '补丁后：Address Device 不再报参数错，虚拟 xHC 枚举通过——设备 Default→Address。',
     '④ 补丁后',
   );
-  yield* okChip().opacity(0.95, 0.3);
+  okChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(8.6);
-  yield* okChip().opacity(0, 0.3);
+  okChip().opacity(0);
+  yield* waitFor(0.3);
   const specChip = makeChip(
     view,
     '§4.3.3 步8（spec-43 p76）的 EP0 字段表独缺 Average TRB Length——§6.2.3 专门条款补上：控制端点=8。',
@@ -149,9 +158,11 @@ export default makeScene2D(function* (view) {
     '规范锚点：步8 的 EP0 字段表独缺 Average TRB Length——§6.2.3：控制端点=8。',
     '④ 收尾',
   );
-  yield* specChip().opacity(0.95, 0.3);
+  specChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(10.8);
-  yield* specChip().opacity(0, 0.3);
+  specChip().opacity(0);
+  yield* waitFor(0.3);
 
   const sum = makeCard({
     title: '补丁 · f72b9aa821a2（2025-07）',
@@ -171,5 +182,7 @@ export default makeScene2D(function* (view) {
   );
   yield* cardIn(sum, new Vector2(TLx(960), TLy(850)));
   yield* waitFor(7.7);
-  yield* all(sum.ref().opacity(0, 0.5), stage.caption().opacity(0, 0.5));
+    sum.ref().opacity(0);
+  stage.caption().opacity(0);
+  yield* waitFor(0.5);
 });

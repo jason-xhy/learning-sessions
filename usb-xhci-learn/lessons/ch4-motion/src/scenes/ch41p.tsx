@@ -72,13 +72,15 @@ export default makeScene2D(function* (view) {
   );
 
   /* ===== 幕① 背景现场 ===== */
-  yield* panel.ref().opacity(1, 0.5);
+  panel.ref().opacity(1);
+  yield* waitFor(0.5);
   yield* panel.highlight(0);
   yield* stage.say(
     '2021 年 1 月压测现场：多设备并发 + 取消 URB，两条 Set TR Dequeue 背靠背排队。',
     '① 背景',
   );
-  yield* bgNote().opacity(0.85, 0.4);
+  bgNote().opacity(0.85);
+  yield* waitFor(0.4);
   yield* waitFor(9.0); // pace R3: 拍#2 9.7s→10.1s（阈值9.9）
   const errChip = makeChip(
     view,
@@ -89,9 +91,11 @@ export default makeScene2D(function* (view) {
     '症状：日志反复刷同一条报错——出环指针被设成乱值（报错原文见下方卡）。',
     '① 背景',
   );
-  yield* errChip().opacity(0.95, 0.3);
+  errChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(10.4);
-  yield* errChip().opacity(0, 0.3);
+  errChip().opacity(0);
+  yield* waitFor(0.3);
 
   /* ===== 幕② 补丁前错误行为 ===== */
   yield* stage.say(
@@ -109,9 +113,11 @@ export default makeScene2D(function* (view) {
     '硬件不等人：前一颗命令一完成，xHC 立刻扫环——只要 cycle 位对，写到一半的 TRB 也照取。',
     '② 根因',
   );
-  yield* raceChip().opacity(0.95, 0.3);
+  raceChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(7.2);
-  yield* raceChip().opacity(0, 0.3);
+  raceChip().opacity(0);
+  yield* waitFor(0.3);
   yield* stage.say(
     '后果：第二条命令只写了一半就被取走，出环指针指向乱值——压测日志刷屏。',
     '② 根因',
@@ -146,9 +152,11 @@ export default makeScene2D(function* (view) {
     '规范锚点（§4.1 p68）：命令=先把命令 TRB 放上命令环，再敲命令门铃——上环完成在先，门铃在后。',
     '④ 收尾',
   );
-  yield* specChip().opacity(0.95, 0.3);
+  specChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(7.9);
-  yield* specChip().opacity(0, 0.3);
+  specChip().opacity(0);
+  yield* waitFor(0.3);
 
   const sum = makeCard({
     title: '补丁 · 576667bad341（2021-01）',
@@ -168,5 +176,7 @@ export default makeScene2D(function* (view) {
   );
   yield* cardIn(sum, new Vector2(TLx(960), TLy(850)));
   yield* waitFor(9.2);
-  yield* all(sum.ref().opacity(0, 0.5), stage.caption().opacity(0, 0.5));
+    sum.ref().opacity(0);
+  stage.caption().opacity(0);
+  yield* waitFor(0.5);
 });

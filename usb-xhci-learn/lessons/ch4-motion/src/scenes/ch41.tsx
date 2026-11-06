@@ -70,14 +70,16 @@ export default makeScene2D(function* (view) {
       />
     </>,
   );
-  yield* all(t1().opacity(1, 0.6), t2().opacity(1, 0.6));
-  yield* t3().opacity(1, 0.6);
+    t1().opacity(1);
+  t2().opacity(1);
+  yield* waitFor(0.6);
+  t3().opacity(1);
+  yield* waitFor(0.6);
   yield* waitFor(5.3);
-  yield* all(
-    t1().opacity(0, 0.4),
-    t2().opacity(0, 0.4),
-    t3().opacity(0, 0.4),
-  );
+    t1().opacity(0);
+  t2().opacity(0);
+  t3().opacity(0);
+  yield* waitFor(0.4);
   t1().remove();
   t2().remove();
   t3().remove();
@@ -101,7 +103,8 @@ export default makeScene2D(function* (view) {
     ],
     {x: TLx(1210), y: TLy(G.laneDevY + 104), w: 850, tint: C.dev},
   );
-  yield* devNote().opacity(0.85, 0.5);
+  devNote().opacity(0.85);
+  yield* waitFor(0.5);
 
   yield* stage.say(
     'xHCI 驱动发给 xHC 的所有命令，共用同一条通道（右侧：真实内核调用栈）。本节用一个例子走完它的完整流程。',
@@ -129,11 +132,10 @@ export default makeScene2D(function* (view) {
     title: 'Linux xhci 驱动 · drivers/usb/host/xhci-ring.c',
     lines: (excerpts as any).cmd.map((e: any) => ({line: e.line, code: e.code})),
   });
-  yield* all(
-    cmd.group().opacity(1, 0.5),
-    evt.group().opacity(1, 0.5),
-    panel.ref().opacity(1, 0.5),
-  );
+    cmd.group().opacity(1);
+  evt.group().opacity(1);
+  panel.ref().opacity(1);
+  yield* waitFor(0.5);
   cmd.markLink();
   evt.markLink();
   yield* waitFor(8.0); // pace R3: 拍#2 2.1s→10.1s（阈值10.0）
@@ -144,14 +146,16 @@ export default makeScene2D(function* (view) {
     '"There is only one Command Ring that is used for issuing xHC specific commands or commands related to Device Slots." — §4.1 p68',
     {x: 0, y: TLy(234), w: 1560, tint: C.driver, size: 19},
   );
-  yield* q1().opacity(1, 0.4);
+  q1().opacity(1);
+  yield* waitFor(0.4);
   yield* flash(cmd.group, 2);
   yield* stage.say(
     '整个 xHC 只有一条命令环——xHC 专属命令、设备槽相关命令，全部走它。',
     '断言 1/3',
   );
   yield* waitFor(11.5);
-  yield* q1().opacity(0, 0.3);
+  q1().opacity(0);
+  yield* waitFor(0.3);
 
   /* ===== ① 组命令 TRB ===== */
   const deskPos = new Vector2(TLx(430), TLy(G.laneDriverY + 122));
@@ -190,7 +194,9 @@ export default makeScene2D(function* (view) {
     new Vector2(TLx(630), TLy(520)),
     {color: C.driver},
   );
-  yield* all(bell.ref().opacity(1, 0.4), a1().opacity(0.9, 0.4));
+    bell.ref().opacity(1);
+  a1().opacity(0.9);
+  yield* waitFor(0.4);
   yield* panel.highlight(4);
   yield* stage.say(
     '然后敲命令门铃：写门铃寄存器 0，DB Target=0（Host Controller Command，门铃寄存器组见 §5.6）。',
@@ -205,7 +211,8 @@ export default makeScene2D(function* (view) {
     'CRCR · Command Ring Control Register（Operational 寄存器 · §5.4.5）',
     {x: TLx(1170), y: TLy(545), w: 330, tint: C.hc, size: 18},
   );
-  yield* crcr().opacity(1, 0.4);
+  crcr().opacity(1);
+  yield* waitFor(0.4);
   yield* stage.say('xHC 按 CRCR 记录的出环指针，从命令环取走命令 TRB。', '③ / 7');
   yield* cmd.deqTo(0);
   yield* cmd.consume(0);
@@ -238,7 +245,8 @@ export default makeScene2D(function* (view) {
       />
     </Rect>,
   );
-  yield* exec().opacity(1, 0.4);
+  exec().opacity(1);
+  yield* waitFor(0.4);
   yield* stage.say(
     'xHC 执行命令。Enable Slot 的效果是分配一个设备槽——结果不直接返回，随完成事件回话。',
     '④ / 7',
@@ -262,7 +270,8 @@ export default makeScene2D(function* (view) {
     w: 430,
   });
   view.add(evtCard.node);
-  yield* exec().opacity(0, 0.25);
+  exec().opacity(0);
+  yield* waitFor(0.25);
   yield* cardIn(evtCard, new Vector2(TLx(1555), TLy(545)));
   yield* panel.highlight(6);
   const q2 = makeChip(
@@ -270,7 +279,8 @@ export default makeScene2D(function* (view) {
     '"All commands result in the generation of a Command Completion Event TRB on the Event Ring." — §4.1 p68',
     {x: 0, y: TLy(724), w: 1560, tint: C.evt, size: 19},
   );
-  yield* q2().opacity(1, 0.3);
+  q2().opacity(1);
+  yield* waitFor(0.3);
   yield* stage.say(
     '所有命令都以命令完成事件收尾：xHC 把 Command Completion Event TRB 写到事件环。',
     '⑤ / 7',
@@ -282,7 +292,8 @@ export default makeScene2D(function* (view) {
   evtCard.ref().opacity(0);
   yield* evt.enqTo(1);
   yield* waitFor(4.3);
-  yield* q2().opacity(0, 0.3);
+  q2().opacity(0);
+  yield* waitFor(0.3);
 
   /* ===== ⑥ 唤起软件 ===== */
   const irq = makeArrow(
@@ -296,7 +307,9 @@ export default makeScene2D(function* (view) {
     'MSI-X 中断唤起软件——中断可选：xHC 可由软件轮询事件环管理（§4.2 p69 脚注 7）',
     {x: TLx(980), y: TLy(300), w: 720, tint: C.hc, size: 18},
   );
-  yield* all(irq().opacity(0.9, 0.4), irqLbl().opacity(1, 0.4));
+    irq().opacity(0.9);
+  irqLbl().opacity(1);
+  yield* waitFor(0.4);
   yield* stage.say('中断唤起软件。中断不是唯一手段——软件也可以轮询事件环。', '⑥ / 7');
   yield* waitFor(8.3);
 
@@ -350,14 +363,16 @@ export default makeScene2D(function* (view) {
   view.add(replayCard.node);
   // 回放段 exec 挪右下空袋（原位 1600,545 已被 ⑦ 收执卡 recv 长驻占用）
   exec().position(new Vector2(TLx(1750), TLy(640)));
-  yield* exec().opacity(1, 0.25);
+  exec().opacity(1);
+  yield* waitFor(0.25);
   yield* waitFor(2.2); // pace R3: 拍#12 0.9s→3.1s（阈值3.0）
   for (let i = 0; i < cap.length; i++) {
     stage.caption().text(cap[i]);
     stage.step().text(`回放 ${i + 1}/7`);
     if (i === 0) {
       replayCard.ref().position(deskPos);
-      yield* replayCard.ref().opacity(1, 0.2);
+      replayCard.ref().opacity(1);
+      yield* waitFor(0.2);
       yield* panel.highlight(3);
       yield* replayCard.ref().position(cmd.cell(rb), 0.5);
       yield* cmd.fill(rb, 'No Op', C.driver);
@@ -402,20 +417,21 @@ export default makeScene2D(function* (view) {
   });
   view.add(sum.node);
   // 总结卡清场：中带常驻件淡出，总结卡放设备泳道（devNote 同时淡出）
-  yield* all(
-    bell.ref().opacity(0, 0.3),
-    crcr().opacity(0, 0.3),
-    exec().opacity(0, 0.3),
-    irq().opacity(0, 0.3),
-    irqLbl().opacity(0, 0.3),
-    a1().opacity(0, 0.3),
-    devNote().opacity(0, 0.3),
-  );
+    bell.ref().opacity(0);
+  crcr().opacity(0);
+  exec().opacity(0);
+  irq().opacity(0);
+  irqLbl().opacity(0);
+  a1().opacity(0);
+  devNote().opacity(0);
+  yield* waitFor(0.3);
   yield* stage.say(
     '下一节看控制器上电后如何初始化（§4.2）。对照：Linux 内核 d9008e061539 xhci 驱动。',
     '完',
   );
   yield* cardIn(sum, new Vector2(TLx(960), TLy(844)));
   yield* waitFor(14.0);
-  yield* all(sum.ref().opacity(0, 0.5), stage.caption().opacity(0, 0.5));
+    sum.ref().opacity(0);
+  stage.caption().opacity(0);
+  yield* waitFor(0.5);
 });

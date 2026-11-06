@@ -56,7 +56,8 @@ export default makeScene2D(function* (view) {
       {no: '200', code: '  xhci_dbg_trace(xhci, trace_xhci_dbg_init, "// Reset the HC");'},
     ],
   });
-  yield* panel.ref().opacity(1, 0.5);
+  panel.ref().opacity(1);
+  yield* waitFor(0.5);
   yield* panel.highlight(2);
 
   /* ===== 幕① 背景现场 ===== */
@@ -76,9 +77,11 @@ export default makeScene2D(function* (view) {
     '错误链条：未 halted → reset 中止 → 返回 0 → 调用方继续写寄存器——复位根本没发生。',
     '② 补丁前',
   );
-  yield* chainChip().opacity(0.95, 0.3);
+  chainChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(9.1);
-  yield* chainChip().opacity(0, 0.3);
+  chainChip().opacity(0);
+  yield* waitFor(0.3);
   yield* stage.say(
     'xhci_reset() 是"复位后等 CNR=0"的载体。谎报成功 → CNR=1 期间接着写——p69 禁止。',
     '② 补丁前',
@@ -112,9 +115,11 @@ export default makeScene2D(function* (view) {
     '补丁后：未 halted 的复位拿到 -EBUSY，调用方按失败处理——不会再误写寄存器。',
     '④ 补丁后',
   );
-  yield* okChip().opacity(0.95, 0.3);
+  okChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(6.4);
-  yield* okChip().opacity(0, 0.3);
+  okChip().opacity(0);
+  yield* waitFor(0.3);
   const specChip = makeChip(
     view,
     '"After Chip Hardware Reset wait until the Controller Not Ready (CNR) flag in the USBSTS is \'0\'"——§4.2 p69',
@@ -124,9 +129,11 @@ export default makeScene2D(function* (view) {
     '规范锚点（p69）：CNR=0 前禁写 Operational/Runtime 寄存器；就绪才 R/S=1。',
     '④ 收尾',
   );
-  yield* specChip().opacity(0.95, 0.3);
+  specChip().opacity(0.95);
+  yield* waitFor(0.3);
   yield* waitFor(12.2);
-  yield* specChip().opacity(0, 0.3);
+  specChip().opacity(0);
+  yield* waitFor(0.3);
 
   const sum = makeCard({
     title: '补丁 · 24d2a690fb83（2026-10）',
@@ -146,5 +153,7 @@ export default makeScene2D(function* (view) {
   );
   yield* cardIn(sum, new Vector2(TLx(960), TLy(850)));
   yield* waitFor(9.5);
-  yield* all(sum.ref().opacity(0, 0.5), stage.caption().opacity(0, 0.5));
+    sum.ref().opacity(0);
+  stage.caption().opacity(0);
+  yield* waitFor(0.5);
 });

@@ -302,6 +302,15 @@
     font-size:13px; color:var(--dim); line-height:1.6;
   }
   .ic-quote span{color:var(--faint); white-space:nowrap}
+  .ic-korder{
+    margin-top:7px; border-top:1px dashed var(--edge-hi); padding-top:5px;
+    font-family:var(--mono); font-size:12.5px; color:var(--hc); line-height:1.55;
+  }
+  #m2-kchain{
+    margin-top:8px; border-top:1px dashed var(--edge-hi); padding-top:7px;
+    font-size:13.5px; line-height:1.75; color:var(--dim);
+  }
+  #m2-kchain b{color:var(--hc); font-weight:600}
 
   /* ---------- 模块三：字段规范原文气泡 ---------- */
   .qb{
@@ -353,22 +362,12 @@
 <!-- ================= 模块一 ================= -->
 <section id="m1">
   <div class="panel">
-      <h2>剧本：Enable Slot 命令闭环</h2>
-      <p class="quote">设备插上根端口、端口复位完成后，软件要先拿到 Device Slot——「The Enable Slot Command returns a Slot ID that is selected by the host controller.」<em>（§4.3.2 p75）</em></p>
-      <ol class="steps" id="m1-steps">
-        <li data-step="1"><span class="chk">○</span><b>① 写命令 TRB 上环</b>
-          <span class="tip">驱动面板：环选「命令环」· 类型选「Enable Slot」→ 点「写 TRB 上环」</span></li>
-        <li data-step="2"><span class="chk">○</span><b>② 敲门铃 DB Target=0</b>
-          <span class="tip">点「敲门铃」→ 选「DB Target = 0 · Host Controller Command」（写门铃寄存器 0）</span></li>
-        <li data-step="3"><span class="chk">○</span><b>③ xHC 执行</b>
-          <span class="tip">点金色「执行」：命令环 deq 推进（取指），完成事件写上事件环（enq 推进）</span></li>
-        <li data-step="4"><span class="chk">○</span><b>④ 确认完成事件</b>
-          <span class="tip">点事件环上出现的「Command Completion Event」卡，查看内容（Slot ID=1）</span></li>
-        <li data-step="5"><span class="chk">○</span><b>⑤ 驱动读事件环</b>
-          <span class="tip">点「读事件环」：事件环 deq 推进，回执收入回执栏——闭环完成</span></li>
-      </ol>
-      <div id="m1-script-done" class="script-done hidden">✓ 剧本完成：Enable Slot 命令闭环（写 TRB → 门铃 0 → 执行 → 完成事件 → 读事件）</div>
-      <div class="freeplay">剧本之外可自由练习：EP0 传输环写 Setup/Data/Status Stage TRB → 门铃 DB Target=1 → xHC 执行（产出 Transfer Event）。enq/deq 指针可点击推进；写错方向会引规范原文提示。</div>
+      <h2 id="m1-script-title">剧本一：Enable Slot 命令闭环</h2>
+      <p class="quote" id="m1-script-quote">设备插上根端口、端口复位完成后，软件要先拿到 Device Slot——「The Enable Slot Command returns a Slot ID that is selected by the host controller.」<em>（§4.3.2 p75）</em></p>
+      <ol class="steps" id="m1-steps"></ol>
+      <div id="m1-round-done" class="script-done hidden"></div>
+      <div id="m1-script-done" class="script-done hidden">✓ 两轮剧本完成：Enable Slot → Address Device 命令闭环（各五步：写 TRB → 门铃 0 → 执行 → 完成事件 → 读事件）。自由练习全面解锁。</div>
+      <div class="freeplay">两轮剧本之外可自由练习：EP0 传输环写 Setup/Data/Status Stage TRB → 门铃 DB Target=1 → xHC 执行（产出 Transfer Event）。enq/deq 指针可点击推进；写错方向会引规范原文提示。</div>
       <div style="margin-top:10px">
         <button class="btn ghost" data-act="m1-stepreset">单步重置（重做当前步）</button>
         <button class="btn ghost" data-act="m1-reset">重置模块一</button>
@@ -454,9 +453,11 @@
       <h2>剧本：把 xHC 从复位带到开机（R/S=1）</h2>
       <p class="quote">就绪门：「After Chip Hardware Reset wait until the Controller Not Ready (CNR) flag in the USBSTS is ‘0’ before writing any xHC Operational or Runtime registers.」<em>（§4.2 p69）</em></p>
       <p class="quote">顺序门：「This text does not imply a specific order for the following operations, however these operations shall be completed before setting the USBCMD register Run/Stop (R/S) bit to ‘1’.」<em>（§4.2 p69 Note）</em></p>
-      <p class="note">点卡片，按你认为合法的顺序完成寄存器编程：①「等 CNR=0」必须最先（就绪前不许写任何 Operational/Runtime 寄存器）；②「USBCMD R/S=1」必须最后（其余没做完不许开机）；③ 中间五步顺序随意——规范明文不强制。每张卡完成后展开该步的规范原文。</p>
+      <p class="note">点卡片，按你认为合法的顺序完成寄存器编程：①「等 CNR=0」必须最先（就绪前不许写任何 Operational/Runtime 寄存器）；②「USBCMD R/S=1」必须最后（其余没做完不许开机）；③ 中间五步顺序随意——规范明文不强制。每张卡完成后展开该步的规范原文；<b>七步全部完成后，每张卡会标注 Linux 内核（基线 d9008e061539）实际编程的顺序</b>。</p>
       <div class="initgrid" id="m2-grid"></div>
-      <div id="m2-donebox" class="script-done hidden">✓ 主机控制器已开机（R/S=1）——「This operation allows the xHC to begin accepting doorbell references.」（§4.2 p70）。根端口开始上报设备连接，可以按 §4.3 枚举设备 → 去模块一走 Enable Slot 命令闭环。</div>
+      <div id="m2-donebox" class="script-done hidden">✓ 主机控制器已开机（R/S=1）——「This operation allows the xHC to begin accepting doorbell references.」（§4.2 p70）。根端口开始上报设备连接，可以按 §4.3 枚举设备 → 去模块一走 Enable Slot 命令闭环。
+        <div id="m2-kchain">Linux 内核（基线 d9008e061539）实际编程顺序：<b>xhci_gen_setup → xhci_reset</b>（等 CNR=0，xhci.c L229/L5516）→ <b>xhci_init</b>（xhci.c L531）内 <b>① MaxSlotsEn → ② CRCR → ③ DCBAAP → ④ ERSTSZ → ERSTBA</b>（xhci_add_interrupter，xhci-mem.c L2343/L2351）→ xhci_run_finished 内 <b>xhci_start</b>（R/S=1，xhci.c L154/L599）。中间五步内核自选次序 = MaxSlotsEn → CRCR → DCBAAP → ERSTSZ → ERSTBA——规范不强制，内核有自己的工程顺序。</div>
+      </div>
       <div class="hint" id="m2-hint">从「等 USBSTS.CNR=0」开始：先点它。</div>
       <div style="margin-top:10px"><button class="btn ghost" data-act="m2-reset">重置模块二</button></div>
     </div>
@@ -613,7 +614,41 @@ window.addEventListener('hashchange', () => activateTab((location.hash || '').sl
 const LINK = 8;                       // 第 9 格 = Link TRB（尾格虚线）
 const RINGS = {};
 const PTR = {};                       // 指针元素表 {ring:{enq,deq}}
-const m1 = { steps:[false,false,false,false,false], db:null, receipts:[], snaps:[] };
+const m1 = { scriptIdx:0, steps:[false,false,false,false,false], db:null, receipts:[], snaps:[] };
+
+/* 两轮剧本：Enable Slot（§4.3.2）→ Address Device（§4.3.3/§4.3.4）——五步同构，命令类型不同 */
+const SCRIPTS = [
+  {
+    type: 'Enable Slot', cn: '一',
+    title: '剧本一：Enable Slot 命令闭环',
+    quote: '设备插上根端口、端口复位完成后，软件要先拿到 Device Slot——「The Enable Slot Command returns a Slot ID that is selected by the host controller.」<em>（§4.3.2 p75）</em>',
+    steps: [
+      {title: '① 写命令 TRB 上环', tip: '驱动面板：环选「命令环」· 类型选「Enable Slot」→ 点「写 TRB 上环」'},
+      {title: '② 敲门铃 DB Target=0', tip: '点「敲门铃」→ 选「DB Target = 0 · Host Controller Command」（写门铃寄存器 0）'},
+      {title: '③ xHC 执行', tip: '点金色「执行」：命令环 deq 推进（取指），完成事件写上事件环（enq 推进）'},
+      {title: '④ 确认完成事件', tip: '点事件环上出现的「Command Completion Event」卡，查看内容（Slot ID=1）'},
+      {title: '⑤ 驱动读事件环', tip: '点「读事件环」：事件环 deq 推进，回执收入回执栏——闭环完成'},
+    ],
+  },
+  {
+    type: 'Address Device', cn: '二',
+    title: '剧本二：Address Device 命令闭环（§4.3.3 / §4.3.4）',
+    quote: '拿到 Slot ID 后，软件在内存装配 Input Context，再发编址命令——「Issue an Address Device Command for the Device Slot, where the command points to the Input Context data structure described above.」<em>（§4.3.3 p76 步11）</em>',
+    steps: [
+      {title: '① 写命令 TRB 上环', tip: '驱动面板：环选「命令环」· 类型选「Address Device」→ 点「写 TRB 上环」（Input Context 装配 = §4.3.3 p75 步8-10，本台从简）'},
+      {title: '② 敲门铃 DB Target=0', tip: '点「敲门铃」→ 选「DB Target = 0 · Host Controller Command」（与 Enable Slot 同一条命令门铃）'},
+      {title: '③ xHC 执行', tip: '点金色「执行」：xHC 按命令参数里的 Input Context 给设备编址、启用默认控制端点（§4.3.3 p76 步11）'},
+      {title: '④ 确认完成事件', tip: '点事件环上出现的「Command Completion Event」卡：设备槽 Enabled → Addressed（§4.3.4 p76）'},
+      {title: '⑤ 驱动读事件环', tip: '点「读事件环」收回执——编址完成才能对该槽发后续命令（§4.3.4 p76）'},
+    ],
+  },
+];
+const scriptType = () => SCRIPTS[m1.scriptIdx].type;
+const scriptCn  = () => SCRIPTS[m1.scriptIdx].cn;
+/* 全部剧本完成 = 自由练习态（此后 DB Target=1 等自由操作放行） */
+function scriptAllDone(){
+  return m1.scriptIdx === SCRIPTS.length - 1 && m1.steps.every(Boolean);
+}
 
 const TYPES = {
   cmd: ['Enable Slot', 'No Op', 'Address Device'],
@@ -689,7 +724,17 @@ function renderSteps(){
     li.classList.toggle('now', isNow);
     if (isNow) nowSet = true;
   });
-  $('#m1-script-done').classList.toggle('hidden', !m1.steps.every(Boolean));
+  $('#m1-script-done').classList.toggle('hidden', !scriptAllDone());
+}
+
+/* 按当前剧本轮次渲染标题/引文/五步清单（步骤 li 由剧本数据生成） */
+function renderScriptPanel(){
+  const s = SCRIPTS[m1.scriptIdx];
+  $('#m1-script-title').textContent = s.title;
+  $('#m1-script-quote').innerHTML = s.quote;
+  $('#m1-steps').innerHTML = s.steps.map((t, i) =>
+    `<li data-step="${i + 1}"><span class="chk">○</span><b>${t.title}</b><span class="tip">${t.tip}</span></li>`).join('');
+  renderSteps();
 }
 
 function renderAll(){
@@ -748,10 +793,10 @@ function updateM1Pulse(){
   if (k === -1) return;                       // 剧本完成 → 自由练习，不闪
   if (k === 0){
     if ($('#m1-ring').value !== 'cmd') setPulse('#m1-ring', true);
-    else if ($('#m1-type').value !== 'Enable Slot') setPulse('#m1-type', true);
+    else if ($('#m1-type').value !== scriptType()) setPulse('#m1-type', true);
     else setPulse('[data-act="m1-write"]', true);
   } else if (k === 1){
-    if (!$('#m1-dbpop').classList.contains('hidden')) setPulse('[data-db]', true);
+    if (!$('#m1-dbpop').classList.contains('hidden')) setPulse('.dbpop [data-db="0"]', true);
     else setPulse('[data-act="m1-doorbell"]', true);
   } else if (k === 2){
     setPulse('[data-act="m1-exec"]', true);
@@ -768,7 +813,24 @@ function stepDone(i, msg){
   /* 步骤完成边界快照（供「单步重置」回退到当前步起点） */
   m1.snaps[i] = JSON.parse(JSON.stringify(
     {rings: RINGS, db: m1.db, receipts: m1.receipts}));
+  if (m1.steps.every(Boolean) && m1.scriptIdx < SCRIPTS.length - 1){
+    advanceRound();
+    return;
+  }
   if (msg) hint(msg, false);
+}
+
+/* 剧本一闭环 → 剧本二（Address Device）：步进状态归零、面板换剧本；环上状态保留（连续剧情） */
+function advanceRound(){
+  m1.scriptIdx++;
+  m1.steps = [false, false, false, false, false];
+  m1.snaps = [];
+  const rd = $('#m1-round-done');
+  rd.classList.remove('hidden');
+  rd.textContent = '✓ 剧本一（Enable Slot 命令闭环）完成——进入剧本二：Address Device（§4.3.3 p76）。';
+  renderScriptPanel();
+  hint('剧本二开始：类型切到「Address Device」→ 点「写 TRB 上环」（命令参数指向软件装配好的 Input Context，§4.3.3 p75 步8-10 / p76 步11）。');
+  renderAll();
 }
 
 /* ---- 单步重置：回退到当前步起点（保留此前已完成步骤） ---- */
@@ -817,8 +879,12 @@ function actWrite(){
   g.cells[idx] = { label: type, kind: (r === 'cmd' ? 'cmd' : 'tr'), cyc: g.pcs };
   g.enq = Math.min(g.enq + 1, LINK);                     // 写后推进（最多停在 Link 上）
   hint(`已写入 ${type} → ${r} 环第 ${idx} 格（C=${g.cells[idx].cyc}），enq 推进到 ${g.enq}${g.enq === LINK ? '（Link 格，下次写入绕回并翻转 Cycle bit）' : ''}——Advance the Endpoint 0 Transfer Ring Enqueue Pointer（§4.3 p73 iii/v/vii 同款动作）。`);
-  if (r === 'cmd' && type === 'Enable Slot'){
-    stepDone(0, '剧本①完成：Enable Slot 命令 TRB 已上命令环。下一步敲 DB Target=0。');
+  if (r === 'cmd' && !scriptAllDone()){
+    if (type === scriptType()){
+      stepDone(0, `剧本${scriptCn()}①完成：${type} 命令 TRB 已上命令环。下一步敲 DB Target=0。`);
+    } else if (!m1.steps[0]){
+      hint(`已写入 ${type} → ${r} 环第 ${idx} 格——注意：剧本${scriptCn()}①走「${scriptType()}」，先把类型切回来；这颗 ${type} 留在环上，xHC 执行时会一并取走。`);
+    }
   }
   renderAll();
 }
@@ -828,21 +894,44 @@ function actDoorbell(){ $('#m1-dbpop').classList.toggle('hidden'); updateM1Pulse
 
 function actDb(t){
   $('#m1-dbpop').classList.add('hidden');
-  m1.db = t;
-  if (t === 0){
-    const pend = RINGS.cmd.cells.some(c => c && c.label === 'Enable Slot');
-    if (m1.steps[0] && pend){
-      hint('已写门铃寄存器 0：DB Target = 0（Host Controller Command code）——「All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register, that is, writing the Host Controller Command code to the DB Target field of Doorbell register 0.」（§4.1 p68）。xHC 侧「执行」已亮起。');
-      stepDone(1, '剧本②完成：门铃 0 已敲。下一步点 xHC「执行」。');
-    } else if (!m1.steps[0]){
-      hint('顺序不对——先完成第①步：把 Enable Slot 命令 TRB 写上命令环，再敲门铃（§4.1 p68：先 placing the desired Command TRB(s) on the Command Ring，then ringing）。', true);
-    } else {
-      hint('命令环上已没有待处理的 Enable Slot TRB——先重新写一个（§4.1 p68）。', true);
+  if (t === 1){
+    if (!scriptAllDone()){
+      /* 剧本期间敲设备槽门铃：拦下并指路（命令门铃是 DB Target=0；DB1 属 EP0 自由练习） */
+      $('#m1-dbpop').classList.remove('hidden');
+      hint('门铃敲错了——命令走 DB Target = 0（写门铃寄存器 0）：「…writing the Host Controller Command code to the DB Target field of Doorbell register 0.」（§4.1 p68）。DB Target = 1 是设备槽门铃（Control EP 0 Enqueue Pointer Update，§4.3 p74 viii），两轮剧本走完后的自由练习（EP0 传输）才用它。', true);
+      updateM1Pulse();
+      return;
     }
-  } else {
+    m1.db = 1;
     const n = pendingCount(RINGS.ep0);
     hint('已写设备槽门铃：DB Target = 1（Control EP 0 Enqueue Pointer Update）——「Ring the Device Slots\u2019 Doorbell with DB Target = Control EP 0 Enqueue Pointer Update.」（§4.3 p74 viii）'
       + (n === 0 ? '（注意：EP0 传输环当前没有待取的 TRB——xHC 无 TD 可取。）' : `（EP0 传输环有 ${n} 个 TRB 待取，xHC「执行」已亮起。）`));
+    renderAll();
+    return;
+  }
+  if (!scriptAllDone()){
+    const pend = RINGS.cmd.cells.some(c => c && c.label === scriptType());
+    if (m1.steps[0] && pend){
+      m1.db = 0;
+      hint('已写门铃寄存器 0：DB Target = 0（Host Controller Command code）——「All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register, that is, writing the Host Controller Command code to the DB Target field of Doorbell register 0.」（§4.1 p68）。xHC 侧「执行」已亮起。');
+      stepDone(1, `剧本${scriptCn()}②完成：门铃 0 已敲。下一步点 xHC「执行」。`);
+    } else if (!m1.steps[0]){
+      m1.db = null;
+      hint(`顺序不对——先完成剧本${scriptCn()}第①步：把 ${scriptType()} 命令 TRB 写上命令环，再敲门铃（§4.1 p68：先 placing the desired Command TRB(s) on the Command Ring，then ringing）。`, true);
+    } else {
+      m1.db = null;
+      hint(`命令环上没有待处理的 ${scriptType()} TRB——先把它写上命令环（§4.1 p68）。`, true);
+    }
+  } else {
+    /* 自由练习：命令环上有任意待处理命令 TRB 即可敲命令门铃 */
+    const n = pendingCount(RINGS.cmd);
+    if (n === 0){
+      m1.db = null;
+      hint('命令环为空——自由练习也要先写命令 TRB 上环再敲门铃（§4.1 p68）。', true);
+    } else {
+      m1.db = 0;
+      hint(`已写门铃寄存器 0（自由练习）：命令环有 ${n} 个 TRB 待取——「All xHC commands are issued by placing the desired Command TRB(s) on the Command Ring, then ringing the xHC command Doorbell register\u2026」（§4.1 p68）。xHC 侧「执行」已亮起。`);
+    }
   }
   renderAll();
 }
@@ -874,10 +963,14 @@ function actExec(){
   let evLabel, evInfo;
   if (r === 'cmd'){
     const names = taken.map(c => c.label).join(' + ');
-    const hasES = taken.some(c => c.label === 'Enable Slot');
+    const stype = scriptType();
+    const hasS = taken.some(c => c.label === stype);
+    const note = (stype === 'Enable Slot')
+      ? ' · Slot ID=1（Slot ID 由 xHC 自选，「The Enable Slot Command returns a Slot ID that is selected by the host controller.」§4.3.2 p75）'
+      : ' · 设备槽 Enabled → Addressed（「Successful completion of the Address Device Command with BSR = \u2018 0\u2019 shall transition the Device Slot from the Enabled to the Addressed state.」§4.3.4 p76）';
     evLabel = 'Command Completion Event';
     evInfo  = `Command Completion Event TRB · ${names}`
-      + (hasES ? ' · Slot ID=1（Slot ID 由 xHC 自选，「The Enable Slot Command returns a Slot ID that is selected by the host controller.」§4.3.2 p75）' : '')
+      + (hasS ? note : '')
       + '（§4.1 p68：All commands result in the generation of a Command Completion Event TRB on the Event Ring.）';
   } else {
     evLabel = 'Transfer Event';
@@ -891,8 +984,8 @@ function actExec(){
   }
   m1.db = null;
   hint(`xHC 取指 ${taken.length} 个 TRB（${r} 环 deq 推进到 ${g.deq}），产生「${evLabel}」写入事件环（enq 推进到 ${e.enq}）——§4.1 p68。`);
-  if (r === 'cmd' && taken.some(c => c.label === 'Enable Slot') && m1.steps[1]){
-    stepDone(2, '剧本③完成：完成事件已上事件环。下一步点事件环上的事件卡确认。');
+  if (r === 'cmd' && taken.some(c => c.label === scriptType()) && m1.steps[1]){
+    stepDone(2, `剧本${scriptCn()}③完成：完成事件已上事件环。下一步点事件环上的事件卡确认。`);
   }
   renderAll();
 }
@@ -910,10 +1003,14 @@ function actReadEvent(){
   e.deq = Math.min(e.deq + 1, LINK);
   m1.receipts.unshift(c.info);
   renderReceipts();
-  hint('已读走「' + c.label + '」（事件环 deq 推进到 ' + e.deq + '），回执见回执栏。'
-    + (c.info.includes('Enable Slot') ? '拿到 Slot ID 后才能对该槽发后续命令——「System software shall wait for the Command Completion Event associated with the Enable Slot Command before issuing any more commands to the slot.」（§4.3.2 p75）' : ''));
-  if (m1.steps[3] && c.label === 'Command Completion Event' && c.info.includes('Enable Slot')){
-    stepDone(4, '剧本⑤完成：Enable Slot 命令闭环走通。');
+  const followup = c.info.includes('Enable Slot')
+    ? '拿到 Slot ID 后才能对该槽发后续命令——「System software shall wait for the Command Completion Event associated with the Enable Slot Command before issuing any more commands to the slot.」（§4.3.2 p75）'
+    : c.info.includes('Address Device')
+      ? '编址完成才能继续配置——「System software shall wait for Address Device Command completion event on the Event Ring before issuing any more commands to the slot.」（§4.3.4 p76）'
+      : '';
+  hint('已读走「' + c.label + '」（事件环 deq 推进到 ' + e.deq + '），回执见回执栏。' + followup);
+  if (m1.steps[3] && c.label === 'Command Completion Event' && c.info.includes(scriptType())){
+    stepDone(4, `剧本${scriptCn()}⑤完成：${scriptType()} 命令闭环走通。`);
   }
   renderAll();
 }
@@ -956,8 +1053,8 @@ function onCellClick(r, i){
   const c = RINGS.evt.cells[i];
   if (!c || c.kind !== 'evt') return;
   $('#m1-evtinfo').textContent = c.info;
-  if (m1.steps[2] && c.info.includes('Enable Slot')){
-    stepDone(3, '剧本④完成：已确认 Command Completion Event（Slot ID=1）。下一步「读事件环」。');
+  if (m1.steps[2] && c.info.includes(scriptType())){
+    stepDone(3, `剧本${scriptCn()}④完成：已确认 Command Completion Event${scriptType() === 'Enable Slot' ? '（Slot ID=1）' : '（设备槽已编址）'}。下一步「读事件环」。`);
     renderAll();
   } else {
     hint('事件卡内容见下方事件信息栏。要收回执，点「读事件环」。');
@@ -977,8 +1074,18 @@ function populateTypes(){
   updateSelnote();
   updateM1Pulse();
 }
-$('#m1-ring').addEventListener('change', populateTypes);
-$('#m1-type').addEventListener('change', () => { updateSelnote(); updateM1Pulse(); });
+$('#m1-ring').addEventListener('change', () => { populateTypes(); guideTypeChoice(); });
+$('#m1-type').addEventListener('change', () => { updateSelnote(); updateM1Pulse(); guideTypeChoice(); });
+
+/* 剧本①期间切到别的命令类型：即时指路（Address Device=剧本二的门；No Op=自由练习） */
+function guideTypeChoice(){
+  const r = $('#m1-ring').value, t = $('#m1-type').value;
+  if (r !== 'cmd' || scriptAllDone() || m1.steps[0] || t === scriptType()) return;
+  const other = SCRIPTS.find(s => s.type === t);
+  hint(other
+    ? `「${t}」是剧本${other.cn}的命令——先把剧本${scriptCn()}（${scriptType()}）走完。类型切回「${scriptType()}」再点「写 TRB 上环」。`
+    : `「${t}」是自由练习命令，不在剧本里——剧本${scriptCn()}①请选「${scriptType()}」。`);
+}
 $('[data-act="m1-write"]').addEventListener('click', actWrite);
 $('[data-act="m1-doorbell"]').addEventListener('click', actDoorbell);
 $$('[data-db]').forEach(b => b.addEventListener('click', () => actDb(Number(b.dataset.db))));
@@ -987,12 +1094,15 @@ $('[data-act="m1-exec"]').addEventListener('click', actExec);
 $('[data-act="m1-stepreset"]').addEventListener('click', actStepReset);
 $('[data-act="m1-reset"]').addEventListener('click', () => {
   ['cmd','ep0','evt'].forEach(buildRing);
+  m1.scriptIdx = 0;
   m1.steps = [false,false,false,false,false];
   m1.db = null; m1.receipts = []; m1.snaps = [];
   renderReceipts();
   $('#m1-evtinfo').textContent = '（点事件环上的事件卡，这里显示完成事件内容）';
   $('#m1-dbpop').classList.add('hidden');
-  hint('已重置。从剧本第①步开始：环选「命令环」、类型选「Enable Slot」，点「写 TRB 上环」。');
+  $('#m1-round-done').classList.add('hidden');
+  renderScriptPanel();
+  hint('已重置。从剧本一第①步开始：环选「命令环」、类型选「Enable Slot」，点「写 TRB 上环」。');
   renderAll();
 });
 
@@ -1044,6 +1154,29 @@ const INIT_DEFS = {
 };
 const INIT_KEYS = ['cnr', 'maxslot', 'dcbaap', 'crcr', 'erstsz', 'erstba', 'rs'];
 const INIT_DISPLAY = ['maxslot', 'crcr', 'erstsz', 'cnr', 'dcbaap', 'rs', 'erstba'];
+/* Linux 内核实际编程顺序（基线 d9008e061539 亲核）：xhci_gen_setup→xhci_reset（CNR 握手）
+   → xhci_init：① MaxSlotsEn ② CRCR ③ DCBAAP ④ xhci_add_interrupter（ERSTSZ→ERSTBA）
+   → xhci_run_finished→xhci_start（R/S=1）。七步全部完成后按此序给卡片打标。 */
+const KORDER = ['cnr', 'maxslot', 'crcr', 'dcbaap', 'erstsz', 'erstba', 'rs'];
+const KFUNC = {
+  cnr:     'xhci_reset() · xhci.c L229（xhci_gen_setup L5516 调用）',
+  maxslot: 'xhci_enable_max_dev_slots() · xhci.c L487（xhci_init 第 1）',
+  crcr:    'xhci_set_cmd_ring_deq() · xhci.c L506（xhci_init 第 2）',
+  dcbaap:  'xhci_init() · xhci.c L555（xhci_init 第 3，写 DCBAAP）',
+  erstsz:  'xhci_add_interrupter() · xhci-mem.c L2343（xhci_init 第 4a）',
+  erstba:  'xhci_add_interrupter() · xhci-mem.c L2351（xhci_init 第 4b）',
+  rs:      'xhci_start() · xhci.c L154（xhci_run_finished L599 调用）',
+};
+function markKernelOrder(){
+  KORDER.forEach((k, i) => {
+    const card = $(`#m2-grid .initcard[data-init="${k}"]`);
+    if (!card) return;
+    const d = document.createElement('div');
+    d.className = 'ic-korder';
+    d.textContent = `Linux 内核实际顺序：第 ${i + 1}/7 步 · ${KFUNC[k]}`;
+    card.appendChild(d);
+  });
+}
 const m2init = { done: [], blocked: 0 };
 
 function m2FreeKeys(){ return INIT_KEYS.filter(k => INIT_DEFS[k].rule === 'free'); }
@@ -1104,7 +1237,8 @@ function onInitCard(k, card){
   card.appendChild(q);
   if (k === 'rs'){
     $('#m2-donebox').classList.remove('hidden');
-    m2InitHint('开机完成：R/S=1 之后 xHC 才开始接受门铃引用——7 步全部就位（CNR 最先、R/S 最后、中间五步顺序随意）。');
+    markKernelOrder();
+    m2InitHint('开机完成：R/S=1 之后 xHC 才开始接受门铃引用——7 步全部就位（CNR 最先、R/S 最后、中间五步顺序随意）。每张卡已标注 Linux 内核实际编程顺序，完整调用链见下方绿色框。');
   } else {
     m2InitHint('已编程 ' + d.reg + '（' + m2init.done.length + '/7）。中间五步顺序随意（规范明文不强制）；R/S=1 留到最后。');
   }
@@ -1664,7 +1798,7 @@ window.__ts = {
       };
     }
     return {
-      m1: { steps: m1.steps.slice(), rings: rr, done: m1.steps.every(Boolean), receipts: m1.receipts.length },
+      m1: { scriptIdx: m1.scriptIdx, scriptType: scriptType(), steps: m1.steps.slice(), rings: rr, done: scriptAllDone(), receipts: m1.receipts.length },
       m2: {
         doneCount: m2init.done.length,
         order: m2init.done.slice(),
@@ -1684,6 +1818,7 @@ window.__ts = {
 /* ================= 初始化 ================= */
 ['cmd','ep0','evt'].forEach(buildRing);
 populateTypes();
+renderScriptPanel();
 buildM2Init();
 buildM3();
 renderAll();

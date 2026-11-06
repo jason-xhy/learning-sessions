@@ -47,10 +47,16 @@ export default makeScene2D(function* (view) {
         x={0} y={TLy(640)} fontFamily={FONT.sans} fontSize={34} fill={C.dim} />
     </>,
   );
-  yield* all(t1().opacity(1, 0.6), t2().opacity(1, 0.6));
-  yield* t3().opacity(1, 0.6);
+    t1().opacity(1);
+  t2().opacity(1);
+  yield* waitFor(0.6);
+  t3().opacity(1);
+  yield* waitFor(0.6);
   yield* waitFor(5.4);
-  yield* all(t1().opacity(0, 0.4), t2().opacity(0, 0.4), t3().opacity(0, 0.4));
+    t1().opacity(0);
+  t2().opacity(0);
+  t3().opacity(0);
+  yield* waitFor(0.4);
   t1().remove(); t2().remove(); t3().remove();
 
   /* ===== 舞台 ===== */
@@ -70,7 +76,8 @@ export default makeScene2D(function* (view) {
     ],
     {x: TLx(1180), y: TLy(G.laneDevY + 100), w: 800, tint: C.dev},
   );
-  yield* devNote().opacity(0.85, 0.5);
+  devNote().opacity(0.85);
+  yield* waitFor(0.5);
   /* 代码栈面板（init 组，行内容逐字来自 drafts/code-excerpts.json）：
      右列 y 169..224 是驱动泳道标签带，面板落其下 240..415 净带 */
   const panel: CodePanelApi = makeCodePanel(view, {
@@ -78,7 +85,8 @@ export default makeScene2D(function* (view) {
     title: 'Linux xhci 驱动 · drivers/usb/host/xhci.c + xhci-mem.c',
     lines: (excerpts as any).init.map((e: any) => ({line: e.line, code: e.code})),
   });
-  yield* panel.ref().opacity(1, 0.4);
+  panel.ref().opacity(1);
+  yield* waitFor(0.4);
   yield* stage.say(
     '系统启动，xHC 就位。本节四个阶段：等就绪、自由组五步、合闸、端口上报。',
   );
@@ -151,7 +159,9 @@ export default makeScene2D(function* (view) {
       />
     </Rect>,
   );
-  yield* all(freeBox().opacity(1, 0.4), cnrLamp.ref().opacity(0, 0.3));
+    freeBox().opacity(1);
+  cnrLamp.ref().opacity(0);
+  yield* waitFor(0.4);
   cnrLamp.ref().remove();
 
   /* 自由组进度：不再用独立灯排（与框顶注记互叠），改在每张 S 卡内打勾 */
@@ -174,7 +184,8 @@ export default makeScene2D(function* (view) {
   yield* stage.say('S1：配 CONFIG.MaxSlotsEn，定设备槽数量上限（p69）。', '②·S1 自由组');
   yield* s1.row(2)().text('✓ 已配置');
   yield* waitFor(3.9); // pace R3: 拍#5 1.7s→5.6s（阈值5.5）
-  yield* s1.ref().opacity(0, 0.3);
+  s1.ref().opacity(0);
+  yield* waitFor(0.3);
   s1.ref().remove();
 
   /* ===== S2 DCBAAP ===== */
@@ -195,7 +206,8 @@ export default makeScene2D(function* (view) {
   yield* stage.say('S2：DCBAAP 指向 DCBAA——每个设备槽的输出上下文指针由软件装表（p69）。', '②·S2 自由组');
   yield* s2.row(3)().text('✓ 已装载');
   yield* waitFor(5.6); // pace R3: 拍#6 1.7s→7.3s（阈值7.2）
-  yield* s2.ref().opacity(0, 0.3);
+  s2.ref().opacity(0);
+  yield* waitFor(0.3);
   s2.ref().remove();
 
   /* ===== S3 CRCR ===== */
@@ -215,7 +227,8 @@ export default makeScene2D(function* (view) {
   yield* stage.say('S3：CRCR 写入命令环首 TRB 地址——§4.1 的命令通道从这里开始（p69）。', '②·S3 自由组');
   yield* s3.row(2)().text('✓ 已写入');
   yield* waitFor(5.1); // pace R3: 拍#7 1.7s→6.8s（阈值6.7）
-  yield* s3.ref().opacity(0, 0.3);
+  s3.ref().opacity(0);
+  yield* waitFor(0.3);
   s3.ref().remove();
 
   /* ===== S4 事件环 ===== */
@@ -245,11 +258,14 @@ export default makeScene2D(function* (view) {
     '写 ERSTBA 的这一刻，事件环启用（p70 · §4.9.4）',
     {x: TLx(1220), y: TLy(555), w: 560, tint: C.evt, size: 20},
   );
-  yield* erst().opacity(1, 0.3);
+  erst().opacity(1);
+  yield* waitFor(0.3);
   yield* panel.highlight(8);
   yield* stage.say('最后写 ERSTBA——写入即启用事件环（p70）。', '②·S4 自由组');
   yield* waitFor(6.8);
-  yield* all(s4.ref().opacity(0, 0.3), erst().opacity(0, 0.3));
+    s4.ref().opacity(0);
+  erst().opacity(0);
+  yield* waitFor(0.3);
   s4.ref().remove();
 
   /* ===== S5 中断链 ===== */
@@ -272,13 +288,17 @@ export default makeScene2D(function* (view) {
     '中断可选——xHC 可由软件轮询事件环管理（p69 脚注 7）',
     {x: TLx(1290), y: TLy(555), w: 520, tint: C.dim, size: 18},
   );
-  yield* irqOpt().opacity(0.9, 0.3);
+  irqOpt().opacity(0.9);
+  yield* waitFor(0.3);
   yield* stage.say(
     'S5：中断链点亮——MSI-X 表（向量 0 起步）、节流 Interval、INTE、IE 依次打开（p69–70）。',
     '②·S5 自由组',
   );
   yield* waitFor(8.8);
-  yield* all(s5.ref().opacity(0, 0.3), irqOpt().opacity(0, 0.3), freeBox().opacity(0, 0.3));
+    s5.ref().opacity(0);
+  irqOpt().opacity(0);
+  freeBox().opacity(0);
+  yield* waitFor(0.3);
   s5.ref().remove();
 
   /* ===== 6) R/S=1 ===== */
@@ -322,7 +342,10 @@ export default makeScene2D(function* (view) {
     new Vector2(TLx(1000), TLy(545)),
     {color: C.ok},
   );
-  yield* all(rs.ref().opacity(0, 0.3), portBar().opacity(1, 0.4), upArrow().opacity(0.9, 0.4));
+    rs.ref().opacity(0);
+  portBar().opacity(1);
+  upArrow().opacity(0.9);
+  yield* waitFor(0.3);
   rs.ref().remove();
   yield* stage.say(
     '控制器运行——根集线器端口开始上报设备连接，软件按 §4.3 枚举设备（p70）。',
@@ -334,7 +357,9 @@ export default makeScene2D(function* (view) {
   yield* waitFor(8.8);
 
   /* ===== 8) USB2 vs SS 分叉 ===== */
-  yield* all(portBar().opacity(0, 0.3), upArrow().opacity(0, 0.3));
+    portBar().opacity(0);
+  upArrow().opacity(0);
+  yield* waitFor(0.3);
   const fork = makeNote(
     view,
     [
@@ -344,7 +369,8 @@ export default makeScene2D(function* (view) {
     ],
     {x: TLx(960), y: TLy(560), w: 900, tint: C.warn},
   );
-  yield* fork().opacity(0.9, 0.4);
+  fork().opacity(0.9);
+  yield* waitFor(0.4);
   yield* stage.say(
     '注意分叉：USB2 端口必须软件发起端口复位才 Enabled；SS 端口 attach 成功自动 Enabled（p70）。',
     '④ 协议分叉',
@@ -365,12 +391,17 @@ export default makeScene2D(function* (view) {
     rowSize: 23,
   });
   view.add(sum.node);
-  yield* all(fork().opacity(0, 0.3), portBar().opacity(0, 0.3), upArrow().opacity(0, 0.3));
+    fork().opacity(0);
+  portBar().opacity(0);
+  upArrow().opacity(0);
+  yield* waitFor(0.3);
   yield* stage.say(
     '下一节：端口上报连接之后，一个 USB 设备如何走完初始化（§4.3）。对照：Linux 内核 d9008e061539 xhci 驱动。',
     '完',
   );
   yield* cardIn(sum, new Vector2(TLx(960), TLy(548)));
   yield* waitFor(14.0);
-  yield* all(sum.ref().opacity(0, 0.5), stage.caption().opacity(0, 0.5));
+    sum.ref().opacity(0);
+  stage.caption().opacity(0);
+  yield* waitFor(0.5);
 });

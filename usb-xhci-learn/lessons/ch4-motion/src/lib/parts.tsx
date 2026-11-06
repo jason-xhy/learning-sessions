@@ -212,21 +212,24 @@ export function buildStage(
 
   function* say(text: string, stepText?: string): ThreadGenerator {
     const cap = caption();
-    yield* all(cap.opacity(0, 0.25), step().opacity(0, 0.25));
+        cap.opacity(0);
+    step().opacity(0);
+    yield* waitFor(0.25);
     cap.text(text);
     if (stepText !== undefined) step().text(stepText);
-    yield* all(cap.opacity(1, 0.45), step().opacity(1, 0.45));
+        cap.opacity(1);
+    step().opacity(1);
+    yield* waitFor(0.45);
   }
 
   return {caption, step, cite, lane, laneNote, say};
 }
 
 export function* lanesIn(stage: StageApi): ThreadGenerator {
-  yield* all(
-    stage.lane.driver().opacity(1, 0.5),
-    stage.lane.hc().opacity(1, 0.5),
-    stage.lane.dev().opacity(1, 0.5),
-  );
+    stage.lane.driver().opacity(1);
+  stage.lane.hc().opacity(1);
+  stage.lane.dev().opacity(1);
+  yield* waitFor(0.5);
 }
 
 /* ---------- TRB / 事件 卡片 ---------- */
@@ -316,7 +319,10 @@ export function makeCard(o: CardOpts): CardApi {
 
 export function* cardIn(card: CardApi, pos: Vector2, dur = 0.5): ThreadGenerator {
   card.ref().position(pos);
-  yield* all(card.ref().opacity(1, dur), card.ref().scale(0.92, dur));
+    card.ref().opacity(1);
+  yield* all(
+    card.ref().scale(0.92, dur),
+  );
 }
 
 /* ---------- 环带（命令环 / 事件环） ---------- */
@@ -484,10 +490,14 @@ export function makeRing(
       const c = cellNodes[i]();
       t.text(label);
       c.stroke(tint);
-      yield* all(t.opacity(1, 0.25), c.stroke(C.edgeHi, 0.25));
+            t.opacity(1);
+      yield* all(
+        c.stroke(C.edgeHi, 0.25),
+      );
     },
     *consume(i) {
-      yield* all(cellTxts[i]().opacity(0.35, 0.3));
+            cellTxts[i]().opacity(0.35);
+      yield* waitFor(0.3);
       cellNodes[i]().stroke(C.edge);
     },
     *enqTo(i, dur = 0.35) {
@@ -516,7 +526,8 @@ export function makeRing(
 
 export function* ringIn(ring: RingApi, label: string): ThreadGenerator {
   ring.group().find(Txt)!.text(label);
-  yield* ring.group().opacity(1, 0.5);
+  ring.group().opacity(1);
+  yield* waitFor(0.5);
 }
 
 /* ---------- 门铃 / 灯 / 芯片 / 注记 ---------- */
@@ -632,9 +643,11 @@ export function makeLampRow(
         dot().fill(C.faint);
       },
       *set(text) {
-        yield* val().opacity(0, 0.08);
+        val().opacity(0);
+        yield* waitFor(0.08);
         val().text(text);
-        yield* val().opacity(1, 0.15);
+        val().opacity(1);
+        yield* waitFor(0.15);
       },
     };
   });
@@ -810,11 +823,10 @@ export function makeCodePanel(
         const on = r === tgt;
         noRefs[r]().fill(on ? '#d9a860' : C.faint);
         codeRefs[r]().fill(on ? '#d9a860' : C.ink);
+        noRefs[r]().opacity(on ? 1 : 0.45);
+        codeRefs[r]().opacity(on ? 1 : 0.45);
       }
-      yield* all(
-        ...noRefs.map((nr, r) => nr().opacity(r === tgt ? 1 : 0.45, 0.2)),
-        ...codeRefs.map((cr, r) => cr().opacity(r === tgt ? 1 : 0.45, 0.2)),
-      );
+      yield* waitFor(0.2);
     },
   };
 }
@@ -865,13 +877,15 @@ export function makeBus(view: View2D, o: {x: number; y0: number; y1: number}): B
           />
         </Rect>,
       );
-      yield* ticket().opacity(1, 0.15);
+      ticket().opacity(1);
+      yield* waitFor(0.15);
       yield* ticket().position(
         new Vector2(o.x, down ? o.y1 : o.y0),
         0.8,
         easeInOutCubic,
       );
-      yield* ticket().opacity(0, 0.25);
+      ticket().opacity(0);
+      yield* waitFor(0.25);
       ticket().remove();
     },
   };
@@ -903,14 +917,19 @@ export function makeArrow(
 
 export function* flash(ref: Ref<Node>, times = 1): ThreadGenerator {
   for (let i = 0; i < times; i++) {
-    yield* ref().opacity(0.35, 0.1);
-    yield* ref().opacity(1, 0.15);
+    ref().opacity(0.35);
+    yield* waitFor(0.1);
+    ref().opacity(1);
+    yield* waitFor(0.15);
   }
 }
 
 export function* popIn(ref: Ref<Node>): ThreadGenerator {
   ref().scale(0.7);
-  yield* all(ref().opacity(1, 0.2), ref().scale(1, 0.35, easeOutBack));
+    ref().opacity(1);
+  yield* all(
+    ref().scale(1, 0.35, easeOutBack),
+  );
 }
 
 /* ---------- diff 代码面板（R3 P4 增量：补丁前/后对照，行级红绿底） ----------
@@ -1058,12 +1077,11 @@ export function makeDiffPanel(
         codeRefs[r]().fill(on ? '#d9a860' : C.ink);
         rowRefs[r]().stroke(on ? '#d9a860' : BG_CTX);
         rowRefs[r]().lineWidth(on ? 1.5 : 1);
+        noRefs[r]().opacity(on ? 1 : 0.45);
+        signRefs[r]().opacity(on ? 1 : 0.45);
+        codeRefs[r]().opacity(on ? 1 : 0.45);
       }
-      yield* all(
-        ...noRefs.map((nr, r) => nr().opacity(r === tgt ? 1 : 0.45, 0.2)),
-        ...signRefs.map((sr, r) => sr().opacity(r === tgt ? 1 : 0.45, 0.2)),
-        ...codeRefs.map((cr, r) => cr().opacity(r === tgt ? 1 : 0.45, 0.2)),
-      );
+      yield* waitFor(0.2);
     },
   };
 }

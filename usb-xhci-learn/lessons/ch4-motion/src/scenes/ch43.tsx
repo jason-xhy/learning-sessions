@@ -68,10 +68,16 @@ export default makeScene2D(function* (view) {
         x={0} y={TLy(630)} fontFamily={FONT.sans} fontSize={34} fill={C.dim} />
     </>,
   );
-  yield* all(t1().opacity(1, 0.6), t2().opacity(1, 0.6));
-  yield* t3().opacity(1, 0.6);
+    t1().opacity(1);
+  t2().opacity(1);
+  yield* waitFor(0.6);
+  t3().opacity(1);
+  yield* waitFor(0.6);
   yield* waitFor(4.3);
-  yield* all(t1().opacity(0, 0.4), t2().opacity(0, 0.4), t3().opacity(0, 0.4));
+    t1().opacity(0);
+  t2().opacity(0);
+  t3().opacity(0);
+  yield* waitFor(0.4);
   t1().remove(); t2().remove(); t3().remove();
 
   /* ===== 舞台 ===== */
@@ -103,19 +109,19 @@ export default makeScene2D(function* (view) {
     title: 'Linux xhci 驱动 · drivers/usb/core + host',
     lines: (excerpts as any).dev.map((e: any) => ({line: e.line, code: e.code})),
   });
-  yield* all(
-    cmd.group().opacity(1, 0.5),
-    evt.group().opacity(1, 0.5),
-    ep0.group().opacity(1, 0.5),
-    panel.ref().opacity(1, 0.5),
-  );
+    cmd.group().opacity(1);
+  evt.group().opacity(1);
+  ep0.group().opacity(1);
+  panel.ref().opacity(1);
+  yield* waitFor(0.5);
   cmd.markLink(); evt.markLink(); ep0.markLink();
 
   /* PORTSC 面板（中带新位：避开 deq 标签带 522..542 与 evt enq 带 592..612） */
   const psc = makeLampRow(view, {
     x: TLx(620), y: TLy(570), labels: ['CCS', 'CSC', 'PED', 'PR', 'PLS', 'Speed'], w: 112,
   });
-  for (const l of psc) yield* l.ref().opacity(1, 0.2);
+  for (const l of psc) l.ref().opacity(1);
+ yield* waitFor(0.2);
 
   /* 槽状态卡（中带，与灯排分行错开） */
   const slot = makeCard({
@@ -162,7 +168,10 @@ export default makeScene2D(function* (view) {
   /* 工作位（驱动泳道左侧，瞬态卡公用位） */
   const BENCH = new Vector2(TLx(370), TLy(245));
 
-  yield* all(devBox().opacity(1, 0.5), slot.ref().opacity(1, 0.5), bus.wire().opacity(0.9, 0.5));
+    devBox().opacity(1);
+  slot.ref().opacity(1);
+  bus.wire().opacity(0.9);
+  yield* waitFor(0.5);
   yield* stage.say(
     '示例：全速（FS）设备插入 USB2 根端口 1——这条分支步骤最全。设备此刻只感到上电（Powered）。',
   );
@@ -178,11 +187,14 @@ export default makeScene2D(function* (view) {
     ],
     {x: TLx(1200), y: TLy(G.laneDevY + 96), w: 640, tint: C.dev},
   );
-  yield* fork().opacity(0.85, 0.4);
+  fork().opacity(0.85);
+  yield* waitFor(0.4);
   yield* stage.say('端口在 Disconnected 等待。USB2 与 USB3 的路径从这里分岔（p71–72）。', '前提');
   yield* waitFor(9.4);
-  yield* fork().opacity(0, 0.3);
-  yield* devNameplate().opacity(0.85, 0.4);
+  fork().opacity(0);
+  yield* waitFor(0.3);
+  devNameplate().opacity(0.85);
+  yield* waitFor(0.4);
 
   /* ===== B1 插入 ===== */
   yield* all(psc[0].on(C.ok), psc[0].set('1'));
@@ -218,7 +230,8 @@ export default makeScene2D(function* (view) {
     new Vector2(TLx(676), TLy(545)),
     {color: C.driver, dash: true},
   );
-  yield* rdArrow().opacity(0.85, 0.3);
+  rdArrow().opacity(0.85);
+  yield* waitFor(0.3);
   yield* stage.say('B2 驱动读 PORTSC：CSC=1——连接事件。USB2 端口要软件发起端口复位（p71–72）。', 'B2 / 11');
   yield* all(psc[3].on(C.warn), psc[3].set('1'));
   yield* waitFor(6.7); // pace R3: 拍#5 0.9s→7.6s（阈值7.5）
@@ -239,7 +252,8 @@ export default makeScene2D(function* (view) {
   yield* waitFor(8.2); // pace R3: 拍#7 0.9s→9.1s（阈值9.0）
   yield* stage.say('复位把设备送入 Default 态——备好收 SET_ADDRESS（p72）。', 'B3 / 11');
   yield* waitFor(7.1);
-  yield* rdArrow().opacity(0, 0.2);
+  rdArrow().opacity(0);
+  yield* waitFor(0.2);
 
   /* ===== B4 取槽 ===== */
   const cmd1 = makeCard({
@@ -274,9 +288,11 @@ export default makeScene2D(function* (view) {
     '完成事件带回 Slot ID=1——由 xHC 自选（§4.3.2 p75）。设备槽进入 Enabled。',
     'B4 / 11',
   );
-  yield* slot.ref().opacity(0, 0.15);
+  slot.ref().opacity(0);
+  yield* waitFor(0.15);
   slot.row(0)().text('Enabled · Slot ID=1');
-  yield* slot.ref().opacity(1, 0.2);
+  slot.ref().opacity(1);
+  yield* waitFor(0.2);
   slotEvt.ref().remove();
   yield* evt.deqTo(1);
   yield* evt.consume(1);
@@ -315,9 +331,12 @@ export default makeScene2D(function* (view) {
     'DCBAA 1 号格由软件挂上输出上下文指针（p76 步10）——xHC 只读',
     {x: TLx(300), y: TLy(655), w: 420, tint: C.dim, size: 18},
   );
-  yield* dcbaa().opacity(0.9, 0.3);
+  dcbaa().opacity(0.9);
+  yield* waitFor(0.3);
   yield* waitFor(5.1);
-  yield* all(ic.ref().opacity(0, 0.3), dcbaa().opacity(0, 0.3));
+    ic.ref().opacity(0);
+  dcbaa().opacity(0);
+  yield* waitFor(0.3);
   ic.ref().remove();
 
   /* ===== B6 编址 ===== */
@@ -352,9 +371,11 @@ export default makeScene2D(function* (view) {
   yield* bus.send('SET_ADDRESS(1)', true, C.dev);
   yield* devState().fill(C.ink, 0.2);
   devState().text('Address');
-  yield* slot.ref().opacity(0, 0.15);
+  slot.ref().opacity(0);
+  yield* waitFor(0.15);
   slot.row(0)().text('Addressed');
-  yield* slot.ref().opacity(1, 0.2);
+  slot.ref().opacity(1);
+  yield* waitFor(0.2);
   yield* panel.highlight(11);
   yield* evt.fill(2, 'CCE', C.evt);
   yield* evt.enqTo(3);
@@ -375,9 +396,11 @@ export default makeScene2D(function* (view) {
     ],
     {x: TLx(370), y: TLy(245), w: 500, tint: C.warn},
   );
-  yield* bsr().opacity(0.85, 0.3);
+  bsr().opacity(0.85);
+  yield* waitFor(0.3);
   yield* waitFor(7.8);
-  yield* bsr().opacity(0, 0.3);
+  bsr().opacity(0);
+  yield* waitFor(0.3);
 
   /* ===== B7 问尺寸（FS 专属） ===== */
   yield* panel.highlight(0);
@@ -386,7 +409,8 @@ export default makeScene2D(function* (view) {
     'B7 / 11',
   );
   const bell = makeBell(view, {x: TLx(1650), y: TLy(570)});
-  yield* bell.ref().opacity(1, 0.3);
+  bell.ref().opacity(1);
+  yield* waitFor(0.3);
   let ep = 0;
   const trbs: [string, {k: string; v: string}[]][] = [
     ['Setup Stage TRB', [
@@ -494,7 +518,8 @@ export default makeScene2D(function* (view) {
     'B9 / 11',
   );
   yield* waitFor(7.1);
-  yield* docs.ref().opacity(0, 0.3);
+  docs.ref().opacity(0);
+  yield* waitFor(0.3);
   docs.ref().remove();
 
   /* ===== B10 配置（双操作同成） ===== */
@@ -533,18 +558,24 @@ export default makeScene2D(function* (view) {
     '缺一不可：Configure Endpoint 未成功就发 SET_CONFIGURATION = 未定义行为（p78）',
     {x: TLx(1200), y: TLy(890), w: 800, tint: C.warn, size: 19},
   );
-  yield* rule().opacity(0.9, 0.3);
+  rule().opacity(0.9);
+  yield* waitFor(0.3);
   yield* devState().fill(C.dev, 0.2);
   devState().text('Configured');
-  yield* slot.ref().opacity(0, 0.15);
+  slot.ref().opacity(0);
+  yield* waitFor(0.15);
   slot.row(0)().text('Configured');
-  yield* slot.ref().opacity(1, 0.2);
+  slot.ref().opacity(1);
+  yield* waitFor(0.2);
   yield* waitFor(3.5); // pace R3: 拍#20 5.0s→8.5s（阈值8.4）
   yield* stage.say(
     '双绿：设备 Address→Configured、槽 Addressed→Configured（§4.3.5 p77–78）。',
     'B10 / 11',
   );
-  yield* all(cfg1.ref().opacity(0, 0.3), cfg2.ref().opacity(0, 0.3), rule().opacity(0, 0.3));
+    cfg1.ref().opacity(0);
+  cfg2.ref().opacity(0);
+  rule().opacity(0);
+  yield* waitFor(0.3);
   cfg1.ref().remove();
   cfg2.ref().remove();
   yield* waitFor(6.0); // pace R3: 拍#21 1.0s→7.0s（阈值6.9）
@@ -570,12 +601,11 @@ export default makeScene2D(function* (view) {
     rowSize: 23,
   });
   view.add(sum.node);
-  yield* all(
-    devNameplate().opacity(0, 0.3),
-    ...psc.map(l => l.ref().opacity(0, 0.3)),
-    slot.ref().opacity(0, 0.3),
-    bell.ref().opacity(0, 0.3),
-  );
+  devNameplate().opacity(0);
+  for (const l of psc) l.ref().opacity(0);
+  slot.ref().opacity(0);
+  bell.ref().opacity(0);
+  yield* waitFor(0.3);
   yield* stage.say(
     '设备全程只见 USB 请求——槽、环、上下文对设备不可见。下一节：设备移除（§4.4）。对照：Linux 内核 d9008e061539 xhci 驱动。',
     '完',
@@ -590,12 +620,13 @@ export default makeScene2D(function* (view) {
     ],
     {x: TLx(1660), y: TLy(327), w: 380, tint: C.dim},
   );
-  yield* panel.ref().opacity(0, 0.3);
-  yield* hubNote().opacity(0.85, 0.3);
+  panel.ref().opacity(0);
+  yield* waitFor(0.3);
+  hubNote().opacity(0.85);
+  yield* waitFor(0.3);
   yield* waitFor(8.9); // pace R3: 拍#23 10.1s→11.2s（阈值11.2，7.8→8.9）
-  yield* all(
-    hubNote().opacity(0, 0.3),
-    sum.ref().opacity(0, 0.5),
-    stage.caption().opacity(0, 0.5),
-  );
+    hubNote().opacity(0);
+  sum.ref().opacity(0);
+  stage.caption().opacity(0);
+  yield* waitFor(0.3);
 });
