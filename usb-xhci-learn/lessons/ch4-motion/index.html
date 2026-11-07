@@ -132,7 +132,7 @@
 <div class="wrap">
   <header>
     <h1>xHCI 第 4 章视频课件<span class="tag">R4 四段式 · 2026-11-06</span></h1>
-    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + §4.6 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、No Op / Enable Slot / Disable Slot、Address Device / Configure Endpoint / Evaluate Context / Reset Endpoint / Stop Endpoint / Set TR Dequeue Pointer / Reset Device 十命令与三支补丁片）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读）。</p>
+    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + §4.6 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、4.6.2-4.6.18 十七命令与三支补丁片=18 小节全上线，六支可选规范项）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读）。</p>
     <div class="meta">
       1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 持续违例</b>（三主片+三补丁片，全帧非抽样）·
       判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
@@ -519,7 +519,7 @@ Date:   Fri Jan 15 18:19:06 2021 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，§4.1 p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=16">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=23">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1091,7 +1091,7 @@ Date:   Fri Oct 9 18:16:14 2026 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">单行改动（<code>drivers/usb/host/xhci.c</code>，<code>xhci_reset</code>）：未 halted 中止分支 <code>return 0</code> → <code>return -EBUSY</code>。补丁前：中止复位被当成成功，调用方在错误状态下继续走初始化。补丁后：-EBUSY 把「主机忙、未停机」如实上抛，调用方走错误处理——<code>xhci_reset</code> 的所有失败出口（未 halted / handshake 超时）语义一致。与代码摘录（drafts/code-excerpts.json init 组 L229，同函数内 <code>xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us)</code>）对读：那条握手失败会返回超时错误，本补丁让“没进入复位”同样返回错误；凡依赖返回值判断复位成败的调用方（探测、休眠恢复、错误恢复路径）从此拿到一致语义，验收时可直接对 -EBUSY 分支验证未停机场景。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=17">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=24">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1560,7 +1560,7 @@ Date:   Thu Jul 17 10:31:07 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（§4.3.3 p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=18">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=25">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1774,7 +1774,7 @@ Date:   Thu Mar 5 00:36:37 2026 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">把两条错误路径的 <code>kfree(command)</code> 改为 <code>xhci_free_command(xhci, command)</code>（+2/-2）：后者同时释放命令结构与关联的 completion 结构；命令结构零初始化使 <code>command-&gt;in_ctx</code> 为 NULL，不会被误释放。补丁前：kfree 只放一半，completion 泄漏；补丁后：错误路径与成功路径（L4183）释放形态统一，任何退出路径都不留孤儿。与贴码对读：det:1 分配行（true=带 completion）、det:5 热行即被改的错误路径之一——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；§4.4 拔除剧本的「异常退出」分支从此与正常分支同构。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=19">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=26">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -2209,14 +2209,14 @@ Date:   Tue Aug 19 15:58:43 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">把清理前移到命令完成事件的中断上下文：<code>xhci_handle_cmd_disable_slot</code> 增加 cmd_comp_code 形参（TRB_DISABLE_SLOT case 分派行同步传入），COMP_SUCCESS 时即刻清 <code>xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id]</code> 与 <code>xhci-&gt;devs[slot_id]</code>——DCBAA 指针清零即 Disabled 态的规范形态，此后 B 的 Enable Slot 完成时 devs[1] 已空，枚举照常。配套：<code>xhci_free_virt_device</code> 改为显式传 virt_dev 指针、只在数组仍指向本设备时清指针（防误清新主）；新增 <code>xhci_disable_and_free_slot()</code> 收拢全部「禁槽 + 释放」调用对。与贴码对读：§4.4 段 det:6 热行即本补丁在中断上下文清 DCBAA 指针的新增块（基线形态 <code>xhci-&gt;dcbaa.ctx_array[slot_id] = 0</code>）、§4.5 段 slot:8 冲突检测热行（B 被挡的判定点）与 slot:9 DCBAA 装载热行（装载/清零互为正反操作）——本补丁已在基线 d9008e061539 内，贴码即补丁后形态。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=20">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=27">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
   </section>
 
   <section id="s46">
-    <h2><span class="no">§4.6</span>Command Interface 命令接口 <span class="cmt">18 小节逐支短片线 · 已上线机制片+十命令+三支补丁片（批 A-C）</span></h2>
+    <h2><span class="no">§4.6</span>Command Interface 命令接口 <span class="cmt">18 小节逐支短片线 · 机制片+十七命令+三支补丁片=18 小节全上线（批 A-D）</span></h2>
     <style>
   .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
   .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
@@ -2251,7 +2251,7 @@ section 4.6.1.2. </blockquote>
         <a class="btn ghost" href="interactive/index.html#m6">模块六 · 命令受理台 →</a>
         <span class="note">单文件自包含 · Zone A 受理剧本（5 代表命令拼 TRB→入环→回执）· Zone B 命令×槽状态合法性矩阵（错配引原文拦截）</span>
       </div>
-      <p class="int-note"><b>补丁片（选做）：</b>三支已落地——ch4606p（d6759133e981 Configure Endpoint Context Entries 重算）· ch4609p（1174d44906d5 Stop EP 完成竞态重发）· ch4610p（0d9f78a92ef5 背靠背 Set TR Deq Ptr 越段挂死，修复函数已退役故无对读段）；准入判据=R10-SPEC §6 三判据（真实主线修复 / 三幕 ≤700f 可讲清 / 与该命令规范机制直接相关），无可准入者不硬凑。</p>
+      <p class="int-note"><b>补丁片（选做）：</b>三支已落地——ch4606p（d6759133e981 Configure Endpoint Context Entries 重算）· ch4609p（1174d44906d5 Stop EP 完成竞态重发）· ch4610p（0d9f78a92ef5 背靠背 Set TR Deq Ptr 越段挂死，修复函数已退役故无对读段）；准入判据=R10-SPEC §6 三判据（真实主线修复 / 三幕 ≤700f 可讲清 / 与该命令规范机制直接相关），无可准入者不硬凑。可选族七支无补丁片——无内核修复故事可配（R10-SPEC §6 判据）。</p>
     </div>
     <div class="card b1">
       <div class="bhead"><span class="badge">②</span>18 小节导航（规范序）</div>
@@ -3417,7 +3417,7 @@ Date:   Tue Jun 24 17:14:42 2014 +0300
       <p class="ph">要解决的问题（症状 + 机制）</p>
       <p class="pbody">症状：某些「全部端点被 drop」的配置切换（如切到 Alternate Interface 0）后，Configure Endpoint 命令被 xHC 以 Parameter Error 拒绝，或驱动继续沿用旧值。机制（message 原文）：<code>drop_endpoint()</code> 的增量计算「似乎假定 add_flags 总含新配置的全部端点」——实际 add_flags 只含新配置里<b>新增</b>的端点；且 EP0_FLAG 在设备生命周期里并非恒置。两个假设任一不成立，全 drop 时 Context Entries 就被算成 0（非法值——p111 Parameter Error 判据「Add 的 DCI &gt; Context Entries」直接命中）或 -1（按 LAST_CTX 宏解读为 31，导致继续使用旧的错误值）。</p>
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">把两处增量维护整块删除（add/drop 各一块），改为 <code>xhci_check_bandwidth()</code> 发命令前的终点一步重算：i 自 31 下探，取第一个「ring 存活且未被 Drop」或「Add 旗标置位」的端点写 LAST_CTX(i)；全不命中则 i==1 兜底——LAST_CTX(1) 即「只剩 EP0」。补丁前：每步增量的两处假设任一不成立就写坏值；补丁后：终点一次算清，且 i==1 分支正是规范 p110「全 Disabled → Context Entries=\'1\'」的内核直译。与贴码对读：下方补丁对读段琥珀高亮行（Fix up 注释行）即修复循环所在——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；分帧走读见 ch4606p（scene=21）。</p>
+      <p class="pbody">把两处增量维护整块删除（add/drop 各一块），改为 <code>xhci_check_bandwidth()</code> 发命令前的终点一步重算：i 自 31 下探，取第一个「ring 存活且未被 Drop」或「Add 旗标置位」的端点写 LAST_CTX(i)；全不命中则 i==1 兜底——LAST_CTX(1) 即「只剩 EP0」。补丁前：每步增量的两处假设任一不成立就写坏值；补丁后：终点一次算清，且 i==1 分支正是规范 p110「全 Disabled → Context Entries=\'1\'」的内核直译。与贴码对读：下方补丁对读段琥珀高亮行（Fix up 注释行）即修复循环所在——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；分帧走读见 ch4606p（scene=28）。</p>
       <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 琥珀高亮行 = 修复循环所在</span></h3>
             <div class="exhead2">drivers/usb/host/xhci.c:3078-3174 · xhci_check_bandwidth·补丁对读段 · d9008e061539</div>
       <pre class="codeseg" data-src="xhci.c:3078:3174"><div class="cl" data-line="3078"><span class="ln">3078</span><span class="cd">int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)</span></div>
@@ -3518,7 +3518,7 @@ Date:   Tue Jun 24 17:14:42 2014 +0300
 <div class="cl" data-line="3173"><span class="ln">3173</span><span class="cd">	return ret;</span></div>
 <div class="cl" data-line="3174"><span class="ln">3174</span><span class="cd">}</span></div></pre>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=21">补丁分帧动画 · 三幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=28">补丁分帧动画 · 三幕走读 →</a>
         <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 §4.6.6 p110 Entries 两分支）</span>
       </div>
       <div class="act">
@@ -4327,7 +4327,7 @@ Date:   Fri Jan 29 15:00:40 2021 +0200
       <p class="ph">要解决的问题（症状 + 机制）</p>
       <p class="pbody">症状：取消风暴场景下 Stop Endpoint 假失败残留——完成码 Context State Error 但环实际已在跑，端点停在「半停」态。机制：完成处理器的 COMP_CONTEXT_STATE_ERROR 分支此前只按「真的没停下来」处理；规范 p122 竞态 Note（L1881-1887）明确 Context State Error 可能来自 Busy 端点的异步翻转——本补丁修的正是其反向形态：EP 实际 Running、命令却报错=竞态败给了取消重启。</p>
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">EP_STATE_RUNNING case 补竞态分支（+11）：原地 GFP_ATOMIC 分配命令、重挂 stop_cmd_timer、重发 Stop Endpoint 命令、重敲命令环门铃；halted case 补 <code>return;</code> 止住串入。补丁后：假失败当场自愈，端点必达 Stopped。与贴码对读：下方补丁对读段琥珀行（race 注释/重发命令）即本修复块——本补丁已在基线 d9008e061539 内（后续 42b758137601 加 100ms 重试上限与 fallthrough，语义同源）；本卡贴码 det:24 热行（完成侧无处理注释）即修复前的入口；分帧走读见 ch4609p（scene=23）。</p>
+      <p class="pbody">EP_STATE_RUNNING case 补竞态分支（+11）：原地 GFP_ATOMIC 分配命令、重挂 stop_cmd_timer、重发 Stop Endpoint 命令、重敲命令环门铃；halted case 补 <code>return;</code> 止住串入。补丁后：假失败当场自愈，端点必达 Stopped。与贴码对读：下方补丁对读段琥珀行（race 注释/重发命令）即本修复块——本补丁已在基线 d9008e061539 内（后续 42b758137601 加 100ms 重试上限与 fallthrough，语义同源）；本卡贴码 det:24 热行（完成侧无处理注释）即修复前的入口；分帧走读见 ch4609p（scene=29）。</p>
       <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 琥珀高亮行 = 竞态重发块所在</span></h3>
             <div class="exhead2">drivers/usb/host/xhci-ring.c:1194-1319 · xhci_handle_cmd_stop_ep·补丁对读段 · d9008e061539</div>
       <pre class="codeseg" data-src="xhci-ring.c:1194:1319"><div class="cl" data-line="1194"><span class="ln">1194</span><span class="cd">static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,</span></div>
@@ -4457,7 +4457,7 @@ Date:   Fri Jan 29 15:00:40 2021 +0200
 <div class="cl" data-line="1318"><span class="ln">1318</span><span class="cd">	xhci_ring_doorbell_for_active_rings(xhci, slot_id, ep_index);</span></div>
 <div class="cl" data-line="1319"><span class="ln">1319</span><span class="cd">}</span></div></pre>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=23">补丁分帧动画 · 三幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=29">补丁分帧动画 · 三幕走读 →</a>
         <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 §4.6.9 p122 竞态 Note）</span>
       </div>
       <div class="act">
@@ -4892,9 +4892,9 @@ Date:   Thu Jun 21 16:28:30 2012 -0700
       <p class="ph">要解决的问题（症状 + 机制）</p>
       <p class="pbody">症状：整机挂死。机制（message 原文）：update_ring_for_set_deq_completion 无条件推进软件出队指针——指针已停在 link TRB（段尾）时一推即越出段外（la-la-land），while 循环在段间内存里狂找匹配（顺带 GPF 隐患），deq_seg 与 dequeue 失同步 → <code>xhci_trb_virt_to_dma</code> 返回 NULL → 后续传输事件被忽略 → 超时转 No-Op → 中断上下文死循环。</p>
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">while 循环前补 last_trb 段尾守卫（+11）：软件出队指针停在 link TRB 时，先把 deq_seg 前进一段、dequeue 回新段首，while 从正确的段出发找 queued_deq_ptr——越段扫描、失同步、挂死三点全堵。沿革（诚实注记）：该函数已于 2025-03-06 被 856563be98b2 移除（deq_seg/deq_ptr 直接存 queued_deq_seg/queued_deq_ptr，无需再搜），基线不含修复后形态，故本卡无对读段；本支判据=diff 原文（drafts/patch-48.txt）。与贴码对读：本卡贴码 set:27 热行（deq_seg 从 queued_* 取回）即该簿记的现代形态——修复保护的语义延续至今；分帧走读见 ch4610p（scene=22）。</p>
+      <p class="pbody">while 循环前补 last_trb 段尾守卫（+11）：软件出队指针停在 link TRB 时，先把 deq_seg 前进一段、dequeue 回新段首，while 从正确的段出发找 queued_deq_ptr——越段扫描、失同步、挂死三点全堵。沿革（诚实注记）：该函数已于 2025-03-06 被 856563be98b2 移除（deq_seg/deq_ptr 直接存 queued_deq_seg/queued_deq_ptr，无需再搜），基线不含修复后形态，故本卡无对读段；本支判据=diff 原文（drafts/patch-48.txt）。与贴码对读：本卡贴码 set:27 热行（deq_seg 从 queued_* 取回）即该簿记的现代形态——修复保护的语义延续至今；分帧走读见 ch4610p（scene=30）。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=22">补丁分帧动画 · 三幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=30">补丁分帧动画 · 三幕走读 →</a>
         <span class="note">背景现场 → diff 逐行走读 → 规范收尾 + 函数沿革注记（无对读段：修复函数已退役）</span>
       </div>
       <div class="act">
@@ -5178,40 +5178,677 @@ Cycle bit = Event Ring’s PCS flag. </blockquote>
       </div>
     </div>
 
-    <div class="card s46todo" id="s46-12">
+    <div class="card s46card" id="s46-12">
       <div class="s46head"><span class="s46no">4.6.12</span><span class="s46ttl">Force Event</span><span class="s46tag opt">可选命令</span><span class="s46pg">p130-p131</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 D：可选族）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2457-L2462">The Force Event Command is used by a VMM to insert an Event TRB in an 
+Event Ring of a target VM when the VMM is emulating an xHC device to a VM. 
+When a Force Event Command is processed by the xHC it shall insert an Event 
+TRB on the target VFs’ Event Ring and copy the data pointed to by the Force 
+Event Command, except for the Cycle bit, to the target Event TRB. The xHC 
+shall set the Cycle bit to be consistent with the target VFs’ Event Ring. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2457-L2462（p130）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2463-L2465">A Command Completion Event with a TRB Error will be generated if the VF ID 
+of the Force Event Command is not valid. A VF Event Ring Full Error shall be 
+generated if the Target VF’s Event Ring is full. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2463-L2465（p130）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2544-L2548">Note: When the command completes, the VMM may release the buffer containing 
+the Event TRB pointed to by the Force Event Command. 
+Note: The “forced” event shall be dropped if the target Event Ring is full. Software 
+should reschedule a Force Event Command if an VF Event Ring Full Error is 
+returned. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2544-L2548（p131）</div>
+      <h3>TRB 类型表（内核直译） <span class="cmt">基线 xhci.h 枚举切片 · 驱动零使用</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.h:1139-1140 · TRB 类型枚举（Table 6-91 内核直译） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.h:1139:1140"><div class="cl" data-line="1139"><span class="ln">1139</span><span class="cd">/* Force Event Command (opt) */</span></div>
+<div class="cl" data-line="1140"><span class="ln">1140</span><span class="cd">#define TRB_FORCE_EVENT		18</span></div></pre>
+      <p class="pbody">可选规范项 · Linux xHCI 驱动不使用此命令（drivers/usb/host/*.c 零发行）——贴码=基线 TRB 类型号枚举对（注释行 + define 行），无调用链可配。</p>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2472-L2496">To issue a Force Event Command system software shall perform the following 
+operations: 
+• 
+Allocate and initialize the VF Event TRB that will be sent to the target VF’s 
+Event Ring. The details of the VF Event TRB initialization will depend on the 
+type of Event that is being forced. 
+o 
+Insert a Force Event Command on the Command Ring of the PF0 and 
+initialize the following fields: 
+o 
+TRB Type = Force Event Command (refer to Table 6-91). 
+o 
+VF ID = ID of the target VF. 
+o 
+VF Interrupter Target = The ID of the target Interrupter assigned to the 
+VF. Refer to  Table 6-72 for more information on this value. 
+o 
+Event TRB Pointer = The address of the VF Event TRB. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2472-L2496（p130）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2503-L2543">When a Force Event Command is executed by the xHC it shall perform the 
+following operations: 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+• 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+• 
+Command TRB Pointer = The address of the Force Event Command TRB. 
+• 
+If the VF ID is valid: 
+o 
+If the VF Interrupter Target is in range for the VF: 
+• 
+If the target VF’s Event Ring is not full: 
+o 
+Insert the VF’s Event TRB referenced by the Force Event Command 
+Event TRB Pointer into target VF’s Event Ring specified by the VF ID 
+and the VF Interrupter Target fields: 
+•  
+Copy all fields of the VF Event TRB except the Cycle bit field to the 
+target VF’s Event Ring. 
+•  
+Cycle bit = Target VF’s Event Ring’s PCS flag. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else // The target VF’s Event Ring is full 
+•  
+Completion Code = VF Event Ring Full Error. 
+o 
+else // The VF Interrupter Target is not in range for the VF 
+•  
+Completion Code = TRB Error. 
+o 
+else // The VF ID is not valid 
+•  
+Completion Code = TRB Error. 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2503-L2543（p131）</div>
+      <div class="act">
+        <video controls preload="metadata" src="4612-force-event.mp4"></video>
+        <a class="btn" href="player/index.html?scene=16">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 可选规范项</span>
+      </div>
     </div>
 
-    <div class="card s46todo" id="s46-13">
+    <div class="card s46card" id="s46-13">
       <div class="s46head"><span class="s46no">4.6.13</span><span class="s46ttl">Negotiate Bandwidth</span><span class="s46tag opt">可选命令</span><span class="s46pg">p131-p133</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 D：可选族）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2551-L2557">The Negotiate Bandwidth Command is used by system software to initiate 
+Bandwidth Request Events for periodic endpoints. This command should be 
+used to recover unused USB bandwidth from the system. 
+If the BW Negotiation Capability (BNC) bit in the HCCPARAMS1 register is ‘1’, 
+the xHC shall support this command. 
+This command shall complete with a Success Completion Code if the command 
+is supported, or a TRB Error Completion Code if the command is not supported. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2551-L2557（p131）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2564-L2566">The xHC shall generate Bandwidth Request Events upon the reception of the 
+command to all target periodic endpoints. The command will complete when all 
+Bandwidth Request Events have been generated. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2564-L2566（p132）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2655-L2663">Note: System software may never issue a Negotiate Bandwidth Command, however 
+if the BNC flag is ‘1’ an unsolicited Bandwidth Request Event may be 
+generated by hardware, for example, if the system software is running in a 
+Virtual Machine and communicating with an xHCI Virtual Function. This 
+condition occurs when system software running in another Virtual Machine 
+issues a Negotiate Bandwidth Command through its xHCI Virtual Function. 
+System software should immediately honor an unsolicited Bandwidth Request 
+Event and free unused USB bandwidth by selecting lower bandwidth alternate 
+configurations or interfaces on the devices that it owns. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2655-L2663（p133）</div>
+      <h3>TRB 类型表（内核直译） <span class="cmt">基线 xhci.h 枚举切片 · 驱动零使用</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.h:1141-1142 · TRB 类型枚举（Table 6-91 内核直译） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.h:1141:1142"><div class="cl" data-line="1141"><span class="ln">1141</span><span class="cd">/* Negotiate Bandwidth Command (opt) */</span></div>
+<div class="cl" data-line="1142"><span class="ln">1142</span><span class="cd">#define TRB_NEG_BANDWIDTH	19</span></div></pre>
+      <p class="pbody">可选规范项 · Linux xHCI 驱动不使用此命令（drivers/usb/host/*.c 零发行）——贴码=基线 TRB 类型号枚举对（注释行 + define 行），无调用链可配。</p>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2572-L2587">To issue a Negotiate Bandwidth Command system software shall perform the 
+following operations: 
+• 
+Insert a Negotiate Bandwidth Command on the Command Ring and 
+initialize the following fields: 
+o 
+TRB Type = Negotiate Bandwidth Command (refer to Table 6-91). 
+o 
+Slot ID = The ID of the slot that requires the bandwidth negotiation. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2572-L2587（p132）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2588-L2623">When a Negotiate Bandwidth Command is executed by the xHC it shall perform 
+the following operations: 
+• 
+If the command is supported: 
+o 
+If the Device Slot identified by the Slot ID has been enabled by an 
+Enable Slot Command: 
+o 
+If the Slot ID identifies a slot in the Addressed or Configured state 
+then: 
+•  
+If there are devices that define candidate periodic endpoints for 
+receiving Bandwidth Request Events: 
+•  
+For each device, identify the target Event Ring (specified by the Interrupt 
+Target field of the device’s Slot Context). 
+•  
+If there is space on the device’s target Event Ring: 
+•  
+Insert a Bandwidth Request Event and initialize the following fields: 
+•  
+TRB Type = Bandwidth Request Event (refer to Table 6-91). 
+•  
+Slot ID = ID of the device slot. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+Clear all other fields of the event TRB to ‘0’. 
+•  
+Cycle bit = Device’s target Event Ring’s PCS flag. 
+•  
+else // No space on the device’s target Event Ring 
+•  
+Skip the device. 
+•  
+Completion Code = Success (refer to Table 6-90). </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2588-L2623（p132）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2630-L2654">o 
+else // The Slot ID identifies slot not in the Addressed or Configured 
+state 
+•  
+Completion Code =Context State Error. 
+o 
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error 
+o 
+else // The Negotiate Bandwidth Command is not supported 
+•  
+Completion Code =TRB Error. 
+• 
+Insert a Command Completion Event on the Event Ring of Interrupter 0 
+and initialize the following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Negotiate Bandwidth 
+Command TRB. 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2630-L2654（p133）</div>
+      <div class="act">
+        <video controls preload="metadata" src="4613-negotiate-bandwidth.mp4"></video>
+        <a class="btn" href="player/index.html?scene=17">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 可选规范项</span>
+      </div>
     </div>
 
-    <div class="card s46todo" id="s46-14">
+    <div class="card s46card" id="s46-14">
       <div class="s46head"><span class="s46no">4.6.14</span><span class="s46ttl">Set Latency Tolerance Value</span><span class="s46tag opt">可选命令</span><span class="s46pg">p133-p135</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 D：可选族）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2673-L2676">The Set LTV Command provides a simple means for host software to provide a 
+Best Effort Latency Tolerance (BELT) value to the xHC. This command is 
+optional normative, however it shall be supported if the xHC also supports a 
+corresponding host interconnect LTR mechanism. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2673-L2676（p133）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2686-L2688">The value of the BELT field in the Set LTV Command TRB shall be treated in 
+exactly the same way as BELT values received from USB3 devices by the xHC. 
+Refer to section 4.13.1. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2686-L2688（p134）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2691-L2698">If the Latency Tolerance Messaging Capability (LTC) bit in the HCCPARAMS1 
+register is ‘0’, the xHC shall not support this command. 
+Note: If LTC = 0, then this xHC implementation does not translate LTM messages 
+from a device into system LTM messages. However, if enabled in the DNCTRL 
+register (N2 = ‘1’), then LTM Device Notification TPs are received by the xHC 
+shall generate Device Notification Events. Refer to section 4.13.1. 
+This command will complete with a Success Completion Code if the command is 
+supported, or a TRB Error Completion Code if the command is not supported. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2691-L2698（p134）</div>
+      <h3>TRB 类型表（内核直译） <span class="cmt">基线 xhci.h 枚举切片 · 驱动零使用</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.h:1143-1144 · TRB 类型枚举（Table 6-91 内核直译） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.h:1143:1144"><div class="cl" data-line="1143"><span class="ln">1143</span><span class="cd">/* Set Latency Tolerance Value Command (opt) */</span></div>
+<div class="cl" data-line="1144"><span class="ln">1144</span><span class="cd">#define TRB_SET_LT		20</span></div></pre>
+      <p class="pbody">可选规范项 · Linux xHCI 驱动不使用此命令（drivers/usb/host/*.c 零发行）——贴码=基线 TRB 类型号枚举对（注释行 + define 行），无调用链可配。</p>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2703-L2719">To issue a Set Latency Tolerance Value Command system software shall 
+perform the following operations: 
+• 
+Insert a Set Latency Tolerance Value Command on the Command Ring and 
+initialize the following fields: 
+o 
+TRB Type = Set Latency Tolerance Value Command (refer to Table 
+6-91). 
+o 
+BELT = The Best Effort Latency Tolerance value provided by software. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2703-L2719（p134）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2720-L2736">When a Set Latency Tolerance Value Command is executed by the xHC it shall 
+perform the following operations: 
+• 
+Record the value of the BELT field as the host defined LTV. 
+• 
+If the value of the BELT field is less than the “current” LTV maintained by 
+the xHC: 
+o 
+Set the value of the BELT field as the “current” xHC LTV. 
+o 
+Send the host-specific LTM to the host, reporting the new LTV to the 
+system. 
+• 
+Insert a Command Completion Event on the Event Ring of Interrupter 0 
+and initialize the following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2720-L2736（p134）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2743-L2751">o 
+Command TRB Pointer = The address of the Set Latency Tolerance 
+Value Command TRB. 
+o 
+Completion Code = Success (refer to Table 6-90). 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2743-L2751（p135）</div>
+      <div class="act">
+        <video controls preload="metadata" src="4614-set-latency-tolerance-value.mp4"></video>
+        <a class="btn" href="player/index.html?scene=18">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 可选规范项</span>
+      </div>
     </div>
 
-    <div class="card s46todo" id="s46-15">
+    <div class="card s46card" id="s46-15">
       <div class="s46head"><span class="s46no">4.6.15</span><span class="s46ttl">Get Port Bandwidth</span><span class="s46tag opt">可选命令</span><span class="s46pg">p135-p138</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 D：可选族）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2754-L2761">The Get Port Bandwidth Command is issued by software to retrieve the 
+percentage of Total Available Bandwidth on each Root Hub Port of the xHC or 
+on the downstream facing ports of an external USB hub. This information can 
+be used by system software to recommend topology changes to the user if 
+they were unable to enumerate a device due to a Bandwidth Error (Root Hub) 
+or Secondary Bandwidth Error (external hub). 
+This command shall complete with a Success Completion Code if the command 
+is supported, or a TRB Error Completion Code if the command is not supported. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2754-L2761（p135）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2799-L2809">The Get Port Bandwidth Command passes a pointer to a Port Bandwidth 
+Context data structure to the xHC. The xHC updates this context with the 
+percentage of Total Available Bandwidth on each port. If a hub is attached to a 
+Root Hub port then the reported bandwidth is available on any unused port of 
+the hub or any port of the hub that is operating at the Device Speed. 
+For the Root Hub the Port Bandwidth Context shall be at least NumPorts+1 
+bytes in size or for an external hub the Port Bandwidth Context shall be at least 
+bNbrPorts25+1 bytes in size, rounded up to the nearest Dword boundary. 
+The xHC overwrites the Port Bandwidth Context when it executes the Get Port 
+Bandwidth Command, so software does not need to initialize the context data 
+structure before passing it to the xHC. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2799-L2809（p136）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2819-L2822">Note: Software shall consider any port that reports ‘0’ bandwidth available as being 
+unusable. A port that, as far as software is concerned, does not have a device 
+attached may report ‘0’ bandwidth available. For example, a VMM shall report 
+‘0’ bandwidth for a port if the device attached to it is assigned to another VF. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2819-L2822（p136）</div>
+      <h3>TRB 类型表（内核直译） <span class="cmt">基线 xhci.h 枚举切片 · 驱动零使用</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.h:1145-1146 · TRB 类型枚举（Table 6-91 内核直译） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.h:1145:1146"><div class="cl" data-line="1145"><span class="ln">1145</span><span class="cd">/* Get port bandwidth Command */</span></div>
+<div class="cl" data-line="1146"><span class="ln">1146</span><span class="cd">#define TRB_GET_BW		21</span></div></pre>
+      <p class="pbody">可选规范项 · Linux xHCI 驱动不使用此命令（drivers/usb/host/*.c 零发行）——贴码=基线 TRB 类型号枚举对（注释行 + define 行），无调用链可配。</p>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2851-L2877">To issue a Get Port Bandwidth Command, system software shall perform the 
+following operations: 
+• 
+Allocate and initialize a Port Bandwidth Context data structure. 
+• 
+Insert a Get Port Bandwidth Command TRB on the Command Ring 
+o 
+TRB Type = Get Port Bandwidth Command (refer to Table 6-91). 
+o 
+Dev Speed = The bus speed of the target device. Refer to the Dev 
+Speed field in Table 6-76 for the encoding. 
+o 
+Hub Slot ID = ‘0’ if referencing Root Hub ports (that is, the Primary 
+Bandwidth Domain) or the value of the respective hub’s Slot ID if 
+referencing the ports of a USB2 hub (that is, a Secondary Bandwidth 
+Domain). Refer to section 4.16.2 for more information on Bandwidth 
+Domains. 
+o 
+Port Bandwidth Context Pointer = The base address of the Port 
+Bandwidth Context data structure. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2851-L2877（p137）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2878-L2911">When a Get Port Bandwidth Command is executed by the xHC it shall perform 
+the following operations: 
+• 
+Insert a Command Completion Event TRB on the Event Ring. 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Get Port Bandwidth 
+Command TRB. 
+o 
+Slot ID = ‘0’. 
+o 
+If the Dev Speed field is valid (that is, not equal to Undefined or 
+Reserved): 
+•  
+If the Hub Slot ID field = ‘0’: 
+•  
+Compute Percentage of Total Available Bandwidth for each Root 
+Hub port based on its Speed. Use the value of the Dev Speed 
+field for ports that do not have devices attached. 
+•  
+else 
+•  
+Compute the percentage of Total Available Bandwidth for the 
+ports of the hub specified by the Hub Slot ID based on their 
+Speed. Use the value of the Dev Speed field for ports that do not 
+have devices attached. 
+o 
+Copy the results to the Port Bandwidth Context. 
+o 
+Completion Code = Success (refer to Table 6-90). 
+• 
+else // The Dev Speed field is not valid 
+</blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2878-L2911（p137）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2918-L2925">Completion Code = TRB Error. 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+Note: If a non-zero Hub Slot ID references a Device Slot whose Slot Context Hub 
+field = ‘0’ or Speed field is not equal to High-speed, may result in undefined 
+behavior by the xHC. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2918-L2925（p138）</div>
+      <div class="act">
+        <video controls preload="metadata" src="4615-get-port-bandwidth.mp4"></video>
+        <a class="btn" href="player/index.html?scene=19">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 可选规范项</span>
+      </div>
     </div>
 
-    <div class="card s46todo" id="s46-16">
+    <div class="card s46card" id="s46-16">
       <div class="s46head"><span class="s46no">4.6.16</span><span class="s46ttl">Force Header</span><span class="s46tag core">核心命令</span><span class="s46pg">p138-p139</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 D：可选族）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2928-L2931">The Force Header Command is issued by software to send a Link Management 
+(LMP) or Transaction Packet (TP) to a USB device, through a selected Root Hub 
+Port. For instance, it may be used to send a PING TP or a Vendor Device Test 
+LMP. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2928-L2931（p138）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2932-L2945">Note: Inappropriate or incorrect use of this command may cause the xHC link state 
+machines to get out of sync with those on an attached device. Software shall 
+comprehend the possible side effects of the specific headers that are forced 
+on the USB. If a forced header results in undefined behavior by the device or 
+the xHC (for example, a DPH with no DP), software may have to reset the 
+device, a Root Hub port, the xHC, or all of them to restore normal operating 
+conditions. 
+ 
+The xHC is not required to comprehend the content of the header being 
+forced. Depending upon the type of header forced, it is possible for various 
+parameters in the header (such a Data Packet sequence numbers) to be out 
+of sync with the host controller and/or device. In addition, some TPs may 
+result in Device responses which will not be comprehended by the xHC. It 
+may be necessary to reset the xHC to recover from these conditions. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2932-L2945（p138）</div>
+      <h3>TRB 类型表（内核直译） <span class="cmt">基线 xhci.h 枚举切片 · 驱动零使用</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.h:1147-1148 · TRB 类型枚举（Table 6-91 内核直译） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.h:1147:1148"><div class="cl" data-line="1147"><span class="ln">1147</span><span class="cd">/* Force Header Command - generate a transaction or link management packet */</span></div>
+<div class="cl" data-line="1148"><span class="ln">1148</span><span class="cd">#define TRB_FORCE_HEADER	22</span></div></pre>
+      <p class="pbody">Linux xHCI 驱动不使用此命令（drivers/usb/host/*.c 零发行）——贴码=基线 TRB 类型号枚举对（注释行 + define 行），无调用链可配。</p>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2949-L2966">To issue a Force Header Command, system software shall perform the 
+following operations: 
+• 
+Insert a Force Header Command TRB on the Command Ring 
+o 
+TRB Type = Force Header Command (refer to Table 6-91). 
+o 
+Root Hub Port Number = The number of the Root Hub Port that defines 
+the target of the Header packet. 
+o 
+Packet Type = The field identifies the SS packet type. Refer to section 
+8.3.1.2 in the USB3 specification for valid values. 
+o 
+Header Info = The header Type specific data to send to the target 
+device. Refer to section 8 in the USB3 specification for the encoding 
+information. 
+o 
+Clear all other fields of the command TRB to ‘0’. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2949-L2966（p138）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2973-L3006">o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Force Header Command is executed by the xHC it shall perform the 
+following operations: 
+• 
+Insert a Command Completion Event on the Event Ring. 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Force Header Command 
+TRB. 
+o 
+Slot ID = 0. 
+o 
+If the value Root Hub Port Number field is in range: 
+•  
+If the Force Header packet was transmitted successfully: 
+•  
+Completion Code = Success (refer to Table 6-90). 
+o 
+else // The Force Header packet was not transmitted successfully 
+•  
+Completion Code = Undefined Error. 
+o 
+else // The value Root Hub Port Number field is not in range 
+•  
+Completion Code = TRB Error. 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2973-L3006（p139）</div>
+      <div class="act">
+        <video controls preload="metadata" src="4616-force-header.mp4"></video>
+        <a class="btn" href="player/index.html?scene=20">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进</span>
+      </div>
     </div>
 
-    <div class="card s46todo" id="s46-17">
+    <div class="card s46card" id="s46-17">
       <div class="s46head"><span class="s46no">4.6.17</span><span class="s46ttl">Get Extended Property</span><span class="s46tag opt">可选命令</span><span class="s46pg">p139-p141</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 D：可选族）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L3009-L3013">The Get Extended Property Command is used by system software to discover 
+specific Extended Capabilities supported by the xHC, and to enumerate and 
+read specific attributes of those Extended Capabilities. 
+If the Get/Set Extended Property Capability (GSC) bit in the HCCPARAMS2 
+register is ‘1’, the xHC shall support this command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3009-L3013（p139）</div>
+      <blockquote data-ck="spec:spec-46.txt:L3014-L3019">Depending upon the actual Extended Capability and Subtype in the Get 
+Extended Property command, the command may contain a pointer to an 
+Extended Property Context, in which case the xHC shall update the Extended 
+Property Context with the property referenced by the Get Extended Property 
+command. Since the context is overwritten by the xHC, it is not necessary for 
+SW to initialize the context before passing it to the xHC. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3014-L3019（p139）</div>
+      <blockquote data-ck="spec:spec-46.txt:L3046-L3049">This command shall complete with a Success Completion Code if the command 
+is supported (that is, GSC bit in the HCCPARAMS2 register is ‘1’), or a TRB 
+Error Completion Code if the command is not supported  (that is, GSC bit in the 
+HCCPARAMS2 register is ‘0’). </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3046-L3049（p140）</div>
+      <p class="pbody">基线 xhci.h 无此命令的 TRB 类型定义（xhci.h L1151「TRB IDs 24-31 reserved」注记即缺席位置）· 可选规范项 · Linux xHCI 驱动零使用（drivers/usb/host/*.c 零发行）。</p>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L3050-L3074">4.6.17.1 
+SW Execution of Get Extended Property Command 
+To issue a Get Extended Property Command, software shall perform the 
+following operations: 
+• 
+Allocate an Extended Property Context Data Structure if needed. 
+• 
+Insert a Get Extended Property Command TRB into the command ring. 
+o 
+TRB Type = Get Extended Property Command 
+o 
+Extended Capability Identifier = either set to all zeroes (See section 4.6.17.2 
+for details) or one bit within the identifier field set to indicate the specific 
+capability the command is associated with.  
+o 
+Slot ID = Slot ID associated with the command, or all zeroes if the command 
+does not reference a specific Device 
+o 
+EP ID = EP ID associated with the command, or all zeroes if the command 
+does not reference a specific EP. 
+o 
+Subtype = Specific command subtype to be executed. The subtype field is 
+dependent upon the Extended Capability referenced. 
+• 
+Write the host controller doorbell with the DB Target = Host Controller Command.  </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3050-L3074（p140）</div>
+      <blockquote data-ck="spec:spec-46.txt:L3075-L3085">4.6.17.2 
+xHC Execution of Get Extended Property Command 
+When a Get Extended Property Command is executed by the xHC, it shall 
+perform the following operations: 
+• 
+If the Extended Capability and SubType referenced by the command 
+require the Extended Property Context to be updated (as defined in the 
+appropriate Extended Capability Description in Chapter 7), the xHC shall 
+write the required information to the Extended Property Context location 
+specified by the Extended Property Context pointers in the Get Extended 
+Property command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3075-L3085（p140）</div>
+      <blockquote data-ck="spec:spec-46.txt:L3092-L3113">• 
+Subsequently, the xHC shall insert a Command Completion Event TRB in 
+the Event Ring 
+o 
+TRB Type = Command Completion Event (refer to Table 139). 
+o 
+Command TRB pointer = The address of the Get Extended Property 
+Command TRB. 
+o 
+Slot ID = Slot ID referenced in the Get Extended Property Command   
+o 
+Extended Capability Identifier = Either of the following: 
+•  
+If the Get Extended Property Command had the Extended Capability 
+Identifier set to zero, the xHC shall set the bit associated with each 
+supported extended capability, as defined by Table 4-3. 
+•  
+If the Get Extended Property Command referenced a specific 
+extended capability (by setting one bit in the Extended Capability 
+Identifier field), the xHC shall set that bit in the completion TRB. 
+o 
+Completion Code= Success </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3092-L3113（p141）</div>
+      <blockquote data-ck="spec:spec-46.txt:L3114-L3138">4.6.17.3 
+Enumeration of Supported Extended Capabilities 
+In order to discover if the xHC supports specific Extended Capabilities that are 
+associated with the Get Extended Property Command, System Software shall 
+issue a Get Extended Property command with the Extended Capability ID field 
+and the SubType field set to all zeroes. 
+• 
+In response to receiving a Get Extended Property Command with the 
+Extended Capabilities ID field set to zero, the xHC shall return a Command 
+Completion TRB with a bit set for each supported extended capability in 
+bits [15:0] of the Command Completion Parameter field of the Command 
+Completion Event TRB (as defined in Table 4-3 below). Note that multiple 
+bits may be set if multiple capabilities are supported. 
+The Extended Capability Identifier field is defined as shown below: 
+Table 4-3: Extended Capability Identifier   
+Bits 
+Description 
+0 
+Audio Sideband Extended Capability 
+11:1 
+RsvdZ. 
+15:12 
+Vendor Defined Extended Capability 
+Each bit, when set, refers to a separate vendor defined extended capability. System software 
+interprets and uses these bits in the context of the specific host controller vendor. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3114-L3138（p141）</div>
+      <div class="act">
+        <video controls preload="metadata" src="4617-get-extended-property.mp4"></video>
+        <a class="btn" href="player/index.html?scene=21">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 可选规范项</span>
+      </div>
     </div>
 
-    <div class="card s46todo" id="s46-18">
+    <div class="card s46card" id="s46-18">
       <div class="s46head"><span class="s46no">4.6.18</span><span class="s46ttl">Set Extended Property</span><span class="s46tag opt">可选命令</span><span class="s46pg">p141-p142</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 D：可选族）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L3141-L3145">The Set Extended Property Command is used by System Software to control 
+attributes of specific Extended Capabilities supported by the xHC. 
+If the Get/Set Extended Property Capability (GSC) bit in the HCCPARAMS2 
+register is ‘1’, the xHC shall support this command. 
+The format of the Set Extended Property is defined in section 7.9.2. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3141-L3145（p141）</div>
+      <blockquote data-ck="spec:spec-46.txt:L3178-L3181">This command shall complete with a Success Completion Code if the command 
+is supported (that is, GSC bit in the HCCPARAMS2 register is ‘1’), or a TRB 
+Error Completion Code if the command is not supported (that is, GSC bit in the 
+HCCPARAMS2 register is ‘0’). </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3178-L3181（p142）</div>
+      <p class="pbody">基线 xhci.h 无此命令的 TRB 类型定义（xhci.h L1151「TRB IDs 24-31 reserved」注记即缺席位置）· 可选规范项 · Linux xHCI 驱动零使用（drivers/usb/host/*.c 零发行）。</p>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L3152-L3177">• 
+The Set Extended Property Command references a specific Extended 
+Capability using the Extended Capability Identifier. 
+o 
+Each bit in the Extended Capability Identifier represents one specific 
+Extended Capability as defined in Table 4-3. 
+o 
+Software shall not set more than one bit in the Extended Capability 
+Identifier field. 
+• 
+The list of Extended Capabilities allowed to use this command are listed in 
+Table 4-3. 
+• 
+The Set Extended Property Command further contains a Subtype field that 
+defines the specific property within the scope of the Extended Capability. 
+• 
+The Set Extended Property Command may identify the specific Endpoint ID 
+and Device Slot ID targeted by the command, depending upon the 
+Extended Capability and Subtype. 
+• 
+The specific subtypes and xHC actions are defined in the appropriate 
+section in Chapter 7 (Extended Capabilities). 
+• 
+The Set Extended Property Command specifies a Capability Parameter that 
+is used to configure certain aspects of the Extended Capability associated 
+with the Extended Capability specified in the Extended Capability ID. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L3152-L3177（p142）</div>
+      <div class="act">
+        <video controls preload="metadata" src="4618-set-extended-property.mp4"></video>
+        <a class="btn" href="player/index.html?scene=22">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 可选规范项</span>
+      </div>
     </div>
+
+
   </section>
 
   <footer>
