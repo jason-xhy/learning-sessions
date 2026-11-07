@@ -191,3 +191,82 @@
 - ch4603 中止注记（L297-299：aborted 时 Slot ID 视为无效）未上屏，归本表口径注记。
 - §4.6 导语三 Note（未识别 TRB Type 报 TRB Error L20-22；Undefined/Vendor Defined Error L23-25；
   状态修改命令挂起期禁敲端点门铃 L26-30）属 4.6 大区面，批 A 未上屏，留待批 B-D 视需要取材。
+
+## 4605-address-device.mp4（§4.6.5 Address Device · p97-102；R10 批 B TrackA 终订=成片上屏内容）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 片头：§4.6.5 Address Device · p97-102；示例声明「Slot ID=1（Enabled 槽）· 选中地址 0x11 —— 课程示例值」 | spec-46.txt L398-399（节题）；示例值=课程口径 |
+| 引文 "… to transition a Device Slot from the Enabled to the Default or Addressed state or from the Default to the Addressed state, depending on the state of the Block Set Address Request (BSR) flag."（逐字） | spec-46.txt L400-403（p97） |
+| 槽位状态卡：Enabled（示例）→ BSR=1 目标 Default / BSR=0 目标 Addressed | spec-46.txt L400-403 |
+| xHC 三件事注记：使能 DCEP / 选地址 / 发 SET_ADDRESS——USB2 发往 Address '0'，USB3 用 Route String | spec-46.txt L404-408（p97） |
+| 成功后三件卡：DCEP 加入端点调度表 / DCEP 0 Context Doorbell 使能 / TRB 可上 DCEP Transfer Ring | spec-46.txt L409-412（p97） |
+| 引文 "Once a successful Address Device Command has completed, system software can issue USB GET_DESCRIPTOR requests through the Default Control Endpoint …"（逐字） | spec-46.txt L422-424（p98） |
+| BSR 语义卡：BSR='1' 不发 SET_ADDRESS 其余照做（老设备先读描述符兼容）；BSR='0' 选地址+发 SET_ADDRESS | spec-46.txt L437-445（p98） |
+| Input Context 装配卡：A0+A1=1、其余 Add/Drop 全 0 + 引文 "The Add Context flags A0 and A1 … shall be set to '1' …"（逐字） | spec-46.txt L456-458、L476-482（p98-99） |
+| EP0 Context 四有效值（TR Dequeue Pointer/EP Type/CErr/Max Packet Size）与三清零（MaxPStreams/Max Burst/EP State） | spec-46.txt L476-482 |
+| 发行流程：DCBAA 表项就位（flash）→ 摆 Address Device TRB（TRB Type/Slot ID/Input Context Pointer/其余清 '0'/Cycle bit=PCS）→ 敲 HC 门铃 + 引文 "Ensure that the Device Context Base Address Array entry points to … Write the Host Controller Doorbell with DB Target = Host Controller Command."（节选逐字） | spec-46.txt L470-499（p98-99） |
+| 守卫卡：查槽曾被 Enable Slot 使能？（DCBAA/槽检索）否 → CC=Slot Not Enabled Error | spec-46.txt L518-519、L596-598（p99-100） |
+| BSR=1 分支：Enabled 态 → Input Slot/EP0 整块拷贝 → Output，EP0→Running、Slot State→Default、Address→'0'、CC=Success；非 Enabled → Context State Error | spec-46.txt L523-549（p99-100） |
+| BSR=0 分支：SET_ADDRESS 请求卡（bmRequestType=0 / wValue=选中地址 / wIndex=0 / wLength=0 / Route String 取自 Input Slot Context）→ 成功：拷贝+Running+Slot State→Addressed+Address=选中值+Success | spec-46.txt L550-586（p100） |
+| 失败分支：SET_ADDRESS 不成功 → CC=USB Transaction Error、槽停 Default；非 Enabled/Default → Context State Error；软件负责 SetAddress() 恢复间隔计时与超时中止 | spec-46.txt L588-594、L625-627（p100-101） |
+| 错误族卡：地址耗尽=Resource Error / context 无效=Parameter Error（输出不动）/ 失败恢复=Disable+Enable Slot / TT 后设备=CLEAR_TT_BUFFER / 命令中止=设备状态未知 / 端点须 Stopped 或 Idle | spec-46.txt L603-606、L621-644（p100-101） |
+| 引文 "If a USB Transaction Error … may be due to a Stall response … Software should issue a Disable Slot Command … then an Enable Slot Command to recover …"（逐字） | spec-46.txt L633-636（p101） |
+| 护栏二条：① SET_ADDRESS 在 DCEP Transfer Ring 上被检出 → TRB Error、永不转发；② 首请求 GET_DESCRIPTOR wLength=8、末字节 bMaxPacketSize0 回写 Max Packet Size | spec-46.txt L446-449、L428-436（p98） |
+| 收口卡：用途/BSR/Input Context 合同/成功（EP0 全通）；转场「下一支：§4.6.6 Configure Endpoint（本批）」 | spec-46.txt L398-651 汇总；L657（§4.6.6 起） |
+
+## 4606-configure-endpoint.mp4（§4.6.6 Configure Endpoint · p102-112；R10 批 B TrackA 终订=成片上屏内容）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 片头：§4.6.6 Configure Endpoint · p102-112；示例声明「Slot ID=1（Addressed 槽）· 启用 EP1 IN / EP1 OUT —— 课程示例值」 | spec-46.txt L657-658（节题）；示例值=课程口径 |
+| 引文 "The Configure Endpoint Command is issued by software to enable, disable, or reconfigure endpoints associated with a target configuration."（逐字） | spec-46.txt L659-660（p102） |
+| 三大场景卡：配置设备（配 SET_CONFIGURATION · Addressed→Configured）/ 去配置（DC=1 + SET_CONFIGURATION(0) · Configured→Addressed）/ 改交替接口（配 SET_INTERFACE） | spec-46.txt L665-704（L667-672/L677-686/L698-702） |
+| xHC 不维护配置↔端点关系注记：软件用 Add/Drop 旗标显式指出受影响端点 | spec-46.txt L711-726（p103） |
+| DC 捷径卡：DC='1' 等价 Drop 2-31 全 1 + Add 2-31 全 0；Input Context Pointer 被忽略；输出 Context Entries 落 '1'；只有 DCEP 的设备发 SET_CONFIGURATION(0) 前无需本命令 | spec-46.txt L689-696（p102） |
+| Input Context 旗标合同卡：A1/D0/D1 清 '0'（EP0 不适用）、A0='1'、其余按端点定；Add 引用须初始化、仅 Drop 引用无需初始化 + 引文（逐字节选） | spec-46.txt L732-743（p103） |
+| 发行流程：Configure Endpoint TRB 卡（TRB Type/Slot ID/Input Ctx Pointer（DC=1 时忽略）/DC 位/其余清 '0'/Cycle bit=PCS）→ 敲 HC 门铃 | spec-46.txt L1043-1061（p108） |
+| 评估两变量卡：先 Drop 后 Add；Resource Required=Σ Drop 释放 − Σ Add 需求；Bandwidth 同式记账（周期端点）；Drop 命中 Disabled=无操作；全部评完才动资源与 Slot State + 引文（逐字节选） | spec-46.txt L752-789、L791-816（p103-104） |
+| 超额判定与零改动注记：Resources/Bandwidth Available−Required<0 → Resource/Bandwidth Error（次域=Secondary）；失败→资源/带宽/Slot State/输出 EP Context 全不动；undefined 警栏（D=0、A=1 而非 Disabled=加端点不清旧账） | spec-46.txt L818-859（p104-105） |
+| 成功四象限（2×2 卡阵）：D=0A=0 无操作 / D=1A=0 摘调度表+Disabled / D=0A=1 入调度表+全字段拷贝+Running+DB 使能 / D=1A=1 释放旧配额+分配新+拷贝+Running；拷贝=Stream Context Array/Transfer Ring 所有权软件→xHC（Figure 4-3 指路 p108） | spec-46.txt L868-932（p105-106）；L1007-1041（图） |
+| Slot State 收束卡：全 DCI 2-31 Disabled → Addressed + Context Entries='1'；任一 enabled → Configured + Entries=最后有效上下文索引（槽状态卡翻转 Configured ✓） | spec-46.txt L934-942（p106）、L1193-1204（p110） |
+| Alt Interface 四规则卡：不修改=00 / 新启用=01（须初始化）/ 禁用=10 / 参数修改=11 | spec-46.txt L943-958（p106-107） |
+| 错误族卡：Slot State=Disabled→Slot Not Enabled Error / 带宽不够→Bandwidth Error / 资源不够→Resource Error / Add DCI>Entries→Parameter Error / 槽非 Addr/Cfg→Context State Error / 退出延迟超限→Max Exit Latency Too Large | spec-46.txt L975-981（p107）、L1237-1243、L1259-1262（p111） |
+| 完成事件与 ELD 卡（4.6.6.1）：ELD=0 不支持 hint；Success→Max Exit Latency 可增 μs 数；MELTL Error→须减 μs 数；其余 CC Param 清 '0' | spec-46.txt L1270-1294（p111-112） |
+| 双确认门注记：命令成功+SET_CONFIGURATION（或 SET_INTERFACE）都成功才可排传输；成功后端点入调度表、DCB 使能、TRB 可上环 | spec-46.txt L965-972、L986-989（p107） |
+| 收口卡：用途/旗标（四象限）/天平（先评估失败零改动）/收束（Configured↔Addressed）；转场「补丁片 ch4606p（本批）」 | spec-46.txt L657-1294 汇总 |
+
+## 4611-reset-device.mp4（§4.6.11 Reset Device · p128-130；R10 批 B TrackA 终订=成片上屏内容）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 片头：§4.6.11 Reset Device · p128-130；示例声明「Slot ID=1（已 Configured 的槽）—— 课程示例值」 | spec-46.txt L2347-2348（节题）；示例值=课程口径 |
+| 引文 "The Reset Device Command is used by software to inform the xHC that the USB Device associated with a Device Slot has been Reset (by either; setting the Root Hub port PR flag …, or issuing a SetPortFeature(PORT_RESET) request …)."（逐字） | spec-46.txt L2349-2353（p128） |
+| 复位操作已置形态注记：Slot State→Default、Address→'0'、除 DCEP 外端点全 Disabled——xHC 侧簿记要跟上 | spec-46.txt L2353-2357（p128） |
+| 前提注记：先停全部端点活动 + 引文 "Software should stop all endpoint activity before issuing a Reset Device Command."（逐字）；未成功复位=未定义行为（后续 Address Device 必失败） | spec-46.txt L2357-2375（p128） |
+| Reset Device TRB 卡：TRB Type / Slot ID=1（示例）/ Input Context=不引用（与 4.6.5/4.6.6 最大差异）/ 其余清 '0' / Cycle bit=PCS + 引文（逐字节选） | spec-46.txt L2385-2400（p129） |
+| xHC 处置卡：非 DCEP 五项（终止 USB 活动/禁门铃/弃未上环挂起事件/放周期带宽/放内部资源）+ DCEP 三项（终止活动+弃挂起+转 Running） | spec-46.txt L2359-2372（p128） |
+| 执行算法动画：Slot Context 逐行翻转（Slot State→Default / Context Entries→'1' / Address→'0'）+ EP 条禁用（EP1/EP2→Disabled、EP0 保持）+ 引文（逐字节选） | spec-46.txt L2401-2417（p129） |
+| 完成事件卡：固定 Interrupter 0 的事件环；曾 Addressed/Configured→CC=Success；否则→Context State Error + 引文（逐字节选） | spec-46.txt L2419-2433（p129） |
+| 软件回收义务注记：被禁端点上下文拥有的内存结构（Stream Context Array/Transfer Ring 等）由软件收回 | spec-46.txt L2438-2440（p129） |
+| 无 Input Context 深意注记：TRB 不引用 Input Context，复位后 Slot/EP0 Context 值由 xHC 直接落成（须足以向刚复位设备的 DCEP 发请求，6.2.2.4/6.2.3.7 指路） | spec-46.txt L2447-2454（p130） |
+| 收口卡：用途/命令 TRB（无 Input Context）/xHC（五项清算+DCEP 回 Running）/事件（Interrupter 0 · CC 双分支）；转场「下一支：§4.6.12 Force Event（批 D）」 | spec-46.txt L2347-2454 汇总；L2455（§4.6.12 起） |
+
+## ch4606p 补丁分帧（d6759133e981 "Correct last context entry calculation for Configure Endpoint"；R10 批 B 补丁候选首支）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 幕① 背景：内核在 add_endpoint()/drop_endpoint() 里增量重算 Context Entries；drop 假定 add_flags 含全部端点（实际只含新增）+ EP0_FLAG 非恒置 → 全 drop 算出 0（Parameter Error）或 -1（按 31 解读沿用旧值）（message 原文逐字） | git show d6759133e981 message（drafts/patch-46.txt） |
+| 幕② diff 面板：drop 旧 1637-1644 删增量块 / add 旧 1762-1769 同删 / check_bandwidth 新 2723-2734 终点重算循环（i 自 31 下探：ring 存活未 Drop 或 Add 置位 → LAST_CTX(i)；i==1 兜底）（diff 逐字） | git show d6759133e981 diff（drafts/patch-46.txt） |
+| 幕② 逻辑注记卡：循环判据=存量（ring 存活且未 Drop）或增量（Add 置位）取第一个命中；全不命中 i==1=只剩 EP0 | 同上 diff L2725-2734 |
+| 幕③ 规范收尾引文 "If all Endpoints are Disabled: … Set the Context Entries field … to '1'. else … to the index of the last valid Endpoint Context"（逐字）——i==1 兜底与 else 分支=两行内核直译；坏值 0 代价=p111 Parameter Error 判据（Add DCI > Context Entries） | spec-46.txt L1193-1204（p110）、L1256-1257（p111） |
+| 总结卡：改动（删两处增量 -33）/新增（check_bandwidth 终点重算 +11）/对齐（i==1==规范 Entries='1' 分支）/堵漏（全 drop 不再算出 0/-1） | git show d6759133e981 |
+
+### R10 批 B 口径注记
+
+- ch4605 选中地址 0x11、ch4606 启用 EP1 IN/OUT、ch4611 三端点示例皆为课程示例值（规范未定具体值）。
+- ch4605 三个 Note（SetAddress 恢复间隔 L625-627 / TT CLEAR_TT_BUFFER L642-644 / 端点 Stopped-Idle L637-641）
+  与 ch4606 脚注 14（Add+Drop 同置不写中间 Disabled 态 L1212-1214）、脚注 15（主/次域检查顺序 L1216-1217）
+  按降密度原则归错误族卡/注记一行带过，全文在 landing 卡引文（s46-05/06 full 区间）。
+- ch4606 ELD 数值语义（μs）上屏，granularity 报 '1' 细则（L1292-1294）归本注记。
+- ch4611 6.2.2.4/6.2.3.7（复位后 Slot/EP0 Context 字段值细则）只指路不展开。

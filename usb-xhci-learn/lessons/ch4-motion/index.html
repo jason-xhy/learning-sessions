@@ -132,7 +132,7 @@
 <div class="wrap">
   <header>
     <h1>xHCI 第 4 章视频课件<span class="tag">R4 四段式 · 2026-11-06</span></h1>
-    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + §4.6 命令接口大区（18 小节逐支短片线，本批上线 4.6.1 机制片与 No Op / Enable Slot / Disable Slot 三支）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 四幕分帧走读）。</p>
+    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + §4.6 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、No Op / Enable Slot / Disable Slot、Address Device / Configure Endpoint / Reset Device 三巨头与首支补丁片 ch4606p）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读）。</p>
     <div class="meta">
       1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 持续违例</b>（三主片+三补丁片，全帧非抽样）·
       判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
@@ -519,7 +519,7 @@ Date:   Fri Jan 15 18:19:06 2021 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，§4.1 p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=9">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=12">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1091,7 +1091,7 @@ Date:   Fri Oct 9 18:16:14 2026 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">单行改动（<code>drivers/usb/host/xhci.c</code>，<code>xhci_reset</code>）：未 halted 中止分支 <code>return 0</code> → <code>return -EBUSY</code>。补丁前：中止复位被当成成功，调用方在错误状态下继续走初始化。补丁后：-EBUSY 把「主机忙、未停机」如实上抛，调用方走错误处理——<code>xhci_reset</code> 的所有失败出口（未 halted / handshake 超时）语义一致。与代码摘录（drafts/code-excerpts.json init 组 L229，同函数内 <code>xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us)</code>）对读：那条握手失败会返回超时错误，本补丁让“没进入复位”同样返回错误；凡依赖返回值判断复位成败的调用方（探测、休眠恢复、错误恢复路径）从此拿到一致语义，验收时可直接对 -EBUSY 分支验证未停机场景。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=10">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=13">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1560,7 +1560,7 @@ Date:   Thu Jul 17 10:31:07 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（§4.3.3 p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=11">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=14">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1774,7 +1774,7 @@ Date:   Thu Mar 5 00:36:37 2026 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">把两条错误路径的 <code>kfree(command)</code> 改为 <code>xhci_free_command(xhci, command)</code>（+2/-2）：后者同时释放命令结构与关联的 completion 结构；命令结构零初始化使 <code>command-&gt;in_ctx</code> 为 NULL，不会被误释放。补丁前：kfree 只放一半，completion 泄漏；补丁后：错误路径与成功路径（L4183）释放形态统一，任何退出路径都不留孤儿。与贴码对读：det:1 分配行（true=带 completion）、det:5 热行即被改的错误路径之一——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；§4.4 拔除剧本的「异常退出」分支从此与正常分支同构。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=12">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=15">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -2209,14 +2209,14 @@ Date:   Tue Aug 19 15:58:43 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">把清理前移到命令完成事件的中断上下文：<code>xhci_handle_cmd_disable_slot</code> 增加 cmd_comp_code 形参（TRB_DISABLE_SLOT case 分派行同步传入），COMP_SUCCESS 时即刻清 <code>xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id]</code> 与 <code>xhci-&gt;devs[slot_id]</code>——DCBAA 指针清零即 Disabled 态的规范形态，此后 B 的 Enable Slot 完成时 devs[1] 已空，枚举照常。配套：<code>xhci_free_virt_device</code> 改为显式传 virt_dev 指针、只在数组仍指向本设备时清指针（防误清新主）；新增 <code>xhci_disable_and_free_slot()</code> 收拢全部「禁槽 + 释放」调用对。与贴码对读：§4.4 段 det:6 热行即本补丁在中断上下文清 DCBAA 指针的新增块（基线形态 <code>xhci-&gt;dcbaa.ctx_array[slot_id] = 0</code>）、§4.5 段 slot:8 冲突检测热行（B 被挡的判定点）与 slot:9 DCBAA 装载热行（装载/清零互为正反操作）——本补丁已在基线 d9008e061539 内，贴码即补丁后形态。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=13">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=16">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
   </section>
 
   <section id="s46">
-    <h2><span class="no">§4.6</span>Command Interface 命令接口 <span class="cmt">18 小节逐支短片线 · 本批上线机制片+前三命令</span></h2>
+    <h2><span class="no">§4.6</span>Command Interface 命令接口 <span class="cmt">18 小节逐支短片线 · 已上线机制片+六命令+Reset Device+首支补丁片</span></h2>
     <style>
   .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
   .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
@@ -2251,7 +2251,7 @@ section 4.6.1.2. </blockquote>
         <a class="btn ghost" href="interactive/index.html#m6">模块六 · 命令受理台 →</a>
         <span class="note">单文件自包含 · Zone A 受理剧本（5 代表命令拼 TRB→入环→回执）· Zone B 命令×槽状态合法性矩阵（错配引原文拦截）</span>
       </div>
-      <p class="int-note"><b>补丁片（选做）：</b>按 R10-SPEC §6 准入三判据实证后定（候选：Set TR Dequeue Pointer / Reset Endpoint / Configure Endpoint），批 B-C 落地；无可准入者不硬凑。</p>
+      <p class="int-note"><b>补丁片（选做）：</b>首支已落地（ch4606p · commit d6759133e981「Correct last context entry calculation for Configure Endpoint」，R10-SPEC §6 三判据实证通过：真实主线修复 / 三幕 ≤700f 可讲清 / 与 §4.6.6 Context Entries 机制直接相关）；余支批 C 按三判据续选，无可准入者不硬凑。</p>
     </div>
     <div class="card b1">
       <div class="bhead"><span class="badge">②</span>18 小节导航（规范序）</div>
@@ -2401,7 +2401,7 @@ Generate a Command Completion Event with the Completion Code set to
 Command Ring Stopped and the Command TRB Pointer set to the current 
 value of the Command Ring Dequeue Pointer. </blockquote>
       <div class="qsrc">—— evidence/spec-46.txt L121-L136（p92）</div>
-      <div class="act">
+            <div class="act">
         <video controls preload="metadata" src="4601-command-ring-operation.mp4"></video>
         <a class="btn" href="player/index.html?scene=5">分帧版 · 逐真帧步进 →</a>
         <span class="note">与视频 1:1 同源 · 教学拍步进</span>
@@ -2456,7 +2456,7 @@ Clear all other fields of the event TRB to ‘0’.
 o 
 Cycle bit = Event Ring’s PCS flag. </blockquote>
       <div class="qsrc">—— evidence/spec-46.txt L199-L213（p94）</div>
-      <div class="act">
+            <div class="act">
         <video controls preload="metadata" src="4602-no-op.mp4"></video>
         <a class="btn" href="player/index.html?scene=6">分帧版 · 逐真帧步进 →</a>
         <span class="note">与视频 1:1 同源 · 教学拍步进</span>
@@ -2544,7 +2544,7 @@ Clear all other fields of the event TRB to ‘0’.
 • 
 Cycle bit = Event Ring’s PCS flag. </blockquote>
       <div class="qsrc">—— evidence/spec-46.txt L268-L295（p95）</div>
-      <div class="act">
+            <div class="act">
         <video controls preload="metadata" src="4603-enable-slot.mp4"></video>
         <a class="btn" href="player/index.html?scene=7">分帧版 · 逐真帧步进 →</a>
         <span class="note">与视频 1:1 同源 · 教学拍步进</span>
@@ -2699,21 +2699,1107 @@ Clear all other fields of the event TRB to ‘0’.
 • 
 Cycle bit = Event Ring’s PCS flag. </blockquote>
       <div class="qsrc">—— evidence/spec-46.txt L364-L391（p97）</div>
-      <div class="act">
+            <div class="act">
         <video controls preload="metadata" src="4604-disable-slot.mp4"></video>
         <a class="btn" href="player/index.html?scene=8">分帧版 · 逐真帧步进 →</a>
         <span class="note">与视频 1:1 同源 · 教学拍步进</span>
       </div>
     </div>
 
-    <div class="card s46todo" id="s46-05">
+    <div class="card s46card" id="s46-05">
       <div class="s46head"><span class="s46no">4.6.5</span><span class="s46ttl">Address Device</span><span class="s46tag core">核心命令</span><span class="s46pg">p97-p102</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 B：设备级巨头）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L400-L403">The Address Device Command is issued by software to transition a Device Slot 
+from the Enabled to the Default or Addressed state or from the Default to the 
+Addressed state, depending on the state of the Block Set Address Request 
+(BSR) flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L400-L403（p97）</div>
+      <blockquote data-ck="spec:spec-46.txt:L404-L408">When an Address Device Command is processed by the xHC it shall enable the 
+device’s Default Control Endpoint, select an address for the USB device, and 
+issue a USB SET_ADDRESS request to the USB Device. The SET_ADDRESS 
+request for a USB2 device shall be issued to Address ‘0’. The SET_ADDRESS 
+request for a USB3 device shall be issued using the Route String. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L404-L408（p97）</div>
+      <blockquote data-ck="spec:spec-46.txt:L437-L445">Note: If the Block Set Address Request (BSR) flag is ‘0’ in the Address Device 
+Command TRB, then the xHC shall select a USB Device Address and issue a 
+SET_ADDRESS request to a USB device as part of an Address Device 
+Command. If the Block Set Address Request (BSR) flag is ‘1’ then the xHC 
+shall not issue a SET_ADDRESS request to a USB device as part of an Address 
+Device Command. In either case, all other operations described in this section 
+for the Address Device Command are performed. The BSR flag may be used 
+by software to provide compatibility with legacy USB devices which require 
+their Device Descriptor to be read before receiving a SET_ADDRESS request. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L437-L445（p98）</div>
+      <blockquote data-ck="spec:spec-46.txt:L456-L458">The Add Context flags A0 and A1 of the Input Control Context data structure 
+(in the Input Context) shall be set to ‘1’, and all remaining Add Context and 
+Drop Context flags shall all be cleared to ‘0’. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L456-L458（p98）</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:4318-4392 · xhci_setup_device·前半（Input Context 装配） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4318:4392"><div class="cl" data-line="4318"><span class="ln">4318</span><span class="cd">static int xhci_setup_device(struct usb_hcd *hcd, struct usb_device *udev,</span></div>
+<div class="cl" data-line="4319"><span class="ln">4319</span><span class="cd">			     enum xhci_setup_dev setup, unsigned int timeout_ms)</span></div>
+<div class="cl" data-line="4320"><span class="ln">4320</span><span class="cd">{</span></div>
+<div class="cl" data-line="4321"><span class="ln">4321</span><span class="cd">	const char *act = setup == SETUP_CONTEXT_ONLY ? "context" : "address";</span></div>
+<div class="cl" data-line="4322"><span class="ln">4322</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="4323"><span class="ln">4323</span><span class="cd">	struct xhci_virt_device *virt_dev;</span></div>
+<div class="cl" data-line="4324"><span class="ln">4324</span><span class="cd">	int ret = 0;</span></div>
+<div class="cl" data-line="4325"><span class="ln">4325</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="4326"><span class="ln">4326</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="4327"><span class="ln">4327</span><span class="cd">	struct xhci_input_control_ctx *ctrl_ctx;</span></div>
+<div class="cl" data-line="4328"><span class="ln">4328</span><span class="cd">	u64 temp_64;</span></div>
+<div class="cl" data-line="4329"><span class="ln">4329</span><span class="cd">	struct xhci_command *command = NULL;</span></div>
+<div class="cl" data-line="4330"><span class="ln">4330</span><span class="cd"></span></div>
+<div class="cl" data-line="4331"><span class="ln">4331</span><span class="cd">	mutex_lock(&amp;xhci-&gt;mutex);</span></div>
+<div class="cl" data-line="4332"><span class="ln">4332</span><span class="cd"></span></div>
+<div class="cl" data-line="4333"><span class="ln">4333</span><span class="cd">	if (xhci-&gt;xhc_state) {	/* dying, removing or halted */</span></div>
+<div class="cl" data-line="4334"><span class="ln">4334</span><span class="cd">		ret = -ESHUTDOWN;</span></div>
+<div class="cl" data-line="4335"><span class="ln">4335</span><span class="cd">		goto out;</span></div>
+<div class="cl" data-line="4336"><span class="ln">4336</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4337"><span class="ln">4337</span><span class="cd"></span></div>
+<div class="cl" data-line="4338"><span class="ln">4338</span><span class="cd">	if (!udev-&gt;slot_id) {</span></div>
+<div class="cl" data-line="4339"><span class="ln">4339</span><span class="cd">		xhci_dbg_trace(xhci, trace_xhci_dbg_address,</span></div>
+<div class="cl" data-line="4340"><span class="ln">4340</span><span class="cd">				"Bad Slot ID %d", udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="4341"><span class="ln">4341</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="4342"><span class="ln">4342</span><span class="cd">		goto out;</span></div>
+<div class="cl" data-line="4343"><span class="ln">4343</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4344"><span class="ln">4344</span><span class="cd"></span></div>
+<div class="cl" data-line="4345"><span class="ln">4345</span><span class="cd">	virt_dev = xhci-&gt;devs[udev-&gt;slot_id];</span></div>
+<div class="cl" data-line="4346"><span class="ln">4346</span><span class="cd"></span></div>
+<div class="cl" data-line="4347"><span class="ln">4347</span><span class="cd">	if (WARN_ON(!virt_dev)) {</span></div>
+<div class="cl" data-line="4348"><span class="ln">4348</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="4349"><span class="ln">4349</span><span class="cd">		 * In plug/unplug torture test with an NEC controller,</span></div>
+<div class="cl" data-line="4350"><span class="ln">4350</span><span class="cd">		 * a zero-dereference was observed once due to virt_dev = 0.</span></div>
+<div class="cl" data-line="4351"><span class="ln">4351</span><span class="cd">		 * Print useful debug rather than crash if it is observed again!</span></div>
+<div class="cl" data-line="4352"><span class="ln">4352</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="4353"><span class="ln">4353</span><span class="cd">		xhci_warn(xhci, "Virt dev invalid for slot_id 0x%x!\n",</span></div>
+<div class="cl" data-line="4354"><span class="ln">4354</span><span class="cd">			udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="4355"><span class="ln">4355</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="4356"><span class="ln">4356</span><span class="cd">		goto out;</span></div>
+<div class="cl" data-line="4357"><span class="ln">4357</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4358"><span class="ln">4358</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="4359"><span class="ln">4359</span><span class="cd">	trace_xhci_setup_device_slot(slot_ctx);</span></div>
+<div class="cl" data-line="4360"><span class="ln">4360</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4361" data-hot="cmd46:7"><span class="ln">4361</span><span class="cd">	if (setup == SETUP_CONTEXT_ONLY) {</span></div>
+<div class="cl" data-line="4362"><span class="ln">4362</span><span class="cd">		if (GET_SLOT_STATE(le32_to_cpu(slot_ctx-&gt;dev_state)) ==</span></div>
+<div class="cl" data-line="4363"><span class="ln">4363</span><span class="cd">		    SLOT_STATE_DEFAULT) {</span></div>
+<div class="cl" data-line="4364"><span class="ln">4364</span><span class="cd">			xhci_dbg(xhci, "Slot already in default state\n");</span></div>
+<div class="cl" data-line="4365"><span class="ln">4365</span><span class="cd">			goto out;</span></div>
+<div class="cl" data-line="4366"><span class="ln">4366</span><span class="cd">		}</span></div>
+<div class="cl" data-line="4367"><span class="ln">4367</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4368"><span class="ln">4368</span><span class="cd"></span></div>
+<div class="cl" data-line="4369"><span class="ln">4369</span><span class="cd">	command = xhci_alloc_command(xhci, true, GFP_KERNEL);</span></div>
+<div class="cl" data-line="4370"><span class="ln">4370</span><span class="cd">	if (!command) {</span></div>
+<div class="cl" data-line="4371"><span class="ln">4371</span><span class="cd">		ret = -ENOMEM;</span></div>
+<div class="cl" data-line="4372"><span class="ln">4372</span><span class="cd">		goto out;</span></div>
+<div class="cl" data-line="4373"><span class="ln">4373</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4374"><span class="ln">4374</span><span class="cd"></span></div>
+<div class="cl" data-line="4375"><span class="ln">4375</span><span class="cd">	command-&gt;in_ctx = virt_dev-&gt;in_ctx;</span></div>
+<div class="cl" data-line="4376"><span class="ln">4376</span><span class="cd">	command-&gt;timeout_ms = timeout_ms;</span></div>
+<div class="cl" data-line="4377"><span class="ln">4377</span><span class="cd"></span></div>
+<div class="cl" data-line="4378"><span class="ln">4378</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;in_ctx);</span></div>
+<div class="cl" data-line="4379"><span class="ln">4379</span><span class="cd">	ctrl_ctx = xhci_get_input_control_ctx(virt_dev-&gt;in_ctx);</span></div>
+<div class="cl" data-line="4380"><span class="ln">4380</span><span class="cd">	if (!ctrl_ctx) {</span></div>
+<div class="cl" data-line="4381"><span class="ln">4381</span><span class="cd">		xhci_warn(xhci, "%s: Could not get input context, bad type.\n",</span></div>
+<div class="cl" data-line="4382"><span class="ln">4382</span><span class="cd">				__func__);</span></div>
+<div class="cl" data-line="4383"><span class="ln">4383</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="4384"><span class="ln">4384</span><span class="cd">		goto out;</span></div>
+<div class="cl" data-line="4385"><span class="ln">4385</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4386"><span class="ln">4386</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="4387"><span class="ln">4387</span><span class="cd">	 * If this is the first Set Address since device plug-in or</span></div>
+<div class="cl" data-line="4388"><span class="ln">4388</span><span class="cd">	 * virt_device realloaction after a resume with an xHCI power loss,</span></div>
+<div class="cl" data-line="4389"><span class="ln">4389</span><span class="cd">	 * then set up the slot context.</span></div>
+<div class="cl" data-line="4390"><span class="ln">4390</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4391"><span class="ln">4391</span><span class="cd">	if (!slot_ctx-&gt;dev_info)</span></div>
+<div class="cl hot" data-line="4392" data-hot="cmd46:8"><span class="ln">4392</span><span class="cd">		xhci_setup_addressable_virt_dev(xhci, udev);</span></div></pre>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L470-L499">• 
+Ensure that the Device Context Base Address Array entry points to a 
+properly sized and initialized Device Context data structure for the device. 
+o 
+Allocate and initialize an Input Context data structure for the command. 
+• 
+The Add Context flags for the Slot Context and the Endpoint 0 Context 
+shall be set to ‘1’. All fields of the Input Context Slot Context data structure 
+shall define valid values, refer to section 4.5.2. The Endpoint 0 Context 
+data structure in the Input Context shall define valid values for the TR 
+Dequeue Pointer, EP Type, Error Count (CErr), and Max Packet Size fields. 
+The MaxPStreams, Max Burst Size, and EP State values shall be cleared to 
+'0'. 
+• 
+Insert an Address Device Command on the Command Ring and initialize 
+the following fields: 
+o 
+TRB Type = Address Device command (refer to Table 6-91). 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+Input Context Pointer = The base address of the Input Context data 
+structure. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L470-L499（p99）</div>
+      <blockquote data-ck="spec:spec-46.txt:L505-L533">When an Address Device Command is executed by the xHC it shall perform the 
+following operations: 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Address Device Command 
+TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+If the Device Slot identified by the command’s Slot ID field has been 
+previously enabled by an Enable Slot Command: 
+•  
+Retrieve the pointer to the Output Device Context of the selected Device Slot. 
+•  
+If the Block Set Address Request (BSR) flag = ‘1’  
+•  
+If the slot is in the Enabled state: 
+•  
+Copy all fields of the Input Slot Context to the Output Slot Context. 
+•  
+Copy all fields of the Input Endpoint 0 Context to the Output Endpoint 
+0 Context. 
+•  
+Set the Endpoint State (EP State) field in the Output Endpoint 0 
+</blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L505-L533（p99）</div>
+      <blockquote data-ck="spec:spec-46.txt:L539-L602">Context to Running. 
+•  
+Set the Slot State in the Output Slot Context to Default. 
+•  
+Set the USB Device Address field in the Output Slot Context to ‘0’. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else // The slot is not in the Enabled state: 
+•  
+Completion Code = Context State Error. 
+o 
+else // BSR = ‘0’ 
+•  
+If the slot is in the Enabled or Default state: 
+•  
+Select a Device Address for the target USB device. 
+•  
+Construct a SET_ADDRESS request to be sent the device 
+•  
+bmRequestType = 0. 
+•  
+wValue = Selected Device Address. 
+•  
+wIndex = 0. 
+•  
+wLength = 0. 
+•  
+Retrieve the Route String from the Input Slot Context. 
+•  
+Issue a SET_ADDRESS request to the target USB device. 
+•  
+If the SET_ADDRESS request is successful: 
+•  
+Copy all fields of the Input Slot Context to the Output Slot Context. 
+•  
+Copy all fields of the Input Endpoint 0 Context to the Output Endpoint 0 
+Context. 
+•  
+Set the Endpoint State (EP State) field in the Output Endpoint 0 Context 
+to Running. 
+•  
+Set the Slot State in the Output Slot Context to Addressed. 
+•  
+Set the USB Device Address field in the Output Slot Context to the 
+address selected for the USB device by the xHC. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+o 
+else // SET_ADDRESS request is not successful 
+•  
+Completion Code = USB Transaction Error. 
+•  
+else // The slot is not in the Enabled or Default state: 
+•  
+Completion Code = Context State Error. 
+• 
+else // The slot has not been enabled by an Enable Slot Command 
+o 
+Completion Code = Slot Not Enabled Error. 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L539-L602（p100）</div>
+            <div class="act">
+        <video controls preload="metadata" src="4605-address-device.mp4"></video>
+        <a class="btn" href="player/index.html?scene=9">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进</span>
+      </div>
     </div>
 
-    <div class="card s46todo" id="s46-06">
+    <div class="card s46card" id="s46-06">
       <div class="s46head"><span class="s46no">4.6.6</span><span class="s46ttl">Configure Endpoint</span><span class="s46tag core">核心命令</span><span class="s46pg">p102-p112</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 B：设备级巨头）。</p>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L659-L660">The Configure Endpoint Command is issued by software to enable, disable, or 
+reconfigure endpoints associated with a target configuration. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L659-L660（p102）</div>
+      <blockquote data-ck="spec:spec-46.txt:L667-L675">Configuring a device. To set a configuration in a device, software shall 
+issue a Configure Endpoint Command to the xHC in conjunction with 
+issuing USB SET_CONFIGURATION request to the device. This command 
+shall be used to enable the set of Device Slot endpoints selected by the 
+target configuration, and transition a Device Slot from the Addressed to the 
+Configured state. Undefined behavior may occur if TDs are posted for 
+endpoints enabled by this command and the SET_CONFIGURATION request 
+associated with this command is not successfully completed by the USB 
+device. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L667-L675（p102）</div>
+      <blockquote data-ck="spec:spec-46.txt:L689-L693">Note: Setting the Deconfigure (DC) flag to ‘1’ in the Configure Endpoint Command 
+TRB is equivalent to setting Input Context Drop Context flags 2-31 to ‘1’ and 
+Add Context 2-31 flags to ‘0’. If the DC flag = ‘1’, the Input Context Pointer 
+field shall be ignored by the xHC and the Output Slot Context Context Entries 
+field shall be set to ‘1’. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L689-L693（p102）</div>
+      <blockquote data-ck="spec:spec-46.txt:L856-L859">xHC behavior is undefined if the Drop Context (D) flag is ‘0’, the Add Context 
+(A) flag is ‘1’, and the Output Endpoint Context is not in the Disabled state 
+(that is, software is trying to add an endpoint without dropping its current 
+resources). </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L856-L859（p105）</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:2958-3052 · xhci_configure_endpoint · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:2958:3052"><div class="cl" data-line="2958"><span class="ln">2958</span><span class="cd">static int xhci_configure_endpoint(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="2959"><span class="ln">2959</span><span class="cd">		struct usb_device *udev,</span></div>
+<div class="cl" data-line="2960"><span class="ln">2960</span><span class="cd">		struct xhci_command *command,</span></div>
+<div class="cl" data-line="2961"><span class="ln">2961</span><span class="cd">		bool ctx_change, bool must_succeed)</span></div>
+<div class="cl" data-line="2962"><span class="ln">2962</span><span class="cd">{</span></div>
+<div class="cl" data-line="2963"><span class="ln">2963</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="2964"><span class="ln">2964</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="2965"><span class="ln">2965</span><span class="cd">	struct xhci_input_control_ctx *ctrl_ctx;</span></div>
+<div class="cl" data-line="2966"><span class="ln">2966</span><span class="cd">	struct xhci_virt_device *virt_dev;</span></div>
+<div class="cl" data-line="2967"><span class="ln">2967</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="2968"><span class="ln">2968</span><span class="cd"></span></div>
+<div class="cl" data-line="2969"><span class="ln">2969</span><span class="cd">	if (!command)</span></div>
+<div class="cl" data-line="2970"><span class="ln">2970</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="2971"><span class="ln">2971</span><span class="cd"></span></div>
+<div class="cl" data-line="2972"><span class="ln">2972</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="2973"><span class="ln">2973</span><span class="cd"></span></div>
+<div class="cl" data-line="2974"><span class="ln">2974</span><span class="cd">	if (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) {</span></div>
+<div class="cl" data-line="2975"><span class="ln">2975</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="2976"><span class="ln">2976</span><span class="cd">		return -ESHUTDOWN;</span></div>
+<div class="cl" data-line="2977"><span class="ln">2977</span><span class="cd">	}</span></div>
+<div class="cl" data-line="2978"><span class="ln">2978</span><span class="cd"></span></div>
+<div class="cl" data-line="2979"><span class="ln">2979</span><span class="cd">	virt_dev = xhci-&gt;devs[udev-&gt;slot_id];</span></div>
+<div class="cl" data-line="2980"><span class="ln">2980</span><span class="cd"></span></div>
+<div class="cl" data-line="2981"><span class="ln">2981</span><span class="cd">	ctrl_ctx = xhci_get_input_control_ctx(command-&gt;in_ctx);</span></div>
+<div class="cl" data-line="2982"><span class="ln">2982</span><span class="cd">	if (!ctrl_ctx) {</span></div>
+<div class="cl" data-line="2983"><span class="ln">2983</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="2984"><span class="ln">2984</span><span class="cd">		xhci_warn(xhci, "%s: Could not get input context, bad type.\n",</span></div>
+<div class="cl" data-line="2985"><span class="ln">2985</span><span class="cd">				__func__);</span></div>
+<div class="cl" data-line="2986"><span class="ln">2986</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="2987"><span class="ln">2987</span><span class="cd">	}</span></div>
+<div class="cl" data-line="2988"><span class="ln">2988</span><span class="cd"></span></div>
+<div class="cl hot" data-line="2989" data-hot="cmd46:9"><span class="ln">2989</span><span class="cd">	if ((xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK) &amp;&amp;</span></div>
+<div class="cl" data-line="2990"><span class="ln">2990</span><span class="cd">			xhci_reserve_host_resources(xhci, ctrl_ctx)) {</span></div>
+<div class="cl" data-line="2991"><span class="ln">2991</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="2992"><span class="ln">2992</span><span class="cd">		xhci_warn(xhci, "Not enough host resources, "</span></div>
+<div class="cl" data-line="2993"><span class="ln">2993</span><span class="cd">				"active endpoint contexts = %u\n",</span></div>
+<div class="cl" data-line="2994"><span class="ln">2994</span><span class="cd">				xhci-&gt;num_active_eps);</span></div>
+<div class="cl" data-line="2995"><span class="ln">2995</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="2996"><span class="ln">2996</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="2997" data-hot="cmd46:10"><span class="ln">2997</span><span class="cd">	if ((xhci-&gt;quirks &amp; XHCI_SW_BW_CHECKING) &amp;&amp; !ctx_change &amp;&amp;</span></div>
+<div class="cl" data-line="2998"><span class="ln">2998</span><span class="cd">	    xhci_reserve_bandwidth(xhci, virt_dev, command-&gt;in_ctx)) {</span></div>
+<div class="cl" data-line="2999"><span class="ln">2999</span><span class="cd">		if ((xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK))</span></div>
+<div class="cl" data-line="3000"><span class="ln">3000</span><span class="cd">			xhci_free_host_resources(xhci, ctrl_ctx);</span></div>
+<div class="cl" data-line="3001"><span class="ln">3001</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="3002"><span class="ln">3002</span><span class="cd">		xhci_warn(xhci, "Not enough bandwidth\n");</span></div>
+<div class="cl" data-line="3003"><span class="ln">3003</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="3004"><span class="ln">3004</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3005"><span class="ln">3005</span><span class="cd"></span></div>
+<div class="cl" data-line="3006"><span class="ln">3006</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, command-&gt;in_ctx);</span></div>
+<div class="cl" data-line="3007"><span class="ln">3007</span><span class="cd"></span></div>
+<div class="cl" data-line="3008"><span class="ln">3008</span><span class="cd">	trace_xhci_configure_endpoint_ctrl_ctx(ctrl_ctx);</span></div>
+<div class="cl" data-line="3009"><span class="ln">3009</span><span class="cd">	trace_xhci_configure_endpoint(slot_ctx);</span></div>
+<div class="cl" data-line="3010"><span class="ln">3010</span><span class="cd"></span></div>
+<div class="cl" data-line="3011"><span class="ln">3011</span><span class="cd">	if (!ctx_change)</span></div>
+<div class="cl hot" data-line="3012" data-hot="cmd46:11"><span class="ln">3012</span><span class="cd">		ret = xhci_queue_configure_endpoint(xhci, command,</span></div>
+<div class="cl" data-line="3013"><span class="ln">3013</span><span class="cd">				command-&gt;in_ctx-&gt;dma,</span></div>
+<div class="cl" data-line="3014"><span class="ln">3014</span><span class="cd">				udev-&gt;slot_id, must_succeed);</span></div>
+<div class="cl" data-line="3015"><span class="ln">3015</span><span class="cd">	else</span></div>
+<div class="cl" data-line="3016"><span class="ln">3016</span><span class="cd">		ret = xhci_queue_evaluate_context(xhci, command,</span></div>
+<div class="cl" data-line="3017"><span class="ln">3017</span><span class="cd">				command-&gt;in_ctx-&gt;dma,</span></div>
+<div class="cl" data-line="3018"><span class="ln">3018</span><span class="cd">				udev-&gt;slot_id, must_succeed);</span></div>
+<div class="cl" data-line="3019"><span class="ln">3019</span><span class="cd">	if (ret &lt; 0) {</span></div>
+<div class="cl" data-line="3020"><span class="ln">3020</span><span class="cd">		if ((xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK))</span></div>
+<div class="cl" data-line="3021"><span class="ln">3021</span><span class="cd">			xhci_free_host_resources(xhci, ctrl_ctx);</span></div>
+<div class="cl" data-line="3022"><span class="ln">3022</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="3023"><span class="ln">3023</span><span class="cd">		xhci_dbg_trace(xhci,  trace_xhci_dbg_context_change,</span></div>
+<div class="cl" data-line="3024"><span class="ln">3024</span><span class="cd">				"FIXME allocate a new ring segment");</span></div>
+<div class="cl" data-line="3025"><span class="ln">3025</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="3026"><span class="ln">3026</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3027"><span class="ln">3027</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="3028"><span class="ln">3028</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="3029"><span class="ln">3029</span><span class="cd"></span></div>
+<div class="cl" data-line="3030"><span class="ln">3030</span><span class="cd">	/* Wait for the configure endpoint command to complete */</span></div>
+<div class="cl" data-line="3031"><span class="ln">3031</span><span class="cd">	wait_for_completion(command-&gt;completion);</span></div>
+<div class="cl" data-line="3032"><span class="ln">3032</span><span class="cd"></span></div>
+<div class="cl" data-line="3033"><span class="ln">3033</span><span class="cd">	if (!ctx_change)</span></div>
+<div class="cl" data-line="3034"><span class="ln">3034</span><span class="cd">		ret = xhci_configure_endpoint_result(xhci, udev,</span></div>
+<div class="cl" data-line="3035"><span class="ln">3035</span><span class="cd">						     &amp;command-&gt;status);</span></div>
+<div class="cl" data-line="3036"><span class="ln">3036</span><span class="cd">	else</span></div>
+<div class="cl" data-line="3037"><span class="ln">3037</span><span class="cd">		ret = xhci_evaluate_context_result(xhci, udev,</span></div>
+<div class="cl" data-line="3038"><span class="ln">3038</span><span class="cd">						   &amp;command-&gt;status);</span></div>
+<div class="cl" data-line="3039"><span class="ln">3039</span><span class="cd"></span></div>
+<div class="cl" data-line="3040"><span class="ln">3040</span><span class="cd">	if ((xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK)) {</span></div>
+<div class="cl" data-line="3041"><span class="ln">3041</span><span class="cd">		spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="3042"><span class="ln">3042</span><span class="cd">		/* If the command failed, remove the reserved resources.</span></div>
+<div class="cl" data-line="3043"><span class="ln">3043</span><span class="cd">		 * Otherwise, clean up the estimate to include dropped eps.</span></div>
+<div class="cl" data-line="3044"><span class="ln">3044</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3045"><span class="ln">3045</span><span class="cd">		if (ret)</span></div>
+<div class="cl" data-line="3046"><span class="ln">3046</span><span class="cd">			xhci_free_host_resources(xhci, ctrl_ctx);</span></div>
+<div class="cl" data-line="3047"><span class="ln">3047</span><span class="cd">		else</span></div>
+<div class="cl" data-line="3048"><span class="ln">3048</span><span class="cd">			xhci_finish_resource_reservation(xhci, ctrl_ctx);</span></div>
+<div class="cl" data-line="3049"><span class="ln">3049</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="3050"><span class="ln">3050</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3051"><span class="ln">3051</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="3052"><span class="ln">3052</span><span class="cd">}</span></div></pre>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L750-L763">The following rules apply to processing a Configure Endpoint Command: 
+• 
+The xHC resources assigned to a Device Slot are not modified until after all 
+Drop Context and Add Context flags are evaluated. 
+• 
+The Slot State field of a Device Slot Context is not modified until after all 
+Drop Context and Add Context flags are evaluated. 
+• 
+The xHC maintains a global Resources Available variable, which is 
+initialized to indicate all xHC resources are available. A Resource is an 
+xHC implementation defined metric, which refers to the internal xHC data 
+structures, buffer space, or other implementation specific resources 
+required to support an endpoint type. 
+</blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L750-L763（p103）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1043-L1058">To issue a Configure Endpoint Command system software shall perform the 
+following operations: 
+• 
+Allocate and initialize an Input Context data structure for the command. 
+• 
+Insert a Configure Endpoint Command on the Command Ring and initialize 
+the following fields: 
+o 
+TRB Type = Configure Endpoint Command (refer to Table 6-91). 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+Input Context Pointer = The base address of the Input Context data 
+structure.Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1043-L1058（p108）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1081-L1146">When a Configure Endpoint Command is executed by the xHC it shall perform 
+the following operations: 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Configure Endpoint 
+Command TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+Initialize the Bandwidth Required variable to 0. 
+o 
+Initialize the Resource Required variable to 0. 
+o 
+If the Device Slot identified by the Slot ID field has been previously 
+enabled by an Enable Slot Command: 
+•  
+Retrieve the Output Device Context of the selected Device Slot. 
+// Release the resources and bandwidth for the endpoints to be disabled. 
+• 
+If the Output Device Context Slot State is equal to Configured: 
+o 
+If the Deconfigure (DC) flag = ‘1’: 
+•  
+For each Endpoint Context not in the Disabled state: 
+•  
+Subtract the resources allocated to the endpoint from the Resource Required 
+variable. 
+•  
+If the endpoint is periodic: 
+•  
+Subtract bandwidth allocated to the endpoint from the Bandwidth Required 
+variable. 
+•  
+Set the Output EP State field to Disabled. 
+•  
+Set the Slot State in the Output Slot Context to Addressed. 
+•  
+Completion Code = Success (refer to Table 6-90).  This value may be overwritten by 
+a later operation. 
+•  
+else // DC = ‘0’ 
+•  
+For each Endpoint Context designated by a Drop Context flag = '1': 
+•  
+Subtract the resources allocated to the endpoint from the Resource Required 
+variable. 
+•  
+If the endpoint is periodic: 
+•  
+Subtract bandwidth allocated to the endpoint from the Bandwidth Required 
+variable. 
+•  
+Completion Code = Success (refer to Table 6-90).  This value may be overwritten by 
+a later operation. 
+// Calculate the resource and bandwidth requirements for the endpoints to be enabled. 
+•  
+If the Output Device Context Slot State is equal to Addressed or Configured and DC = ‘0’: 
+•  
+If all Input Endpoint Contexts identified by Add Context flag fields = ‘1’ are valid: 
+•  
+For each Endpoint Context designated by an Add Context flag = '1': 
+</blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1081-L1146（p109）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1152-L1219">•  
+If the xHC resources required by the enabled endpoints are available: 
+•  
+Add the resources allocated to the endpoint to the Resource Required 
+variable. 
+•  
+If the endpoint is periodic: 
+•  
+Evaluate the bandwidth requirements define by the Endpoint Context. 
+•  
+Add bandwidth allocated to the endpoint from the Bandwidth Required 
+variable. 
+•  
+If the Resource Required is less than or equal to the Resource Available: 
+•  
+If the Bandwidth Required is less than or equal to the Bandwidth Available: 
+// The resource and bandwidth allocations will allow a successful completion, so 
+update Endpoint Context(s). 
+•  
+Subtract the Bandwidth Required from the Bandwidth Available. 
+•  
+For each Endpoint Context designated by a Drop Context flag = '1': 
+•  
+Set the EP State field to Disabled14. 
+•  
+For each Endpoint Context designated by a Add Context flag = '1': 
+•  
+Copy all fields of the Input Endpoint Context to the Output Endpoint 
+Context. 
+ 
+Note that this action passes ownership of the Transfer Ring or Stream 
+Context Array/Transfer Rings from software to the xHC. If the Output 
+Endpoint Context had previously pointed to a Transfer Ring or a Stream 
+Context Array, software is responsible for performing any garbage 
+collection necessary for recovering them. 
+•  
+Set the Output EP State field to Running. 
+•  
+Load the xHC Enqueue and Dequeue Pointers with the value of the TR 
+Dequeue Pointer field from the Endpoint Context. 
+•  
+If all Endpoints are Disabled: 
+•  
+Set the Slot State in the Output Slot Context to Addressed. 
+•  
+Set the Context Entries field in the Output Slot Context to ‘1’. 
+•  
+else // An Endpoint is Enabled 
+•  
+Set the Slot State in the Output Slot Context to Configured. 
+•  
+Set the Context Entries field in the Output Slot Context to the index of 
+the last valid Endpoint Context in its Output Device Context structure. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else15 // The Bandwidth Required is greater than the Bandwidth Available 
+•  
+If the Bandwidth Error is encountered in the primary Bandwidth Domain: 
+ 
+14Note, if both the Add and Drop flags are set for an Endpoint Context, the xHC is not expected to write out the intermediate Disabled state 
+to the Output Device Context. The only requirement is that the Endpoint Context is correct when the Command Completion Event is 
+generated. 
+ 
+15It is not required that the following checks for Primary and Secondary Bandwidth availability occur in this order. An xHCI 
+implementation may check for Secondary Bandwidth availability first. 
+ 
+</blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1152-L1219（p110）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1225-L1251">•  
+Completion Code = Bandwidth Error. 
+•  
+else // The Bandwidth Error is encountered in a Secondary Bandwidth 
+Domain, refer to section 4.16.2 for more information on Bandwidth Domains. 
+•  
+Completion Code = Secondary Bandwidth Error. 
+•  
+else // The Resource Required is greater than the Resource Available 
+•  
+Completion Code = Resource Error. 
+•  
+else // Not all Input Endpoint Contexts identified by Add Context flag fields = ‘1’ are valid 
+•  
+Completion Code =Parameter Error. 
+•  
+else // The Output Device Context Slot State is not equal to Addressed or Configured. 
+•  
+Completion Code = Context State Error. 
+•  
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error. 
+•  
+Clear all other fields of the event TRB to ‘0’. 
+•  
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1225-L1251（p111）</div>
+            <div class="phead">上游 commit d6759133e9815ef807b17dc752aff8c3771b7444 · 2014-06-24 · Julius Werner（Chromium） · drivers/usb/host/xhci.c 1 文件 +18/-33 · hunks @@ -1582,12 / @@ -1634,24 / @@ -1674,11 / @@ -1693,7 / @@ -1759,24 / @@ -2746,8</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:d6759133e9815ef807b17dc752aff8c3771b7444">commit d6759133e9815ef807b17dc752aff8c3771b7444
+Author: Julius Werner &lt;jwerner@chromium.org&gt;
+Date:   Tue Jun 24 17:14:42 2014 +0300
+
+    usb: xhci: Correct last context entry calculation for Configure Endpoint
+    
+    The current XHCI driver recalculates the Context Entries field in the
+    Slot Context on every add_endpoint() and drop_endpoint() call. In the
+    case of drop_endpoint(), it seems to assume that the add_flags will
+    always contain every endpoint for the new configuration, which is not
+    necessarily correct if you don't make assumptions about how the USB core
+    uses the add_endpoint/drop_endpoint interface (add_flags only contains
+    endpoints that are new additions in the new configuration).
+    
+    Furthermore, EP0_FLAG is not consistently set in add_flags throughout
+    the lifetime of a device. This means that when all endpoints are
+    dropped, the Context Entries field can be set to 0 (which is invalid and
+    may cause a Parameter Error) or -1 (which is interpreted as 31 and
+    causes the driver to keep using the old, incorrect value).
+    
+    The only surefire way to set this field right is to also take all
+    existing endpoints into account, and to force the value to 1 (meaning
+    only EP0 is active) if no other endpoint is found. This patch implements
+    that as a single step in the final check_bandwidth() call and removes
+    the intermediary calculations from add_endpoint() and drop_endpoint().
+    
+    Signed-off-by: Julius Werner &lt;jwerner@chromium.org&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c</span>
+<span class="d-meta">index 2b8d9a24af09..013aabb5b379 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.c</span>
+<span class="d-hunk">@@ -1582,12 +1582,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,</span>
+<span class="d-ctx"> 	struct xhci_hcd *xhci;</span>
+<span class="d-ctx"> 	struct xhci_container_ctx *in_ctx, *out_ctx;</span>
+<span class="d-ctx"> 	struct xhci_input_control_ctx *ctrl_ctx;</span>
+<span class="d-del">-	struct xhci_slot_ctx *slot_ctx;</span>
+<span class="d-del">-	unsigned int last_ctx;</span>
+<span class="d-ctx"> 	unsigned int ep_index;</span>
+<span class="d-ctx"> 	struct xhci_ep_ctx *ep_ctx;</span>
+<span class="d-ctx"> 	u32 drop_flag;</span>
+<span class="d-del">-	u32 new_add_flags, new_drop_flags, new_slot_info;</span>
+<span class="d-add">+	u32 new_add_flags, new_drop_flags;</span>
+<span class="d-ctx"> 	int ret;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);</span>
+<span class="d-hunk">@@ -1634,24 +1632,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,</span>
+<span class="d-ctx"> 	ctrl_ctx-&gt;add_flags &amp;= cpu_to_le32(~drop_flag);</span>
+<span class="d-ctx"> 	new_add_flags = le32_to_cpu(ctrl_ctx-&gt;add_flags);</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx-&gt;add_flags));</span>
+<span class="d-del">-	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);</span>
+<span class="d-del">-	/* Update the last valid endpoint context, if we deleted the last one */</span>
+<span class="d-del">-	if ((le32_to_cpu(slot_ctx-&gt;dev_info) &amp; LAST_CTX_MASK) &gt;</span>
+<span class="d-del">-	    LAST_CTX(last_ctx)) {</span>
+<span class="d-del">-		slot_ctx-&gt;dev_info &amp;= cpu_to_le32(~LAST_CTX_MASK);</span>
+<span class="d-del">-		slot_ctx-&gt;dev_info |= cpu_to_le32(LAST_CTX(last_ctx));</span>
+<span class="d-del">-	}</span>
+<span class="d-del">-	new_slot_info = le32_to_cpu(slot_ctx-&gt;dev_info);</span>
+<span class="d-del">-</span>
+<span class="d-ctx"> 	xhci_endpoint_zero(xhci, xhci-&gt;devs[udev-&gt;slot_id], ep);</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",</span>
+<span class="d-add">+	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",</span>
+<span class="d-ctx"> 			(unsigned int) ep-&gt;desc.bEndpointAddress,</span>
+<span class="d-ctx"> 			udev-&gt;slot_id,</span>
+<span class="d-ctx"> 			(unsigned int) new_drop_flags,</span>
+<span class="d-del">-			(unsigned int) new_add_flags,</span>
+<span class="d-del">-			(unsigned int) new_slot_info);</span>
+<span class="d-add">+			(unsigned int) new_add_flags);</span>
+<span class="d-ctx"> 	return 0;</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-hunk">@@ -1674,11 +1661,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,</span>
+<span class="d-ctx"> 	struct xhci_hcd *xhci;</span>
+<span class="d-ctx"> 	struct xhci_container_ctx *in_ctx, *out_ctx;</span>
+<span class="d-ctx"> 	unsigned int ep_index;</span>
+<span class="d-del">-	struct xhci_slot_ctx *slot_ctx;</span>
+<span class="d-ctx"> 	struct xhci_input_control_ctx *ctrl_ctx;</span>
+<span class="d-ctx"> 	u32 added_ctxs;</span>
+<span class="d-del">-	unsigned int last_ctx;</span>
+<span class="d-del">-	u32 new_add_flags, new_drop_flags, new_slot_info;</span>
+<span class="d-add">+	u32 new_add_flags, new_drop_flags;</span>
+<span class="d-ctx"> 	struct xhci_virt_device *virt_dev;</span>
+<span class="d-ctx"> 	int ret = 0;</span>
+<span class="d-ctx"> </span>
+<span class="d-hunk">@@ -1693,7 +1678,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,</span>
+<span class="d-ctx"> 		return -ENODEV;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	added_ctxs = xhci_get_endpoint_flag(&amp;ep-&gt;desc);</span>
+<span class="d-del">-	last_ctx = xhci_last_valid_endpoint(added_ctxs);</span>
+<span class="d-ctx"> 	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {</span>
+<span class="d-ctx"> 		/* FIXME when we have to issue an evaluate endpoint command to</span>
+<span class="d-ctx"> 		 * deal with ep0 max packet size changing once we get the</span>
+<span class="d-hunk">@@ -1759,24 +1743,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,</span>
+<span class="d-ctx"> 	 */</span>
+<span class="d-ctx"> 	new_drop_flags = le32_to_cpu(ctrl_ctx-&gt;drop_flags);</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);</span>
+<span class="d-del">-	/* Update the last valid endpoint context, if we just added one past */</span>
+<span class="d-del">-	if ((le32_to_cpu(slot_ctx-&gt;dev_info) &amp; LAST_CTX_MASK) &lt;</span>
+<span class="d-del">-	    LAST_CTX(last_ctx)) {</span>
+<span class="d-del">-		slot_ctx-&gt;dev_info &amp;= cpu_to_le32(~LAST_CTX_MASK);</span>
+<span class="d-del">-		slot_ctx-&gt;dev_info |= cpu_to_le32(LAST_CTX(last_ctx));</span>
+<span class="d-del">-	}</span>
+<span class="d-del">-	new_slot_info = le32_to_cpu(slot_ctx-&gt;dev_info);</span>
+<span class="d-del">-</span>
+<span class="d-ctx"> 	/* Store the usb_device pointer for later use */</span>
+<span class="d-ctx"> 	ep-&gt;hcpriv = udev;</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",</span>
+<span class="d-add">+	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",</span>
+<span class="d-ctx"> 			(unsigned int) ep-&gt;desc.bEndpointAddress,</span>
+<span class="d-ctx"> 			udev-&gt;slot_id,</span>
+<span class="d-ctx"> 			(unsigned int) new_drop_flags,</span>
+<span class="d-del">-			(unsigned int) new_add_flags,</span>
+<span class="d-del">-			(unsigned int) new_slot_info);</span>
+<span class="d-add">+			(unsigned int) new_add_flags);</span>
+<span class="d-ctx"> 	return 0;</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-hunk">@@ -2746,8 +2720,19 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)</span>
+<span class="d-ctx"> 		ret = 0;</span>
+<span class="d-ctx"> 		goto command_cleanup;</span>
+<span class="d-ctx"> 	}</span>
+<span class="d-del">-	xhci_dbg(xhci, "New Input Control Context:\n");</span>
+<span class="d-add">+	/* Fix up Context Entries field. Minimum value is EP0 == BIT(1). */</span>
+<span class="d-ctx"> 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;in_ctx);</span>
+<span class="d-add">+	for (i = 31; i &gt;= 1; i--) {</span>
+<span class="d-add">+		__le32 le32 = cpu_to_le32(BIT(i));</span>
+<span class="d-add">+</span>
+<span class="d-add">+		if ((virt_dev-&gt;eps[i-1].ring &amp;&amp; !(ctrl_ctx-&gt;drop_flags &amp; le32))</span>
+<span class="d-add">+		    || (ctrl_ctx-&gt;add_flags &amp; le32) || i == 1) {</span>
+<span class="d-add">+			slot_ctx-&gt;dev_info &amp;= cpu_to_le32(~LAST_CTX_MASK);</span>
+<span class="d-add">+			slot_ctx-&gt;dev_info |= cpu_to_le32(LAST_CTX(i));</span>
+<span class="d-add">+			break;</span>
+<span class="d-add">+		}</span>
+<span class="d-add">+	}</span>
+<span class="d-add">+	xhci_dbg(xhci, "New Input Control Context:\n");</span>
+<span class="d-ctx"> 	xhci_dbg_ctx(xhci, virt_dev-&gt;in_ctx,</span>
+<span class="d-ctx"> 		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx-&gt;dev_info)));</span>
+<span class="d-ctx"> </span></pre>
+      <p class="ph">背景（何时 / 谁修 / 为什么是它）</p>
+      <p class="pbody">2014 年 6 月，Chromium OS 的 Julius Werner 提交、Mathias Nyman 与 Greg Kroah-Hartman 签收。Context Entries 是 Slot Context 里「本槽最后一个有效端点上下文的索引」——§4.6.6 执行算法（p110）规定每次 Configure Endpoint 后由 xHC 收束：全 Disabled 落 '1'，否则落最后有效索引；p111 还规定Add 旗标指到的 DCI 超过该值即 Parameter Error。这个字段的内核侧计算，从环扩张时代起就散落在<code>xhci_add_endpoint()</code>/<code>xhci_drop_endpoint()</code> 里增量维护。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：某些「全部端点被 drop」的配置切换（如切到 Alternate Interface 0）后，Configure Endpoint 命令被 xHC 以 Parameter Error 拒绝，或驱动继续沿用旧值。机制（message 原文）：<code>drop_endpoint()</code> 的增量计算「似乎假定 add_flags 总含新配置的全部端点」——实际 add_flags 只含新配置里<b>新增</b>的端点；且 EP0_FLAG 在设备生命周期里并非恒置。两个假设任一不成立，全 drop 时 Context Entries 就被算成 0（非法值——p111 Parameter Error 判据「Add 的 DCI &gt; Context Entries」直接命中）或 -1（按 LAST_CTX 宏解读为 31，导致继续使用旧的错误值）。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">把两处增量维护整块删除（add/drop 各一块），改为 <code>xhci_check_bandwidth()</code> 发命令前的终点一步重算：i 自 31 下探，取第一个「ring 存活且未被 Drop」或「Add 旗标置位」的端点写 LAST_CTX(i)；全不命中则 i==1 兜底——LAST_CTX(1) 即「只剩 EP0」。补丁前：每步增量的两处假设任一不成立就写坏值；补丁后：终点一次算清，且 i==1 分支正是规范 p110「全 Disabled → Context Entries=\'1\'」的内核直译。与贴码对读：下方补丁对读段琥珀高亮行（Fix up 注释行）即修复循环所在——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；分帧走读见 ch4606p（scene=17）。</p>
+      <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 琥珀高亮行 = 修复循环所在</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:3078-3174 · xhci_check_bandwidth·补丁对读段 · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:3078:3174"><div class="cl" data-line="3078"><span class="ln">3078</span><span class="cd">int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)</span></div>
+<div class="cl" data-line="3079"><span class="ln">3079</span><span class="cd">{</span></div>
+<div class="cl" data-line="3080"><span class="ln">3080</span><span class="cd">	int i;</span></div>
+<div class="cl" data-line="3081"><span class="ln">3081</span><span class="cd">	int ret = 0;</span></div>
+<div class="cl" data-line="3082"><span class="ln">3082</span><span class="cd">	struct xhci_hcd *xhci;</span></div>
+<div class="cl" data-line="3083"><span class="ln">3083</span><span class="cd">	struct xhci_virt_device	*virt_dev;</span></div>
+<div class="cl" data-line="3084"><span class="ln">3084</span><span class="cd">	struct xhci_input_control_ctx *ctrl_ctx;</span></div>
+<div class="cl" data-line="3085"><span class="ln">3085</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="3086"><span class="ln">3086</span><span class="cd">	struct xhci_command *command;</span></div>
+<div class="cl" data-line="3087"><span class="ln">3087</span><span class="cd"></span></div>
+<div class="cl" data-line="3088"><span class="ln">3088</span><span class="cd">	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);</span></div>
+<div class="cl" data-line="3089"><span class="ln">3089</span><span class="cd">	if (ret &lt;= 0)</span></div>
+<div class="cl" data-line="3090"><span class="ln">3090</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="3091"><span class="ln">3091</span><span class="cd">	xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="3092"><span class="ln">3092</span><span class="cd">	if ((xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) ||</span></div>
+<div class="cl" data-line="3093"><span class="ln">3093</span><span class="cd">		(xhci-&gt;xhc_state &amp; XHCI_STATE_REMOVING))</span></div>
+<div class="cl" data-line="3094"><span class="ln">3094</span><span class="cd">		return -ENODEV;</span></div>
+<div class="cl" data-line="3095"><span class="ln">3095</span><span class="cd"></span></div>
+<div class="cl" data-line="3096"><span class="ln">3096</span><span class="cd">	xhci_dbg(xhci, "%s called for udev %p\n", __func__, udev);</span></div>
+<div class="cl" data-line="3097"><span class="ln">3097</span><span class="cd">	virt_dev = xhci-&gt;devs[udev-&gt;slot_id];</span></div>
+<div class="cl" data-line="3098"><span class="ln">3098</span><span class="cd"></span></div>
+<div class="cl" data-line="3099"><span class="ln">3099</span><span class="cd">	command = xhci_alloc_command(xhci, true, GFP_KERNEL);</span></div>
+<div class="cl" data-line="3100"><span class="ln">3100</span><span class="cd">	if (!command)</span></div>
+<div class="cl" data-line="3101"><span class="ln">3101</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="3102"><span class="ln">3102</span><span class="cd"></span></div>
+<div class="cl" data-line="3103"><span class="ln">3103</span><span class="cd">	command-&gt;in_ctx = virt_dev-&gt;in_ctx;</span></div>
+<div class="cl" data-line="3104"><span class="ln">3104</span><span class="cd"></span></div>
+<div class="cl" data-line="3105"><span class="ln">3105</span><span class="cd">	/* See section 4.6.6 - A0 = 1; A1 = D0 = D1 = 0 */</span></div>
+<div class="cl" data-line="3106"><span class="ln">3106</span><span class="cd">	ctrl_ctx = xhci_get_input_control_ctx(command-&gt;in_ctx);</span></div>
+<div class="cl" data-line="3107"><span class="ln">3107</span><span class="cd">	if (!ctrl_ctx) {</span></div>
+<div class="cl" data-line="3108"><span class="ln">3108</span><span class="cd">		xhci_warn(xhci, "%s: Could not get input context, bad type.\n",</span></div>
+<div class="cl" data-line="3109"><span class="ln">3109</span><span class="cd">				__func__);</span></div>
+<div class="cl" data-line="3110"><span class="ln">3110</span><span class="cd">		ret = -ENOMEM;</span></div>
+<div class="cl" data-line="3111"><span class="ln">3111</span><span class="cd">		goto command_cleanup;</span></div>
+<div class="cl" data-line="3112"><span class="ln">3112</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3113"><span class="ln">3113</span><span class="cd">	ctrl_ctx-&gt;add_flags |= cpu_to_le32(SLOT_FLAG);</span></div>
+<div class="cl" data-line="3114"><span class="ln">3114</span><span class="cd">	ctrl_ctx-&gt;add_flags &amp;= cpu_to_le32(~EP0_FLAG);</span></div>
+<div class="cl" data-line="3115"><span class="ln">3115</span><span class="cd">	ctrl_ctx-&gt;drop_flags &amp;= cpu_to_le32(~(SLOT_FLAG | EP0_FLAG));</span></div>
+<div class="cl" data-line="3116"><span class="ln">3116</span><span class="cd"></span></div>
+<div class="cl" data-line="3117"><span class="ln">3117</span><span class="cd">	/* Don't issue the command if there's no endpoints to update. */</span></div>
+<div class="cl" data-line="3118"><span class="ln">3118</span><span class="cd">	if (ctrl_ctx-&gt;add_flags == cpu_to_le32(SLOT_FLAG) &amp;&amp;</span></div>
+<div class="cl" data-line="3119"><span class="ln">3119</span><span class="cd">	    ctrl_ctx-&gt;drop_flags == 0) {</span></div>
+<div class="cl" data-line="3120"><span class="ln">3120</span><span class="cd">		ret = 0;</span></div>
+<div class="cl" data-line="3121"><span class="ln">3121</span><span class="cd">		goto command_cleanup;</span></div>
+<div class="cl" data-line="3122"><span class="ln">3122</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="3123" data-hot="cmd46:15"><span class="ln">3123</span><span class="cd">	/* Fix up Context Entries field. Minimum value is EP0 == BIT(1). */</span></div>
+<div class="cl" data-line="3124"><span class="ln">3124</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;in_ctx);</span></div>
+<div class="cl" data-line="3125"><span class="ln">3125</span><span class="cd">	for (i = 31; i &gt;= 1; i--) {</span></div>
+<div class="cl" data-line="3126"><span class="ln">3126</span><span class="cd">		__le32 le32 = cpu_to_le32(BIT(i));</span></div>
+<div class="cl" data-line="3127"><span class="ln">3127</span><span class="cd"></span></div>
+<div class="cl" data-line="3128"><span class="ln">3128</span><span class="cd">		if ((virt_dev-&gt;eps[i-1].ring &amp;&amp; !(ctrl_ctx-&gt;drop_flags &amp; le32))</span></div>
+<div class="cl" data-line="3129"><span class="ln">3129</span><span class="cd">		    || (ctrl_ctx-&gt;add_flags &amp; le32) || i == 1) {</span></div>
+<div class="cl" data-line="3130"><span class="ln">3130</span><span class="cd">			slot_ctx-&gt;dev_info &amp;= cpu_to_le32(~LAST_CTX_MASK);</span></div>
+<div class="cl" data-line="3131"><span class="ln">3131</span><span class="cd">			slot_ctx-&gt;dev_info |= cpu_to_le32(LAST_CTX(i));</span></div>
+<div class="cl" data-line="3132"><span class="ln">3132</span><span class="cd">			break;</span></div>
+<div class="cl" data-line="3133"><span class="ln">3133</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3134"><span class="ln">3134</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3135"><span class="ln">3135</span><span class="cd"></span></div>
+<div class="cl" data-line="3136"><span class="ln">3136</span><span class="cd">	ret = xhci_configure_endpoint(xhci, udev, command,</span></div>
+<div class="cl" data-line="3137"><span class="ln">3137</span><span class="cd">			false, false);</span></div>
+<div class="cl" data-line="3138"><span class="ln">3138</span><span class="cd">	if (ret)</span></div>
+<div class="cl" data-line="3139"><span class="ln">3139</span><span class="cd">		/* Callee should call reset_bandwidth() */</span></div>
+<div class="cl" data-line="3140"><span class="ln">3140</span><span class="cd">		goto command_cleanup;</span></div>
+<div class="cl" data-line="3141"><span class="ln">3141</span><span class="cd"></span></div>
+<div class="cl" data-line="3142"><span class="ln">3142</span><span class="cd">	/* Free any rings that were dropped, but not changed. */</span></div>
+<div class="cl" data-line="3143"><span class="ln">3143</span><span class="cd">	for (i = 1; i &lt; 31; i++) {</span></div>
+<div class="cl" data-line="3144"><span class="ln">3144</span><span class="cd">		if ((le32_to_cpu(ctrl_ctx-&gt;drop_flags) &amp; (1 &lt;&lt; (i + 1))) &amp;&amp;</span></div>
+<div class="cl" data-line="3145"><span class="ln">3145</span><span class="cd">		    !(le32_to_cpu(ctrl_ctx-&gt;add_flags) &amp; (1 &lt;&lt; (i + 1)))) {</span></div>
+<div class="cl" data-line="3146"><span class="ln">3146</span><span class="cd">			xhci_free_endpoint_ring(xhci, virt_dev, i);</span></div>
+<div class="cl" data-line="3147"><span class="ln">3147</span><span class="cd">			xhci_check_bw_drop_ep_streams(xhci, virt_dev, i);</span></div>
+<div class="cl" data-line="3148"><span class="ln">3148</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3149"><span class="ln">3149</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3150"><span class="ln">3150</span><span class="cd">	xhci_zero_in_ctx(xhci, virt_dev);</span></div>
+<div class="cl" data-line="3151"><span class="ln">3151</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3152"><span class="ln">3152</span><span class="cd">	 * Install any rings for completely new endpoints or changed endpoints,</span></div>
+<div class="cl" data-line="3153"><span class="ln">3153</span><span class="cd">	 * and free any old rings from changed endpoints.</span></div>
+<div class="cl" data-line="3154"><span class="ln">3154</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3155"><span class="ln">3155</span><span class="cd">	for (i = 1; i &lt; 31; i++) {</span></div>
+<div class="cl" data-line="3156"><span class="ln">3156</span><span class="cd">		if (!virt_dev-&gt;eps[i].new_ring)</span></div>
+<div class="cl" data-line="3157"><span class="ln">3157</span><span class="cd">			continue;</span></div>
+<div class="cl" data-line="3158"><span class="ln">3158</span><span class="cd">		/* Only free the old ring if it exists.</span></div>
+<div class="cl" data-line="3159"><span class="ln">3159</span><span class="cd">		 * It may not if this is the first add of an endpoint.</span></div>
+<div class="cl" data-line="3160"><span class="ln">3160</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3161"><span class="ln">3161</span><span class="cd">		if (virt_dev-&gt;eps[i].ring) {</span></div>
+<div class="cl" data-line="3162"><span class="ln">3162</span><span class="cd">			xhci_free_endpoint_ring(xhci, virt_dev, i);</span></div>
+<div class="cl" data-line="3163"><span class="ln">3163</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3164"><span class="ln">3164</span><span class="cd">		xhci_check_bw_drop_ep_streams(xhci, virt_dev, i);</span></div>
+<div class="cl" data-line="3165"><span class="ln">3165</span><span class="cd">		virt_dev-&gt;eps[i].ring = virt_dev-&gt;eps[i].new_ring;</span></div>
+<div class="cl" data-line="3166"><span class="ln">3166</span><span class="cd">		virt_dev-&gt;eps[i].new_ring = NULL;</span></div>
+<div class="cl" data-line="3167"><span class="ln">3167</span><span class="cd">		xhci_debugfs_create_endpoint(xhci, virt_dev, i);</span></div>
+<div class="cl" data-line="3168"><span class="ln">3168</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3169"><span class="ln">3169</span><span class="cd">command_cleanup:</span></div>
+<div class="cl" data-line="3170"><span class="ln">3170</span><span class="cd">	kfree(command-&gt;completion);</span></div>
+<div class="cl" data-line="3171"><span class="ln">3171</span><span class="cd">	kfree(command);</span></div>
+<div class="cl" data-line="3172"><span class="ln">3172</span><span class="cd"></span></div>
+<div class="cl" data-line="3173"><span class="ln">3173</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="3174"><span class="ln">3174</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=17">补丁分帧动画 · 三幕走读 →</a>
+        <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 §4.6.6 p110 Entries 两分支）</span>
+      </div>
+      <div class="act">
+        <video controls preload="metadata" src="4606-configure-endpoint.mp4"></video>
+        <a class="btn" href="player/index.html?scene=10">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进</span>
+      </div>
+    </div>
+
+    <div class="card s46card" id="s46-11">
+      <div class="s46head"><span class="s46no">4.6.11</span><span class="s46ttl">Reset Device</span><span class="s46tag core">核心命令</span><span class="s46pg">p128-p130</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2349-L2357">The Reset Device Command is used by software to inform the xHC that the 
+USB Device associated with a Device Slot has been Reset (by either; setting 
+the Root Hub port PR flag if the device is attached to a Root Hub port, or 
+issuing a SetPortFeature(PORT_RESET) request the external hub port upstream 
+of the device). In the Slot Context of the selected device slot, the reset 
+operation sets the Slot State field to the Default state and the USB Device 
+Address field to ‘0’. The reset operation also disables all endpoints of the slot 
+except for the Default Control Endpoint by setting the Endpoint Context EP 
+State field to Disabled in all enabled Endpoint Contexts. Software should stop </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2349-L2357（p128）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2359-L2369">For all endpoints except the Default Control Endpoint the xHC shall: 
+• 
+Terminate any USB activity (for example, packet transfers). 
+• 
+Disable the endpoints’ Doorbell. 
+• 
+Drop any pending events not already posted to an Event Ring. 
+• 
+Free any bandwidth allocated to the periodic endpoints. 
+• 
+Free any internal resources associated with the endpoint. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2359-L2369（p128）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2447-L2454">The Reset Device Command forces a Device Slot to the Default state, however 
+the Reset Device Command TRB (section 6.4.3.10) does not reference an Input 
+Context, so there is no Input Context available to use to set the values of the 
+Output Device Context. After the completion of a Reset Device Command the 
+Slot and Endpoint 0 Contexts shall contain values that allow the xHC to issue 
+requests to the Default Control Endpoint of the USB device that has just been 
+reset. Refer to sections 6.2.2.4 and 6.2.3.7 for the respective Slot Context and 
+Endpoint Context field value settings. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2447-L2454（p130）</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:3923-4098 · xhci_discover_or_reset_device · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:3923:4098"><div class="cl" data-line="3923"><span class="ln">3923</span><span class="cd">static int xhci_discover_or_reset_device(struct usb_hcd *hcd,</span></div>
+<div class="cl" data-line="3924"><span class="ln">3924</span><span class="cd">		struct usb_device *udev)</span></div>
+<div class="cl" data-line="3925"><span class="ln">3925</span><span class="cd">{</span></div>
+<div class="cl" data-line="3926"><span class="ln">3926</span><span class="cd">	int ret, i;</span></div>
+<div class="cl" data-line="3927"><span class="ln">3927</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="3928"><span class="ln">3928</span><span class="cd">	struct xhci_hcd *xhci;</span></div>
+<div class="cl" data-line="3929"><span class="ln">3929</span><span class="cd">	unsigned int slot_id;</span></div>
+<div class="cl" data-line="3930"><span class="ln">3930</span><span class="cd">	struct xhci_virt_device *virt_dev;</span></div>
+<div class="cl" data-line="3931"><span class="ln">3931</span><span class="cd">	struct xhci_command *reset_device_cmd;</span></div>
+<div class="cl" data-line="3932"><span class="ln">3932</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="3933"><span class="ln">3933</span><span class="cd">	int old_active_eps = 0;</span></div>
+<div class="cl" data-line="3934"><span class="ln">3934</span><span class="cd"></span></div>
+<div class="cl" data-line="3935"><span class="ln">3935</span><span class="cd">	ret = xhci_check_args(hcd, udev, NULL, 0, false, __func__);</span></div>
+<div class="cl" data-line="3936"><span class="ln">3936</span><span class="cd">	if (ret &lt;= 0)</span></div>
+<div class="cl" data-line="3937"><span class="ln">3937</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="3938"><span class="ln">3938</span><span class="cd">	xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="3939"><span class="ln">3939</span><span class="cd">	slot_id = udev-&gt;slot_id;</span></div>
+<div class="cl" data-line="3940"><span class="ln">3940</span><span class="cd">	virt_dev = xhci-&gt;devs[slot_id];</span></div>
+<div class="cl" data-line="3941"><span class="ln">3941</span><span class="cd">	if (!virt_dev) {</span></div>
+<div class="cl" data-line="3942"><span class="ln">3942</span><span class="cd">		xhci_dbg(xhci, "The device to be reset with slot ID %u does "</span></div>
+<div class="cl" data-line="3943"><span class="ln">3943</span><span class="cd">				"not exist. Re-allocate the device\n", slot_id);</span></div>
+<div class="cl" data-line="3944"><span class="ln">3944</span><span class="cd">		ret = xhci_alloc_dev(hcd, udev);</span></div>
+<div class="cl" data-line="3945"><span class="ln">3945</span><span class="cd">		if (ret == 1)</span></div>
+<div class="cl" data-line="3946"><span class="ln">3946</span><span class="cd">			return 0;</span></div>
+<div class="cl" data-line="3947"><span class="ln">3947</span><span class="cd">		else</span></div>
+<div class="cl" data-line="3948"><span class="ln">3948</span><span class="cd">			return -EINVAL;</span></div>
+<div class="cl" data-line="3949"><span class="ln">3949</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3950"><span class="ln">3950</span><span class="cd"></span></div>
+<div class="cl" data-line="3951"><span class="ln">3951</span><span class="cd">	if (virt_dev-&gt;tt_info)</span></div>
+<div class="cl" data-line="3952"><span class="ln">3952</span><span class="cd">		old_active_eps = virt_dev-&gt;tt_info-&gt;active_eps;</span></div>
+<div class="cl" data-line="3953"><span class="ln">3953</span><span class="cd"></span></div>
+<div class="cl" data-line="3954"><span class="ln">3954</span><span class="cd">	if (virt_dev-&gt;udev != udev) {</span></div>
+<div class="cl" data-line="3955"><span class="ln">3955</span><span class="cd">		/* If the virt_dev and the udev does not match, this virt_dev</span></div>
+<div class="cl" data-line="3956"><span class="ln">3956</span><span class="cd">		 * may belong to another udev.</span></div>
+<div class="cl" data-line="3957"><span class="ln">3957</span><span class="cd">		 * Re-allocate the device.</span></div>
+<div class="cl" data-line="3958"><span class="ln">3958</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3959"><span class="ln">3959</span><span class="cd">		xhci_dbg(xhci, "The device to be reset with slot ID %u does "</span></div>
+<div class="cl" data-line="3960"><span class="ln">3960</span><span class="cd">				"not match the udev. Re-allocate the device\n",</span></div>
+<div class="cl" data-line="3961"><span class="ln">3961</span><span class="cd">				slot_id);</span></div>
+<div class="cl" data-line="3962"><span class="ln">3962</span><span class="cd">		ret = xhci_alloc_dev(hcd, udev);</span></div>
+<div class="cl" data-line="3963"><span class="ln">3963</span><span class="cd">		if (ret == 1)</span></div>
+<div class="cl" data-line="3964"><span class="ln">3964</span><span class="cd">			return 0;</span></div>
+<div class="cl" data-line="3965"><span class="ln">3965</span><span class="cd">		else</span></div>
+<div class="cl" data-line="3966"><span class="ln">3966</span><span class="cd">			return -EINVAL;</span></div>
+<div class="cl" data-line="3967"><span class="ln">3967</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3968"><span class="ln">3968</span><span class="cd"></span></div>
+<div class="cl" data-line="3969"><span class="ln">3969</span><span class="cd">	/* If device is not setup, there is no point in resetting it */</span></div>
+<div class="cl" data-line="3970"><span class="ln">3970</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;out_ctx);</span></div>
+<div class="cl hot" data-line="3971" data-hot="cmd46:12"><span class="ln">3971</span><span class="cd">	if (GET_SLOT_STATE(le32_to_cpu(slot_ctx-&gt;dev_state)) ==</span></div>
+<div class="cl" data-line="3972"><span class="ln">3972</span><span class="cd">						SLOT_STATE_DISABLED)</span></div>
+<div class="cl" data-line="3973"><span class="ln">3973</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="3974"><span class="ln">3974</span><span class="cd"></span></div>
+<div class="cl" data-line="3975"><span class="ln">3975</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_ETRON_HOST) {</span></div>
+<div class="cl" data-line="3976"><span class="ln">3976</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="3977"><span class="ln">3977</span><span class="cd">		 * Obtaining a new device slot to inform the xHCI host that</span></div>
+<div class="cl" data-line="3978"><span class="ln">3978</span><span class="cd">		 * the USB device has been reset.</span></div>
+<div class="cl" data-line="3979"><span class="ln">3979</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3980"><span class="ln">3980</span><span class="cd">		ret = xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="3981"><span class="ln">3981</span><span class="cd">		if (!ret) {</span></div>
+<div class="cl" data-line="3982"><span class="ln">3982</span><span class="cd">			ret = xhci_alloc_dev(hcd, udev);</span></div>
+<div class="cl" data-line="3983"><span class="ln">3983</span><span class="cd">			if (ret == 1)</span></div>
+<div class="cl" data-line="3984"><span class="ln">3984</span><span class="cd">				ret = 0;</span></div>
+<div class="cl" data-line="3985"><span class="ln">3985</span><span class="cd">			else</span></div>
+<div class="cl" data-line="3986"><span class="ln">3986</span><span class="cd">				ret = -EINVAL;</span></div>
+<div class="cl" data-line="3987"><span class="ln">3987</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3988"><span class="ln">3988</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="3989"><span class="ln">3989</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3990"><span class="ln">3990</span><span class="cd"></span></div>
+<div class="cl" data-line="3991"><span class="ln">3991</span><span class="cd">	trace_xhci_discover_or_reset_device(slot_ctx);</span></div>
+<div class="cl" data-line="3992"><span class="ln">3992</span><span class="cd"></span></div>
+<div class="cl" data-line="3993"><span class="ln">3993</span><span class="cd">	xhci_dbg(xhci, "Resetting device with slot ID %u\n", slot_id);</span></div>
+<div class="cl" data-line="3994"><span class="ln">3994</span><span class="cd">	/* Allocate the command structure that holds the struct completion.</span></div>
+<div class="cl" data-line="3995"><span class="ln">3995</span><span class="cd">	 * Assume we're in process context, since the normal device reset</span></div>
+<div class="cl" data-line="3996"><span class="ln">3996</span><span class="cd">	 * process has to wait for the device anyway.  Storage devices are</span></div>
+<div class="cl" data-line="3997"><span class="ln">3997</span><span class="cd">	 * reset as part of error handling, so use GFP_NOIO instead of</span></div>
+<div class="cl" data-line="3998"><span class="ln">3998</span><span class="cd">	 * GFP_KERNEL.</span></div>
+<div class="cl" data-line="3999"><span class="ln">3999</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4000"><span class="ln">4000</span><span class="cd">	reset_device_cmd = xhci_alloc_command(xhci, true, GFP_NOIO);</span></div>
+<div class="cl" data-line="4001"><span class="ln">4001</span><span class="cd">	if (!reset_device_cmd) {</span></div>
+<div class="cl" data-line="4002"><span class="ln">4002</span><span class="cd">		xhci_dbg(xhci, "Couldn't allocate command structure.\n");</span></div>
+<div class="cl" data-line="4003"><span class="ln">4003</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="4004"><span class="ln">4004</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4005"><span class="ln">4005</span><span class="cd"></span></div>
+<div class="cl" data-line="4006"><span class="ln">4006</span><span class="cd">	/* Attempt to submit the Reset Device command to the command ring */</span></div>
+<div class="cl" data-line="4007"><span class="ln">4007</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4008"><span class="ln">4008</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4009" data-hot="cmd46:13"><span class="ln">4009</span><span class="cd">	ret = xhci_queue_reset_device(xhci, reset_device_cmd, slot_id);</span></div>
+<div class="cl" data-line="4010"><span class="ln">4010</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="4011"><span class="ln">4011</span><span class="cd">		xhci_dbg(xhci, "FIXME: allocate a command ring segment\n");</span></div>
+<div class="cl" data-line="4012"><span class="ln">4012</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4013"><span class="ln">4013</span><span class="cd">		goto command_cleanup;</span></div>
+<div class="cl" data-line="4014"><span class="ln">4014</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4015"><span class="ln">4015</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="4016"><span class="ln">4016</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4017"><span class="ln">4017</span><span class="cd"></span></div>
+<div class="cl" data-line="4018"><span class="ln">4018</span><span class="cd">	/* Wait for the Reset Device command to finish */</span></div>
+<div class="cl" data-line="4019"><span class="ln">4019</span><span class="cd">	wait_for_completion(reset_device_cmd-&gt;completion);</span></div>
+<div class="cl" data-line="4020"><span class="ln">4020</span><span class="cd"></span></div>
+<div class="cl" data-line="4021"><span class="ln">4021</span><span class="cd">	/* The Reset Device command can't fail, according to the 0.95/0.96 spec,</span></div>
+<div class="cl" data-line="4022"><span class="ln">4022</span><span class="cd">	 * unless we tried to reset a slot ID that wasn't enabled,</span></div>
+<div class="cl" data-line="4023"><span class="ln">4023</span><span class="cd">	 * or the device wasn't in the addressed or configured state.</span></div>
+<div class="cl" data-line="4024"><span class="ln">4024</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4025"><span class="ln">4025</span><span class="cd">	ret = reset_device_cmd-&gt;status;</span></div>
+<div class="cl" data-line="4026"><span class="ln">4026</span><span class="cd">	switch (ret) {</span></div>
+<div class="cl" data-line="4027"><span class="ln">4027</span><span class="cd">	case COMP_COMMAND_ABORTED:</span></div>
+<div class="cl" data-line="4028"><span class="ln">4028</span><span class="cd">	case COMP_COMMAND_RING_STOPPED:</span></div>
+<div class="cl" data-line="4029"><span class="ln">4029</span><span class="cd">		xhci_warn(xhci, "Timeout waiting for reset device command\n");</span></div>
+<div class="cl" data-line="4030"><span class="ln">4030</span><span class="cd">		ret = -ETIME;</span></div>
+<div class="cl" data-line="4031"><span class="ln">4031</span><span class="cd">		goto command_cleanup;</span></div>
+<div class="cl hot" data-line="4032" data-hot="cmd46:14"><span class="ln">4032</span><span class="cd">	case COMP_SLOT_NOT_ENABLED_ERROR: /* 0.95 completion for bad slot ID */</span></div>
+<div class="cl" data-line="4033"><span class="ln">4033</span><span class="cd">	case COMP_CONTEXT_STATE_ERROR: /* 0.96 completion code for same thing */</span></div>
+<div class="cl" data-line="4034"><span class="ln">4034</span><span class="cd">		xhci_dbg(xhci, "Can't reset device (slot ID %u) in %s state\n",</span></div>
+<div class="cl" data-line="4035"><span class="ln">4035</span><span class="cd">				slot_id,</span></div>
+<div class="cl" data-line="4036"><span class="ln">4036</span><span class="cd">				xhci_get_slot_state(xhci, virt_dev-&gt;out_ctx));</span></div>
+<div class="cl" data-line="4037"><span class="ln">4037</span><span class="cd">		xhci_dbg(xhci, "Not freeing device rings.\n");</span></div>
+<div class="cl" data-line="4038"><span class="ln">4038</span><span class="cd">		/* Don't treat this as an error.  May change my mind later. */</span></div>
+<div class="cl" data-line="4039"><span class="ln">4039</span><span class="cd">		ret = 0;</span></div>
+<div class="cl" data-line="4040"><span class="ln">4040</span><span class="cd">		goto command_cleanup;</span></div>
+<div class="cl" data-line="4041"><span class="ln">4041</span><span class="cd">	case COMP_SUCCESS:</span></div>
+<div class="cl" data-line="4042"><span class="ln">4042</span><span class="cd">		xhci_dbg(xhci, "Successful reset device command.\n");</span></div>
+<div class="cl" data-line="4043"><span class="ln">4043</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="4044"><span class="ln">4044</span><span class="cd">	default:</span></div>
+<div class="cl" data-line="4045"><span class="ln">4045</span><span class="cd">		if (xhci_is_vendor_info_code(xhci, ret))</span></div>
+<div class="cl" data-line="4046"><span class="ln">4046</span><span class="cd">			break;</span></div>
+<div class="cl" data-line="4047"><span class="ln">4047</span><span class="cd">		xhci_warn(xhci, "Unknown completion code %u for "</span></div>
+<div class="cl" data-line="4048"><span class="ln">4048</span><span class="cd">				"reset device command.\n", ret);</span></div>
+<div class="cl" data-line="4049"><span class="ln">4049</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="4050"><span class="ln">4050</span><span class="cd">		goto command_cleanup;</span></div>
+<div class="cl" data-line="4051"><span class="ln">4051</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4052"><span class="ln">4052</span><span class="cd"></span></div>
+<div class="cl" data-line="4053"><span class="ln">4053</span><span class="cd">	/* Free up host controller endpoint resources */</span></div>
+<div class="cl" data-line="4054"><span class="ln">4054</span><span class="cd">	if ((xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK)) {</span></div>
+<div class="cl" data-line="4055"><span class="ln">4055</span><span class="cd">		spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4056"><span class="ln">4056</span><span class="cd">		/* Don't delete the default control endpoint resources */</span></div>
+<div class="cl" data-line="4057"><span class="ln">4057</span><span class="cd">		xhci_free_device_endpoint_resources(xhci, virt_dev, false);</span></div>
+<div class="cl" data-line="4058"><span class="ln">4058</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4059"><span class="ln">4059</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4060"><span class="ln">4060</span><span class="cd"></span></div>
+<div class="cl" data-line="4061"><span class="ln">4061</span><span class="cd">	/* Everything but endpoint 0 is disabled, so free the rings. */</span></div>
+<div class="cl" data-line="4062"><span class="ln">4062</span><span class="cd">	for (i = 1; i &lt; 31; i++) {</span></div>
+<div class="cl" data-line="4063"><span class="ln">4063</span><span class="cd">		struct xhci_virt_ep *ep = &amp;virt_dev-&gt;eps[i];</span></div>
+<div class="cl" data-line="4064"><span class="ln">4064</span><span class="cd"></span></div>
+<div class="cl" data-line="4065"><span class="ln">4065</span><span class="cd">		if (ep-&gt;ep_state &amp; EP_HAS_STREAMS) {</span></div>
+<div class="cl" data-line="4066"><span class="ln">4066</span><span class="cd">			xhci_warn(xhci, "WARN: endpoint 0x%02x has streams on device reset, freeing streams.\n",</span></div>
+<div class="cl" data-line="4067"><span class="ln">4067</span><span class="cd">					xhci_get_endpoint_address(i));</span></div>
+<div class="cl" data-line="4068"><span class="ln">4068</span><span class="cd">			xhci_free_stream_info(xhci, ep-&gt;stream_info);</span></div>
+<div class="cl" data-line="4069"><span class="ln">4069</span><span class="cd">			ep-&gt;stream_info = NULL;</span></div>
+<div class="cl" data-line="4070"><span class="ln">4070</span><span class="cd">			ep-&gt;ep_state &amp;= ~EP_HAS_STREAMS;</span></div>
+<div class="cl" data-line="4071"><span class="ln">4071</span><span class="cd">		}</span></div>
+<div class="cl" data-line="4072"><span class="ln">4072</span><span class="cd"></span></div>
+<div class="cl" data-line="4073"><span class="ln">4073</span><span class="cd">		if (ep-&gt;ring) {</span></div>
+<div class="cl" data-line="4074"><span class="ln">4074</span><span class="cd">			if (ep-&gt;sideband)</span></div>
+<div class="cl" data-line="4075"><span class="ln">4075</span><span class="cd">				xhci_sideband_notify_ep_ring_free(ep-&gt;sideband, i);</span></div>
+<div class="cl" data-line="4076"><span class="ln">4076</span><span class="cd">			xhci_debugfs_remove_endpoint(xhci, virt_dev, i);</span></div>
+<div class="cl" data-line="4077"><span class="ln">4077</span><span class="cd">			xhci_free_endpoint_ring(xhci, virt_dev, i);</span></div>
+<div class="cl" data-line="4078"><span class="ln">4078</span><span class="cd">		}</span></div>
+<div class="cl" data-line="4079"><span class="ln">4079</span><span class="cd">		if (!list_empty(&amp;virt_dev-&gt;eps[i].bw_endpoint_list))</span></div>
+<div class="cl" data-line="4080"><span class="ln">4080</span><span class="cd">			xhci_drop_ep_from_interval_table(xhci,</span></div>
+<div class="cl" data-line="4081"><span class="ln">4081</span><span class="cd">					&amp;virt_dev-&gt;eps[i].bw_info,</span></div>
+<div class="cl" data-line="4082"><span class="ln">4082</span><span class="cd">					virt_dev-&gt;bw_table,</span></div>
+<div class="cl" data-line="4083"><span class="ln">4083</span><span class="cd">					udev,</span></div>
+<div class="cl" data-line="4084"><span class="ln">4084</span><span class="cd">					&amp;virt_dev-&gt;eps[i],</span></div>
+<div class="cl" data-line="4085"><span class="ln">4085</span><span class="cd">					virt_dev-&gt;tt_info);</span></div>
+<div class="cl" data-line="4086"><span class="ln">4086</span><span class="cd">		xhci_clear_endpoint_bw_info(&amp;virt_dev-&gt;eps[i].bw_info);</span></div>
+<div class="cl" data-line="4087"><span class="ln">4087</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4088"><span class="ln">4088</span><span class="cd">	/* If necessary, update the number of active TTs on this root port */</span></div>
+<div class="cl" data-line="4089"><span class="ln">4089</span><span class="cd">	xhci_update_tt_active_eps(xhci, virt_dev, old_active_eps);</span></div>
+<div class="cl" data-line="4090"><span class="ln">4090</span><span class="cd">	ret = 0;</span></div>
+<div class="cl" data-line="4091"><span class="ln">4091</span><span class="cd"></span></div>
+<div class="cl" data-line="4092"><span class="ln">4092</span><span class="cd">command_cleanup:</span></div>
+<div class="cl" data-line="4093"><span class="ln">4093</span><span class="cd">	for (i = 0; i &lt; EP_CTX_PER_DEV; i++)</span></div>
+<div class="cl" data-line="4094"><span class="ln">4094</span><span class="cd">		virt_dev-&gt;eps[i].ep_state &amp;= ~EP_DROP_PENDING;</span></div>
+<div class="cl" data-line="4095"><span class="ln">4095</span><span class="cd"></span></div>
+<div class="cl" data-line="4096"><span class="ln">4096</span><span class="cd">	xhci_free_command(xhci, reset_device_cmd);</span></div>
+<div class="cl" data-line="4097"><span class="ln">4097</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="4098"><span class="ln">4098</span><span class="cd">}</span></div></pre>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2385-L2437">To issue a Reset Device Command system software shall perform the following 
+operations: 
+• 
+Insert an Reset Device Command on the Command Ring and initialize the 
+following fields: 
+o 
+TRB Type = Reset Device Command (refer to Table 6-91). 
+o 
+Slot ID = The ID of the Device Slot to reset. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Reset Device Command is executed by the xHC it shall perform the 
+following operations: 
+• 
+If the Device Slot is in the Addressed or Configured state: 
+o 
+Abort any USB transactions to the Device. 
+o 
+Set the Slot State field of Slot Context to the Default state. 
+o 
+Set the Context Entries field of Slot Context to ‘1’. 
+o 
+Set the USB Device Address field of Slot Context to ‘0’. 
+o 
+For each Endpoint Context of the Device Context (except the Default 
+Control Endpoint): 
+•  
+Set the Endpoint Context EP State field to Disabled. 
+• 
+Insert a Command Completion Event on the Event Ring of Interrupter 0 
+and initialize the following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Reset Device Command 
+TRB. 
+o 
+If the Device Slot was in the Addressed or Configured state: 
+•  
+Completion Code = Success (refer to Table 6-90). 
+o 
+else // The Device Slot was not in the Addressed or Configured state 
+•  
+Completion Code = Context State Error. 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2385-L2437（p129）</div>
+            <div class="act">
+        <video controls preload="metadata" src="4611-reset-device.mp4"></video>
+        <a class="btn" href="player/index.html?scene=11">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进</span>
+      </div>
     </div>
 
     <div class="card s46todo" id="s46-07">
@@ -2734,11 +3820,6 @@ Cycle bit = Event Ring’s PCS flag. </blockquote>
     <div class="card s46todo" id="s46-10">
       <div class="s46head"><span class="s46no">4.6.10</span><span class="s46ttl">Set TR Dequeue Pointer</span><span class="s46tag core">核心命令</span><span class="s46pg">p125-p128</span></div>
       <p class="int-note">短片制作中——R10 后续批次上线（批 C：端点批）。</p>
-    </div>
-
-    <div class="card s46todo" id="s46-11">
-      <div class="s46head"><span class="s46no">4.6.11</span><span class="s46ttl">Reset Device</span><span class="s46tag core">核心命令</span><span class="s46pg">p128-p130</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 B：设备级巨头）。</p>
     </div>
 
     <div class="card s46todo" id="s46-12">
@@ -3242,6 +4323,114 @@ entry for the slot is no longer considered valid by the xHC and software can
 free the Device Context, Transfer Ring, Stream Context Array, etc. data 
 structures associated with the slot. </blockquote>
 <div class="qsrc">—— evidence/spec-46.txt L321-L325（p96）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-7">
+<p class="tipnote">BSR=1 情境的内核入口：setup==SETUP_CONTEXT_ONLY 即规范 Block Set Address Request='1'——老设备先读描述符的兼容路径（queue 时该 setup 变量直传 BSR 位）。</p>
+<blockquote data-ck="spec:spec-46.txt:L437-L443">Note: If the Block Set Address Request (BSR) flag is ‘0’ in the Address Device 
+Command TRB, then the xHC shall select a USB Device Address and issue a 
+SET_ADDRESS request to a USB device as part of an Address Device 
+Command. If the Block Set Address Request (BSR) flag is ‘1’ then the xHC 
+shall not issue a SET_ADDRESS request to a USB device as part of an Address 
+Device Command. In either case, all other operations described in this section 
+for the Address Device Command are performed. The BSR flag may be used </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L437-L443（p98）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-8">
+<p class="tipnote">首次 Set Address 装配 Input Slot Context：xhci_setup_addressable_virt_dev 填 Slot/EP0 Context 全字段——对应规范「System software shall initialize Slot Context and Endpoint Context 0 entries of the Input Context」。</p>
+<blockquote data-ck="spec:spec-46.txt:L459-L461">System software shall initialize Slot Context and Endpoint Context 0 entries of 
+the Input Context. All other Endpoint Contexts in the Input Context shall be 
+ignored by the xHC during the execution of this command. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L459-L461（p98）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-9">
+<p class="tipnote">资源预检（xhci_reserve_host_resources）：quirk 主机先估内部资源够不够——对应规范 Resource Error 拒绝语义（内部数据结构/缓冲空间是 xHC 实现定义的度量）。</p>
+<blockquote data-ck="spec:spec-46.txt:L979-L981">The xHC shall reject a Configure Endpoint Command with Resource Error if it 
+determines that it does not have enough internal resources (buffer space, etc.) 
+available to service all the endpoints defined in the configuration. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L979-L981（p107）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-10">
+<p class="tipnote">带宽预检（xhci_reserve_bandwidth）：周期端点带宽先估后配——对应规范 Bandwidth Error 拒绝语义（带宽按 bus instance 记账）。</p>
+<blockquote data-ck="spec:spec-46.txt:L977-L978">The xHC shall reject a Configure Endpoint Command with Bandwidth Error if it 
+determines that the bandwidth required by the configuration is not available. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L977-L978（p107）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-11">
+<p class="tipnote">Configure Endpoint 命令入环：xhci_queue_configure_endpoint 携 Input Context DMA 与 slot_id——规范发行算法的内核落点（TRB Type/Slot ID/ICP/清 0/Cycle=PCS）。</p>
+<blockquote data-ck="spec:spec-46.txt:L1048-L1058">Insert a Configure Endpoint Command on the Command Ring and initialize 
+the following fields: 
+o 
+TRB Type = Configure Endpoint Command (refer to Table 6-91). 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+Input Context Pointer = The base address of the Input Context data 
+structure.Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1048-L1058（p108）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-12">
+<p class="tipnote">复位前的槽状态检查：槽已 Disabled（未 setup）则无需 Reset Device——规范执行算法的前提分支「If the Device Slot is in the Addressed or Configured state」的补集面。</p>
+<blockquote data-ck="spec:spec-46.txt:L2404-L2417">If the Device Slot is in the Addressed or Configured state: 
+o 
+Abort any USB transactions to the Device. 
+o 
+Set the Slot State field of Slot Context to the Default state. 
+o 
+Set the Context Entries field of Slot Context to ‘1’. 
+o 
+Set the USB Device Address field of Slot Context to ‘0’. 
+o 
+For each Endpoint Context of the Device Context (except the Default 
+Control Endpoint): 
+•  
+Set the Endpoint Context EP State field to Disabled. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L2404-L2417（p129）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-13">
+<p class="tipnote">Reset Device 命令入环：xhci_queue_reset_device 只带 slot_id 不带 Input Context——规范明言本命令 TRB 不引用 Input Context。</p>
+<blockquote data-ck="spec:spec-46.txt:L2388-L2400">Insert an Reset Device Command on the Command Ring and initialize the 
+following fields: 
+o 
+TRB Type = Reset Device Command (refer to Table 6-91). 
+o 
+Slot ID = The ID of the Device Slot to reset. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L2388-L2400（p129）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-14">
+<p class="tipnote">完成码分派：Slot Not Enabled / Context State Error 两码在驱动侧同判（0.95 时代兼容码归并）——对应规范 CC 双分支。</p>
+<blockquote data-ck="spec:spec-46.txt:L2427-L2433">If the Device Slot was in the Addressed or Configured state: 
+•  
+Completion Code = Success (refer to Table 6-90). 
+o 
+else // The Device Slot was not in the Addressed or Configured state 
+•  
+Completion Code = Context State Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L2427-L2433（p129）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-15">
+<p class="tipnote">Context Entries 终点重算（d6759133e981 修复形态）：i 自 31 下探找第一个「活」端点，i==1 兜底=只剩 EP0——规范 p110「全 Disabled→Entries='1'/否则=最后有效上下文索引」的内核直译。</p>
+<blockquote data-ck="spec:spec-46.txt:L1193-L1204">If all Endpoints are Disabled: 
+•  
+Set the Slot State in the Output Slot Context to Addressed. 
+•  
+Set the Context Entries field in the Output Slot Context to ‘1’. 
+•  
+else // An Endpoint is Enabled 
+•  
+Set the Slot State in the Output Slot Context to Configured. 
+•  
+Set the Context Entries field in the Output Slot Context to the index of 
+the last valid Endpoint Context in its Output Device Context structure. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1193-L1204（p110）</div>
 </div>
 </div>
 <div id="codetip" hidden><div class="tipbody"></div></div>
