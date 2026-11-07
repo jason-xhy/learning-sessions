@@ -387,5 +387,49 @@
       "code": "\txhci->devs[slot_id] = dev;",
       "note": "devs[slot_id] = dev：软件侧槽位登记，与 DCBAA 指针、门铃寄存器并列为槽三件套的驱动镜像"
     }
+  ],
+  "cmd46": [
+    {
+      "file": "drivers/usb/host/xhci-ring.c",
+      "line": 1749,
+      "code": "\tif (!xhci->current_cmd || delayed_work_pending(&xhci->cmd_timer)) {",
+      "note": "超时工作与完成事件的竞态守卫：current_cmd 已空或新一轮超时已挂起＝命令其实已完成，直接返回不再中止（规范：软件负责全部命令超时）。"
+    },
+    {
+      "file": "drivers/usb/host/xhci-ring.c",
+      "line": 1775,
+      "code": "\txhci->current_cmd->status = COMP_COMMAND_ABORTED;",
+      "note": "把当前命令标记为待取消——完成事件回来时 TRB_CMD_NOOP 分支据此把完成码改判 Command Ring Stopped 上报（见 4.6.2 卡贴码）。"
+    },
+    {
+      "file": "drivers/usb/host/xhci-ring.c",
+      "line": 1789,
+      "code": "\t\txhci_abort_cmd_ring(xhci, flags);",
+      "note": "环在跑（CRR=1）才走中止：内部对命令环执行 Command Abort（CA）——4.6.1.2 的中止语义；中止完成后事件环有一枚 Command Ring Stopped 事件。"
+    },
+    {
+      "file": "drivers/usb/host/xhci-ring.c",
+      "line": 1608,
+      "code": "\tif (cmd_comp_code == COMP_SUCCESS)",
+      "note": "Enable Slot 完成事件分派：成功才把 xHC 选定的 Slot ID 交给等待方——xHC 自选算法实现相关（规范明言 implementation dependent）。"
+    },
+    {
+      "file": "drivers/usb/host/xhci-ring.c",
+      "line": 1611,
+      "code": "\t\tcommand->slot_id = 0;",
+      "note": "失败/无槽可用分支：slot_id 清 0——对应规范 No Slots Available Error 时 Slot ID 字段清 '0'，软件不得把 0 当真槽号使用。"
+    },
+    {
+      "file": "drivers/usb/host/xhci-mem.c",
+      "line": 879,
+      "code": "\t/* If device ctx array still points to _this_ device, clear it */",
+      "note": "守卫注释：只在 DCBAA 槽项仍指向本设备时才清——防误清已复用给新设备的槽项（2eb0337 补丁同款防误清语义）。"
+    },
+    {
+      "file": "drivers/usb/host/xhci-mem.c",
+      "line": 882,
+      "code": "\t\txhci->dcbaa.ctx_array[slot_id] = 0;",
+      "note": "软件侧 DCBAA 槽项清 0＝Disable 的规范收尾（硬件侧早把槽标记为可复用）；与 xhci_alloc_virt_device 的装载互为正反操作。"
+    }
   ]
 }

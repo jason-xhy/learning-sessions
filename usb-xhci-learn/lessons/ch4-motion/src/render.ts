@@ -18,9 +18,14 @@ import ch42 from './scenes/ch42?scene';
 import ch43 from './scenes/ch43?scene';
 import ch44 from './scenes/ch44?scene';
 import ch45 from './scenes/ch45?scene';
+// R10 批 A：§4.6 Command Interface 前四支（ch4601..ch4604）插到 ch45 之后
+import ch4601 from './scenes/ch4601?scene';
+import ch4602 from './scenes/ch4602?scene';
+import ch4603 from './scenes/ch4603?scene';
+import ch4604 from './scenes/ch4604?scene';
 // R3 P4：补丁分帧场景接入探针链（TrackA；纯追加，供 render.html 与 P6 全门 probe）
-// R9：清单扩为十场景——主线在前字典序（ch41..ch45=0..4）、补丁在后字典序
-//（ch41p..ch45p=5..9），与 src/player.ts orderedSceneKeys 比较器语义一致。
+// R10：清单扩为十四场景——主线在前（ch41..ch45=0..4、ch4601..ch4604=5..8）、
+// 补丁在后（ch41p..ch45p=9..13），与 src/player.ts orderedSceneKeys 比较器语义一致。
 import ch41p from './scenes/ch41p?scene';
 import ch42p from './scenes/ch42p?scene';
 import ch43p from './scenes/ch43p?scene';
@@ -184,7 +189,7 @@ function probeFrame(root: any, frame: number): any[] {
   });
 }
 
-const scenes = [ch41, ch42, ch43, ch44, ch45, ch41p, ch42p, ch43p, ch44p, ch45p];
+const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch41p, ch42p, ch43p, ch44p, ch45p];
 
 const q = new URLSearchParams(location.search);
 const sceneIdx = Math.max(0, Math.min(scenes.length - 1, Number(q.get('scene') ?? 0)));

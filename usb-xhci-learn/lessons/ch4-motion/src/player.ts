@@ -14,7 +14,7 @@
 // requestNextFrame 触发 playback.seek → 下次循环重算并重绘该帧。
 // 场景清单动态扫描 src/scenes/*.tsx（import.meta.glob + ?scene 查询，vite 插件自动
 // 扫描），排序规则：主线场景在前、补丁场景（chNNp）在后，组内按字典序
-//   → ch41,ch42,ch43,ch41p,ch42p,ch43p 对应 ?scene=0..5。
+//   → 主线 ch41..ch45,ch4601..ch4604 在前、补丁 ch41p..ch45p 在后。
 // 场景越界/缺席 → 显示「场景开发中」占位，不硬编码场景数组长度。
 import {
   makeProject,
@@ -37,7 +37,7 @@ const sceneLoaders = import.meta.glob('./scenes/*.tsx', {
   import: 'default',
 }) as Record<string, () => Promise<any>>;
 
-// 主线在前、补丁（chNNp）在后，组内字典序 → 0=ch41 1=ch42 2=ch43 3=ch41p 4=ch42p 5=ch43p
+// 主线在前、补丁（chNNp）在后，组内字典序 → 0=ch41..4=ch45 5=ch4601..8=ch4604 9=ch41p..13=ch45p
 function orderedSceneKeys(): string[] {
   const isPatch = (key: string) => {
     const base = key.split('/').pop() ?? '';

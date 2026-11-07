@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="data:,">
-<title>xHCI 第 4 章交互教学台 · 三环操作台 / 初始化台 / URB→TRB→TD / 代码解读 / 拔除与槽位管理</title>
+<title>xHCI 第 4 章交互教学台 · 三环操作台 / 初始化台 / URB→TRB→TD / 代码解读 / 拔除与槽位管理 / 命令受理台</title>
 <style>
   :root{
     --bg:#0b0f15; --panel:#111823; --panel-hi:#18222f; --edge:#2a3849; --edge-hi:#3b4d63;
@@ -391,6 +391,37 @@
   #m5c-svg .elab{fill:var(--faint); font-size:11.5px; font-family:var(--mono)}
   #m5c-svg .elab.big{fill:var(--hc)}
 
+  /* ---------- 模块六：命令受理台（§4.6） ---------- */
+  .m6fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:10px; margin-top:8px}
+  .m6fld{border:1px solid var(--edge); border-radius:10px; padding:8px 10px; background:var(--chip)}
+  .m6fld label{display:block; font-family:var(--mono); font-size:13px; color:var(--dim); margin-bottom:3px}
+  .m6fld select{width:100%; font-size:14.5px; padding:4px 6px}
+  .m6fld .m6fhint{font-size:13px; margin-top:3px; line-height:1.5; color:var(--faint)}
+  .m6fld.ok{border-color:var(--ok)} .m6fld.ok .m6fhint{color:var(--ok)}
+  .m6fld.bad{border-color:var(--warn)} .m6fld.bad .m6fhint{color:var(--warn)}
+  .m6rings{display:flex; gap:16px; margin-top:14px; flex-wrap:wrap; align-items:flex-start}
+  .m6ring .m6rname{font-size:13.5px; color:var(--dim); margin-bottom:6px}
+  .m6cell{
+    width:200px; min-height:58px; border:1px dashed var(--edge-hi); border-radius:8px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-family:var(--mono); font-size:12.5px; color:var(--faint); background:var(--chip); padding:4px;
+  }
+  .m6cell.filled{border-style:solid}
+  .m6cell.cmdc.filled{border-color:var(--driver); color:var(--ink)}
+  .m6cell.evtc.filled{border-color:var(--evt); color:var(--evt); cursor:pointer}
+  .m6resolve{
+    font-family:var(--mono); font-size:13.5px; color:var(--evt); line-height:1.65;
+    border-left:3px solid var(--evt); padding:4px 0 4px 10px; white-space:pre-wrap; min-height:40px;
+  }
+  .m6mtx{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:8px}
+  .m6mtx th,.m6mtx td{border:1px solid var(--edge); padding:5px 7px; text-align:center}
+  .m6mtx th{color:var(--dim); background:var(--chip); font-weight:600}
+  .m6mtx td.m6cmdname{font-family:var(--mono); text-align:left; white-space:nowrap; font-size:12.5px}
+  .m6mtx td.m6ok{color:var(--ok); cursor:pointer}
+  .m6mtx td.m6bad{color:var(--warn); cursor:pointer}
+  .m6mtx td.m6na{color:var(--faint); cursor:pointer}
+  .m6mtx td.m6cur{outline:2px solid var(--driver); outline-offset:-2px}
+
   footer{margin-top:26px; color:var(--faint); font-size:13.5px; line-height:1.7}
   footer .mono{font-family:var(--mono)}
 </style>
@@ -400,7 +431,7 @@
 
 <header class="hero">
   <h1>xHCI 第 4 章交互教学台</h1>
-  <p class="sub">TRB（传输请求块，Transfer Request Block）在三方之间流转：<code>xHCI 驱动</code> 写环敲门铃 → <code>xHC 控制器</code> 取指执行、产生事件 → 驱动读事件环收回执。五模块按小节分工：模块一（§4.1 三环操作台）· 模块二（§4.2 控制器初始化台）· 模块三（§4.3 URB→TRB→TD 组装）· 模块四（代码解读题组）· 模块五（§4.4 拔除剧本 + §4.5 DCI 计算器/槽位状态机）。判据：xHCI 1.2b §4.1（p68）、§4.2（p69-70）、§4.3（p71-80）、§4.4/§4.5（p81-89），字段值逐条对表 evidence/ 切片与 EVIDENCE.md。示例设备：FS 设备 · Slot ID=1（由 xHC 自选，§4.3.2 p75）。零依赖单文件，双击即开；<b>闪烁描边的控件=当前该点这里</b>。</p>
+  <p class="sub">TRB（传输请求块，Transfer Request Block）在三方之间流转：<code>xHCI 驱动</code> 写环敲门铃 → <code>xHC 控制器</code> 取指执行、产生事件 → 驱动读事件环收回执。六模块按小节分工：模块一（§4.1 三环操作台）· 模块二（§4.2 控制器初始化台）· 模块三（§4.3 URB→TRB→TD 组装）· 模块四（代码解读题组）· 模块五（§4.4 拔除剧本 + §4.5 DCI 计算器/槽位状态机）· 模块六（§4.6 命令受理台）。判据：xHCI 1.2b §4.1（p68）、§4.2（p69-70）、§4.3（p71-80）、§4.4/§4.5（p81-89）、§4.6（p90-142），字段值逐条对表 evidence/ 切片与 EVIDENCE.md。示例设备：FS 设备 · Slot ID=1（由 xHC 自选，§4.3.2 p75）。零依赖单文件，双击即开；<b>闪烁描边的控件=当前该点这里</b>。</p>
   <div class="legend">
     <span class="lg-drv"><b></b>xHCI 驱动（system software）</span>
     <span class="lg-hc"><b></b>xHC 控制器（host controller）</span>
@@ -415,6 +446,7 @@
   <button class="tab" data-tab="m3">模块三 · URB→TRB→TD 组装（§4.3 设备初始化）</button>
   <button class="tab" data-tab="m4">模块四 · 代码解读（4.1/4.2/4.3）</button>
   <button class="tab" data-tab="m5">模块五 · 拔除与槽位管理台</button>
+  <button class="tab" data-tab="m6">模块六 · 命令受理台（§4.6）</button>
 </nav>
 
 <!-- ================= 模块一 ================= -->
@@ -775,6 +807,82 @@
   </div>
 </section>
 
+<!-- ================= 模块六：命令受理台（§4.6） ================= -->
+<section id="m6" class="hidden">
+
+  <!-- Zone A：受理剧本（§4.6.1 公共机制 + 五代表命令 + 自由拼 TRB 通用面板） -->
+  <div class="panel">
+    <h2>受理剧本：拼命令 TRB → 入命令环 → 敲门铃 → xHC 解析 → 完成事件回执（§4.6）</h2>
+    <p class="quote" id="m6a-quote"></p>
+    <div class="ctl-row">
+      <label>命令 <select id="m6a-cmd">
+        <option value="enableSlot">Enable Slot（§4.6.3）</option>
+        <option value="addressDevice">Address Device（§4.6.5）</option>
+        <option value="configureEndpoint">Configure Endpoint（§4.6.6）</option>
+        <option value="resetEndpoint">Reset Endpoint（§4.6.8）</option>
+        <option value="noOp">No Op（§4.6.2）</option>
+        <option value="free">自由拼 TRB（其余命令 · 通用面板）</option>
+      </select></label>
+      <label>场景 <select id="m6a-scen"></select></label>
+    </div>
+    <ol class="steps" id="m6a-steps"></ol>
+    <div id="m6a-done" class="script-done hidden"></div>
+    <p class="pulse-note">闪烁描边的控件 = 剧本当前步该点的地方（与模块一同款规则）；「场景」下拉切换成功/失败分支（No Op 与自由拼只有成功支路，口径见场景说明）。</p>
+
+    <h3 style="margin-top:14px">第①步 · 拼命令 TRB 关键字段（下拉选值，对/错即时判定并引规范原文）</h3>
+    <div class="m6fields" id="m6a-fields"></div>
+    <p class="note" id="m6a-fnote"></p>
+
+    <div class="m6rings">
+      <div class="m6ring">
+        <div class="m6rname">命令环（Command Ring · 简化一格 · §4.6.1）</div>
+        <div class="m6cell cmdc" data-m6cell="cmd"><span class="m6lab">（空）</span></div>
+      </div>
+      <div class="m6ring">
+        <div class="m6rname">事件环（Primary Event Ring · 简化一格 · 点事件卡=读）</div>
+        <div class="m6cell evtc" data-m6cell="evt0"><span class="m6lab">（空）</span></div>
+      </div>
+      <div class="m6ring" style="flex:1; min-width:300px">
+        <div class="m6rname">xHC 解析 / 事件信息栏</div>
+        <div class="m6resolve" id="m6a-resolve">（xHC 解析过程显示在这里）</div>
+      </div>
+    </div>
+
+    <div class="ctl-row" style="margin-top:12px">
+      <button class="btn driver" data-m6act="m6-write">② 入命令环</button>
+      <button class="btn driver" data-m6act="m6-db">③ 敲门铃（门铃寄存器 0）</button>
+      <button class="btn hc" data-m6act="m6-exec">④ xHC 执行（解析 + 产生完成事件）</button>
+      <button class="btn ghost" data-m6act="m6-reset">重置剧本</button>
+    </div>
+    <div class="hint" id="m6a-hint">从第①步开始：选命令，把命令 TRB 的关键字段拼对。</div>
+    <h3 style="margin-top:10px">回执栏（读走的完成事件）</h3>
+    <ul class="receipts" id="m6a-receipts"></ul>
+  </div>
+
+  <!-- Zone B：命令×槽位状态 合法性矩阵（§4.6 各命令状态前提汇总） -->
+  <div class="panel" style="margin-top:14px">
+    <h2>Zone B · 命令 × 槽位状态 合法性矩阵（§4.6 各命令 xHC 算法分支汇总）</h2>
+    <p class="note">矩阵判据 = 每条命令 §4.6 小节里 xHC 执行算法的分支原文：分支放行（Success 支路）=合法，分支拒绝（Context State Error / Slot Not Enabled Error 支路）=非法。点任意格看该格判定与原文（引文逐字+行号指路）；或用下方选择器模拟受理——错配被拦，警告保持展开。</p>
+    <div class="ctl-row">
+      <label>当前槽位状态 <select id="m6b-state">
+        <option value="disabled">Disabled（未启用）</option>
+        <option value="enabled">Enabled</option>
+        <option value="default">Default</option>
+        <option value="addressed">Addressed</option>
+        <option value="configured">Configured</option>
+      </select></label>
+      <label>命令 <select id="m6b-cmd"></select></label>
+      <button class="btn driver" data-m6act="m6-accept">受理</button>
+    </div>
+    <div class="hint" id="m6b-hint">选状态 + 命令点「受理」：合法放行并给算法支路原文；错配被拦并引 §4.6 原文（警告保持展开）。</div>
+    <table class="m6mtx" id="m6b-table"></table>
+    <div class="anchor hidden" id="m6b-detail">
+      <div class="anchor-head" id="m6b-detail-head"></div>
+      <blockquote id="m6b-detail-quote"></blockquote>
+    </div>
+  </div>
+</section>
+
 <!-- 模块五 · DCI 公式气泡浮层（页面级） -->
 <div id="m5-quote-pop" class="qpop hidden">
   <div class="qpop-card">
@@ -794,7 +902,7 @@
 </div>
 
 <footer>
-  <p>本页全部位值/字段名对表判据文件：<span class="mono">evidence/spec-41.txt</span>（§4.1 p68 命令操作）、<span class="mono">evidence/spec-42.txt</span>（§4.2 p69-70 初始化顺序：CNR 就绪门 L18-20 / 顺序 Note L21-23 / 各寄存器 L25-117）、<span class="mono">evidence/spec-43.txt</span>（§4.3 p71-80，GET_DESCRIPTOR 三段 TRB 字段见 p73 ii/iv/vi）、<span class="mono">evidence/spec-44.txt</span>（§4.4 p81 拔除：CCS/CSC/PSCEG L2-5 / Disable Slot 义务 L5-8）、<span class="mono">evidence/spec-45.txt</span>（§4.5 p81-89 槽位管理：DCI 公式 L96-102 / Table 4-1 L207-276 / 状态机 L283-416 / Enabled 复用值 0 注记 L319-323）、<span class="mono">evidence/EVIDENCE.md</span>（已核断言表）。规范引文为 xHCI 1.2b 原文（字段气泡与初始化台引文=逐字切片，连行处并单空格，行内脚注编号为显示剥离）；示例值（Slot ID=1、FS 设备）为教学示例。「读事件环」即轮询式管理——「Interrupts are optional. The xHC may be managed by polling Event Rings.」（§4.2 p69 脚注 7）。</p>
+  <p>本页全部位值/字段名对表判据文件：<span class="mono">evidence/spec-41.txt</span>（§4.1 p68 命令操作）、<span class="mono">evidence/spec-42.txt</span>（§4.2 p69-70 初始化顺序：CNR 就绪门 L18-20 / 顺序 Note L21-23 / 各寄存器 L25-117）、<span class="mono">evidence/spec-43.txt</span>（§4.3 p71-80，GET_DESCRIPTOR 三段 TRB 字段见 p73 ii/iv/vi）、<span class="mono">evidence/spec-44.txt</span>（§4.4 p81 拔除：CCS/CSC/PSCEG L2-5 / Disable Slot 义务 L5-8）、<span class="mono">evidence/spec-45.txt</span>（§4.5 p81-89 槽位管理：DCI 公式 L96-102 / Table 4-1 L207-276 / 状态机 L283-416 / Enabled 复用值 0 注记 L319-323）、<span class="mono">evidence/spec-46.txt</span>（§4.6 p90-142 命令接口：大区导语与 Note L1-39 / 命令环机制 4.6.1 L40-167 / No Op L168-213 / Enable Slot L214-299 / Disable Slot L306-397 / Address Device L398-650 / Configure Endpoint L657-1269 / Reset Endpoint L1434-1624）、<span class="mono">evidence/EVIDENCE.md</span>（已核断言表）。规范引文为 xHCI 1.2b 原文（字段气泡与初始化台引文=逐字切片，连行处并单空格，行内脚注编号为显示剥离）；示例值（Slot ID=1、FS 设备）为教学示例。「读事件环」即轮询式管理——「Interrupts are optional. The xHC may be managed by polling Event Rings.」（§4.2 p69 脚注 7）。</p>
 </footer>
 
 </div>
@@ -806,7 +914,7 @@ const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
 /* Tab 切换 + hash 路由（落地页分节锚定：#m1/#m2/#m3/#m4 直达对应模块） */
-const TAB_IDS = ['m1','m2','m3','m4','m5'];
+const TAB_IDS = ['m1','m2','m3','m4','m5','m6'];
 function activateTab(id){
   if (!TAB_IDS.includes(id)) return;
   $$('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === id));
@@ -1891,7 +1999,7 @@ async function initM4(){
   } catch (e) {
     m4.err = String((e && e.message) || e);
     note.textContent = '模块四数据加载失败（' + m4.err + '）——本模块需经 http 服务打开'
-      + '（部署后 interactive/ 与 drafts/ 同级，fetch 相对路径 ../drafts/…）。模块一/二/三/五不受影响（模块五零外部数据）。';
+      + '（部署后 interactive/ 与 drafts/ 同级，fetch 相对路径 ../drafts/…）。模块一/二/三/五/六不受影响（模块五/六零外部数据）。';
   }
 }
 
@@ -2560,9 +2668,671 @@ updateM5B();
 renderM5C();
 
 
+const M6Q = {
+  producer: 'System software is the producer of all Command TRBs and the xHC is the consumer.',  // 生产者/消费者 · L45-46
+  doorbell: 'To ring the Host Controller Doorbell software shall write the Host Controller Doorbell register (offset 0 in the Doorbell Register Array), asserting the Host Controller Command value in the DB Target field and ‘0’ in the DB Stream ID field.',  // 敲门铃口径 · L68-71
+  ccEvery: 'The xHC shall generate a Command Completion Event for every command.',  // 每命令必回完成事件 · L76-77
+  ccPtr: 'Command TRB Pointer field of the Command Completion Event shall point to the Command TRB that initiated the event.',  // 完成事件 TRB Pointer · L77-78
+  ccCode: 'The Completion Code field of the Command Completion Event shall indicate the completion status of the command.',  // 完成码字段语义 · L78-80
+  ccSlot: 'The Slot ID and VF ID fields shall reflect the values of the respective fields of the Command TRB that initiated the event.',  // Slot ID/VF ID 回带 · L80-81
+  ccOrder: 'The Command Completion Events that result from processing the commands shall be ordered with respect to their location in the Command Ring.',  // 按环序完成 · L89-90
+  issue: 'Commands are issued by software to the xHC by: 1. Placing one or more Command Descriptors on the Command Ring and 2. Ringing the Host Controller Doorbell.',  // 命令发布两步链 · L63-67
+  pending: 'Note: Software shall not ring the doorbell of an endpoint that has a state modifying command pending. The Configure Endpoint, Evaluate Context, Reset Endpoint, Stop Endpoint, and Set TR Dequeue Pointer Commands affect specific endpoints of a device. The Address Device, Disable Slot, and Reset Device Commands affect all endpoints of a device.',  // 状态修改命令挂起禁敲端点门铃 · L26-30
+  undefined: 'Note: Undefined xHC behavior may result if commands and all data structures that they reference are not correctly formed by software.',  // 数据结构不合法后果 · L12-13
+  timeout: 'Note: Software shall be responsible for all command timeouts. If a command times out, software may abort the command using the mechanism described in section 4.6.1.2.',  // 超时责任在软件 · L31-33
+  noopPurpose: 'The No Op command can be issued by software to exercise the TRB Ring mechanism of the xHC without affecting any xHC or USB Device state, or to report the current value of the Command Ring Dequeue Pointer.',  // No Op 用途 · L170-172
+  noopTrt: 'TRB Type = No Op Command (refer to Table 6-91).',  // TRB Type · L184-184
+  noopClear: 'Clear all other fields of the command TRB to ‘0’.',  // 其余字段清 0 · L192-192
+  noopCyc: 'Cycle bit = Command Ring’s PCS flag.',  // Cycle bit=PCS · L194-194
+  noopDb: 'Write the Host Controller Doorbell with DB Target = Host Controller Command.',  // 门铃 · L197-198
+  noopEvtType: 'TRB Type = Command Completion Event (refer to Table 6-91).',  // 事件 TRB Type · L205-205
+  noopEvtPtr: 'Command TRB Pointer = The address of the No Op Command TRB.',  // 事件 TRB Pointer · L207-207
+  noopEvtCc: 'Completion Code = Success (refer to Table 6-90).',  // CC=Success · L209-209
+  noopEvtClear: 'Clear all other fields of the event TRB to ‘0’.',  // 事件其余字段清 0 · L211-211
+  noopEvtCyc: 'Cycle bit = Event Ring’s PCS flag.',  // 事件 Cycle bit · L213-213
+  enPurpose: 'The Enable Slot Command is issued by software to obtain an available Device Slot and to transition a Device Slot from the Disabled to the Enabled state.',  // 用途 · L216-217
+  enLook: 'When an Enable Slot Command is processed by the xHC, it will look for an available Device Slot.',  // 找可用槽 · L220-221
+  enAvail: 'If a slot is available, the ID of a selected slot will be returned in the Slot ID field of a successful Command Completion Event on the Event Ring.',  // 有槽分支散文 · L221-223
+  enNone: 'If a Device Slot is not available, the Slot ID field shall be cleared to ‘0’ and a No Slots Available Error shall be returned in the Command Completion Event.',  // 无槽分支散文 · L223-225
+  enTrt: 'TRB Type = Enable Slot command (refer to Table 6-91).',  // TRB Type · L256-256
+  enSlotType: 'Slot Type = value specified by the Protocol Slot Type field of the associated xHCI Supported Protocol Capability structure (refer to Table 7-9).',  // Slot Type · L258-260
+  enClear: 'Clear all other fields of the command TRB to ‘0’.',  // 其余清 0 · L262-262
+  enCyc: 'Cycle bit = Command Ring’s PCS flag.',  // Cycle bit · L264-264
+  enDb: 'Write the Host Controller Doorbell with DB Target = Host Controller Command.',  // 门铃 · L266-267
+  enEvtPtr: 'Command TRB Pointer = The address of the Enable Slot Command TRB.',  // 事件 Pointer · L276-277
+  enDetermine: 'Determine if a Device Slot is available.',  // 判定可用性 · L279-279
+  enIfAvail: 'If a Device Slot is available:',  // 有槽分支 · L281-281
+  enSlotId: 'Slot ID = ID of the selected Device Slot.',  // Slot ID=自选 · L283-283
+  enCcOk: 'Completion Code = Success (refer to Table 6-90).',  // CC · L285-285
+  enElse: 'else // Device Slot is not available',  // 无槽分支 · L287-287
+  enSlotId0: 'Slot ID = ‘0’.',  // Slot ID=0 · L289-289
+  enCcNone: 'Completion Code = No Slots Available.',  // CC · L291-291
+  dsPurpose: 'The Disable Slot Command is issued by software to force a Device Slot to the Disabled state. A typical use would be to free a Device Slot when a USB device is disconnected.',  // 用途 · L308-310
+  dsSlotId: 'Slot ID = ID of the Device Slot to be disabled.',  // Slot ID 字段 · L348-348
+  dsIfEnabled: 'If the Device Slot identified by the Slot ID has been previously enabled by an Enable Slot Command:',  // 曾启用分支 · L375-376
+  dsFreed: 'Any xHC resources assigned to the Device Slot are freed and the Device Slot is made available for reassignment.',  // 资源回收 · L378-379
+  dsState: 'The Slot State of the associated Slot Context is set to Disabled.',  // Slot State→Disabled · L381-381
+  dsCcOk: 'Completion Code = Success (refer to Table 6-90).',  // CC · L383-383
+  dsElse: 'else // The slot has not been enabled by an Enable Slot Command',  // 未启用分支 · L385-385
+  dsCcBad: 'Completion Code = Slot Not Enabled Error.',  // CC · L387-387
+  adTrt: 'TRB Type = Address Device command (refer to Table 6-91).',  // TRB Type · L487-487
+  adSlotId: 'Slot ID = ID of the target Device Slot.',  // Slot ID · L489-489
+  adIcp: 'Input Context Pointer = The base address of the Input Context data structure.',  // Input Context Pointer · L491-492
+  adA0A1: 'The Add Context flags A0 and A1 of the Input Control Context data structure (in the Input Context) shall be set to ‘1’, and all remaining Add Context and Drop Context flags shall all be cleared to ‘0’.',  // A0/A1 前置 · L456-458
+  adIfEnaDef: 'If the slot is in the Enabled or Default state:',  // Enabled/Default 分支 · L553-553
+  adSlotAddr: 'Set the Slot State in the Output Slot Context to Addressed.',  // Slot State→Addressed · L581-581
+  adCcOk: 'Completion Code = Success (refer to Table 6-90).',  // CC · L586-586
+  adUsbErr: 'Completion Code = USB Transaction Error.',  // CC=USB Transaction Error · L590-590
+  adElseSt: 'else // The slot is not in the Enabled or Default state:',  // 非 Enabled/Default 分支 · L592-592
+  adCcState: 'Completion Code = Context State Error.',  // CC=Context State Error · L594-594
+  adElseNotEna: 'else // The slot has not been enabled by an Enable Slot Command',  // 未启用分支 · L596-596
+  adCcNotEna: 'Completion Code = Slot Not Enabled Error.',  // CC=Slot Not Enabled Error · L598-598
+  adRemainDef: 'Note: If the SET_ADDRESS request was unsuccessful, system software may issue a Disable Slot Command for the slot or reset the device and attempt the Address Device Command again. An unsuccessful Address Device Command shall leave the Device Slot in the Default state.',  // 失败后留在 Default · L617-620
+  adEvtPtr: 'Command TRB Pointer = The address of the Address Device Command TRB.',  // Address Device 事件 Pointer · L513-514
+  cePurpose: 'The Configure Endpoint Command is issued by software to enable, disable, or reconfigure endpoints associated with a target configuration.',  // 用途 · L659-660
+  ceDcFlag: 'Note: Setting the Deconfigure (DC) flag to ‘1’ in the Configure Endpoint Command TRB is equivalent to setting Input Context Drop Context flags 2-31 to ‘1’ and Add Context 2-31 flags to ‘0’.',  // DC 标志语义 · L689-691
+  ceTrt: 'TRB Type = Configure Endpoint Command (refer to Table 6-91).',  // TRB Type · L1051-1051
+  ceSlotId: 'Slot ID = ID of the target Device Slot.',  // Slot ID · L1053-1053
+  ceIcp: 'Input Context Pointer = The base address of the Input Context data structure.',  // ICP（L1055-1056 跨行粘连切片） · L1055-1056
+  ceCyc: 'Cycle bit = Command Ring’s PCS flag.',  // Cycle bit · L1058-1058
+  ceIfConfig: 'If the Output Device Context Slot State is equal to Configured:',  // Configured 分支 · L1104-1104
+  ceIfDc1: 'If the Deconfigure (DC) flag = ‘1’:',  // DC=1 分支 · L1106-1106
+  ceToAddr: 'Set the Slot State in the Output Slot Context to Addressed.',  // Slot State→Addressed · L1120-1120
+  ceIfState: 'If the Output Device Context Slot State is equal to Addressed or Configured and DC = ‘0’:',  // Addressed/Configured 且 DC=0 · L1141-1141
+  ceToConfig: 'Set the Slot State in the Output Slot Context to Configured.',  // Slot State→Configured · L1201-1201
+  ceCcOk: 'Completion Code = Success (refer to Table 6-90).',  // CC · L1206-1206
+  ceCcBand: 'Completion Code = Bandwidth Error.',  // CC=Bandwidth Error · L1226-1226
+  ceEvtPtr: 'Command TRB Pointer = The address of the Configure Endpoint Command TRB.',  // Configure Endpoint 事件 Pointer · L1089-1090
+  ceCcOk1: 'Completion Code = Success (refer to Table 6-90).',  // DC=1 支路 CC（行内切片） · L1122-1122
+  ceElseState: 'else // The Output Device Context Slot State is not equal to Addressed or Configured.',  // 状态错分支 · L1241-1241
+  ceCcState: 'Completion Code = Context State Error.',  // CC · L1243-1243
+  ceElseNotEna: 'else // The slot has not been enabled by an Enable Slot Command',  // 未启用分支 · L1245-1245
+  ceCcNotEna: 'Completion Code = Slot Not Enabled Error.',  // CC · L1247-1247
+  rePurpose: 'The Reset Endpoint Command is issued by software to recover from a halted condition on an endpoint.',  // 用途 · L1436-1437
+  reTsp: 'Transfer State Preserve (TSP) = Desired Transfer State result.',  // TSP 字段 · L1544-1544
+  reEpid: 'Endpoint ID = ID of the target endpoint.',  // Endpoint ID 字段 · L1546-1546
+  reSlotId: 'Slot ID = ID of the target Device Slot.',  // Slot ID 字段 · L1548-1548
+  reCyc: 'Cycle bit = Command Ring’s PCS flag.',  // Cycle bit · L1552-1552
+  reDb: 'Write the Host Controller Doorbell with DB Target = Host Controller Command (DB Stream ID = ‘0’).',  // 门铃（含 DB Stream ID） · L1554-1554
+  reIfSlot: 'If the Slot State is set to Default, Addressed, or Configured:',  // Slot State 三态分支 · L1570-1570
+  reIfHalt: 'If the Endpoint State (EP State) field is set to Halted:',  // EP Halted 分支 · L1572-1572
+  reToStop: 'Set the Endpoint State (EP State) field to Stopped.',  // EP State→Stopped · L1574-1574
+  reCcOk: 'Completion Code = Success (refer to Table 6-90).',  // CC · L1582-1582
+  reElseEp: 'else // The Endpoint State (EP State) field is not set to Halted',  // EP 非 Halted 分支 · L1584-1584
+  reCcEp: 'Completion Code = Context State Error.',  // CC · L1586-1586
+  reElseSlot: 'else // The Slot State is not set to Default, Addressed, or Configured',  // Slot State 错分支 · L1588-1588
+  reCcSlot: 'Completion Code = Context State Error.',  // CC · L1590-1590
+  reElseNotEna: 'else // The slot has not been enabled by an Enable Slot Command',  // 未启用分支 · L1592-1592
+  reCcNotEna: 'Completion Code = Slot Not Enabled Error',  // CC（原文无句点） · L1594-1594
+  reEvtPtr: 'Command TRB Pointer = The address of the Reset Endpoint Command TRB.',  // Reset Endpoint 事件 Pointer · L1562-1562
+  reOnlyHalt: 'Note: The Reset Endpoint Command may only be issued to endpoints in the Halted state.',  // 仅 Halted 可发 · L1620-1621
+};
+
+const M6Q_SRC = {
+  producer: 'L45-46',
+  doorbell: 'L68-71',
+  ccEvery: 'L76-77',
+  ccPtr: 'L77-78',
+  ccCode: 'L78-80',
+  ccSlot: 'L80-81',
+  ccOrder: 'L89-90',
+  issue: 'L63-67',
+  pending: 'L26-30',
+  undefined: 'L12-13',
+  timeout: 'L31-33',
+  noopPurpose: 'L170-172',
+  noopTrt: 'L184-184',
+  noopClear: 'L192-192',
+  noopCyc: 'L194-194',
+  noopDb: 'L197-198',
+  noopEvtType: 'L205-205',
+  noopEvtPtr: 'L207-207',
+  noopEvtCc: 'L209-209',
+  noopEvtClear: 'L211-211',
+  noopEvtCyc: 'L213-213',
+  enPurpose: 'L216-217',
+  enLook: 'L220-221',
+  enAvail: 'L221-223',
+  enNone: 'L223-225',
+  enTrt: 'L256-256',
+  enSlotType: 'L258-260',
+  enClear: 'L262-262',
+  enCyc: 'L264-264',
+  enDb: 'L266-267',
+  enEvtPtr: 'L276-277',
+  enDetermine: 'L279-279',
+  enIfAvail: 'L281-281',
+  enSlotId: 'L283-283',
+  enCcOk: 'L285-285',
+  enElse: 'L287-287',
+  enSlotId0: 'L289-289',
+  enCcNone: 'L291-291',
+  dsPurpose: 'L308-310',
+  dsSlotId: 'L348-348',
+  dsIfEnabled: 'L375-376',
+  dsFreed: 'L378-379',
+  dsState: 'L381-381',
+  dsCcOk: 'L383-383',
+  dsElse: 'L385-385',
+  dsCcBad: 'L387-387',
+  adTrt: 'L487-487',
+  adSlotId: 'L489-489',
+  adIcp: 'L491-492',
+  adA0A1: 'L456-458',
+  adIfEnaDef: 'L553-553',
+  adSlotAddr: 'L581-581',
+  adCcOk: 'L586-586',
+  adUsbErr: 'L590-590',
+  adElseSt: 'L592-592',
+  adCcState: 'L594-594',
+  adElseNotEna: 'L596-596',
+  adCcNotEna: 'L598-598',
+  adRemainDef: 'L617-620',
+  adEvtPtr: 'L513-514',
+  cePurpose: 'L659-660',
+  ceDcFlag: 'L689-691',
+  ceTrt: 'L1051-1051',
+  ceSlotId: 'L1053-1053',
+  ceIcp: 'L1055-1056',
+  ceCyc: 'L1058-1058',
+  ceIfConfig: 'L1104-1104',
+  ceIfDc1: 'L1106-1106',
+  ceToAddr: 'L1120-1120',
+  ceIfState: 'L1141-1141',
+  ceToConfig: 'L1201-1201',
+  ceCcOk: 'L1206-1206',
+  ceCcBand: 'L1226-1226',
+  ceEvtPtr: 'L1089-1090',
+  ceCcOk1: 'L1122-1122',
+  ceElseState: 'L1241-1241',
+  ceCcState: 'L1243-1243',
+  ceElseNotEna: 'L1245-1245',
+  ceCcNotEna: 'L1247-1247',
+  rePurpose: 'L1436-1437',
+  reTsp: 'L1544-1544',
+  reEpid: 'L1546-1546',
+  reSlotId: 'L1548-1548',
+  reCyc: 'L1552-1552',
+  reDb: 'L1554-1554',
+  reIfSlot: 'L1570-1570',
+  reIfHalt: 'L1572-1572',
+  reToStop: 'L1574-1574',
+  reCcOk: 'L1582-1582',
+  reElseEp: 'L1584-1584',
+  reCcEp: 'L1586-1586',
+  reElseSlot: 'L1588-1588',
+  reCcSlot: 'L1590-1590',
+  reElseNotEna: 'L1592-1592',
+  reCcNotEna: 'L1594-1594',
+  reEvtPtr: 'L1562-1562',
+  reOnlyHalt: 'L1620-1621',
+};
+
+/* ================= 模块六：命令受理台（§4.6） ================= */
+/* 判据=evidence/spec-46.txt 逐字切片（§4.6 命令接口，R10 批 A）。
+   引文常量 M6Q/M6Q_SRC 由脚本程序化提取（连行处并单空格，弯引号逐字节照抄；
+   提取器=~/.cache/zcode-tmp/m6_extract_quotes.py），smoke 内嵌
+   「引文↔spec-46.txt 归一化窗口匹配」全量对表（html-tool-smoke 坑 13 配方）。
+   Zone A=受理剧本（五代表命令+自由拼 TRB 通用面板，CC 成功/失败双分支）；
+   Zone B=命令×槽位状态合法性矩阵（判据=各命令 §4.6 xHC 算法分支原文，
+   错配引原文拦截=m2/m5 先例）。
+   选择器全部 m6 前缀（R9 坑①：既有 m3 的 $$('.slot')/$$('[data-field]')、
+   m1 的 $$('[data-db]')、m5 的 $$('[data-m5cell]') 均为全页扫描，禁撞）。 */
+
+/* ---- Zone A：剧本数据（TRB 字段判据=各自小节原文；ok=null=自由拼任选） ---- */
+const M6A_CMDS = {
+  enableSlot: {
+    name: 'Enable Slot', sec: '§4.6.3',
+    intro: '取槽入座——「' + M6Q.enPurpose + '」<em>（§4.6.3 · spec-46.txt ' + M6Q_SRC.enPurpose + '）</em>成功后软件须以回带的 Slot ID 把 Device Context 挂进 DCBAA[Slot ID]（§4.6.3 L226-231 指路），否则后续命令/EP0 门铃行为未定义。',
+    note: '字段清单出自 §4.6.3 To-issue 算法（spec-46.txt L250-267）：不携带 Input Context Pointer——只有 TRB Type / Slot Type / Cycle bit，其余清 ‘0’。',
+    fields: [
+      {id:'en-trt', label:'TRB Type', opts:['Enable Slot command','No Op Command','Disable Slot Command'], ok:'Enable Slot command', q:'enTrt', src:'§4.6.3 · spec-46.txt ' + M6Q_SRC.enTrt},
+      {id:'en-slottype', label:'Slot Type', opts:['Protocol Slot Type 字段指定值（Table 7-9 指路）','固定 ‘0’','固定 ‘1’'], ok:'Protocol Slot Type 字段指定值（Table 7-9 指路）', q:'enSlotType', src:'§4.6.3 · spec-46.txt ' + M6Q_SRC.enSlotType},
+      {id:'en-clear', label:'其余字段', opts:['全部清 ‘0’','填 Input Context 指针','填 Endpoint ID'], ok:'全部清 ‘0’', q:'enClear', src:'§4.6.3 · spec-46.txt ' + M6Q_SRC.enClear},
+      {id:'en-cyc', label:'Cycle bit', opts:['命令环的 PCS flag','事件环的 PCS flag','固定 ‘1’'], ok:'命令环的 PCS flag', q:'enCyc', src:'§4.6.3 · spec-46.txt ' + M6Q_SRC.enCyc},
+    ],
+    scens: [
+      {label:'成功：有可用 Device Slot', lines:['enLook','enDetermine','enIfAvail','enSlotId','enCcOk'], cc:'enCcOk', ptr:'enEvtPtr'},
+      {label:'失败：无可用 Device Slot', lines:['enLook','enDetermine','enElse','enSlotId0','enCcNone'], cc:'enCcNone', ptr:'enEvtPtr', noteKey:'enNone'},
+    ],
+  },
+  addressDevice: {
+    name: 'Address Device', sec: '§4.6.5',
+    intro: '编址——「Address Device Command 让 xHC 使能默认控制端点、为 USB 设备选地址并发出 SET_ADDRESS 请求」（§4.6.5 L404-408 指路）；成功后设备槽 Enabled → Addressed（BSR=‘0’）。',
+    note: '上环前置——「' + M6Q.adA0A1 + '」（§4.6.5 · spec-46.txt ' + M6Q_SRC.adA0A1 + '）',
+    fields: [
+      {id:'ad-trt', label:'TRB Type', opts:['Address Device command','Configure Endpoint Command','No Op Command'], ok:'Address Device command', q:'adTrt', src:'§4.6.5 · spec-46.txt ' + M6Q_SRC.adTrt},
+      {id:'ad-slotid', label:'Slot ID', opts:['目标 Device Slot 的 ID','‘0’','xHC 自选新 ID'], ok:'目标 Device Slot 的 ID', q:'adSlotId', src:'§4.6.5 · spec-46.txt ' + M6Q_SRC.adSlotId},
+      {id:'ad-icp', label:'Input Context Pointer', opts:['Input Context 数据结构的基址','Device Context 的基址','DCBAA 的基址'], ok:'Input Context 数据结构的基址', q:'adIcp', src:'§4.6.5 · spec-46.txt ' + M6Q_SRC.adIcp},
+      {id:'ad-cyc', label:'Cycle bit', opts:['命令环的 PCS flag','事件环的 PCS flag','固定 ‘0’'], ok:'命令环的 PCS flag', q:'enCyc', src:'§4.6.5 · spec-46.txt L496'},
+    ],
+    scens: [
+      {label:'成功：BSR=‘0’ · 槽位 Enabled → SET_ADDRESS 成功', lines:['adIfEnaDef','adSlotAddr','adCcOk'], cc:'adCcOk', ptr:'adEvtPtr'},
+      {label:'失败：槽位未启用', lines:['adElseNotEna','adCcNotEna'], cc:'adCcNotEna', ptr:'adEvtPtr', noteKey:'adRemainDef'},
+    ],
+  },
+  configureEndpoint: {
+    name: 'Configure Endpoint', sec: '§4.6.6',
+    intro: '配置端点——「' + M6Q.cePurpose + '」（§4.6.6 · spec-46.txt ' + M6Q_SRC.cePurpose + '）成功后设备槽 Addressed → Configured（DC=‘0’）。',
+    note: '「' + M6Q.ceDcFlag + '」（§4.6.6 · spec-46.txt ' + M6Q_SRC.ceDcFlag + '）本剧本走 DC=‘0’（使能端点）；去配置（DC=‘1’）支路见 Zone B 矩阵行。',
+    fields: [
+      {id:'ce-trt', label:'TRB Type', opts:['Configure Endpoint Command','Address Device command','Reset Endpoint Command'], ok:'Configure Endpoint Command', q:'ceTrt', src:'§4.6.6 · spec-46.txt ' + M6Q_SRC.ceTrt},
+      {id:'ce-slotid', label:'Slot ID', opts:['目标 Device Slot 的 ID','目标端点的 ID','‘0’'], ok:'目标 Device Slot 的 ID', q:'ceSlotId', src:'§4.6.6 · spec-46.txt ' + M6Q_SRC.ceSlotId},
+      {id:'ce-icp', label:'Input Context Pointer', opts:['Input Context 数据结构的基址','Transfer Ring 的基址','ERST 的基址'], ok:'Input Context 数据结构的基址', q:'ceIcp', src:'§4.6.6 · spec-46.txt ' + M6Q_SRC.ceIcp},
+      {id:'ce-cyc', label:'Cycle bit', opts:['命令环的 PCS flag','事件环的 PCS flag','固定 ‘1’'], ok:'命令环的 PCS flag', q:'ceCyc', src:'§4.6.6 · spec-46.txt ' + M6Q_SRC.ceCyc},
+    ],
+    scens: [
+      {label:'成功：DC=‘0’ · 槽位 Addressed → 端点使能', lines:['ceIfState','ceToConfig','ceCcOk'], cc:'ceCcOk', ptr:'ceEvtPtr'},
+      {label:'失败：槽位仍 Enabled（未编址）', lines:['ceElseState','ceCcState'], cc:'ceCcState', ptr:'ceEvtPtr'},
+    ],
+  },
+  resetEndpoint: {
+    name: 'Reset Endpoint', sec: '§4.6.8',
+    intro: '端点复位——「' + M6Q.rePurpose + '」（§4.6.8 · spec-46.txt ' + M6Q_SRC.rePurpose + '）成功后 EP State Halted → Stopped，传输环下次敲门铃即恢复调度。',
+    note: '「' + M6Q.reOnlyHalt + '」（§4.6.8 · spec-46.txt ' + M6Q_SRC.reOnlyHalt + '）目标端点 EP State 不是 Halted 时完成事件回 Context State Error（L1584-1586）。',
+    fields: [
+      {id:'re-trt', label:'TRB Type', opts:['Reset Endpoint Command','Reset Device Command','Stop Endpoint Command'], ok:'Reset Endpoint Command', q:null, src:'§4.6.8 · spec-46.txt L1542（提取件此行含 ‘(r refer’ 印刷瑕疵，引文不逐字上屏——勘误口径 R9④）'},
+      {id:'re-tsp', label:'TSP（Transfer State Preserve）', opts:['Desired Transfer State result','固定 ‘1’','固定 ‘0’'], ok:'Desired Transfer State result', q:'reTsp', src:'§4.6.8 · spec-46.txt ' + M6Q_SRC.reTsp},
+      {id:'re-epid', label:'Endpoint ID', opts:['目标端点的 ID','目标 Device Slot 的 ID','‘0’'], ok:'目标端点的 ID', q:'reEpid', src:'§4.6.8 · spec-46.txt ' + M6Q_SRC.reEpid},
+      {id:'re-slotid', label:'Slot ID', opts:['目标 Device Slot 的 ID','目标端点的 ID','xHC 自选'], ok:'目标 Device Slot 的 ID', q:'reSlotId', src:'§4.6.8 · spec-46.txt ' + M6Q_SRC.reSlotId},
+      {id:'re-cyc', label:'Cycle bit', opts:['命令环的 PCS flag','事件环的 PCS flag','固定 ‘0’'], ok:'命令环的 PCS flag', q:'reCyc', src:'§4.6.8 · spec-46.txt ' + M6Q_SRC.reCyc},
+    ],
+    scens: [
+      {label:'成功：EP State=Halted → 复位到 Stopped', lines:['reIfSlot','reIfHalt','reToStop','reCcOk'], cc:'reCcOk', ptr:'reEvtPtr'},
+      {label:'失败：EP State 不是 Halted', lines:['reIfSlot','reElseEp','reCcEp'], cc:'reCcEp', ptr:'reEvtPtr'},
+    ],
+  },
+  noOp: {
+    name: 'No Op', sec: '§4.6.2',
+    intro: '空跑命令环——「' + M6Q.noopPurpose + '」（§4.6.2 · spec-46.txt ' + M6Q_SRC.noopPurpose + '）',
+    note: '命令 TRB 只有 TRB Type + Cycle bit，其余字段全部清 ‘0’（§4.6.2 To-issue 算法，spec-46.txt L178-198）。',
+    fields: [
+      {id:'no-trt', label:'TRB Type', opts:['No Op Command','Enable Slot command','Reset Endpoint Command'], ok:'No Op Command', q:'noopTrt', src:'§4.6.2 · spec-46.txt ' + M6Q_SRC.noopTrt},
+      {id:'no-clear', label:'其余字段', opts:['全部清 ‘0’','填 Slot ID','填 Input Context 指针'], ok:'全部清 ‘0’', q:'noopClear', src:'§4.6.2 · spec-46.txt ' + M6Q_SRC.noopClear},
+      {id:'no-cyc', label:'Cycle bit', opts:['命令环的 PCS flag','事件环的 PCS flag','固定 ‘1’'], ok:'命令环的 PCS flag', q:'noopCyc', src:'§4.6.2 · spec-46.txt ' + M6Q_SRC.noopCyc},
+    ],
+    scens: [
+      {label:'成功：CC=Success（唯一支路）', lines:['noopEvtType','noopEvtPtr','noopEvtCc','noopEvtClear','noopEvtCyc'], cc:'noopEvtCc', ptr:'noopEvtPtr',
+       note:'规范未定义 No Op 专属失败完成码——命令（TRB Type）不被 xHC 识别时才须回 TRB Error 完成码（§4.6 · spec-46.txt L20-22；提取件该句有印刷重复，不逐字上屏——勘误口径 R9④）'},
+    ],
+  },
+  free: {
+    name: '自由拼 TRB', sec: '§4.6.1',
+    intro: '公共机制剧本——「' + M6Q.producer + '」（§4.6.1 · spec-46.txt ' + M6Q_SRC.producer + '）其余命令（§4.6.4/§4.6.7/§4.6.9-§4.6.18，共 12 条）各小节讲各自专有解析；本面板只练公共链：拼 TRB → 上环 → 门铃 → 通用完成事件（完成码判定见对应小节）。',
+    note: '自由拼不走对错判定：选 TRB Type + 按需带 Slot ID 即视为拼装完成（识别命令清单见 Table 6-91，§4.6.1 L92-96 指路）。',
+    fields: [
+      {id:'fr-type', label:'TRB Type（其余命令 · 自由拼）', opts:['Disable Slot','Evaluate Context','Stop Endpoint','Set TR Dequeue Pointer','Reset Device','Force Event','Negotiate Bandwidth','Set Latency Tolerance Value (LTV)','Get Port Bandwidth','Force Header','Get Extended Property','Set Extended Property'], ok:null, hint:'12 条非代表命令 = §4.6.4 / §4.6.7 / §4.6.9-§4.6.18 各小节'},
+      {id:'fr-slotid', label:'Slot ID（选填 · 是否携带见该命令小节）', opts:['（不带 Slot ID）','Slot ID = 1（示例）'], ok:null, hint:'完成事件的 Slot ID / VF ID 字段回带命令 TRB 的对应字段（见右侧解析）'},
+    ],
+    scens: [
+      {label:'通用完成事件（§4.6.1 公共机制）', lines:['ccEvery','ccPtr','ccCode','ccSlot'], cc:null, ptr:null},
+    ],
+  },
+};
+
+/* Zone A 五步（与 m1/m5 同构：数据驱动渲染） */
+const M6A_STEPS = [
+  {t:'① 拼命令 TRB 关键字段', tip:'下方字段卡逐项选对（对=绿+规范原文；错=红+应为值+原文）'},
+  {t:'② 入命令环', tip:'点「② 入命令环」：命令 TRB 写入命令环（驱动=生产者，xHC=消费者）'},
+  {t:'③ 敲门铃', tip:'点「③ 敲门铃」：写门铃寄存器 0（offset 0）· DB Target=Host Controller Command · DB Stream ID=‘0’'},
+  {t:'④ xHC 执行解析', tip:'点「④ xHC 执行」：按「场景」走 §4.6 算法分支（成功/失败），完成事件上事件环'},
+  {t:'⑤ 读完成事件回执', tip:'点事件环上的「Command Completion Event」卡收执（每命令必回完成事件）'},
+];
+
+const m6a = { cmd:'enableSlot', scen:0, answers:{}, trb:null, db:false, cell:null, evtc:null,
+              steps:[false,false,false,false,false], done:false, doneMsg:'', receipts:[], resolve:'' };
+const m6b = { state:'disabled', cmd:'addressDevice', ok:0, bad:0, na:0, last:null };
+
+function m6aHint(text, warn){
+  const h = $('#m6a-hint');
+  h.textContent = text;
+  h.classList.toggle('warn', !!warn);
+}
+function m6FieldOk(f){ return f.ok === null ? !!m6a.answers[f.id] : m6a.answers[f.id] === f.ok; }
+function m6FieldsOkCount(){ return M6A_CMDS[m6a.cmd].fields.filter(m6FieldOk).length; }
+
+function buildM6A(){
+  const c = M6A_CMDS[m6a.cmd];
+  m6a.scen = 0; m6a.answers = {}; m6a.trb = null; m6a.db = false;
+  m6a.cell = null; m6a.evtc = null;
+  m6a.steps = [false,false,false,false,false];
+  m6a.done = false; m6a.doneMsg = ''; m6a.receipts = [];
+  m6a.resolve = '（xHC 解析过程显示在这里）';
+  $('#m6a-quote').innerHTML = c.intro;
+  const sc = $('#m6a-scen');
+  sc.innerHTML = '';
+  c.scens.forEach((s, i) => {
+    const o = document.createElement('option');
+    o.value = String(i); o.textContent = s.label;
+    sc.appendChild(o);
+  });
+  sc.value = '0';
+  const box = $('#m6a-fields');
+  box.innerHTML = '';
+  c.fields.forEach(f => {
+    const d = document.createElement('div');
+    d.className = 'm6fld';
+    const lab = document.createElement('label');
+    lab.textContent = f.label;
+    const sel = document.createElement('select');
+    sel.dataset.m6field = f.id;
+    const ph = document.createElement('option');
+    ph.value = ''; ph.textContent = '—— 选值 ——';
+    sel.appendChild(ph);
+    f.opts.forEach(o => {
+      const op = document.createElement('option');
+      op.value = o; op.textContent = o;
+      sel.appendChild(op);
+    });
+    sel.addEventListener('change', () => onM6Field(f, sel.value));
+    const hintEl = document.createElement('div');
+    hintEl.className = 'm6fhint';
+    d.append(lab, sel, hintEl);
+    box.appendChild(d);
+  });
+  $('#m6a-fnote').textContent = c.note || '';
+  renderM6A();
+  m6aHint('受理台就绪：把「' + c.name + '」的命令 TRB 关键字段拼对（第①步）。切换命令会重开一本受理剧本。');
+}
+
+function renderM6A(){
+  const ol = $('#m6a-steps');
+  ol.innerHTML = M6A_STEPS.map((t, i) =>
+    `<li data-step="${i + 1}"><span class="chk">${m6a.steps[i] ? '✓' : '○'}</span><b>${t.t}</b><span class="tip">${t.tip}</span></li>`).join('');
+  let nowSet = false;
+  $$('#m6a-steps li').forEach((li, i) => {
+    const isNow = !m6a.steps[i] && !nowSet;
+    li.classList.toggle('now', isNow);
+    if (isNow) nowSet = true;
+  });
+  const cmdCell = $('[data-m6cell="cmd"]');
+  cmdCell.innerHTML = m6a.cell ? `<span class="m6lab">${m6a.cell.label}</span>` : '<span class="m6lab">（空）</span>';
+  cmdCell.classList.toggle('filled', !!m6a.cell);
+  const evtCell = $('[data-m6cell="evt0"]');
+  evtCell.innerHTML = m6a.evtc ? `<span class="m6lab">${m6a.evtc.label}</span>` : '<span class="m6lab">（空）</span>';
+  evtCell.classList.toggle('filled', !!m6a.evtc);
+  $('#m6a-resolve').textContent = m6a.resolve;
+  const done = $('#m6a-done');
+  done.classList.toggle('hidden', !m6a.done);
+  if (m6a.done) done.textContent = m6a.doneMsg;
+  const ul = $('#m6a-receipts');
+  ul.innerHTML = '';
+  m6a.receipts.forEach(t => {
+    const li = document.createElement('li');
+    li.textContent = t;
+    ul.appendChild(li);
+  });
+  updateM6Pulse();
+}
+
+function onM6Field(f, v){
+  m6a.answers[f.id] = v;
+  const fld = $(`[data-m6field="${f.id}"]`).closest('.m6fld');
+  const hintEl = fld.querySelector('.m6fhint');
+  if (v === ''){
+    fld.classList.remove('ok','bad');
+    hintEl.textContent = '';
+  } else if (f.ok === null){
+    fld.classList.add('ok'); fld.classList.remove('bad');
+    hintEl.textContent = '✓ 自由拼任选即合法——' + f.hint;
+  } else if (v === f.ok){
+    fld.classList.add('ok'); fld.classList.remove('bad');
+    hintEl.textContent = (f.q ? '✓ 「' + M6Q[f.q] + '」（' + f.src + '）' : '✓ ' + f.src);
+  } else {
+    fld.classList.add('bad'); fld.classList.remove('ok');
+    hintEl.textContent = '✗ 应为「' + f.ok + '」——' + (f.q ? '「' + M6Q[f.q] + '」（' + f.src + '）' : f.src);
+  }
+  const c = M6A_CMDS[m6a.cmd];
+  if (!m6a.steps[0] && c.fields.every(m6FieldOk)){
+    m6a.steps[0] = true;
+    m6aHint('① 完成：' + c.name + ' 的命令 TRB 关键字段拼对——下一步点「② 入命令环」。');
+  }
+  renderM6A();
+}
+
+function m6EvtInfo(){
+  const c = M6A_CMDS[m6a.cmd];
+  const s = c.scens[m6a.scen];
+  if (s.cc){
+    return 'Command Completion Event · ' + c.name + ' —— ' + M6Q[s.cc]
+      + ' ｜ ' + M6Q[s.ptr] + '（' + c.sec + ' · spec-46.txt ' + M6Q_SRC[s.cc] + '）';
+  }
+  return 'Command Completion Event · ' + (m6a.answers['fr-type'] || '（未选类型）')
+    + ' —— ' + M6Q.ccPtr + ' ｜ ' + M6Q.ccSlot
+    + '（§4.6.1 · spec-46.txt ' + M6Q_SRC.ccPtr + '；Completion Code 判定见该命令小节）';
+}
+
+function actM6Write(){
+  const c = M6A_CMDS[m6a.cmd];
+  if (!m6a.steps[0]){
+    m6aHint('先把命令 TRB 关键字段拼对（第①步）——「' + M6Q.undefined + '」（spec-46.txt ' + M6Q_SRC.undefined + '）', true);
+    return;
+  }
+  if (m6a.trb){ m6aHint('命令 TRB 已在命令环上——下一步点「③ 敲门铃」。'); return; }
+  m6a.trb = true;
+  const label = (m6a.cmd === 'free') ? ('TRB: ' + (m6a.answers['fr-type'] || '（未选类型）')) : c.name;
+  m6a.cell = { label };
+  m6a.steps[1] = true;
+  m6aHint('② 完成：命令 TRB 已写入命令环——「' + M6Q.producer + '」（spec-46.txt ' + M6Q_SRC.producer + '）。下一步点「③ 敲门铃」。');
+  renderM6A();
+}
+
+function actM6Db(){
+  if (!m6a.steps[1]){
+    m6aHint('顺序不对——命令 TRB 还没上环：「' + M6Q.issue + '」（spec-46.txt ' + M6Q_SRC.issue + '）', true);
+    return;
+  }
+  if (m6a.db){ m6aHint('门铃已敲——下一步点「④ xHC 执行」。'); return; }
+  m6a.db = true;
+  m6a.steps[2] = true;
+  m6aHint('③ 完成：已写门铃寄存器 0（offset 0）——「' + M6Q.doorbell + '」（spec-46.txt ' + M6Q_SRC.doorbell + '）。下一步点「④ xHC 执行」。');
+  renderM6A();
+}
+
+function actM6Exec(){
+  const c = M6A_CMDS[m6a.cmd];
+  const s = c.scens[m6a.scen];
+  if (!m6a.db){
+    m6aHint('还没敲门铃——xHC 只在门铃后取指执行：「' + M6Q.issue + '」（spec-46.txt ' + M6Q_SRC.issue + '）', true);
+    return;
+  }
+  if (m6a.evtc){ m6aHint('完成事件已在事件环上——点它读回执。'); return; }
+  let t = 'xHC 解析（' + c.name + ' · ' + s.label + '）：\n'
+    + s.lines.map(k => '· 「' + M6Q[k] + '」（spec-46.txt ' + M6Q_SRC[k] + '）').join('\n');
+  if (s.noteKey) t += '\n· 「' + M6Q[s.noteKey] + '」（spec-46.txt ' + M6Q_SRC[s.noteKey] + '）';
+  if (s.note) t += '\n· 注：' + s.note;
+  m6a.resolve = t;
+  m6a.cell = null;                     // xHC 取指（deq 推进的简化形态）
+  m6a.evtc = { label:'Command Completion Event', info: m6EvtInfo() };
+  m6a.steps[3] = true;
+  m6aHint('④ 完成：xHC 按场景「' + s.label + '」走 §4.6 算法分支（解析过程见右栏），完成事件已上事件环——「' + M6Q.ccEvery + '」（spec-46.txt ' + M6Q_SRC.ccEvery + '）。下一步点事件卡。');
+  renderM6A();
+}
+
+function onM6Cell(which){
+  if (which === 'cmd'){
+    if (m6a.cell) $('#m6a-resolve').textContent = '命令 TRB 在环上：' + m6a.cell.label + '（' + M6A_CMDS[m6a.cmd].name + '）';
+    renderM6A();
+    return;
+  }
+  if (!m6a.evtc){
+    $('#m6a-resolve').textContent = '（这格没有完成事件。）';
+    renderM6A();
+    return;
+  }
+  $('#m6a-resolve').textContent = m6a.evtc.info;
+  if (m6a.steps[3] && !m6a.steps[4]){
+    m6a.receipts.unshift(m6a.evtc.info);
+    m6a.evtc = null;
+    m6a.steps[4] = true;
+    m6a.done = true;
+    const c = M6A_CMDS[m6a.cmd];
+    m6a.doneMsg = '✓ 受理闭环完成：拼 TRB → 入命令环 → 敲门铃 → xHC 解析（' + c.scens[m6a.scen].label + '）→ 完成事件回执（§4.6.1）。切换命令/场景可再练。';
+    m6aHint('⑤ 完成：回执已收（回执栏）。切换命令或场景可再练。');
+  }
+  renderM6A();
+}
+
+function updateM6Pulse(){
+  ['[data-m6act="m6-write"]', '[data-m6act="m6-db"]', '[data-m6act="m6-exec"]',
+   '[data-m6cell="evt0"]', '#m6a-fields .m6fld select'].forEach(s => setPulse(s, false));
+  if (m6a.done) return;
+  const k = m6a.steps.indexOf(false);
+  if (k === 0){
+    for (const f of M6A_CMDS[m6a.cmd].fields){
+      if (!m6FieldOk(f)){ setPulse(`[data-m6field="${f.id}"]`, true); return; }
+    }
+    setPulse('[data-m6act="m6-write"]', true);
+  } else if (k === 1) setPulse('[data-m6act="m6-write"]', true);
+  else if (k === 2) setPulse('[data-m6act="m6-db"]', true);
+  else if (k === 3) setPulse('[data-m6act="m6-exec"]', true);
+  else if (k === 4) setPulse('[data-m6cell="evt0"]', true);
+}
+
+/* ---- Zone B：命令×槽位状态 合法性矩阵（判据=§4.6 各命令算法分支原文） ---- */
+const M6B_STATES = [
+  {k:'disabled', name:'Disabled（未启用）'},
+  {k:'enabled', name:'Enabled'},
+  {k:'default', name:'Default'},
+  {k:'addressed', name:'Addressed'},
+  {k:'configured', name:'Configured'},
+];
+const M6B_CMDS = [
+  {k:'enableSlot', name:'Enable Slot', sec:'§4.6.3'},
+  {k:'noOp', name:'No Op', sec:'§4.6.2'},
+  {k:'addressDevice', name:'Address Device（BSR=‘0’）', sec:'§4.6.5'},
+  {k:'configureEndpoint', name:'Configure Endpoint（DC=‘0’）', sec:'§4.6.6'},
+  {k:'configureEndpointDc1', name:'Configure Endpoint（DC=‘1’ · 去配置）', sec:'§4.6.6'},
+  {k:'resetEndpoint', name:'Reset Endpoint', sec:'§4.6.8'},
+  {k:'disableSlot', name:'Disable Slot', sec:'§4.6.4'},
+];
+const M6B_NA_EN = {v:'na', q:['enLook','enAvail'], note:'Enable Slot 不携带 Slot ID——由 xHC 找可用槽并自选 ID 回带完成事件。'};
+const M6B_OK_NOOP = {v:'ok', q:['noopPurpose']};
+const M6B_OK_RE = {v:'ok', q:['reIfSlot','reIfHalt','reCcOk'], note:'合法但目标端点 EP State 须为 Halted（EP 非 Halted → Context State Error，L1584-1586）。'};
+const M6B = {
+  enableSlot: {disabled:M6B_NA_EN, enabled:M6B_NA_EN, default:M6B_NA_EN, addressed:M6B_NA_EN, configured:M6B_NA_EN},
+  noOp: {disabled:M6B_OK_NOOP, enabled:M6B_OK_NOOP, default:M6B_OK_NOOP, addressed:M6B_OK_NOOP, configured:M6B_OK_NOOP},
+  addressDevice: {
+    disabled:{v:'bad', q:['adElseNotEna','adCcNotEna']},
+    enabled:{v:'ok', q:['adIfEnaDef','adSlotAddr','adCcOk']},
+    default:{v:'ok', q:['adIfEnaDef','adSlotAddr','adCcOk']},
+    addressed:{v:'bad', q:['adElseSt','adCcState']},
+    configured:{v:'bad', q:['adElseSt','adCcState']},
+  },
+  configureEndpoint: {
+    disabled:{v:'bad', q:['ceElseNotEna','ceCcNotEna']},
+    enabled:{v:'bad', q:['ceElseState','ceCcState']},
+    default:{v:'bad', q:['ceElseState','ceCcState']},
+    addressed:{v:'ok', q:['ceIfState','ceToConfig','ceCcOk']},
+    configured:{v:'ok', q:['ceIfState','ceCcOk'], note:'已配置态再配置（DC=‘0’）：Slot State 保持 Configured（L1199-1204 指路）。'},
+  },
+  configureEndpointDc1: {
+    disabled:{v:'bad', q:['ceElseNotEna','ceCcNotEna']},
+    enabled:{v:'bad', q:['ceElseState','ceCcState']},
+    default:{v:'bad', q:['ceElseState','ceCcState']},
+    addressed:{v:'bad', q:['ceElseState','ceCcState'],
+      note:'跨节口径差异：§4.5.3.5 Table 4-1 记 Addressed 态 DC=‘1’ 为停留（m5 Zone C 迁移4 引 spec-45 L371-374），而 §4.6.6 算法仅 Configured 态进入 DC=‘1’ 支路——本矩阵按 §4.6.6 分支判定（R9④ 勘误口径：跨节差异不裁决，仅注记）。'},
+    configured:{v:'ok', q:['ceIfConfig','ceIfDc1','ceToAddr','ceCcOk1'], note:'去配置支路：Slot State Configured → Addressed（L1120）。'},
+  },
+  resetEndpoint: {
+    disabled:{v:'bad', q:['reElseNotEna','reCcNotEna']},
+    enabled:{v:'bad', q:['reElseSlot','reCcSlot']},
+    default:M6B_OK_RE,
+    addressed:M6B_OK_RE,
+    configured:M6B_OK_RE,
+  },
+  disableSlot: {
+    disabled:{v:'bad', q:['dsElse','dsCcBad']},
+    enabled:{v:'ok', q:['dsIfEnabled','dsState','dsCcOk']},
+    default:{v:'ok', q:['dsIfEnabled','dsState','dsCcOk']},
+    addressed:{v:'ok', q:['dsIfEnabled','dsState','dsCcOk']},
+    configured:{v:'ok', q:['dsIfEnabled','dsState','dsCcOk']},
+  },
+};
+
+function buildM6B(){
+  const sel = $('#m6b-cmd');
+  sel.innerHTML = '';
+  M6B_CMDS.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.k; o.textContent = c.name + '（' + c.sec + '）';
+    sel.appendChild(o);
+  });
+  sel.value = 'addressDevice';
+  renderM6B();
+}
+
+function renderM6B(){
+  const tb = $('#m6b-table');
+  let h = '<tr><th>命令 ＼ 槽位状态</th>' + M6B_STATES.map(s => '<th>' + s.name + '</th>').join('') + '</tr>';
+  M6B_CMDS.forEach(c => {
+    h += '<tr><td class="m6cmdname">' + c.name + '</td>' + M6B_STATES.map(s => {
+      const cell = M6B[c.k][s.k];
+      const cls = cell.v === 'ok' ? 'm6ok' : (cell.v === 'bad' ? 'm6bad' : 'm6na');
+      const mark = cell.v === 'ok' ? '✓ 合法' : (cell.v === 'bad' ? '✗ 非法' : '—');
+      const cur = (m6b.cmd === c.k && m6b.state === s.k) ? ' m6cur' : '';
+      return '<td class="' + cls + cur + '" data-m6mx="' + c.k + '×' + s.k + '">' + mark + '</td>';
+    }).join('') + '</tr>';
+  });
+  tb.innerHTML = h;
+  $$('#m6b-table [data-m6mx]').forEach(td => td.addEventListener('click', () => {
+    const parts = td.dataset.m6mx.split('×');
+    m6b.cmd = parts[0]; m6b.state = parts[1];
+    $('#m6b-state').value = m6b.state;
+    $('#m6b-cmd').value = m6b.cmd;
+    showM6B();
+  }));
+}
+
+function m6bQuoteLines(cell){
+  return cell.q.map(k => '「' + M6Q[k] + '」（spec-46.txt ' + M6Q_SRC[k] + '）').join('\n')
+    + (cell.note ? '\n注：' + cell.note : '');
+}
+
+function showM6B(){
+  const c = M6B_CMDS.find(x => x.k === m6b.cmd);
+  const st = M6B_STATES.find(x => x.k === m6b.state);
+  const cell = M6B[m6b.cmd][m6b.state];
+  m6b.last = m6b.cmd + '×' + m6b.state;
+  const verdictTxt = cell.v === 'ok' ? '合法（算法 Success 支路）' : (cell.v === 'bad' ? '非法（算法拒绝支路）' : '不适用（不针对既有槽位状态）');
+  $('#m6b-detail-head').textContent = c.name + ' × ' + st.name + ' · 判定=' + verdictTxt + ' · ' + c.sec;
+  $('#m6b-detail-quote').textContent = m6bQuoteLines(cell);
+  $('#m6b-detail').classList.remove('hidden');
+  const h = $('#m6b-hint');
+  if (cell.v === 'bad'){
+    m6b.bad++;
+    h.textContent = '拦截——' + c.name + ' 在槽位 ' + st.name + ' 态错配（命令完成事件将回拒绝完成码）：' + m6bQuoteLines(cell) + '（矩阵格已高亮，警告保持展开。）';
+    h.classList.add('warn');
+  } else if (cell.v === 'ok'){
+    m6b.ok++;
+    h.textContent = '放行——' + c.name + ' 在槽位 ' + st.name + ' 态合法：' + m6bQuoteLines(cell);
+    h.classList.remove('warn');
+  } else {
+    m6b.na++;
+    h.textContent = '不适用——' + c.name + ' 不针对既有槽位状态：' + m6bQuoteLines(cell);
+    h.classList.remove('warn');
+  }
+  renderM6B();
+}
+
+/* ---- 模块六控件绑定 ---- */
+$('#m6a-cmd').addEventListener('change', () => { m6a.cmd = $('#m6a-cmd').value; buildM6A(); });
+$('#m6a-scen').addEventListener('change', () => { m6a.scen = Number($('#m6a-scen').value); renderM6A(); });
+$('[data-m6act="m6-write"]').addEventListener('click', actM6Write);
+$('[data-m6act="m6-db"]').addEventListener('click', actM6Db);
+$('[data-m6act="m6-exec"]').addEventListener('click', actM6Exec);
+$('[data-m6act="m6-reset"]').addEventListener('click', buildM6A);
+$$('[data-m6cell]').forEach(c => c.addEventListener('click', () => onM6Cell(c.dataset.m6cell)));
+$('#m6b-state').addEventListener('change', () => { m6b.state = $('#m6b-state').value; renderM6B(); });
+$('#m6b-cmd').addEventListener('change', () => { m6b.cmd = $('#m6b-cmd').value; renderM6B(); });
+$('[data-m6act="m6-accept"]').addEventListener('click', showM6B);
+buildM6A();
+buildM6B();
+
 window.__ts = {
   m1, RINGS, m2init, m2InitDefs: INIT_DEFS, m3, m3Defs: M3DEFS, m4,
   m5a, m5b, m5c, m5cLegal: M5C_LEGAL, M5Q,
+  m6a, m6b, M6Q, M6Q_SRC, m6Fields: M6A_CMDS, m6bMatrix: M6B,
   snapshot(){
     const rr = {};
     for (const k of ['cmd','ep0','evt']){
@@ -2608,6 +3378,17 @@ window.__ts = {
           verdict: m5b.verdict,
         },
         c: { state: m5c.state, blocked: m5c.blocked, moved: m5c.moved, stay: m5c.stay },
+      },
+      m6: {
+        a: {
+          cmd: m6a.cmd, scen: m6a.scen, steps: m6a.steps.slice(),
+          fieldsOk: m6FieldsOkCount(), fieldsTotal: M6A_CMDS[m6a.cmd].fields.length,
+          trb: m6a.trb, db: m6a.db, done: m6a.done,
+          cell: m6a.cell ? m6a.cell.label : null,
+          evt: m6a.evtc ? m6a.evtc.info : null,
+          receipts: m6a.receipts.length, resolve: m6a.resolve,
+        },
+        b: { state: m6b.state, cmd: m6b.cmd, ok: m6b.ok, bad: m6b.bad, na: m6b.na, last: m6b.last },
       },
     };
   },

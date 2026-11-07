@@ -1,0 +1,3181 @@
+4.6 
+Command Interface 
+The command interface of the xHC is managed through the Command Ring 
+Control Register (CRCR). The CRCR Command Ring Pointer field provides a 
+pointer to the Command Ring. Software places commands on the Command 
+Ring, then rings the Host Controller Doorbell Register to notify the xHC. The 
+xHC processes the commands and generates Command Completion Events on 
+the Primary Event Ring to notify software of their completion status. This 
+section describes the operation of the Command Ring and each of the 
+commands. 
+Refer to Table 3-1 for a summary of the xHCI command set. 
+Note: Undefined xHC behavior may result if commands and all data structures that 
+they reference are not correctly formed by software. The algorithms below 
+define checks that xHC should perform and the error conditions that may 
+result when executing a command. The extent of command and data 
+structure validity checking performed by an xHC implementation will vary. 
+More comprehensive checking will ease the development and debugging 
+process, but it is ultimately software’s responsibility to ensure that the xHC 
+does not receive invalid commands. 
+Note: A command shall return an TRB Error code if the command (that is, A 
+command shall return an TRB Error code if the command (that is, TRB Type) 
+is not recognized by the xHC. 
+Note: A command may return an Undefined Error or Vendor Defined Error codes. A 
+vendor should identify the possible sources of these error codes to ease 
+debugging and error handling. 
+Note: Software shall not ring the doorbell of an endpoint that has a state modifying 
+command pending. The Configure Endpoint, Evaluate Context, Reset 
+Endpoint, Stop Endpoint, and Set TR Dequeue Pointer Commands affect 
+specific endpoints of a device. The Address Device, Disable Slot, and Reset 
+Device Commands affect all endpoints of a device. 
+Note: Software shall be responsible for all command timeouts. If a command times 
+out, software may abort the command using the mechanism described in 
+section 4.6.1.2. 
+
+===== [PAGE 91] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+91 
+4.6.1 
+Command Ring Operation 
+The Command Ring is a dedicated TRB Ring (refer to section 4.9 for a 
+description of TRB Ring operation), which only allows those TRB types defined 
+in Table 6-91. Only one Command Ring exists per xHC instance. 
+System software is the producer of all Command TRBs and the xHC is the 
+consumer. 
+The Command Ring Dequeue Pointer is an internal register maintained by 
+the xHC, which is not directly exposed to software. Its value is reported in the 
+Command TRB Pointer field of Command Completion Events. 
+The initial value of the Command Ring Dequeue Pointer is defined by the 
+Command Ring Pointer field in the Command Ring Control Register (CRCR), 
+described in section 5.4.5. The Command Ring Pointer field shall be set by 
+system software to point to the Command Ring prior to running the xHC (that 
+is, setting the Run/Stop (R/S) flag to ‘1’ and ringing the Host Controller 
+Command Doorbell for the first time). The Command Ring Pointer field may 
+only be modified by software while the Command Ring is stopped, as indicated 
+by the Command Ring Running (CRR) flag equal to ‘0’. 
+A Work Item on a Command Ring is called a Command Descriptor (CD). CDs 
+enable the management of Device Slots, virtualization, and the controller as a 
+whole. A CD shall be comprised of one Command TRB data structure. Refer to 
+section 4.11.4 for information on the commands supported by the xHCI and 
+section 6.4.3 for details of the Command TRB data structures. 
+Commands are issued by software to the xHC by: 
+1. 
+Placing one or more Command Descriptors on the Command Ring and  
+2. 
+Ringing the Host Controller Doorbell. 
+To ring the Host Controller Doorbell software shall write the Host Controller 
+Doorbell register (offset 0 in the Doorbell Register Array), asserting the Host 
+Controller Command value in the DB Target field and ‘0’ in the DB Stream ID 
+field. 
+The xHC, upon detecting a Host Controller Command Doorbell ring, shall 
+execute commands until the Command Ring is stopped or empty. 
+Note: If multiple commands are posted to the Command Ring, they are executed in 
+order, so a delay may be incurred before a particular command is executed. 
+The xHC shall generate a Command Completion Event for every command. The 
+Command TRB Pointer field of the Command Completion Event shall point to 
+the Command TRB that initiated the event. The Completion Code field of the 
+Command Completion Event shall indicate the completion status of the 
+command. The Slot ID and VF ID fields shall reflect the values of the respective 
+fields of the Command TRB that initiated the event. 
+The Primary Event Ring receives all Command Completion Events. 
+
+===== [PAGE 92] =====
+ 
+92 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+The Command Completion Events that result from processing the commands 
+shall be ordered with respect to their location in the Command Ring. 
+Command execution times are xHC implementation defined. 
+The standard and optional commands supported by the xHCI are listed in 
+Table 1. 
+xHC vendors may define proprietary commands using the Vendor Defined TRB 
+Type codes identified in Table 6-91. All vendor defined commands shall utilize 
+the Command Completion Event TRB to report completions. 
+4.6.1.1 
+Stopping the Command Ring 
+System software may stop the execution of commands on the Command Ring 
+by writing a ‘1’ to the Command Stop (CS) bit of the Command Ring Control 
+register. Writing a ‘1’ to the CS bit shall stop the xHC from fetching additional 
+CDs after the currently executing command completes, “stopping” the 
+Command Ring. After the Command Ring has been successfully stopped, a 
+Command Completion Event shall be generated with the Completion Code set 
+to Command Ring Stopped and the Command TRB Pointer set to the current 
+value of the Command Ring Dequeue Pointer. 
+While the Command Ring is stopped, ownership of all Command Descriptors on 
+the ring is passed to software, which may remove, add, or rearrange Command 
+Descriptors. Software restarts command execution by writing the Host 
+Controller Doorbell register with the DB Reason field set to Host Controller 
+Command. If the Command Ring Pointer field of the Command Ring Control 
+Register (CRCR) was written while the ring is stopped the xHC shall restart 
+Command Ring execution at the new value defined by the CRCR write, 
+otherwise Command Ring execution shall restart at the current Dequeue 
+Pointer value, that is, the TRB following the last command executed (or 
+aborted). Software may modify the value of the Command Ring Dequeue 
+Pointer prior to restarting it by writing a new value to the Command Ring 
+Pointer field of the Command Ring Control register. 
+4.6.1.2 
+Aborting a Command 
+System software may abort the execution of the current command by writing a 
+‘1’ to the Command Abort (CA) bit of the Command Ring Control register. 
+Aborting a command on the Command Ring shall perform the following 
+operations: 
+• 
+If a command is currently executing: 
+o 
+A Command Completion Event shall be generated for the aborted 
+command with its Completion Code set to Command Aborted. 
+o 
+Advance the Command Ring Dequeue Pointer to point to the next 
+Command TRB. 
+• 
+Generate a Command Completion Event with the Completion Code set to 
+Command Ring Stopped and the Command TRB Pointer set to the current 
+value of the Command Ring Dequeue Pointer. 
+
+===== [PAGE 93] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+93 
+Software may follow the method described in section 4.6.1.1 to restart the 
+“stopped” Command Ring. 
+Note: If the xHC detects the assertion of an abort request between the execution of 
+two commands or after the last command, a Command Completion Event with 
+the Completion Code set to Command Aborted may not be found on the Event 
+Ring after an abort operation. 
+ IMPLEMENTATION NOTE 
+Aborting Commands 
+Typically when software asserts the Command Abort (CA) flag, the Command 
+Ring will normally stop after the completion of a command, that is, Completion 
+Code is not equal to Command Aborted in the last Event Ring Command 
+Completion Event TRB. Only if a command is “blocked” will it be aborted. 
+An example of a command that may hang is the Address Device Command, 
+because waiting for a SET_ADDRESS request to be acknowledged by a USB 
+device is outside of the xHC’s ability to control. 
+An xHC implementation should “checkpoint” the state associated with a 
+command before a command is initiated. If the CA flag is set before the 
+command is complete (for example, its Command Completion Event TRB is 
+posted to the Event Ring), then the command’s previous state should be 
+restored by the xHC using the checkpoint information and its Completion Code 
+shall be set to Command Aborted. 
+Software should time the completion of all xHCI commands, including the Command Abort 
+operation, that is, the delay between the negation of CRR (‘0’) and the assertion of CA (‘1’). 
+If software doesn’t see CRR negated in a timely manner (for example, longer than 5 seconds), 
+then it should assume that there are larger problems with the xHC and assert HCRST. 
+4.6.2 
+No Op 
+The No Op command can be issued by software to exercise the TRB Ring 
+mechanism of the xHC without affecting any xHC or USB Device state, or to 
+report the current value of the Command Ring Dequeue Pointer. 
+Note: A No Op Command may be inserted on the Command Ring by software to 
+modify the alignment memory boundaries of Command TDs. 
+The format of the No Op Command TRB is defined in section 6.4.3.1. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+To issue a No Op Command, system software shall perform the following 
+operations: 
+• 
+Insert a No Op Command TRB on the Command Ring and initialize the 
+following fields: 
+o 
+TRB Type = No Op Command (refer to Table 6-91). 
+
+===== [PAGE 94] =====
+ 
+94 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. Refer to section 4.9.2 for a 
+discussion of the Cycle bit and PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a No Op Command is executed by the xHC it shall perform the following 
+operations: 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the No Op Command TRB. 
+o 
+Completion Code = Success (refer to Table 6-90). 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. 
+4.6.3 
+Enable Slot 
+The Enable Slot Command is issued by software to obtain an available Device 
+Slot and to transition a Device Slot from the Disabled to the Enabled state. 
+Refer to section 3.3.2 for a high level description of the Enable Slot Command 
+and it’s usage. 
+When an Enable Slot Command is processed by the xHC, it will look for an 
+available Device Slot. If a slot is available, the ID of a selected slot will be 
+returned in the Slot ID field of a successful Command Completion Event on the 
+Event Ring. If a Device Slot is not available, the Slot ID field shall be cleared to 
+‘0’ and a No Slots Available Error shall be returned in the Command Completion 
+Event. 
+Upon the successful completion of an Enable Slot Command, system software 
+shall use the Slot ID to link a Device Context data structure to the slot by 
+writing a pointer to the Device Context in the Device Context Base Address 
+Array[Slot ID] location. Undefined operation may occur if the Context Base 
+Address Array entry is not updated prior to issuing a Command for the slot, or 
+ringing the Default Control Endpoint (0) doorbell. 
+To ensure proper operation of the xHC, system software shall provide “valid” 
+Input Control Context, Slot Context and Endpoint Context data structures in 
+the Input Context data structure. 
+The requirements of a valid Slot Context data structure are defined in section 
+6.2.2. 
+The requirements of a valid Endpoint Context data structure are defined in 
+section 6.2.3.1. 
+The format of the Enable Slot Command TRB is defined in section 6.4.3.2. 
+
+===== [PAGE 95] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+95 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+Sections 6.2.2.1 and 6.2.3.1 also define the Completion Code values that will 
+be found in the Command Completion Event if an invalid context is detected. 
+To issue an Enable Slot Command, system software shall perform the following 
+operations: 
+• 
+Insert an Enable Slot Command TRB on the Command Ring and initialize 
+the following fields: 
+o 
+TRB Type = Enable Slot command (refer to Table 6-91). 
+o 
+Slot Type = value specified by the Protocol Slot Type field of the 
+associated xHCI Supported Protocol Capability structure (refer to Table 
+7-9). 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When an Enable Slot Command is executed by the xHC it shall perform the 
+following operations: 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Enable Slot Command 
+TRB. 
+o 
+Determine if a Device Slot is available. 
+o 
+If a Device Slot is available: 
+•  
+Slot ID = ID of the selected Device Slot. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+• 
+else // Device Slot is not available 
+o 
+Slot ID = ‘0’. 
+o 
+Completion Code = No Slots Available. 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+The algorithm for Device Slot ID selection is xHC implementation dependent. 
+Note: If this command is aborted (that is, Completion Code = Command Aborted) 
+the Slot ID field should be considered by software to be invalid (for example, 
+no slot was allocated). 
+
+===== [PAGE 96] =====
+ 
+96 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.6.4 
+Disable Slot 
+The Disable Slot Command is issued by software to force a Device Slot to the 
+Disabled state. A typical use would be to free a Device Slot when a USB device 
+is disconnected. 
+When a Disable Slot Command is processed by the xHC it shall: 
+• 
+Disable the Doorbell register for the slot 
+• 
+Free any bandwidth allocated to the periodic endpoints of the device 
+• 
+Terminate any slot related USB activity (for example, packet transfers) 
+• 
+Free any internal resources associated with the slot 
+• 
+Internally flag the slot as “available” for subsequent reassignment by an 
+Enable Slot Command. that is, the Device Context Base Address Array 
+entry for the slot is no longer considered valid by the xHC and software can 
+free the Device Context, Transfer Ring, Stream Context Array, etc. data 
+structures associated with the slot. 
+A Command Completion Event is always returned for a Disable Slot Command. 
+The format of the Disable Slot Command TRB is defined in section 6.4.3.3. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+Note: Before software issues a Disable Slot Command the following conditions shall 
+be true, otherwise undefined behavior may occur: 
+• 
+Any active endpoints associated with the slot shall be in the Stopped state 
+or Idle in the Running state, and any outstanding Transfer Events shall 
+have been received. 
+• 
+Any commands targeted at the slot that is being disabled shall be 
+complete, that is, any outstanding Command Completion Events for the 
+slot have been received. 
+To issue a Disable Slot Command, system software shall perform the following 
+operations: 
+• 
+Insert a Disable Slot Command on the Command Ring and initialize the 
+following fields: 
+o 
+TRB Type = Disable Slot Command (refer to Table 6-91). 
+o 
+Slot ID = ID of the Device Slot to be disabled. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+o 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Disable Slot Command is executed by the xHC it shall perform the 
+following operations: 
+
+===== [PAGE 97] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+97 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Disable Slot Command 
+TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+If the Device Slot identified by the Slot ID has been previously enabled 
+by an Enable Slot Command: 
+•  
+Any xHC resources assigned to the Device Slot are freed and the Device Slot 
+is made available for reassignment. 
+•  
+The Slot State of the associated Slot Context is set to Disabled. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+• 
+else // The slot has not been enabled by an Enable Slot Command 
+o 
+Completion Code = Slot Not Enabled Error. 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+Note: After software receives the Command Completion TRB for a Disable Slot 
+Command it shall clear the respective DCBAA entry to ‘0’. This action allows 
+the xHC to identify valid vs. invalid Device Slots after a Restore State 
+operation. 
+Note: Any pending events not already posted to an Event Ring may be aborted 
+when this command is executed. 
+4.6.5 
+Address Device 
+The Address Device Command is issued by software to transition a Device Slot 
+from the Enabled to the Default or Addressed state or from the Default to the 
+Addressed state, depending on the state of the Block Set Address Request 
+(BSR) flag. 
+When an Address Device Command is processed by the xHC it shall enable the 
+device’s Default Control Endpoint, select an address for the USB device, and 
+issue a USB SET_ADDRESS request to the USB Device. The SET_ADDRESS 
+request for a USB2 device shall be issued to Address ‘0’. The SET_ADDRESS 
+request for a USB3 device shall be issued using the Route String. 
+Upon successful completion of an Address Device Command, the Default 
+Control Endpoint will be added to the xHCs’ endpoint scheduling list, the 
+Default Control Endpoint 0 Context Doorbell shall be enabled, and TRBs can be 
+posted to its endpoint Transfer Ring. 
+A USB Transaction Error shall be generated if an error is detected on the USB 
+SET_ADDRESS request and the Device Slot shall not transition to the 
+Addressed state. 
+
+===== [PAGE 98] =====
+ 
+98 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Once a successful Address Device Command has completed, system software 
+can issue USB GET_DESCRIPTOR requests through the Default Control 
+Endpoint to retrieve the USB Device, Configuration, etc. descriptors from the 
+USB device. Using the information in these descriptors system software may 
+determine which Class Driver(s) to load for the USB device, and hand off the 
+device. 
+Note: A USB SET_ADDRESS request does not include a data stage, so the default 
+Max Packet Size is sufficient to issue the request. However subsequent USB 
+device requests require that the xHC use the Max Packet Size defined by the 
+device. The first request that system software should issue to a USB Device is 
+a GET_DESCRIPTOR request with the wLength set to 8, to retrieve is the USB 
+Device Descriptor. The last byte of the returned partial Device Descriptor 
+(bMaxPacketSize0) identifies the maximum packet size of the Default Control 
+Endpoint. This value shall be used by system software to update the Max 
+Packet Size field in the Control Endpoint 0 Context. 
+Note: If the Block Set Address Request (BSR) flag is ‘0’ in the Address Device 
+Command TRB, then the xHC shall select a USB Device Address and issue a 
+SET_ADDRESS request to a USB device as part of an Address Device 
+Command. If the Block Set Address Request (BSR) flag is ‘1’ then the xHC 
+shall not issue a SET_ADDRESS request to a USB device as part of an Address 
+Device Command. In either case, all other operations described in this section 
+for the Address Device Command are performed. The BSR flag may be used 
+by software to provide compatibility with legacy USB devices which require 
+their Device Descriptor to be read before receiving a SET_ADDRESS request. 
+Note: If the xHC detects a SET_ADDRESS request on the Default Control Endpoint 
+Transfer Ring, it shall generate a TRB Error Completion Status for the TD. The 
+xHC shall never forward a SET_ADDRESS request on a Default Control 
+Endpoint Transfer Ring to a USB device. 
+The format of the Address Device Command TRB is defined in section 6.4.3.4. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+The Address Device Command utilizes the Address Device Command TRB data 
+structure defined in section 6.4.3.4, which points to an Input Context data 
+structure defined in section 6.2.5. 
+The Add Context flags A0 and A1 of the Input Control Context data structure 
+(in the Input Context) shall be set to ‘1’, and all remaining Add Context and 
+Drop Context flags shall all be cleared to ‘0’. 
+System software shall initialize Slot Context and Endpoint Context 0 entries of 
+the Input Context. All other Endpoint Contexts in the Input Context shall be 
+ignored by the xHC during the execution of this command. 
+To issue an Address Device Command, system software shall perform the 
+following operations: 
+
+===== [PAGE 99] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+99 
+• 
+Ensure that the Device Context Base Address Array entry points to a 
+properly sized and initialized Device Context data structure for the device. 
+o 
+Allocate and initialize an Input Context data structure for the command. 
+• 
+The Add Context flags for the Slot Context and the Endpoint 0 Context 
+shall be set to ‘1’. All fields of the Input Context Slot Context data structure 
+shall define valid values, refer to section 4.5.2. The Endpoint 0 Context 
+data structure in the Input Context shall define valid values for the TR 
+Dequeue Pointer, EP Type, Error Count (CErr), and Max Packet Size fields. 
+The MaxPStreams, Max Burst Size, and EP State values shall be cleared to 
+'0'. 
+• 
+Insert an Address Device Command on the Command Ring and initialize 
+the following fields: 
+o 
+TRB Type = Address Device command (refer to Table 6-91). 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+Input Context Pointer = The base address of the Input Context data 
+structure. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+Note: A Slot or Endpoint Context contained in the Input Context is referred to as an 
+Input Slot or Endpoint Context. And a Slot or Endpoint Context contained in 
+the Device Context data structure pointed to by the Device Context Base 
+Address Array is referred to as an Output Slot or Endpoint Context and the 
+Device Context itself is referred to as the Output Device Context. 
+When an Address Device Command is executed by the xHC it shall perform the 
+following operations: 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Address Device Command 
+TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+If the Device Slot identified by the command’s Slot ID field has been 
+previously enabled by an Enable Slot Command: 
+•  
+Retrieve the pointer to the Output Device Context of the selected Device Slot. 
+•  
+If the Block Set Address Request (BSR) flag = ‘1’  
+•  
+If the slot is in the Enabled state: 
+•  
+Copy all fields of the Input Slot Context to the Output Slot Context. 
+•  
+Copy all fields of the Input Endpoint 0 Context to the Output Endpoint 
+0 Context. 
+•  
+Set the Endpoint State (EP State) field in the Output Endpoint 0 
+
+===== [PAGE 100] =====
+ 
+100 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Context to Running. 
+•  
+Set the Slot State in the Output Slot Context to Default. 
+•  
+Set the USB Device Address field in the Output Slot Context to ‘0’. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else // The slot is not in the Enabled state: 
+•  
+Completion Code = Context State Error. 
+o 
+else // BSR = ‘0’ 
+•  
+If the slot is in the Enabled or Default state: 
+•  
+Select a Device Address for the target USB device. 
+•  
+Construct a SET_ADDRESS request to be sent the device 
+•  
+bmRequestType = 0. 
+•  
+wValue = Selected Device Address. 
+•  
+wIndex = 0. 
+•  
+wLength = 0. 
+•  
+Retrieve the Route String from the Input Slot Context. 
+•  
+Issue a SET_ADDRESS request to the target USB device. 
+•  
+If the SET_ADDRESS request is successful: 
+•  
+Copy all fields of the Input Slot Context to the Output Slot Context. 
+•  
+Copy all fields of the Input Endpoint 0 Context to the Output Endpoint 0 
+Context. 
+•  
+Set the Endpoint State (EP State) field in the Output Endpoint 0 Context 
+to Running. 
+•  
+Set the Slot State in the Output Slot Context to Addressed. 
+•  
+Set the USB Device Address field in the Output Slot Context to the 
+address selected for the USB device by the xHC. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+o 
+else // SET_ADDRESS request is not successful 
+•  
+Completion Code = USB Transaction Error. 
+•  
+else // The slot is not in the Enabled or Default state: 
+•  
+Completion Code = Context State Error. 
+• 
+else // The slot has not been enabled by an Enable Slot Command 
+o 
+Completion Code = Slot Not Enabled Error. 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+Note: The xHC should check that all referenced contexts are valid before executing 
+the command. If an invalid context is detected, the state of the Output Device 
+Context shall not change and the  Command Completion Event shall be 
+generated with the Completion Code set to Parameter Error. 
+
+===== [PAGE 101] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+101 
+Note: The Slot Context (Add Context flag 0 (A0)) and the Default Endpoint Context 
+(Add Context flag 1 (A1)) shall be valid in the Input Context referenced by 
+the Address Device Command. All other Endpoint Contexts (A2 to A31) in the 
+Input Context shall be ignored by the xHC. 
+Note: If the SET_ADDRESS request was unsuccessful, system software may issue a 
+Disable Slot Command for the slot or reset the device and attempt the 
+Address Device Command again. An unsuccessful Address Device Command 
+shall leave the Device Slot in the Default state. 
+Note: If an Address Device Command is received and all available USB Device 
+Addresses have been assigned for the BI that the device is associated with, 
+then a Command Completion Event shall be generated with the Completion 
+Code set to Resource Error. 
+Note: Software shall be responsible for timing the SetAddress() “recovery interval” 
+required by USB and aborting the command on a timeout. Refer to section 
+9.2.6.3 in the USB2 spec. 
+Note: If BSR = ‘0’ and this command is aborted (that is, Completion Code = 
+Command Aborted), software should assume that the USB device is in an 
+unknown state (for example, the USB device may or may not be in the 
+Address state) and take the appropriate action to recover it to a known state, 
+otherwise undefined behavior may occur. 
+Note: A USB Transaction Error Completion Code for an Address Device Command 
+may be due to a Stall response from a device. Software should issue a 
+Disable Slot Command for the Device Slot then an Enable Slot Command to 
+recover from this error. Refer to section 4.11.2.2 Implementation note. 
+Note: All endpoints shall be in the Stopped state or if in the Running state, shall 
+be “idle” (for example, no USB Transactions are in progress, the Transfer Ring 
+is empty, and software has processed all outstanding events for the Transfer 
+Ring) when this command is executed. If this condition is not met undefined 
+behavior may occur. 
+Note: If an Address Device Command fails with USB Transaction Error and the 
+target device is behind a TT, software shall issue a 
+ClearFeature(CLEAR_TT_BUFFER) request to TT in the HS hub. 
+Refer to section 6.2.1 for the definition of a Device Context data structure and 
+its access constraints. 
+The requirements of a “valid” Slot Context data structure are defined in section 
+6.2.2.1. 
+The requirements of a “valid” Endpoint Context data structure are defined in 
+section 6.2.3.1. 
+
+===== [PAGE 102] =====
+ 
+102 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.6.6 
+Configure Endpoint 
+The Configure Endpoint Command is issued by software to enable, disable, or 
+reconfigure endpoints associated with a target configuration. 
+The format of the Configure Endpoint Command TRB is defined in section 
+6.4.3.5. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+This command is issued by software under the following circumstances: 
+• 
+Configuring a device. To set a configuration in a device, software shall 
+issue a Configure Endpoint Command to the xHC in conjunction with 
+issuing USB SET_CONFIGURATION request to the device. This command 
+shall be used to enable the set of Device Slot endpoints selected by the 
+target configuration, and transition a Device Slot from the Addressed to the 
+Configured state. Undefined behavior may occur if TDs are posted for 
+endpoints enabled by this command and the SET_CONFIGURATION request 
+associated with this command is not successfully completed by the USB 
+device. 
+• 
+Deconfiguring a device. To deconfigure a device, software shall issue a 
+Configure Endpoint Command to the xHC in conjunction with 
+“deconfiguring” the device. A USB device is “deconfigured” by issuing a 
+SET_CONFIGURATION request to a USB device with configuration ‘0’ 
+selected. Software shall issue a Configure Endpoint Command with 
+Deconfigure (DC) = ‘1’ to inform the xHC that a SET_CONFIGURATION 
+request with a configuration value of zero shall be sent to the device. This 
+command shall be used to disable all enabled endpoints (except for the 
+Default Control Endpoint) of a Device Slot, and transition the Device Slot 
+from the Configured to the Addressed state. Undefined USB device 
+behavior may occur if the SET_CONFIGURATION request associated with 
+this command is not successfully completed. 
+Note: Setting the Deconfigure (DC) flag to ‘1’ in the Configure Endpoint Command 
+TRB is equivalent to setting Input Context Drop Context flags 2-31 to ‘1’ and 
+Add Context 2-31 flags to ‘0’. If the DC flag = ‘1’, the Input Context Pointer 
+field shall be ignored by the xHC and the Output Slot Context Context Entries 
+field shall be set to ‘1’. 
+Note: If the device only has a Default Control Endpoint, then a Configure Endpoint 
+Command is not necessary prior to issuing a SET_CONFIGURATION 
+“deconfigure” request to a device. 
+• 
+Setting an Alternate Interface on a device. To set an Alternate 
+Interface on a device, software shall issue a Configure Endpoint Command 
+to the xHC in conjunction with issuing USB SET_INTERFACE request to the 
+device. This command shall be used to disable, enable, or reconfigure a 
+selected set of endpoints determined by the target Alternate Interface. 
+Undefined behavior may occur if the SET_INTERFACE request associated 
+with this command is not successfully completed. 
+
+===== [PAGE 103] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+103 
+Note: A USB device presents one or more Configuration options to system software. 
+System software selects a specific configuration with a USB 
+SET_CONFIGURATION request. Also, each Interface defined by a 
+Configuration may optionally present multiple Alternate Interface settings. 
+System software selects a specific Alternate Interface setting with a USB 
+SET_INTERFACE request. The result of the USB SET_CONFIGURATION and 
+SET_INTERFACE requests allow system software to enable a selected set 
+endpoints on a USB device. The specific endpoints enabled by a Configuration 
+or Alternate Interface setting depend on the respective descriptors reported 
+by the device. The xHC does not maintain information about the relationships 
+between the Configuration and Alternate Interface options presented by a 
+USB device and the endpoints enabled by a specific configuration option. 
+System software shall use the Add Context and Drop Context flags of the 
+Configure Endpoint Command to explicitly identify to the xHC the endpoints of 
+a Device Slot that shall be enabled due to the selected USB device 
+Configuration and Alternate Interface settings. 
+Note: Slot or Endpoint Contexts are found in Device and Input Contexts. A Slot or 
+Endpoint Context contained in the Input Context is referred to as an Input 
+Slot or Endpoint Context, and a Slot or Endpoint Context contained in the 
+Device Context data structure is referred to as an Output Slot or Endpoint 
+Context. 
+The Add Context flag A1 and Drop Context flags D0 and D1 of the Input Control 
+Context (in the Input Context) shall be cleared to ‘0’. Endpoint 0 Context does 
+not apply to the Configure Endpoint Command and shall be ignored by the xHC. 
+A0 shall be set to ‘1’ and refer to section 6.2.2.2 for the Slot Context fields 
+used by the Configure Endpoint Command. The state of the remaining Add 
+Context and Drop Context flags depend on the specific endpoints affected by 
+the command. System software shall initialize the Endpoint Contexts of the 
+Input Context referenced by Add Context flags. All Endpoint Context data 
+structures not referenced by an Add Context flag shall be ignored by the xHC. 
+Note that Endpoint Context flags referenced only by a Drop Context flag does 
+not need to be initialized. Refer to section 6.2.3.2 for the Endpoint Context 
+fields used by the Configure Endpoint Command. 
+• 
+An endpoint shall be in the Stopped state or if in the Running state shall be 
+“idle” (for example, no USB Transactions are in progress, the Transfer Ring 
+is empty, and software has processed all outstanding events for the 
+Transfer Ring) if its Drop Context flag is set. If this condition is not met 
+undefined behavior may occur. 
+The following rules apply to processing a Configure Endpoint Command: 
+• 
+The xHC resources assigned to a Device Slot are not modified until after all 
+Drop Context and Add Context flags are evaluated. 
+• 
+The Slot State field of a Device Slot Context is not modified until after all 
+Drop Context and Add Context flags are evaluated. 
+• 
+The xHC maintains a global Resources Available variable, which is 
+initialized to indicate all xHC resources are available. A Resource is an 
+xHC implementation defined metric, which refers to the internal xHC data 
+structures, buffer space, or other implementation specific resources 
+required to support an endpoint type. 
+
+===== [PAGE 104] =====
+ 
+104 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+For each USB bus instance, a Bandwidth Available variable is maintained, 
+which initialized to the respective maximum available value. Bandwidth is 
+a commodity allocated by the host controller. Refer to section 4.14.2 
+(Reserved Bandwidth) for more information on how bandwidth 
+requirements are calculated for an endpoint. 
+• 
+Two temporary variables are maintained by the xHC when evaluating the 
+Configure Endpoint Command: Resource Required and Bandwidth 
+Required. Both variables are initialized to ‘0’. 
+o 
+The Resource Required variable identifies the “sum” of xHC resources 
+required to support all endpoints affected by a Configure Endpoint 
+Command. Note that the “units” of xHC resource measurement is an 
+implementation specific value. 
+o 
+The Bandwidth Required variable identifies the “sum” of USB bandwidth 
+necessary to support all endpoints affected by a Configure Endpoint 
+Command. 
+• 
+The Drop Context flags are evaluated before the Add Context flags. 
+• 
+For each endpoint indicated by a Drop Context flag = ‘1’: 
+o 
+If the Output Endpoint Context is not in the Disabled state: 
+•  
+The endpoint related resources are subtracted from the Resource Required 
+variable. 
+•  
+If the endpoint is periodic, then the bandwidth assigned to the endpoint is 
+subtracted from the Bandwidth Required variable. 
+• 
+else // Output Endpoint Context is in the Disabled state 
+•  
+Do nothing 
+• 
+For each Input Endpoint Context indicated by an Add Context flag = ‘1’: 
+o 
+The resources required to support the endpoint described by the Input 
+Endpoint Context shall be added to the Resource Required variable. 
+o 
+If the endpoint described by the Input Endpoint Context is periodic, 
+then the bandwidth required to support the endpoint shall be added to 
+the Bandwidth Required variable. 
+• 
+If the Drop Context flag is set for an endpoint and the Output Endpoint 
+Context is in the Disabled state, the Drop Context flag shall be ignored and 
+no resource or bandwidth evaluation shall be performed for the endpoint. 
+• 
+After all Drop Context and Add Context flags are evaluated the xHC 
+determines whether the command was successful: 
+• 
+The Resources Required variable is compared to the Resources Available 
+variable, if the result indicates an oversubscription of resources by the 
+command (that is, Resources Available - Resources Required is less than 
+0), then the command shall be unsuccessful and a Resource Error 
+Completion Code shall be returned in the Command Completion Event. 
+Refer to section 4.14.1.1 for more information on xHC resources. 
+• 
+The Bandwidth Required variable is compared to the Bandwidth Available 
+variable, if the result indicates an oversubscription of bandwidth by the 
+command (that is, Bandwidth Available - Bandwidth Required is less than 
+
+===== [PAGE 105] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+105 
+0), then the command shall be unsuccessful and a Bandwidth Error 
+Completion Code shall be returned in the Command Completion Event. 
+• 
+If the Resource and Bandwidth requirements of the command can be met, 
+then the command is successful, and a Success Completion Code shall be 
+returned in the Command Completion Event. 
+If the command is unsuccessful: 
+• 
+Current xHC resource allocations shall be unchanged for the endpoint. 
+• 
+Current xHC bandwidth allocations shall be unchanged for the endpoint. 
+• 
+The Output Slot Context Slot State field shall be unchanged for the device. 
+• 
+The Output Endpoint Contexts referenced by the command in the Device 
+Context shall be unchanged. 
+• 
+The Command Completion Event shall indicate the appropriate error 
+Completion Code. 
+xHC behavior is undefined if the Drop Context (D) flag is ‘0’, the Add Context 
+(A) flag is ‘1’, and the Output Endpoint Context is not in the Disabled state 
+(that is, software is trying to add an endpoint without dropping its current 
+resources). 
+If the command is successful: 
+• 
+The Resources Available variable shall be updated to reflect the new 
+resource allocation. 
+• 
+The Bandwidth Available variable shall be updated to reflect the adjusted 
+bandwidth allocation. 
+• 
+For each endpoint: 
+o 
+If the Drop Context flag is ‘0’ and the Add Context flag is ‘0’, the xHC 
+shall: 
+•  
+Do nothing. 
+•  
+The respective Input Endpoint Context is ignored by the xHC. 
+o 
+If the Drop Context flag is ‘1’ and the Add Context flag is ‘0’, the xHC 
+shall: 
+•  
+Drop the endpoint from its pipe scheduling list if it is scheduled. 
+•  
+Set the Endpoint State (EP State) field of the Output Endpoint Context to 
+Disabled. 
+•  
+The Input Endpoint Context data structure is ignored by the xHC. 
+o 
+If the Drop Context flag is ‘0’ and the Add Context flag is ‘1’, the xHC 
+shall: 
+•  
+Add the endpoint to its pipe scheduling list. 
+•  
+All fields of the Input Endpoint Context data structure in the Configure 
+Endpoint Context are copied to the Output Endpoint Context fields in the 
+Device Context. 
+Note that when the Input Endpoint Context is copied to the Output Endpoint 
+Context, the ownership of a Stream Context Array pointed to by the Input TR 
+
+===== [PAGE 106] =====
+ 
+106 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Dequeue Pointer is passed from software to the xHC. 
+•  
+The Endpoint State (EP State) field of the Output Endpoint Context is set to 
+Running. 
+o 
+Enable the associated Device Context Doorbell. 
+o 
+If the Drop Context flag is ‘1’ and the Add Context flag is ‘1’, the xHC 
+shall: 
+•  
+Release the current Resources and Bandwidth allocated to the endpoint 
+and assign the new Resources and Bandwidth requested for the endpoint. 
+•  
+All fields of the Input Endpoint Context data structure in the Configure 
+Endpoint Context are copied to the Output Endpoint Context fields in the 
+Device Context. 
+ 
+Note that when the Input Endpoint Context is copied to the Output 
+Endpoint Context, the ownership of a Stream Context Array pointed to by 
+the Input TR Dequeue Pointer field is passed from software to the xHC. 
+Software shall not deallocate any Stream Context Array data structures 
+while they are owned by the xHC. It is software’s decision whether to set the 
+Input TR Dequeue Pointer equal to the Output TR Dequeue Pointer, thus 
+reusing the currently allocated Stream Contexts/Transfer Rings, or 
+allocating new data structures and changing the Input TR Dequeue Pointer 
+value. If new data structures are allocated, software shall be responsible for 
+recovering the old data structures after the command completes. 
+•  
+Set the Endpoint State (EP State) field of the Output Endpoint Context to 
+Running. 
+• 
+If the device is “deconfigured” by this command (that is, all Output 
+Endpoint Contexts (DCI 2-31) are in the Disabled state), the Output Slot 
+Context Slot State field shall be set to the Addressed state by the xHC. 
+• 
+If any Output Endpoint Context (2 through 31) is not in the Disabled state, 
+the Output Slot Context Slot State field shall be set to the Configured state 
+by the xHC. 
+• 
+The Command Completion Event Completion Code shall indicate Success. 
+When this command is used to “Set an Alternate Interface on a device”, 
+software shall set the Drop Context and Add Context flags as follows: 
+• 
+If an endpoint is not modified by the Alternate Interface setting, then 
+software shall set the Drop Context and Add Context flags to ‘0’. 
+• 
+If an endpoint previously disabled, is enabled by the Alternate Interface 
+setting, then software shall set the Drop Context flag to ‘0’ and Add 
+Context flag to ‘1’, and initialize the Input Endpoint Context. 
+• 
+If an endpoint previously enabled, is disabled by the Alternate Interface 
+setting, then software shall set the Drop Context flag to ‘1’ and Add 
+Context flag to ‘0’. 
+• 
+If a parameter of an enabled endpoint is modified by an Alternate Interface 
+setting, the Drop Context and Add Context flags shall be set to ‘1’. 
+
+===== [PAGE 107] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+107 
+When configuring or deconfiguring a device, only after completing a successful 
+Configure Endpoint Command and a successful USB SET_CONFIGURATION 
+request may software schedule data transfers through a newly enabled 
+endpoint or Stream Transfer Ring of the Device Slot. 
+When setting an Alternate Interface on a device, only after completing a 
+successful Configure Endpoint Command and a successful USB SET_INTERFACE 
+request may software schedule data transfers through a newly enabled 
+endpoint or Stream Transfer Ring of the Device Slot. 
+When the command is complete, a Command Completion Event is posted to 
+the Event Ring indicating the success or failure of the command. 
+If the Slot State is Disabled when a Configure Endpoint Command is received, 
+the xHC shall generate a Slot Not Enabled Error on the Event Ring. 
+The xHC shall reject a Configure Endpoint Command with Bandwidth Error if it 
+determines that the bandwidth required by the configuration is not available. 
+The xHC shall reject a Configure Endpoint Command with Resource Error if it 
+determines that it does not have enough internal resources (buffer space, etc.) 
+available to service all the endpoints defined in the configuration. 
+If the configuration defines periodic endpoints, system software may optionally 
+issue a Negotiate Bandwidth Command to cause the xHC to renegotiate 
+bandwidth with other devices. Refer to section 4.16.1 for more information on 
+bandwidth negotiation. 
+Upon successful completion of a Configure Endpoint Command, the enabled 
+endpoints will be added to the xHCs’ pipe scheduling list, the respective Device 
+Context Doorbells shall be enabled, and TRBs can be posted to any enabled 
+endpoint or Stream Transfer Ring. 
+Refer to section 4.11.4.5 for more information on the Configure Endpoint 
+Command. 
+The requirements of a “valid” Slot Context data structure are defined in section 
+6.2.2.2. 
+The requirements of a “valid” Endpoint Context data structure are defined in 
+section 6.2.3.2. 
+The requirements of a “valid” Stream Context data structure are defined in 
+section 6.2.2.1. 
+If the successful completion of the Configure Endpoint Command results in 
+endpoints being enabled, then information in the Input Context is copied to the 
+Device Context. As illustrated in the figure below. 
+
+===== [PAGE 108] =====
+ 
+108 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Figure 4-3: Example Configure Endpoint Command 
+EP1  IN Context
+EP1 OUT Context
+EP0  Context
+Slot Context
+Device Context
+EP1  IN Context
+EP1 OUT Context
+EP0  Context
+Input Control 
+Context
+Input Context
+EP15  IN Context
+EP15 OUT Context
+...
+EP15  IN Context
+EP15 OUT Context
+...
+A3 and A30 =  1 . All other 
+Add flags =  0 
+A30 =  1 
+A3 =  1 
+If Configure Endpoint 
+Command Successful, copy 
+Endpoint Context fields
+Configure 
+Endpoint 
+TD
+Device 
+Context 
+Base 
+Address 
+Array
+Slot Context
+ 
+ 
+To issue a Configure Endpoint Command system software shall perform the 
+following operations: 
+• 
+Allocate and initialize an Input Context data structure for the command. 
+• 
+Insert a Configure Endpoint Command on the Command Ring and initialize 
+the following fields: 
+o 
+TRB Type = Configure Endpoint Command (refer to Table 6-91). 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+Input Context Pointer = The base address of the Input Context data 
+structure.Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+Note: This example assumes the existence of two global variables: Bandwidth 
+Available, and Resource Available, which identify the amount of the respective 
+parameter available for allocation. And two temporary variables: Bandwidth 
+Required, and Resource Required, which define the amount of the respective 
+parameter required to successfully complete the Configure Endpoint 
+Command. Bandwidth is a commodity allocated by the host controller. Refer 
+to section 4.14.2 for the maximum bus bandwidth may be allocated to 
+periodic endpoints. Resource is an xHC implementation specific parameter 
+which may refer to internal xHC data structure or buffer space. 
+Note: A Slot or Endpoint Context contained in the Input Context is referred to as an 
+Input Slot or Endpoint Context. And a Slot or Endpoint Context contained in 
+the Device Context data structure pointed to by the Device Context Base 
+Address Array is referred to as an Output Slot or Endpoint Context. 
+
+===== [PAGE 109] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+109 
+When a Configure Endpoint Command is executed by the xHC it shall perform 
+the following operations: 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Configure Endpoint 
+Command TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+Initialize the Bandwidth Required variable to 0. 
+o 
+Initialize the Resource Required variable to 0. 
+o 
+If the Device Slot identified by the Slot ID field has been previously 
+enabled by an Enable Slot Command: 
+•  
+Retrieve the Output Device Context of the selected Device Slot. 
+// Release the resources and bandwidth for the endpoints to be disabled. 
+• 
+If the Output Device Context Slot State is equal to Configured: 
+o 
+If the Deconfigure (DC) flag = ‘1’: 
+•  
+For each Endpoint Context not in the Disabled state: 
+•  
+Subtract the resources allocated to the endpoint from the Resource Required 
+variable. 
+•  
+If the endpoint is periodic: 
+•  
+Subtract bandwidth allocated to the endpoint from the Bandwidth Required 
+variable. 
+•  
+Set the Output EP State field to Disabled. 
+•  
+Set the Slot State in the Output Slot Context to Addressed. 
+•  
+Completion Code = Success (refer to Table 6-90).  This value may be overwritten by 
+a later operation. 
+•  
+else // DC = ‘0’ 
+•  
+For each Endpoint Context designated by a Drop Context flag = '1': 
+•  
+Subtract the resources allocated to the endpoint from the Resource Required 
+variable. 
+•  
+If the endpoint is periodic: 
+•  
+Subtract bandwidth allocated to the endpoint from the Bandwidth Required 
+variable. 
+•  
+Completion Code = Success (refer to Table 6-90).  This value may be overwritten by 
+a later operation. 
+// Calculate the resource and bandwidth requirements for the endpoints to be enabled. 
+•  
+If the Output Device Context Slot State is equal to Addressed or Configured and DC = ‘0’: 
+•  
+If all Input Endpoint Contexts identified by Add Context flag fields = ‘1’ are valid: 
+•  
+For each Endpoint Context designated by an Add Context flag = '1': 
+
+===== [PAGE 110] =====
+ 
+110 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+•  
+If the xHC resources required by the enabled endpoints are available: 
+•  
+Add the resources allocated to the endpoint to the Resource Required 
+variable. 
+•  
+If the endpoint is periodic: 
+•  
+Evaluate the bandwidth requirements define by the Endpoint Context. 
+•  
+Add bandwidth allocated to the endpoint from the Bandwidth Required 
+variable. 
+•  
+If the Resource Required is less than or equal to the Resource Available: 
+•  
+If the Bandwidth Required is less than or equal to the Bandwidth Available: 
+// The resource and bandwidth allocations will allow a successful completion, so 
+update Endpoint Context(s). 
+•  
+Subtract the Bandwidth Required from the Bandwidth Available. 
+•  
+For each Endpoint Context designated by a Drop Context flag = '1': 
+•  
+Set the EP State field to Disabled14. 
+•  
+For each Endpoint Context designated by a Add Context flag = '1': 
+•  
+Copy all fields of the Input Endpoint Context to the Output Endpoint 
+Context. 
+ 
+Note that this action passes ownership of the Transfer Ring or Stream 
+Context Array/Transfer Rings from software to the xHC. If the Output 
+Endpoint Context had previously pointed to a Transfer Ring or a Stream 
+Context Array, software is responsible for performing any garbage 
+collection necessary for recovering them. 
+•  
+Set the Output EP State field to Running. 
+•  
+Load the xHC Enqueue and Dequeue Pointers with the value of the TR 
+Dequeue Pointer field from the Endpoint Context. 
+•  
+If all Endpoints are Disabled: 
+•  
+Set the Slot State in the Output Slot Context to Addressed. 
+•  
+Set the Context Entries field in the Output Slot Context to ‘1’. 
+•  
+else // An Endpoint is Enabled 
+•  
+Set the Slot State in the Output Slot Context to Configured. 
+•  
+Set the Context Entries field in the Output Slot Context to the index of 
+the last valid Endpoint Context in its Output Device Context structure. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else15 // The Bandwidth Required is greater than the Bandwidth Available 
+•  
+If the Bandwidth Error is encountered in the primary Bandwidth Domain: 
+ 
+14Note, if both the Add and Drop flags are set for an Endpoint Context, the xHC is not expected to write out the intermediate Disabled state 
+to the Output Device Context. The only requirement is that the Endpoint Context is correct when the Command Completion Event is 
+generated. 
+ 
+15It is not required that the following checks for Primary and Secondary Bandwidth availability occur in this order. An xHCI 
+implementation may check for Secondary Bandwidth availability first. 
+ 
+
+===== [PAGE 111] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+111 
+•  
+Completion Code = Bandwidth Error. 
+•  
+else // The Bandwidth Error is encountered in a Secondary Bandwidth 
+Domain, refer to section 4.16.2 for more information on Bandwidth Domains. 
+•  
+Completion Code = Secondary Bandwidth Error. 
+•  
+else // The Resource Required is greater than the Resource Available 
+•  
+Completion Code = Resource Error. 
+•  
+else // Not all Input Endpoint Contexts identified by Add Context flag fields = ‘1’ are valid 
+•  
+Completion Code =Parameter Error. 
+•  
+else // The Output Device Context Slot State is not equal to Addressed or Configured. 
+•  
+Completion Code = Context State Error. 
+•  
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error. 
+•  
+Clear all other fields of the event TRB to ‘0’. 
+•  
+Cycle bit = Event Ring’s PCS flag. 
+ 
+Disabled endpoints have no resources or bandwidth allocated to them, so if the Drop Context flag 
+is ‘1’ for a Disabled endpoint it is ignored. 
+ 
+The xHC shall consider an Input Endpoint Context invalid if the DCI of an Add Context flag = ‘1’ is 
+greater than the value of Context Entries field of the Input Slot Context. 
+ 
+A Configure Endpoint Command may generate a Max Exit Latency Too Large Error, because the 
+current Max Exit Latency value caused the xHC to reject the configuration, for example, the Max 
+Exit Latency value prevented a PING required by an Isoch endpoint to be scheduled. Refer to 
+section 4.23.5.2.2 for more information on the Max Exit Latency Too Large Error. 
+Refer to sections 6.2.2 
+The requirements of a “valid” Slot Context data structure are defined in section 
+6.2.2.2. 
+The requirements of a “valid” Endpoint Context data structure are defined in 
+section 6.2.3.2. 
+The requirements of a “valid” Stream Context data structure are defined in 
+section 6.2.4.1. 
+4.6.6.1 
+Exit Latency Delta (ELD) 
+The Exit Latency Delta (ELD) provides a hint to software for optimizing power 
+management. 
+The ELD shall be reported by a Configure Endpoint Command as a non-zero 
+value in the Command Completion Parameter field in the Command Completion 
+Event. If the Command Completion Parameter = ‘0’, then ELD hinting is not 
+available. 
+If the Completion Code of a Configure Endpoint Command = Success, then the 
+ELD shall define the amount time in microseconds by which the current Max 
+Exit Latency value for the slot may be successfully increased and still allow the 
+configuration to succeed. If the Completion Code = Max Exit Latency Too Large 
+
+===== [PAGE 112] =====
+ 
+112 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Error, then the ELD shall define the amount of time in microseconds that Max 
+Exit Latency must be reduced by to enable success. The Command Completion 
+Parameter field shall be cleared to ‘0’ for all other Configure Endpoint 
+Command completion Condition Code values. 
+Internally an xHC adjusts its timing with an implementation specific 
+granularity. An xHC shall report ELD = ‘1’ if the computed ELD value is too 
+small to allow a successful command completion. 
+4.6.7 
+Evaluate Context 
+The Evaluate Context Command is issued by software to inform the xHC that 
+specific fields in the Device Context data structures have been modified. There 
+are several cases where parameters associated with a Slot Context or the 
+Default Control Endpoint Context are initially unknown, which shall be updated 
+after the slot has entered the Addressed state. for example, the Max Packet 
+Size of the control endpoint may be determined only after software reads the 
+Device Descriptor from the device through the control endpoint. The Device 
+Descriptor shall be read to determine whether a device is a hub or not, etc. 
+When an Evaluate Context Command is processed by the xHC it shall only 
+affect the parameters identified by the respective context. Refer to the 
+Evaluate Context Command Usage sub-sections in section 4.5.2 and 6.2.2.3 for 
+more information on the specific context fields that are affected. 
+The format of the Evaluate Context Command TRB is defined in section 6.4.3.6. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+When the command is complete, a Command Completion Event is posted to 
+the Event Ring indicating the success or failure of the command. 
+If the Slot State is Disabled when an Evaluate Context Command is received, 
+the xHC shall generate a Slot Not Enabled Error Event on the Event Ring. 
+Upon successful completion of an Evaluate Context Command, the xHC shall 
+begin executing with the updated context parameters. 
+The Evaluate Context Command utilizes the Input Context data structure 
+defined in section 6.2.5 to define which Contexts are to be evaluated. The state 
+of the Add Context flags depends on the specific endpoints affected by the 
+command. All Drop Context flags of the Input Control Context shall be cleared 
+to ‘0’ (these flags do not apply to the Evaluate Context Command). System 
+software shall initialize Contexts of the Input Context affected by the 
+command. All Contexts not referenced by an Add Context flag in the Input 
+Context are ignored by the xHC. 
+To issue an Evaluate Context Command, system software shall perform the 
+following operations: 
+•  
+Allocate and initialize an Input Context data structure for the command. 
+•  
+Insert an Evaluate Context Command on the Command Ring 
+
+===== [PAGE 113] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+113 
+•  
+TRB Type = Evaluate Context Command (refer to Table 6-91). 
+•  
+The Add Context flags shall be initialized to indicate the IDs of the Contexts affected by the 
+command. Refer to sections 6.2.2.3 and 6.2.3.3 for the specific Context fields that shall be 
+evaluated. 
+•  
+Set all Drop Context flags to ‘0’. 
+•  
+Slot ID = ID of the target Device Slot. 
+•  
+Input Context Pointer = The base address of the Input Context data structure. 
+•  
+Clear all other fields of the command TRB to ‘0’. 
+•  
+Cycle bit = Command Ring’s PCS flag. 
+•  
+Write the Host Controller Doorbell with DB Target = Host Controller Command. 
+When an Evaluate Context Command is executed by the xHC it shall perform 
+the following operations: 
+•  
+Insert a Command Completion Event on the Event Ring. 
+•  
+TRB Type = Command Completion Event (refer to Table 6-91). 
+•  
+Command TRB Pointer = The address of the Evaluate Context Command TRB. 
+•  
+Slot ID = The value of the command’s Slot ID. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+If the Device Slot identified by the Slot ID fields has been previously enabled by an Enable Slot 
+Command: 
+•  
+Retrieve the Output Device Context of the selected Device Slot. 
+•  
+If the Output Slot State is equal to Default, Addressed or Configured: 
+•  
+For each Context designated by an Add Context flag = '1': 
+•  
+Evaluate the parameter settings defined by the selected Contexts. 
+•  
+If the Context parameters are not valid: 
+•  
+Completion Code = Parameter Error. 
+•  
+If the Max Exit Latency is non-zero: 
+•  
+Calculate the Isoch Scheduling Delay. 
+•  
+If the Max Exit Latency + Isoch Scheduling Delay does not allow an Isoch endpoint to 
+be scheduled: 
+•  
+Completion Code = Max Exit Latency Too Large Error. 
+•  
+If Completion Code = Success: 
+•  
+For each Endpoint Context designated by a Add Context flag = '1': 
+•  
+Update Output Device Context parameters. 
+•  
+else // The Output Slot State is not equal to Default, Addressed or Configured 
+•  
+Completion Code = Context State Error. 
+•  
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error. 
+•  
+Clear all other fields of the event TRB to ‘0’. 
+•  
+Cycle bit = Event Ring’s PCS flag. 
+
+===== [PAGE 114] =====
+ 
+114 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+ 
+The xHC shall consider an Endpoint Context invalid if the DCI of an Add Context flag = ‘1’ is greater 
+than the value of Context Entries. 
+Note 
+The Output Slot/Endpoint Context parameters shall not be changed if any error is detected by 
+this command. 
+ 
+When an Evaluate Context Command modifies the value of Max Exit Latency, the xHC shall not 
+drop the data of any Isoch TDs of any endpoints associated with the Device Slot targeted by the 
+command. 
+ 
+Prior to issuing an Evaluate Context Command that modifies the value of the Slot Context 
+Interrupter Target software shall ensure that all Endpoints (including the Default Control 
+Endpoint), are in the Stopped state. 
+The requirements of a “valid” Slot Context data structure are defined in section 
+6.2.2.3. 
+The requirements of a “valid” Endpoint Context data structure are defined in 
+section 6.2.3.3. 
+4.6.8 
+Reset Endpoint 
+The Reset Endpoint Command is issued by software to recover from a halted 
+condition on an endpoint. 
+The format of the Reset Endpoint Command TRB is defined in section 6.4.3.7. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+When a Transfer Ring or Stream is halted; the associated endpoint is removed 
+from the xHC’s Pipe Schedule, the Doorbell Register for that pipe is disabled, 
+the state of the associated Endpoint Context is set to Halted, and any 
+subsequent packets received for the endpoint will be silently dropped. 
+The Reset Endpoint Command defines Slot ID and Endpoint ID fields. The Slot 
+ID and Endpoint ID fields identify the USB device, and the endpoint of that 
+device that is the target of the command. 
+The xHC shall perform the following operations when Resetting an endpoint: 
+•  
+If the endpoint is not in the Halted state when an Reset Endpoint Command is executed: 
+•  
+The xHC shall reject the command and generate a Command Completion Event with the 
+Completion Code set to Context State Error. 
+•  
+else 
+•  
+If the Transfer State Preserve (TSP) flag is ‘0’: 
+•  
+Reset the Data Toggle for USB2 devices or the Sequence Number for USB3 devices. 
+•  
+Reset any USB2 split transaction state associated with the endpoint. 
+•  
+Invalidate any xHC TDs that may be cached, forcing xHC to fetch Transfer TRBs from memory 
+when the pipe transitions from the Stopped to Running state. 
+•  
+else // TSP = ‘1’ 
+
+===== [PAGE 115] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+115 
+•  
+The USB2 Data Toggle or the USB3 Sequence Number for the pipe shall be preserved. 
+•  
+Maintain any USB2 split transaction state associated with the endpoint. 
+•  
+The endpoint shall continue execution by retrying the last transaction the next time the 
+doorbell is rung, if no other commands have been issued to the endpoint. 
+•  
+Set the Endpoint Context EP State field to Stopped. 
+•  
+Enable the Doorbell Register for the pipe. 
+•  
+Generate a Command Completion Event with the Completion Code set to Success. 
+After the command completes, the Transfer Ring will be reinstated on the 
+xHC’s Pipe Schedule the next time its doorbell is rung. 
+Note: The Reset Endpoint Command maintains the state of an endpoint so that the 
+previously executed packet may be retried, irrespective of the value of the 
+TSP flag. for example, if the endpoint halted retrying the 3rd 1K packet of a 
+4KB TRB, a doorbell ring immediately after a Reset Endpoint Command would 
+cause the endpoint to retry the same packet and move the data to/from a 
+2KB offset within the buffer referenced by the TRB. Clearing the TSP flag to 
+‘0’ resets the Data Toggle/Sequence Number of the endpoint, however it has 
+no other effect on other state associated with the endpoint, 
+Note: Prior to restarting the Transfer Ring, software may use the Set TR Dequeue 
+Pointer Command to modify the value of the TR Dequeue Pointer field of the 
+Endpoint Context and clear the endpoint state associated with the previously 
+executed packet. If the Reset Endpoint Command is followed with a Set TR 
+Dequeue Pointer Command, the endpoint shall start execution at the 
+beginning of the TRB referenced by the TR Dequeue Pointer the next time the 
+doorbell is rung. 
+Note: Software shall execute the following sequence to “reset a pipe”, that is, clear 
+the xHC endpoint halt condition, reset the host-side Data Toggle/Sequence 
+Number, clear a stall on the device, and reset the device-side Data 
+Toggle/Sequence Number. Also, if the device was behind a TT, the TT buffer 
+would also need to be cleared. 
+•  
+Reset Endpoint Command (TSP = ‘0’). 
+•  
+If the device was behind a TT and it is a Control or Bulk endpoint: 
+•  
+Issue a ClearFeature(CLEAR_TT_BUFFER) request to the hub. 
+•  
+If not a Control endpoint: 
+•  
+Issue a ClearFeature(ENDPOINT_HALT) request to device. 
+•  
+Issue a Set TR Dequeue Pointer Command, clear the endpoint state and reference the TRB to 
+start. 
+•  
+Ring Doorbell to restart the pipe. 
+The Set TR Dequeue Pointer Command resets the state of the endpoint so that the xHC starts 
+transferring data at the beginning of the TRB referenced by the TR Dequeue Pointer (rather than 
+at the location associated with the previous packet that caused the halt) when the doorbell is 
+rung. 
+
+===== [PAGE 116] =====
+ 
+116 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Note: Undefined behavior may occur if this command is executed with TSP = ‘0’ and 
+the associated device endpoint is not successfully reset by system software. 
+For example, the Data Toggle may not be synchronized between the xHC and 
+a USB2 device (refer to section 8.6 in the USB2 spec). 
+To issue a Reset Endpoint Command system software shall perform the 
+following operations: 
+•  
+Insert a Reset Endpoint Command TRB on the Command Ring and initialize the following fields: 
+•  
+TRB Type = Reset Endpoint Command (r refer to Table 6-91). 
+•  
+Transfer State Preserve (TSP) = Desired Transfer State result. 
+•  
+Endpoint ID = ID of the target endpoint. 
+•  
+Slot ID = ID of the target Device Slot. 
+•  
+Clear all other fields of the command TRB to ‘0’. 
+•  
+Cycle bit = Command Ring’s PCS flag. 
+•  
+Write the Host Controller Doorbell with DB Target = Host Controller Command (DB Stream ID = ‘0’). 
+When a Reset Endpoint Command is executed by the xHC it shall perform the 
+following operations: 
+•  
+Insert a Command Completion Event on the Event Ring and initialize the following fields: 
+•  
+TRB Type = Command Completion Event (refer to Table 6-91). 
+•  
+Command TRB Pointer = The address of the Reset Endpoint Command TRB. 
+•  
+Slot ID = The value of the command’s Slot ID. 
+•  
+If the Device Slot identified by the Slot ID has been enabled by an Enable Slot Command: 
+•  
+Retrieve the Device Context of the selected Device Slot. 
+•  
+If the Slot State is set to Default, Addressed, or Configured: 
+•  
+If the Endpoint State (EP State) field is set to Halted: 
+•  
+Set the Endpoint State (EP State) field to Stopped. 
+•  
+If the Transfer State Preserve (TSP) flag is cleared to ‘0’: 
+•  
+Set the USB2 Data Toggle or the USB3 Sequence Number for the pipe to ‘0’. 
+•  
+Enable the Doorbell register for the endpoint. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else // The Endpoint State (EP State) field is not set to Halted 
+•  
+Completion Code = Context State Error. 
+•  
+else // The Slot State is not set to Default, Addressed, or Configured 
+•  
+Completion Code = Context State Error. 
+•  
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error 
+•  
+Clear all other fields of the event TRB to ‘0’. 
+•  
+Cycle bit = Event Ring’s PCS flag. 
+Note: The xHC resources and bandwidth associated with a reset endpoint are not 
+released by the Reset Endpoint Command. 
+
+===== [PAGE 117] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+117 
+Note: After the successful completion of a Reset Endpoint Command with TSP = ‘0’, 
+system software may issue a CLEAR_FEATURE(ENDPOINT_HALT) request to 
+the USB device to reset the halt condition on the endpoint of the device. 
+Note: Software shall be responsible for timing the Reset “recovery interval” required 
+by USB. 
+Note: After a Reset Endpoint Command is executed for a control endpoint, software 
+shall execute a Set TR Dequeue Pointer Command to ensure that the 
+endpoint's Dequeue Pointer references a Setup TD. 
+Note: Software is responsible for cleaning up any partially completed transfers after 
+issuing a Reset Endpoint Command, for example, after this command 
+completes, software shall update the associated Transfer Ring to ensure that 
+any endpoint specific requirements are met (for example, as identified in the 
+previous note), before ringing the endpoint’s doorbell. 
+Note: The Reset Endpoint Command may only be issued to endpoints in the Halted 
+state. If software wishes to reset the Data Toggle or Sequence Number of an 
+endpoint that isn't in the Halted state, then software may issue a Configure 
+Endpoint Command with the Drop and Add bits set for the target endpoint 
+that is in the Stopped state or Running but Idle state. 
+4.6.8.1 
+Soft Retry 
+A Soft Retry may effectively be used to recover from a USB Transaction Error 
+that was due to a temporary error condition (for example, electrical 
+interference caused by a cell phone transmitting too close to a USB cable). 
+Often the delay introduced between software detecting the error and 
+attempting a Soft Retry is enough to let the temporary condition clear and 
+allow a successful transfer. 
+Section 4.10.2.3 describes how the xHC shall halt an endpoint with a USB 
+Transaction Error after CErr retries have been performed. The USB device is 
+not aware that the xHC has halted the endpoint, and will be waiting for another 
+retry, so a Soft Retry may be used to perform additional retries and recover 
+from an error which has caused the xHC to halt an endpoint. 
+Software performs a Soft Retry with the following operations: 
+1. 
+Issue a Reset Endpoint Command with the TSP flag set to ‘1’. This causes 
+the endpoint to advance from the Halted to the Stopped state, but does not 
+change the state of the Data Toggle or Sequence Number, and allows the xHC 
+to continue the retry process another CErr times. 
+2. 
+Ring the doorbell for the endpoint to initiate up to another CErr retries. 
+To support Soft Retry, the state of a partially completed TRB transfer (for 
+example, if 1K of a 4K TRB has been moved) shall be maintained by a Reset 
+Endpoint Command if TSP = ‘1’. 
+Note: Soft Retry attempts shall not be performed on Isoch endpoints. Any attempt 
+to do so may result in undefined behavior. 
+
+===== [PAGE 118] =====
+ 
+118 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Note: Soft Retry attempts shall not be performed if the device is behind a TT in a 
+HS Hub (that is, Parent Hub Slot ID > ‘0’). Any attempt to do so may result in 
+undefined behavior. 
+Note: Recovery of lost data on an Interrupt endpoint may be handled by class 
+specific mechanism. 
+Note: Software shall limit the number of unsuccessful Soft Retry attempts to 
+prevent an infinite loop. 
+4.6.9 
+Stop Endpoint 
+The Stop Endpoint Command is issued by software to stop the xHC execution 
+of the TDs on an endpoint. An endpoint may be stopped by software so that it 
+can temporarily take ownership of Transfer Ring TDs that had previously been 
+passed to the xHC, or to stop USB activity prior to powering down the xHC. 
+While the endpoint is stopped, software may add, delete, or otherwise 
+rearrange TDs on an associated Transfer Ring. For example, this command 
+allows software to insert “high-priority” TDs at the Dequeue Pointer so they will 
+be executed immediately when the ring is restarted, or to “abort” one or more 
+TDs by removing them from the ring. 
+The Stop Endpoint Command is expected to stop endpoint activity as soon as 
+possible, which may mean that it stops in the middle of a TRB. When the 
+endpoint stops, it saves the value of the TR Dequeue Pointer and DCS fields 
+(and possibly other “Opaque” state) in the Endpoint/Stream Context so that it 
+can pick up where it left off the next time its doorbell is rung, for example, if 
+the endpoint stopped after moving the first 1KB of data in a 4KB TRB, then 
+transfer related state maintained by the xHC will allow it to transfer the 
+remaining 3KB of data when the doorbell is rung. If a Set TR Dequeue Pointer 
+Command is issued while an endpoint is in the Stopped state, the transfer 
+related state of the endpoint will be dumped when the Output Endpoint/Stream 
+Context TR Dequeue Pointer and DCS fields are overwritten. The next time the 
+doorbell is rung, the endpoint shall start execution at the beginning of the TRB 
+referenced by the TR Dequeue Pointer. 
+Note: If the TR Dequeue Pointer references an Event Data TRB when a TD is 
+stopped, the xHC shall execute it before generating the Command Completion 
+Event, by generating an Event Data Transfer Event if the IOC flag was set and 
+advancing to the next TRB. 
+Before generating a Command Completion Event for this command, the xHC 
+shall write the final value of the endpoint’s Dequeue Pointer to the TR Dequeue 
+Pointer field and CCS flag to the DCS field of the Output Endpoint Context or 
+Stream Context associated with the stopped Transfer Ring. And if Stopped 
+EDTLA Capability (SEC) = ‘1’, then the xHC shall write the value of the EDTLA 
+to the Stopped EDTLA field of the Stream Context associated with the stopped 
+Transfer Ring. The xHC shall also ensure that the Stream Context TR Dequeue 
+Pointer, DCS, and Stopped EDTLA fields reflect the forward progress of any 
+Stream that entered the Move Data state while the endpoint was in the 
+
+===== [PAGE 119] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+119 
+Running state. Refer to section 4.12 for more information on Stream endpoint 
+Stopped state transitions. 
+Note: Stopped EDTLA Capability support (that is, SEC = '1') shall be mandatory for 
+all xHCI 1.1 and xHCI 1.2 compliant xHCs. 
+The format of the Stop Endpoint Command TRB is defined in section 6.4.3.8. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+The Stopped - Short Packet Capability (SPC) flag in the HCCPARAMS1 register 
+(5.3.6) indicates whether the xHC is capable of generating a Stopped - Short 
+Packet Completion Code. Any discussion of the Stopped - Short Packet 
+Completion code assumes that the Stopped - Short Packet Capability is 
+supported (SPC =’1’). 
+Note: The Stopped - Short Packet Capability (that is, SPC = '1') shall be mandatory 
+for all xHCI 1.1 and xHCI 1.2 compliant xHCs. 
+Depending on the timing of the execution of the Stop Endpoint command 
+relative to the execution of the TDs on the ring, one of three of scenarios may 
+result: 
+• 
+If the command is executed between TDs, then the xHC shall perform a 
+Force Stopped Event (FSE) operation by generating a Transfer Event for 
+the endpoint with Condition Code = Stopped - Invalid Length, TRB Pointer 
+= current Dequeue Pointer value, and TRB Transfer Length = 0, then 
+generate a Success Command Completion Event for the command. 
+• 
+If SPC = '1' and the command is executed, after a Short Packet condition 
+has been detected, but before the end of the TD has been reached, (that 
+is, the TD is in progress for the pipe), then a Transfer Event TRB with its 
+Completion Code set to Stopped - Short Packet and its TRB Transfer Length 
+set to the value of the EDTLA shall be forced for the interrupted TRB, 
+irrespective of whether its IOC or ISP flags are set. This Transfer Event TRB 
+will precede the Command Completion Event TRB for the command, and is 
+referred to as a Stopped Transfer Event. 
+• 
+If a TD is in progress for the pipe when the command is executed, and a 
+Short Packet condition has not been detected or SPC = ‘0’ and a Short 
+Packet condition has been detected, then a Transfer Event TRB with its 
+Completion Code set to Stopped, TRB Pointer = current Dequeue Pointer 
+value, and TRB Transfer Length set to the residual bytes to transfer, shall 
+be forced for the interrupted TRB, irrespective of whether its IOC or ISP 
+flags are set. This Transfer Event TRB will precede the Command 
+Completion Event TRB for the command, and is also referred to as a 
+Stopped Transfer Event. 
+While an endpoint is stopped, any USB packets received for it shall be silently 
+dropped by the xHC. 
+Note that when an endpoint is stopped, the xHC maintains the state necessary 
+to restart the last active Transfer Ring where it left off, however software may 
+not want to do this. The options are discussed below: 
+
+===== [PAGE 120] =====
+ 
+120 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+1. 
+Temporarily Stop Transfer Ring Activity - If the intent of software in 
+issuing the Stop Endpoint Command was just to temporarily stop activity on 
+the Transfer Ring, then software may restart the stopped ring where it left off 
+by simply ringing its doorbell. 
+2. 
+Aborting a Transfer - If, because of a timeout or other reason, software 
+issued the Stop Endpoint Command to abort the current TD. Then the Set TR 
+Dequeue Pointer Command may be used to force the xHC to dump any internal 
+state that it has for the ring and restart activity at the new Transfer Ring 
+location specified by the Set TR Dequeue Pointer Command. 
+3. 
+Modifying the order of execution of TDs on a Transfer Ring - It may be 
+necessary for software to place a “high priority” TD on a ring, by inserting a TD 
+ahead of any pending TDs. To safely modify the order of execution of TDs on a 
+ring, software shall first stop the endpoint. When an endpoint is stopped, 
+software may examine the Event Ring to determine the current state of TDs on 
+the associated Transfer Ring(s). If the xHC stopped in the middle of a TD, then 
+that TD may not be modified by software, however any other TDs on the ring 
+may be. If the xHC stopped between TDs, then it may modify any TD on the 
+transfer ring. After the TDs are inserted, removed, or rearranged to the 
+satisfaction of software, it may ring the doorbell to restart operation on the 
+ring. 
+Note: The xHC cannot distinguish whether software temporarily stopped Transfer 
+Ring activity or stopping the Transfer Ring to modifying the order of execution 
+of its TDs. In either case, if the xHC has read-ahead and cached TRBs for the 
+Transfer Ring, it shall invalidate all TRBs not associated with the current TD 
+before continuing execution of the Transfer Ring. This ensures that any TDs 
+modified by software shall be correctly executed by the xHC. 
+Note: If software is issuing the Stop Endpoint Command due to suspending a device 
+or a function on a device, it shall set the Suspend (SP) flag to ‘1’ in the Stop 
+Endpoint Command TRB (refer to SP definition in Table 6-66). 
+The xHC shall perform the following operations when Stopping an endpoint: 
+•  
+The xHC shall stop the USB activity for the pipe. 
+•  
+If a USB IN or OUT transaction is in-flight, it shall be completed. 
+•  
+ERDYs shall be ignored on the pipe for that endpoint. 
+•  
+If LS, FS, or HS, then polling of the pipe shall cease. 
+•  
+If an SS pipe is waiting for an ERDY, the xHC shall clear the flow control condition and cease 
+waiting for the ERDY. 
+ 
+A Set TR Dequeue Pointer Command clears any transfer related state associated with an endpoint. 
+If an SS pipe was waiting for an ERDY when the endpoint was stopped, then if the endpoint 
+transfer state was not cleared by a Set TR Dequeue Pointer Command, the xHC shall reissue an IN 
+or OUT for the pipe when the ring is restarted. 
+•  
+The current endpoint Service Opportunity (SO) shall be terminated. 
+•  
+Stop the Transfer Ring activity for the pipe. Refer to Table 4-2 for Stop conditions and Actions. 
+•  
+Remove the endpoint from the xHC’s Pipe Schedule. 
+•  
+Generate a Command Completion Event. 
+
+===== [PAGE 121] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+121 
+After the command completes, the endpoint shall be reinstated on the xHC’s 
+Pipe Schedule the next time its doorbell is rung. 
+Note: Prior to restarting the ring, software may use the Set TR Dequeue Pointer 
+Command to modify the value of the TR Dequeue Pointer field of the Endpoint 
+or Stream Context. The Set TR Dequeue Pointer Command shall invalidate 
+any xHC TDs that may be cached, forcing xHC to fetch Transfer TRBs from 
+memory when the pipe is restarted. 
+Note: If software wants to know the exact number of bytes transferred when a TD is 
+stopped: 
+ 
+If the ED flag is ‘0’ and the Completion Code equals Stopped, software may 
+subtract the value of the TRB Transfer Length field reported by the Transfer 
+Event from the sum of the TRB Transfer Length fields of all Transfer TRBs in 
+the TD executed prior to and including the TRB referenced by the Transfer 
+Event. 
+ 
+If the ED flag is ‘0’ and the Completion Code equals Stopped - Short Packet, 
+software shall use the TRB Transfer Length field of the Transfer Event. 
+ 
+If the ED flag is ‘0’ and the Completion Code equals Stopped - Length Invalid, 
+software shall ignore the TRB Transfer Length field of the Transfer Event, and 
+simply sum of the TRB Transfer Length fields of all Transfer TRBs in the TD 
+executed prior to the TRB referenced by the Transfer Event. 
+ 
+If the ED flag is ‘1’ then the TRB Transfer Length field reflects the number of 
+bytes transferred prior to stopping. 
+Note: If the ED flag is ‘0’ in the Stopped Transfer Event software may emulate an 
+Event Data Transfer Event for the stopped Transfer Ring. It does this by 
+starting at the TRB referenced by the Stopped Transfer Event and advancing 
+through the TD, searching for the next Event Data TRB. If one is found, the 
+Parameter Component of the Event Data TRB and the “number of bytes 
+transferred” as described in the previous Note may be used to emulate an 
+Event Data Transfer Event. 
+Note: After the command is complete, the TR Dequeue Pointer field of all 
+Endpoint/Stream Contexts associated with an endpoint shall contain the 
+current value of the Dequeue Pointer for the respective ring. 
+The xHC shall generate a Stopped Transfer Event every time a Transfer Ring is 
+stopped with a Stop Endpoint Command. This operation is referred to as Force 
+Stopped Event (FSE). The forced Stopped Transfer Event explicitly indicates to 
+software that the selected Transfer Ring has stopped. If a Transfer Ring is 
+empty when a Stop Endpoint Command is issued, a Stopped Transfer Event 
+shall be generated on the Event Ring indicated by the Slot Context Interrupter 
+Target field. 
+The Table 4-2 identifies the Action that shall be taken by the xHC on the TRB 
+referenced by the Dequeue Pointer when the transfer ring stops. When 
+restarting a Stopped endpoint, Table 4-2 also identifies whether the xHC shall 
+
+===== [PAGE 122] =====
+ 
+122 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+advance the Dequeue Pointer prior to executing a TRB, or if it shall continue 
+the execution at the Stopped TRB. 
+Note: The cases in Table 4-2 that reference a “FSE” Action shall force an additional 
+Stopped Transfer Event. 
+Note: A Busy endpoint may asynchronously transition from the Running to the 
+Halted or Error state due to error conditions detected while processing TRBs. 
+A possible race condition may occur if software, thinking an endpoint is in the 
+Running state, issues a Stop Endpoint Command however at the same time 
+the xHC asynchronously transitions the endpoint to the Halted or Error state. 
+In this case, a Context State Error may be generated for the command 
+completion. Software may verify that this case occurred by inspecting the EP 
+State for Halted or Error when a Stop Endpoint Command results in a Context 
+State Error. 
+Table 4-2: Stop Endpoint Command TRB Handling 
+TRB Type referenced 
+by TR Dequeue 
+Pointer 
+Chain 
+bit 
+(CH) 
+Condition 
+Action 
+Advance TR 
+Dequeue Pointer on 
+Doorbell Ring 
+Transfer TRB16 
+(Completed) 
+Residual Length = 0 
+1 
+Stopped on TRB 
+boundary within 
+a TD17. 
+Generate Transfer Event. 
+An ISSE18 else 
+Length = 0, 
+CC = Stopped. 
+Yes 
+0 
+Stopped on TD 
+boundary.19 
+Generate event if IOC 
+flag set. 
+FSE20. 
+Yes 
+Transfer TRB 
+(Incomplete) 
+Residual Length > 0 
+X 
+Stopped within 
+a TRB 
+Generate Transfer Event. 
+An ISSE18 else 
+Length = Residual bytes 
+to transfer, 
+CC = Stopped. 
+No 
+Event Data 
+1 
+Stopped on 
+intermediate 
+Event Data TRB 
+Generate Transfer Event. 
+An ISSE18 else 
+ED = 1, 
+Length = EDTLA, 
+CC = Stopped. 
+Yes 
+ 
+16A “Transfer” TRB is a Normal, Setup Stage, Data Stage, Status Stage, or Isoch TRB. Note, this row identifies the case where the endpoint 
+has stopped on a TRB (that is not the last TRB of a TD), where all the data associated with the TRB has already been transferred. 
+17This condition is interpreted identically to a “Transfer TRB (Incomplete)”, where 0 bytes have been transferred. 
+18 ISSE - If SPC = ‘1’, and a Short Packet condition has been detected, and the end of the TD has not been reached, then the xHC shall 
+perform an Intermediate Short Stopped Event (ISSE) operation, generating a Transfer Event for the endpoint with Condition Code = 
+Stopped - Short Packet, TRB Pointer = current Dequeue Pointer value, and TRB Transfer Length = EDTLA. 
+19In this case the xHC is expected to complete the TD normally (for example, generate a Transfer Event with CC = Success if the IOC flag is 
+set and the transfer was successful) and then perform a Force Stopped Event (FSE) operation. 
+20FSE - The xHC shall perform a Force Stopped Event (FSE) operation by generating a Transfer Event for the endpoint with Condition Code 
+= Stopped - Invalid Length, TRB Pointer = current Dequeue Pointer value, and TRB Transfer Length = 0. 
+
+===== [PAGE 123] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+123 
+TRB Type referenced 
+by TR Dequeue 
+Pointer 
+Chain 
+bit 
+(CH) 
+Condition 
+Action 
+Advance TR 
+Dequeue Pointer on 
+Doorbell Ring 
+0 
+Stopped on 
+terminating 
+Event Data 
+TRB21 
+Generate Transfer Event. 
+ED = 1. 
+Length = EDTLA.  
+CC = previous Transfer 
+TRB CC. 
+FSE20 
+Yes 
+Link 
+1 
+Stopped on Link 
+TRB within a TD 
+Generate Transfer Event. 
+An ISSE18 else 
+Length = 0.  
+CC = Stopped, Length 
+Invalid. 
+Yes22 
+0 
+Stopped on Link 
+TD 
+Generate event if IOC 
+flag set. 
+FSE20. 
+Yes22 
+No Op 
+X 
+Stopped on 
+Terminating No 
+Op TRB 
+Generate Transfer Event 
+if IOC flag set. 
+FSE20. 
+Yes 
+Vendor Defined 
+X 
+Stopped on 
+Vendor Defined 
+TRB 
+Vendor defined. 
+FSE20. 
+Vendor Defined 
+Invalid TRB 
+(C != DCS) 
+Prev TRB23 
+CH = 1 
+Stopped while 
+waiting for more 
+TRBs to be posted 
+for TD 
+Generate Transfer Event.24 
+Length = 0.  
+CC = Stopped - Length 
+Invalid. 
+No 
+Prev23 TRB 
+CH = 0 
+Stopped on TD 
+boundary 
+FSE20. 
+No 
+Note: If a Transfer Ring has been Halted due to error condition when a Stop 
+Endpoint Command is received, no Stopped Transfer Event shall be 
+generated. 
+To issue a Stop Endpoint Command system software shall perform the 
+following operations. 
+Insert a Stop Endpoint Command on the Command Ring and initialize the 
+following fields: 
+ 
+21Force normal completion of Event Data TRB before generating Command Completion Event. 
+22When the Dequeue Pointer is advanced, the xHC shall begin parsing TRBs at the address identified by the Link TRB Ring Segment 
+Pointer field. 
+23In this case the TRB referenced by the TR Dequeue Pointer is invalid, so use the state of the Chain (CH) bit from the last executed TRB. If 
+no TRBs had been executed previously, assume C = ‘0’ case. 
+24The event generated by the “Stopped while waiting for more TRBs to be posted for TD.” condition uses the Slot Context Interrupter 
+Target field to identify the target Event Ring. 
+
+===== [PAGE 124] =====
+ 
+124 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+TRB Type = Stop Endpoint Command (refer to Table 6-91). 
+o 
+Endpoint ID = ID of the target endpoint. 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Stop Endpoint Command is executed by the xHC it shall perform the 
+following operations. 
+If the Stop Endpoint Command interrupted the execution of a TD, then insert a 
+Transfer Event on the Event Ring and initialize the following fields: 
+o 
+TRB Type = Transfer Event. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+Endpoint ID = The value of the command’s Endpoint ID. 
+o 
+If the TRB referenced by the TR Dequeue Pointer is an Event Data TRB: 
+•  
+ED = ‘1’. 
+•  
+Parameter Component (TRB Pointer) = 64 bits of Event Data TRB 
+Parameter component. 
+•  
+Length = The value of the Event Data Transfer Length Accumulator 
+(EDTLA). Refer to section 4.11.5.2 for a description of EDTLA. 
+o 
+else // The TRB referenced by the TR Dequeue Pointer is not an Event 
+Data TRB 
+•  
+ED = ‘0’. 
+•  
+TRB Pointer = The address of the TRB interrupted by the command. 
+•  
+Length = The number of bytes remaining to be moved for the 
+interrupted TRB. 
+o 
+Completion Code = Stopped (refer to Table 6-90). 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event. 
+o 
+Command TRB Pointer = The address of the Stop Endpoint Command 
+TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+If the Device Slot identified by the Slot ID has been previously enabled 
+by an Enable Slot Command: 
+•  
+Retrieve the Device Context of the selected Device Slot. 
+
+===== [PAGE 125] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+125 
+•  
+If the Slot State is set to Default, Configured, or Addressed: 
+•  
+If the Endpoint State (EP State) field equals Running: 
+•  
+Stop the USB activity for the pipe as described above. 
+•  
+Stop the Transfer Ring activity for the pipe as described above. 
+•  
+Write Dequeue Pointer value to the Output Endpoint or Stream 
+Context TR Dequeue Pointer field. 
+•  
+Write CCS value to the Output Endpoint or Stream Context Dequeue 
+Cycle State (DCS) field. 
+•  
+Removed the endpoint from the xHC’s Pipe Schedule. 
+•  
+Set the Endpoint State (EP State) field to Stopped. 
+•  
+Completion Code = Success. 
+•  
+else // The Endpoint State (EP State) field is not Running 
+•  
+Completion Code = Context State Error. 
+• 
+else // The Slot State is not set to Default, Configured, or Addressed 
+o 
+Completion Code = Context State Error. 
+• 
+else // The slot has not been enabled by an Enable Slot Command 
+o 
+Completion Code = Slot Not Enabled Error 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+Note: The xHC resources and bandwidth associated with an endpoint are not 
+released by the Stop Endpoint Command. 
+Note: The xHC shall wait for any partially completed USB2 split transactions to finish 
+before completing the Stop Endpoint Command. 
+4.6.10 
+Set TR Dequeue Pointer 
+The Set TR Dequeue Pointer Command is issued by software to modify the TR 
+Dequeue Pointer field of an Endpoint or Stream Context. 
+The Slot ID and Endpoint ID fields of the Set TR Dequeue Pointer Command 
+TRB identify the USB device, and the endpoint of that device, that is the target 
+of the command. If Streams are enabled for the endpoint, the Set TR Dequeue 
+Pointer Command TRB Stream ID field identifies the Stream Context that shall 
+be modified. 
+This command may be executed only if the target endpoint is in the Error or 
+Stopped state. 
+The format of the Set TR Dequeue Pointer Command TRB is defined in section 
+6.4.3.9. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+The xHC shall perform the following operations when setting a ring address: 
+
+===== [PAGE 126] =====
+ 
+126 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+If the endpoint is not in the Error or Stopped state when the Set TR 
+Dequeue Pointer Command is executed: 
+o 
+The xHC shall reject the command and generate a Command 
+Completion Event with the Completion Code set to Context State Error. 
+• 
+else // The endpoint is in the Error or Stopped state 
+o 
+Set the Dequeue Pointer to the value of the New TR Dequeue Pointer 
+field in the Set TR Dequeue Pointer TRB. 
+o 
+Invalidate any xHC TDs that may be cached, forcing xHC to fetch 
+Transfer TRBs from memory when the pipe transitions from the 
+Stopped to the Running state. 
+• 
+Copy the value of the New TR Dequeue Pointer field in the Set TR Dequeue 
+Pointer TRB to the TR Dequeue Pointer field of the target Endpoint or 
+Stream Context. 
+o 
+Clear any prior transfer state, for example, setting the EDTLA to 0, 
+clearing any partially completed USB2 split transactions, etc. 
+o 
+Generate a Command Completion Event with the Completion Code set 
+to Success. 
+Note: If, when the Transfer Ring was stopped a TD was only partially executed, then 
+any remaining TRBs in that TD shall not be executed when the endpoints’ TR 
+Dequeue Pointer is updated by the Set TR Dequeue Pointer Command. 
+Note: A Set TR Dequeue Pointer Command may be issued to modify the TR 
+Dequeue Pointer field of a non-active Stream Context while a Stream 
+endpoint is in the Running state. Refer to section 4.12 for active vs. non-
+active Stream Context information. 
+To issue a Set TR Dequeue Pointer Command system software shall perform 
+the following operations: 
+• 
+Insert a Set TR Dequeue Pointer Command on the Command Ring and 
+initialize the following fields: 
+o 
+TRB Type = Set TR Dequeue Pointer Command (refer to Table 6-91). 
+o 
+Endpoint ID = ID of the target endpoint. 
+o 
+Stream ID = ID of the target Stream Context or ‘0’ if MaxPStreams = 
+‘0’. 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+New TR Dequeue Pointer = The new TR Dequeue Pointer field value for 
+the target endpoint. 
+o 
+Dequeue Cycle State (DCS) = The state of the xHCI CCS flag for the 
+TRB pointed to by the TR Dequeue Pointer field. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+
+===== [PAGE 127] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+127 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Set TR Dequeue Pointer Command is executed by the xHC it shall 
+perform the following operations: 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Set TR Dequeue Pointer 
+Command TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+If the Device Slot identified by the Slot ID has been enabled by an 
+Enable Slot Command: 
+•  
+Retrieve the Device Context of the selected Device Slot. 
+•  
+If the Slot State is set to Default, Configured, or Addressed: 
+o 
+If the Endpoint State (EP State) field equals Stopped or Error: 
+•  
+If the Stream ID field is non-zero a Stream Context is referenced so 
+perform a Stream ID boundary check as described in section 
+4.12.2.1: 
+•  
+If the Stream ID is valid: 
+•  
+Copy the value of the New TR Dequeue Pointer field to the TR 
+Dequeue Pointer field of the target Stream Context. 
+•  
+Copy the value of the Dequeue Cycle State (DCS) field to the Dequeue 
+Cycle State (DCS) field of the target Stream Context. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else // The Stream ID is invalid 
+•  
+Completion Code = TRB Error. 
+•  
+else (Stream ID = ‘0’) 
+•  
+If MaxPStreams = ‘0’: 
+•  
+Copy the value of the New TR Dequeue Pointer field to the TR Dequeue 
+Pointer field of the target Endpoint Context. 
+•  
+Copy the value of the Dequeue Cycle State (DCS) field to the Dequeue 
+Cycle State (DCS) field of the target Endpoint Context. 
+•  
+Completion Code = Success. 
+•  
+else // MaxPStreams > ‘0’ 
+•  
+Completion Code = TRB Error. 
+o 
+else // The Endpoint State (EP State) field is not Stopped or Error 
+•  
+Completion Code = Context State Error. 
+• 
+else // The Slot State is not set to Default, Configured, or Addressed 
+• 
+Completion Code = Context State Error. 
+o 
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error 
+
+===== [PAGE 128] =====
+ 
+128 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+Note: Consider the case where there are multiple TDs posted for pipe for a single 
+data transfer and an error condition on one TD means that the data transfer 
+is terminated, and that the subsequent TDs associated with the data transfer 
+are now invalid. The xHC may have read ahead on the Transfer Ring and 
+cached the subsequent TDs. To ensure that xHC frees any cached information 
+associated with a pipe in a timely manner (so that it can reuse the cache 
+space for other pipes), software shall issue a Set TR Dequeue Pointer 
+Command for the pipe when the data transfer is terminated, vs. waiting for 
+the next data transfer to be ready before issuing the command. 
+Note: If software issues a Set TR Dequeue Pointer Command that points to a TRB 
+that had previously been partially completed TD, the xHC shall treat that TRB 
+as the first TRB of the TD. that is, any prior state associated with a partially 
+completed TRB is lost. 
+Note: The xHC does not maintain knowledge of which Streams are active or non-
+active. If software issues a Set TR Dequeue Pointer Command that targets an 
+active Stream of an endpoint, undefined behavior may occur. Refer to section 
+4.12 for active vs. non-active Stream Context information) 
+4.6.11 
+Reset Device 
+The Reset Device Command is used by software to inform the xHC that the 
+USB Device associated with a Device Slot has been Reset (by either; setting 
+the Root Hub port PR flag if the device is attached to a Root Hub port, or 
+issuing a SetPortFeature(PORT_RESET) request the external hub port upstream 
+of the device). In the Slot Context of the selected device slot, the reset 
+operation sets the Slot State field to the Default state and the USB Device 
+Address field to ‘0’. The reset operation also disables all endpoints of the slot 
+except for the Default Control Endpoint by setting the Endpoint Context EP 
+State field to Disabled in all enabled Endpoint Contexts. Software should stop 
+all endpoint activity before issuing a Reset Device Command. 
+For all endpoints except the Default Control Endpoint the xHC shall: 
+• 
+Terminate any USB activity (for example, packet transfers). 
+• 
+Disable the endpoints’ Doorbell. 
+• 
+Drop any pending events not already posted to an Event Ring. 
+• 
+Free any bandwidth allocated to the periodic endpoints. 
+• 
+Free any internal resources associated with the endpoint. 
+For the Default Control Endpoint the xHC shall terminate any USB activity, 
+abort any pending events not already posted to an Event Ring, and transition 
+the endpoint to the Running state. Undefined behavior may occur if this 
+command is executed and the device associated with it is not successfully 
+reset. For example, if the USB device is not in the Default state, then a 
+subsequent Address Device Command shall fail. 
+
+===== [PAGE 129] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+129 
+The format of the Reset Device Command TRB is defined in section 6.4.3.10. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+To issue a Reset Device Command system software shall perform the following 
+operations: 
+• 
+Insert an Reset Device Command on the Command Ring and initialize the 
+following fields: 
+o 
+TRB Type = Reset Device Command (refer to Table 6-91). 
+o 
+Slot ID = The ID of the Device Slot to reset. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Reset Device Command is executed by the xHC it shall perform the 
+following operations: 
+• 
+If the Device Slot is in the Addressed or Configured state: 
+o 
+Abort any USB transactions to the Device. 
+o 
+Set the Slot State field of Slot Context to the Default state. 
+o 
+Set the Context Entries field of Slot Context to ‘1’. 
+o 
+Set the USB Device Address field of Slot Context to ‘0’. 
+o 
+For each Endpoint Context of the Device Context (except the Default 
+Control Endpoint): 
+•  
+Set the Endpoint Context EP State field to Disabled. 
+• 
+Insert a Command Completion Event on the Event Ring of Interrupter 0 
+and initialize the following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Reset Device Command 
+TRB. 
+o 
+If the Device Slot was in the Addressed or Configured state: 
+•  
+Completion Code = Success (refer to Table 6-90). 
+o 
+else // The Device Slot was not in the Addressed or Configured state 
+•  
+Completion Code = Context State Error. 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. 
+Note: Software is responsible for recovering any memory data structures (Stream 
+Context Arrays, Transfer Rings, and so forth) owned by disabled Endpoint 
+Contexts the slot when the Reset Device Command is issued. 
+
+===== [PAGE 130] =====
+ 
+130 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+The Reset Device Command forces a Device Slot to the Default state, however 
+the Reset Device Command TRB (section 6.4.3.10) does not reference an Input 
+Context, so there is no Input Context available to use to set the values of the 
+Output Device Context. After the completion of a Reset Device Command the 
+Slot and Endpoint 0 Contexts shall contain values that allow the xHC to issue 
+requests to the Default Control Endpoint of the USB device that has just been 
+reset. Refer to sections 6.2.2.4 and 6.2.3.7 for the respective Slot Context and 
+Endpoint Context field value settings. 
+4.6.12 
+Force Event (Optional Normative) 
+The Force Event Command is used by a VMM to insert an Event TRB in an 
+Event Ring of a target VM when the VMM is emulating an xHC device to a VM. 
+When a Force Event Command is processed by the xHC it shall insert an Event 
+TRB on the target VFs’ Event Ring and copy the data pointed to by the Force 
+Event Command, except for the Cycle bit, to the target Event TRB. The xHC 
+shall set the Cycle bit to be consistent with the target VFs’ Event Ring. 
+A Command Completion Event with a TRB Error will be generated if the VF ID 
+of the Force Event Command is not valid. A VF Event Ring Full Error shall be 
+generated if the Target VF’s Event Ring is full. 
+Refer to section 8 for detailed information on the use of the Force Event 
+Command in a virtualized environment. And refer to section 3.3.11 for a high-
+level description of the Force Event Command and its usage. 
+The format of the Force Event Command TRB is defined in section 6.4.3.11. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+To issue a Force Event Command system software shall perform the following 
+operations: 
+• 
+Allocate and initialize the VF Event TRB that will be sent to the target VF’s 
+Event Ring. The details of the VF Event TRB initialization will depend on the 
+type of Event that is being forced. 
+o 
+Insert a Force Event Command on the Command Ring of the PF0 and 
+initialize the following fields: 
+o 
+TRB Type = Force Event Command (refer to Table 6-91). 
+o 
+VF ID = ID of the target VF. 
+o 
+VF Interrupter Target = The ID of the target Interrupter assigned to the 
+VF. Refer to  Table 6-72 for more information on this value. 
+o 
+Event TRB Pointer = The address of the VF Event TRB. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+
+===== [PAGE 131] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+131 
+When a Force Event Command is executed by the xHC it shall perform the 
+following operations: 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+• 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+• 
+Command TRB Pointer = The address of the Force Event Command TRB. 
+• 
+If the VF ID is valid: 
+o 
+If the VF Interrupter Target is in range for the VF: 
+• 
+If the target VF’s Event Ring is not full: 
+o 
+Insert the VF’s Event TRB referenced by the Force Event Command 
+Event TRB Pointer into target VF’s Event Ring specified by the VF ID 
+and the VF Interrupter Target fields: 
+•  
+Copy all fields of the VF Event TRB except the Cycle bit field to the 
+target VF’s Event Ring. 
+•  
+Cycle bit = Target VF’s Event Ring’s PCS flag. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else // The target VF’s Event Ring is full 
+•  
+Completion Code = VF Event Ring Full Error. 
+o 
+else // The VF Interrupter Target is not in range for the VF 
+•  
+Completion Code = TRB Error. 
+o 
+else // The VF ID is not valid 
+•  
+Completion Code = TRB Error. 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. 
+Note: When the command completes, the VMM may release the buffer containing 
+the Event TRB pointed to by the Force Event Command. 
+Note: The “forced” event shall be dropped if the target Event Ring is full. Software 
+should reschedule a Force Event Command if an VF Event Ring Full Error is 
+returned. 
+4.6.13 
+Negotiate Bandwidth (Optional Normative) 
+The Negotiate Bandwidth Command is used by system software to initiate 
+Bandwidth Request Events for periodic endpoints. This command should be 
+used to recover unused USB bandwidth from the system. 
+If the BW Negotiation Capability (BNC) bit in the HCCPARAMS1 register is ‘1’, 
+the xHC shall support this command. 
+This command shall complete with a Success Completion Code if the command 
+is supported, or a TRB Error Completion Code if the command is not supported. 
+
+===== [PAGE 132] =====
+ 
+132 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+The xHC shall generate Bandwidth Request Events upon the reception of the 
+command to all target periodic endpoints. The command will complete when all 
+Bandwidth Request Events have been generated. 
+The format of the Negotiate Bandwidth Command TRB is defined in section 
+6.4.3.12. 
+The format of the Bandwidth Request Event TRB is defined in section 6.4.2.4. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+To issue a Negotiate Bandwidth Command system software shall perform the 
+following operations: 
+• 
+Insert a Negotiate Bandwidth Command on the Command Ring and 
+initialize the following fields: 
+o 
+TRB Type = Negotiate Bandwidth Command (refer to Table 6-91). 
+o 
+Slot ID = The ID of the slot that requires the bandwidth negotiation. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Negotiate Bandwidth Command is executed by the xHC it shall perform 
+the following operations: 
+• 
+If the command is supported: 
+o 
+If the Device Slot identified by the Slot ID has been enabled by an 
+Enable Slot Command: 
+o 
+If the Slot ID identifies a slot in the Addressed or Configured state 
+then: 
+•  
+If there are devices that define candidate periodic endpoints for 
+receiving Bandwidth Request Events: 
+•  
+For each device, identify the target Event Ring (specified by the Interrupt 
+Target field of the device’s Slot Context). 
+•  
+If there is space on the device’s target Event Ring: 
+•  
+Insert a Bandwidth Request Event and initialize the following fields: 
+•  
+TRB Type = Bandwidth Request Event (refer to Table 6-91). 
+•  
+Slot ID = ID of the device slot. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+Clear all other fields of the event TRB to ‘0’. 
+•  
+Cycle bit = Device’s target Event Ring’s PCS flag. 
+•  
+else // No space on the device’s target Event Ring 
+•  
+Skip the device. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+
+===== [PAGE 133] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+133 
+o 
+else // The Slot ID identifies slot not in the Addressed or Configured 
+state 
+•  
+Completion Code =Context State Error. 
+o 
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error 
+o 
+else // The Negotiate Bandwidth Command is not supported 
+•  
+Completion Code =TRB Error. 
+• 
+Insert a Command Completion Event on the Event Ring of Interrupter 0 
+and initialize the following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Negotiate Bandwidth 
+Command TRB. 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. 
+Note: System software may never issue a Negotiate Bandwidth Command, however 
+if the BNC flag is ‘1’ an unsolicited Bandwidth Request Event may be 
+generated by hardware, for example, if the system software is running in a 
+Virtual Machine and communicating with an xHCI Virtual Function. This 
+condition occurs when system software running in another Virtual Machine 
+issues a Negotiate Bandwidth Command through its xHCI Virtual Function. 
+System software should immediately honor an unsolicited Bandwidth Request 
+Event and free unused USB bandwidth by selecting lower bandwidth alternate 
+configurations or interfaces on the devices that it owns. 
+Note: If the target Event Ring for a device is full, the Bandwidth Request Event shall 
+be dropped by the xHC. 
+Note: The xHCI may generate a Bandwidth Request Event for the same slot that a 
+Negotiate Bandwidth Command was issued to. 
+4.6.14 
+Set Latency Tolerance Value (LTV) (Optional Normative) 
+Refer to section 4.13.1 for an overview of the xHCI’s USB3 Latency Tolerance 
+Messaging (LTM) support. This section describes the Set LTV Command which 
+is one component of the Latency Tolerance Reporting (LTR) mechanism. 
+The Set LTV Command provides a simple means for host software to provide a 
+Best Effort Latency Tolerance (BELT) value to the xHC. This command is 
+optional normative, however it shall be supported if the xHC also supports a 
+corresponding host interconnect LTR mechanism. 
+Note: The host's interconnect LTR definition is owned by the respective bus 
+specification and is outside the scope of this document. (for example, PCI 
+Express, AHBA, etc.) 
+
+===== [PAGE 134] =====
+ 
+134 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+The value of the BELT field in the Set LTV Command TRB shall be treated in 
+exactly the same way as BELT values received from USB3 devices by the xHC. 
+Refer to section 4.13.1. 
+Note: The manner in which these values are stored is implementation specific and 
+as such falls outside the scope of this specification. 
+If the Latency Tolerance Messaging Capability (LTC) bit in the HCCPARAMS1 
+register is ‘0’, the xHC shall not support this command. 
+Note: If LTC = 0, then this xHC implementation does not translate LTM messages 
+from a device into system LTM messages. However, if enabled in the DNCTRL 
+register (N2 = ‘1’), then LTM Device Notification TPs are received by the xHC 
+shall generate Device Notification Events. Refer to section 4.13.1. 
+This command will complete with a Success Completion Code if the command is 
+supported, or a TRB Error Completion Code if the command is not supported. 
+The format of the Set Latency Tolerance Value Command TRB is defined in 
+section 6.4.3.13. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+To issue a Set Latency Tolerance Value Command system software shall 
+perform the following operations: 
+• 
+Insert a Set Latency Tolerance Value Command on the Command Ring and 
+initialize the following fields: 
+o 
+TRB Type = Set Latency Tolerance Value Command (refer to Table 
+6-91). 
+o 
+BELT = The Best Effort Latency Tolerance value provided by software. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Set Latency Tolerance Value Command is executed by the xHC it shall 
+perform the following operations: 
+• 
+Record the value of the BELT field as the host defined LTV. 
+• 
+If the value of the BELT field is less than the “current” LTV maintained by 
+the xHC: 
+o 
+Set the value of the BELT field as the “current” xHC LTV. 
+o 
+Send the host-specific LTM to the host, reporting the new LTV to the 
+system. 
+• 
+Insert a Command Completion Event on the Event Ring of Interrupter 0 
+and initialize the following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+
+===== [PAGE 135] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+135 
+o 
+Command TRB Pointer = The address of the Set Latency Tolerance 
+Value Command TRB. 
+o 
+Completion Code = Success (refer to Table 6-90). 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. 
+4.6.15 
+Get Port Bandwidth (Optional Normative) 
+The Get Port Bandwidth Command is issued by software to retrieve the 
+percentage of Total Available Bandwidth on each Root Hub Port of the xHC or 
+on the downstream facing ports of an external USB hub. This information can 
+be used by system software to recommend topology changes to the user if 
+they were unable to enumerate a device due to a Bandwidth Error (Root Hub) 
+or Secondary Bandwidth Error (external hub). 
+This command shall complete with a Success Completion Code if the command 
+is supported, or a TRB Error Completion Code if the command is not supported. 
+An xHC may support multiple USB Bus Instances (BI), where each BI 
+represents a “unit” bandwidth at the speed that the BI supports. Also note that 
+multiple Root Hub ports may be assigned to a single BI. 
+For instance, an xHCI implementation that supports 8 ports may provide 1 SS 
+BI, 2 HS BIs, and 4 LS/FS BIs. So in this example there are 7 USB BIs, 1 SS 
+(5Gb/s), 2 HS (480 Mb/s) and 4 LS/FS (12Mb/s). Any SS device attached to a 
+root hub port shares the SS BI bandwidth. If the 2 HS BIs are mapped to ports 
+0 to 3 and 4 to 7, and the 4 LS/FS BIs are mapped to ports 0 and 1, 2 and 3, 4 
+and 5, and 6 and 7, respectively, then an LS/FS device attached to port 5 
+shares the BW available on port 4 provided by one the LS/FS BIs, but not with 
+any other ports. A more sophisticated xHC implementation may have the ability 
+to dynamically map ports to BIs as function a device’s bandwidth requirements. 
+A USB2 hub may support a single or multiple Transaction Translators (TT), 
+where a single TT is capable of providing the equivalent of a LS/FS BI’s 
+bandwidth. If a USB2 Hub supports a single TT, then all of its downstream 
+facing ports attached to LS or FS devices shall share the bandwidth of the 
+single TT (that is, a LS/FS BI). If a USB2 Hub supports a multi-TT capability, 
+then a separate TT exists for each of its downstream facing ports and each port 
+is capable of providing the bandwidth of a LS/FS BI. 
+When software issues a Get Port Bandwidth Command it is trying to 
+accommodate the bandwidth requirements of a particular device. By providing 
+a Device Speed parameter in the Get Port Bandwidth Command, the xHC can 
+supply software with Total Available Bandwidth on each port of the Root Hub or 
+USB2 hub, at a particular speed, without exposing its BI or TT to Port mapping 
+scheme. 
+Software, knowing the percentage of Total Available Bandwidth on a hub port, 
+the speed that the device in question is operating at, and the device’s 
+bandwidth requirement, may determine if a particular port will meet the 
+device’s bandwidth needs. 
+
+===== [PAGE 136] =====
+ 
+136 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+The xHC uses the Device Speed parameter to identify which Bus Instance(s) to 
+use when it calculates the Total Available Bandwidth on that port. 
+The Get Port Bandwidth Command passes a pointer to a Port Bandwidth 
+Context data structure to the xHC. The xHC updates this context with the 
+percentage of Total Available Bandwidth on each port. If a hub is attached to a 
+Root Hub port then the reported bandwidth is available on any unused port of 
+the hub or any port of the hub that is operating at the Device Speed. 
+For the Root Hub the Port Bandwidth Context shall be at least NumPorts+1 
+bytes in size or for an external hub the Port Bandwidth Context shall be at least 
+bNbrPorts25+1 bytes in size, rounded up to the nearest Dword boundary. 
+The xHC overwrites the Port Bandwidth Context when it executes the Get Port 
+Bandwidth Command, so software does not need to initialize the context data 
+structure before passing it to the xHC. 
+• 
+A Root Hub port assigned to the Debug Capability shall report ‘0’ bandwidth 
+available. 
+• 
+If the Device Speed parameter is LS, FS, or HS, then USB3 (SS) Root Hub 
+ports shall report ‘0’ bandwidth available. 
+• 
+If the Device Speed parameter is SS, then USB2 Root Hub ports shall report 
+‘0’ bandwidth available. 
+Note: Software shall consider any port that reports ‘0’ bandwidth available as being 
+unusable. A port that, as far as software is concerned, does not have a device 
+attached may report ‘0’ bandwidth available. For example, a VMM shall report 
+‘0’ bandwidth for a port if the device attached to it is assigned to another VF. 
+Consider a physical connector that is “USB3 compatible” and has a SS device 
+attached it. The connector will be wired to a USB2 and a USB3 Root Hub Port. 
+When the USB2 Root Hub Port is queried for its HS bandwidth availability, it will 
+not know that a SS device is attached to physical connector and report a non-
+zero HS bandwidth availability, when in reality the USB2 Root Hub port is not 
+available because it is associated with a physical connector that is attached to 
+SS device. The same problem will occur with a USB3 Root Hub port if a USB2 
+device or hub is attached to the physical connector. Note that the problem does 
+not occur if a USB3 hub is attached because both Root Hub Ports see a hub 
+attached. Software, knowing the Root Hub Port to physical USB connector 
+mapping (refer to section 4.19.7) and whether the attached device is a USB2 
+or USB3 hub, shall be responsible for correcting the reported Port Bandwidth 
+Values. 
+The format of the Get Port Bandwidth Command TRB is defined in section 
+6.4.3.14. 
+The Get Port Bandwidth Command utilizes the Port Bandwidth Context data 
+structure defined in section 6.2.6. 
+ 
+25Refer to section 11.23.2.1 in the USB2 spec for the definition Hub Descriptor bNbrPorts field. 
+ 
+
+===== [PAGE 137] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+137 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+To issue a Get Port Bandwidth Command, system software shall perform the 
+following operations: 
+• 
+Allocate and initialize a Port Bandwidth Context data structure. 
+• 
+Insert a Get Port Bandwidth Command TRB on the Command Ring 
+o 
+TRB Type = Get Port Bandwidth Command (refer to Table 6-91). 
+o 
+Dev Speed = The bus speed of the target device. Refer to the Dev 
+Speed field in Table 6-76 for the encoding. 
+o 
+Hub Slot ID = ‘0’ if referencing Root Hub ports (that is, the Primary 
+Bandwidth Domain) or the value of the respective hub’s Slot ID if 
+referencing the ports of a USB2 hub (that is, a Secondary Bandwidth 
+Domain). Refer to section 4.16.2 for more information on Bandwidth 
+Domains. 
+o 
+Port Bandwidth Context Pointer = The base address of the Port 
+Bandwidth Context data structure. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Get Port Bandwidth Command is executed by the xHC it shall perform 
+the following operations: 
+• 
+Insert a Command Completion Event TRB on the Event Ring. 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Get Port Bandwidth 
+Command TRB. 
+o 
+Slot ID = ‘0’. 
+o 
+If the Dev Speed field is valid (that is, not equal to Undefined or 
+Reserved): 
+•  
+If the Hub Slot ID field = ‘0’: 
+•  
+Compute Percentage of Total Available Bandwidth for each Root 
+Hub port based on its Speed. Use the value of the Dev Speed 
+field for ports that do not have devices attached. 
+•  
+else 
+•  
+Compute the percentage of Total Available Bandwidth for the 
+ports of the hub specified by the Hub Slot ID based on their 
+Speed. Use the value of the Dev Speed field for ports that do not 
+have devices attached. 
+o 
+Copy the results to the Port Bandwidth Context. 
+o 
+Completion Code = Success (refer to Table 6-90). 
+• 
+else // The Dev Speed field is not valid 
+
+===== [PAGE 138] =====
+ 
+138 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+o 
+Completion Code = TRB Error. 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+Note: If a non-zero Hub Slot ID references a Device Slot whose Slot Context Hub 
+field = ‘0’ or Speed field is not equal to High-speed, may result in undefined 
+behavior by the xHC. 
+4.6.16 
+Force Header 
+The Force Header Command is issued by software to send a Link Management 
+(LMP) or Transaction Packet (TP) to a USB device, through a selected Root Hub 
+Port. For instance, it may be used to send a PING TP or a Vendor Device Test 
+LMP. 
+Note: Inappropriate or incorrect use of this command may cause the xHC link state 
+machines to get out of sync with those on an attached device. Software shall 
+comprehend the possible side effects of the specific headers that are forced 
+on the USB. If a forced header results in undefined behavior by the device or 
+the xHC (for example, a DPH with no DP), software may have to reset the 
+device, a Root Hub port, the xHC, or all of them to restore normal operating 
+conditions. 
+ 
+The xHC is not required to comprehend the content of the header being 
+forced. Depending upon the type of header forced, it is possible for various 
+parameters in the header (such a Data Packet sequence numbers) to be out 
+of sync with the host controller and/or device. In addition, some TPs may 
+result in Device responses which will not be comprehended by the xHC. It 
+may be necessary to reset the xHC to recover from these conditions. 
+The format of the Force Header Command TRB is defined in section 6.4.3.15. 
+The format of the Command Completion Event TRB is defined in section 
+6.4.2.2. 
+To issue a Force Header Command, system software shall perform the 
+following operations: 
+• 
+Insert a Force Header Command TRB on the Command Ring 
+o 
+TRB Type = Force Header Command (refer to Table 6-91). 
+o 
+Root Hub Port Number = The number of the Root Hub Port that defines 
+the target of the Header packet. 
+o 
+Packet Type = The field identifies the SS packet type. Refer to section 
+8.3.1.2 in the USB3 specification for valid values. 
+o 
+Header Info = The header Type specific data to send to the target 
+device. Refer to section 8 in the USB3 specification for the encoding 
+information. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+
+===== [PAGE 139] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+139 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. 
+When a Force Header Command is executed by the xHC it shall perform the 
+following operations: 
+• 
+Insert a Command Completion Event on the Event Ring. 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Force Header Command 
+TRB. 
+o 
+Slot ID = 0. 
+o 
+If the value Root Hub Port Number field is in range: 
+•  
+If the Force Header packet was transmitted successfully: 
+•  
+Completion Code = Success (refer to Table 6-90). 
+o 
+else // The Force Header packet was not transmitted successfully 
+•  
+Completion Code = Undefined Error. 
+o 
+else // The value Root Hub Port Number field is not in range 
+•  
+Completion Code = TRB Error. 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. 
+4.6.17 
+Get Extended Property (Optional Normative) 
+The Get Extended Property Command is used by system software to discover 
+specific Extended Capabilities supported by the xHC, and to enumerate and 
+read specific attributes of those Extended Capabilities. 
+If the Get/Set Extended Property Capability (GSC) bit in the HCCPARAMS2 
+register is ‘1’, the xHC shall support this command. 
+Depending upon the actual Extended Capability and Subtype in the Get 
+Extended Property command, the command may contain a pointer to an 
+Extended Property Context, in which case the xHC shall update the Extended 
+Property Context with the property referenced by the Get Extended Property 
+command. Since the context is overwritten by the xHC, it is not necessary for 
+SW to initialize the context before passing it to the xHC. 
+The format of the Get Extended Property Command is defined in section 7.9.1 
+• 
+The Get Extended Property Command references a specific Extended Capability using 
+the Extended Capability Identifier. 
+o 
+Each bit in the Extended Capability Identifier represents one specific Extended 
+Capability as defined in Table 4-3. 
+o 
+The scope of this command is limited to the Extended Capabilities listed in 
+Table 4-3. 
+
+===== [PAGE 140] =====
+ 
+140 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+The Get Extended Property Command further contains a Subtype field that defines 
+the specific property within the scope of the Extended Capability. 
+• 
+The Get Extended Property Command may identify the specific Endpoint ID and 
+Device Slot ID targeted by the command, depending upon the Extended Capability 
+and Subtype. 
+• 
+The specific subtypes and xHC actions are defined in the appropriate section in 
+Chapter 7 (Extended Capabilities). 
+This command shall complete with a Success Completion Code if the command 
+is supported (that is, GSC bit in the HCCPARAMS2 register is ‘1’), or a TRB 
+Error Completion Code if the command is not supported  (that is, GSC bit in the 
+HCCPARAMS2 register is ‘0’). 
+4.6.17.1 
+SW Execution of Get Extended Property Command 
+To issue a Get Extended Property Command, software shall perform the 
+following operations: 
+• 
+Allocate an Extended Property Context Data Structure if needed. 
+• 
+Insert a Get Extended Property Command TRB into the command ring. 
+o 
+TRB Type = Get Extended Property Command 
+o 
+Extended Capability Identifier = either set to all zeroes (See section 4.6.17.2 
+for details) or one bit within the identifier field set to indicate the specific 
+capability the command is associated with.  
+o 
+Slot ID = Slot ID associated with the command, or all zeroes if the command 
+does not reference a specific Device 
+o 
+EP ID = EP ID associated with the command, or all zeroes if the command 
+does not reference a specific EP. 
+o 
+Subtype = Specific command subtype to be executed. The subtype field is 
+dependent upon the Extended Capability referenced. 
+• 
+Write the host controller doorbell with the DB Target = Host Controller Command.  
+4.6.17.2 
+xHC Execution of Get Extended Property Command 
+When a Get Extended Property Command is executed by the xHC, it shall 
+perform the following operations: 
+• 
+If the Extended Capability and SubType referenced by the command 
+require the Extended Property Context to be updated (as defined in the 
+appropriate Extended Capability Description in Chapter 7), the xHC shall 
+write the required information to the Extended Property Context location 
+specified by the Extended Property Context pointers in the Get Extended 
+Property command. 
+
+===== [PAGE 141] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+141 
+• 
+Subsequently, the xHC shall insert a Command Completion Event TRB in 
+the Event Ring 
+o 
+TRB Type = Command Completion Event (refer to Table 139). 
+o 
+Command TRB pointer = The address of the Get Extended Property 
+Command TRB. 
+o 
+Slot ID = Slot ID referenced in the Get Extended Property Command   
+o 
+Extended Capability Identifier = Either of the following: 
+•  
+If the Get Extended Property Command had the Extended Capability 
+Identifier set to zero, the xHC shall set the bit associated with each 
+supported extended capability, as defined by Table 4-3. 
+•  
+If the Get Extended Property Command referenced a specific 
+extended capability (by setting one bit in the Extended Capability 
+Identifier field), the xHC shall set that bit in the completion TRB. 
+o 
+Completion Code= Success 
+4.6.17.3 
+Enumeration of Supported Extended Capabilities 
+In order to discover if the xHC supports specific Extended Capabilities that are 
+associated with the Get Extended Property Command, System Software shall 
+issue a Get Extended Property command with the Extended Capability ID field 
+and the SubType field set to all zeroes. 
+• 
+In response to receiving a Get Extended Property Command with the 
+Extended Capabilities ID field set to zero, the xHC shall return a Command 
+Completion TRB with a bit set for each supported extended capability in 
+bits [15:0] of the Command Completion Parameter field of the Command 
+Completion Event TRB (as defined in Table 4-3 below). Note that multiple 
+bits may be set if multiple capabilities are supported. 
+The Extended Capability Identifier field is defined as shown below: 
+Table 4-3: Extended Capability Identifier   
+Bits 
+Description 
+0 
+Audio Sideband Extended Capability 
+11:1 
+RsvdZ. 
+15:12 
+Vendor Defined Extended Capability 
+Each bit, when set, refers to a separate vendor defined extended capability. System software 
+interprets and uses these bits in the context of the specific host controller vendor. 
+4.6.18 
+Set Extended Property (Optional Normative) 
+The Set Extended Property Command is used by System Software to control 
+attributes of specific Extended Capabilities supported by the xHC. 
+If the Get/Set Extended Property Capability (GSC) bit in the HCCPARAMS2 
+register is ‘1’, the xHC shall support this command. 
+The format of the Set Extended Property is defined in section 7.9.2. 
+
+===== [PAGE 142] =====
+ 
+142 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+The Set Extended Property Command references a specific Extended 
+Capability using the Extended Capability Identifier. 
+o 
+Each bit in the Extended Capability Identifier represents one specific 
+Extended Capability as defined in Table 4-3. 
+o 
+Software shall not set more than one bit in the Extended Capability 
+Identifier field. 
+• 
+The list of Extended Capabilities allowed to use this command are listed in 
+Table 4-3. 
+• 
+The Set Extended Property Command further contains a Subtype field that 
+defines the specific property within the scope of the Extended Capability. 
+• 
+The Set Extended Property Command may identify the specific Endpoint ID 
+and Device Slot ID targeted by the command, depending upon the 
+Extended Capability and Subtype. 
+• 
+The specific subtypes and xHC actions are defined in the appropriate 
+section in Chapter 7 (Extended Capabilities). 
+• 
+The Set Extended Property Command specifies a Capability Parameter that 
+is used to configure certain aspects of the Extended Capability associated 
+with the Extended Capability specified in the Extended Capability ID. 
+This command shall complete with a Success Completion Code if the command 
+is supported (that is, GSC bit in the HCCPARAMS2 register is ‘1’), or a TRB 
+Error Completion Code if the command is not supported (that is, GSC bit in the 
+HCCPARAMS2 register is ‘0’). 
