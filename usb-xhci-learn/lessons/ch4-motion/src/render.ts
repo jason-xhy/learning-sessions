@@ -23,14 +23,28 @@ import ch4601 from './scenes/ch4601?scene';
 import ch4602 from './scenes/ch4602?scene';
 import ch4603 from './scenes/ch4603?scene';
 import ch4604 from './scenes/ch4604?scene';
+// R10 批 B：ch4605/ch4606/ch4611（Address/Configure/Reset Device 三巨头）顺插 ch4604 后
+import ch4605 from './scenes/ch4605?scene';
+import ch4606 from './scenes/ch4606?scene';
+import ch4611 from './scenes/ch4611?scene';
+// R10 批 C：端点批（ch4607..ch4610）按字典序插 ch4606 与 ch4611 之间
+import ch4607 from './scenes/ch4607?scene';
+import ch4608 from './scenes/ch4608?scene';
+import ch4609 from './scenes/ch4609?scene';
+import ch4610 from './scenes/ch4610?scene';
 // R3 P4：补丁分帧场景接入探针链（TrackA；纯追加，供 render.html 与 P6 全门 probe）
-// R10：清单扩为十四场景——主线在前（ch41..ch45=0..4、ch4601..ch4604=5..8）、
-// 补丁在后（ch41p..ch45p=9..13），与 src/player.ts orderedSceneKeys 比较器语义一致。
+// R10 批 C：清单扩为廿四场景——主线在前（ch41..ch45=0..4、ch4601..ch4604=5..8、
+// ch4605/ch4606=9..10、ch4607..ch4610=11..14、ch4611=15）、补丁在后
+// （ch41p..ch45p=16..20、ch4606p=21、ch4609p/ch4610p=22..23），
+// 与 src/player.ts orderedSceneKeys 比较器语义一致。
 import ch41p from './scenes/ch41p?scene';
 import ch42p from './scenes/ch42p?scene';
 import ch43p from './scenes/ch43p?scene';
 import ch44p from './scenes/ch44p?scene';
 import ch45p from './scenes/ch45p?scene';
+import ch4606p from './scenes/ch4606p?scene';
+import ch4609p from './scenes/ch4609p?scene';
+import ch4610p from './scenes/ch4610p?scene';
 
 /* ---------- 全帧重叠探针 ---------- */
 function worldPos(n: any): {x: number; y: number} {
@@ -170,7 +184,13 @@ function probeFrame(root: any, frame: number): any[] {
       }
       if (iconSized && it.w >= 10 && it.h >= 10 && cover >= 0.5) {
         out.push({frame, kind: 'T-S', a: preview(T.n),
-          b: I.n instanceof Line ? 'Line' : 'Icon', ov: `${(cover * 100) | 0}%`});
+          b: I.n instanceof Line ? 'Line' : 'Icon', ov: `${(cover * 100) | 0}%`,
+          // 诊断扩展：肇事实体与文本的世界 bbox（底板级容器已在上方过滤，此处均为图标级）
+          diag: {
+            text: {x0: T.bb.x0, y0: T.bb.y0, x1: T.bb.x1, y1: T.bb.y1},
+            shape: {ctor: I.n.constructor.name,
+              x0: I.bb.x0, y0: I.bb.y0, x1: I.bb.x1, y1: I.bb.y1},
+          }});
       } else if (lineCross) {
         out.push({frame, kind: 'T-S', a: preview(T.n), b: 'LineX', ov: `${it.w | 0}px`});
       }
@@ -189,7 +209,7 @@ function probeFrame(root: any, frame: number): any[] {
   });
 }
 
-const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch41p, ch42p, ch43p, ch44p, ch45p];
+const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch4605, ch4606, ch4607, ch4608, ch4609, ch4610, ch4611, ch41p, ch42p, ch43p, ch44p, ch45p, ch4606p, ch4609p, ch4610p];
 
 const q = new URLSearchParams(location.search);
 const sceneIdx = Math.max(0, Math.min(scenes.length - 1, Number(q.get('scene') ?? 0)));

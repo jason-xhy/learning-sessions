@@ -132,7 +132,7 @@
 <div class="wrap">
   <header>
     <h1>xHCI 第 4 章视频课件<span class="tag">R4 四段式 · 2026-11-06</span></h1>
-    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + §4.6 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、No Op / Enable Slot / Disable Slot、Address Device / Configure Endpoint / Reset Device 三巨头与首支补丁片 ch4606p）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读）。</p>
+    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + §4.6 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、No Op / Enable Slot / Disable Slot、Address Device / Configure Endpoint / Evaluate Context / Reset Endpoint / Stop Endpoint / Set TR Dequeue Pointer / Reset Device 十命令与三支补丁片）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读）。</p>
     <div class="meta">
       1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 持续违例</b>（三主片+三补丁片，全帧非抽样）·
       判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
@@ -519,7 +519,7 @@ Date:   Fri Jan 15 18:19:06 2021 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，§4.1 p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=12">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=16">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1091,7 +1091,7 @@ Date:   Fri Oct 9 18:16:14 2026 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">单行改动（<code>drivers/usb/host/xhci.c</code>，<code>xhci_reset</code>）：未 halted 中止分支 <code>return 0</code> → <code>return -EBUSY</code>。补丁前：中止复位被当成成功，调用方在错误状态下继续走初始化。补丁后：-EBUSY 把「主机忙、未停机」如实上抛，调用方走错误处理——<code>xhci_reset</code> 的所有失败出口（未 halted / handshake 超时）语义一致。与代码摘录（drafts/code-excerpts.json init 组 L229，同函数内 <code>xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us)</code>）对读：那条握手失败会返回超时错误，本补丁让“没进入复位”同样返回错误；凡依赖返回值判断复位成败的调用方（探测、休眠恢复、错误恢复路径）从此拿到一致语义，验收时可直接对 -EBUSY 分支验证未停机场景。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=13">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=17">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1560,7 +1560,7 @@ Date:   Thu Jul 17 10:31:07 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（§4.3.3 p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=14">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=18">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1774,7 +1774,7 @@ Date:   Thu Mar 5 00:36:37 2026 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">把两条错误路径的 <code>kfree(command)</code> 改为 <code>xhci_free_command(xhci, command)</code>（+2/-2）：后者同时释放命令结构与关联的 completion 结构；命令结构零初始化使 <code>command-&gt;in_ctx</code> 为 NULL，不会被误释放。补丁前：kfree 只放一半，completion 泄漏；补丁后：错误路径与成功路径（L4183）释放形态统一，任何退出路径都不留孤儿。与贴码对读：det:1 分配行（true=带 completion）、det:5 热行即被改的错误路径之一——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；§4.4 拔除剧本的「异常退出」分支从此与正常分支同构。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=15">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=19">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -2209,14 +2209,14 @@ Date:   Tue Aug 19 15:58:43 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">把清理前移到命令完成事件的中断上下文：<code>xhci_handle_cmd_disable_slot</code> 增加 cmd_comp_code 形参（TRB_DISABLE_SLOT case 分派行同步传入），COMP_SUCCESS 时即刻清 <code>xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id]</code> 与 <code>xhci-&gt;devs[slot_id]</code>——DCBAA 指针清零即 Disabled 态的规范形态，此后 B 的 Enable Slot 完成时 devs[1] 已空，枚举照常。配套：<code>xhci_free_virt_device</code> 改为显式传 virt_dev 指针、只在数组仍指向本设备时清指针（防误清新主）；新增 <code>xhci_disable_and_free_slot()</code> 收拢全部「禁槽 + 释放」调用对。与贴码对读：§4.4 段 det:6 热行即本补丁在中断上下文清 DCBAA 指针的新增块（基线形态 <code>xhci-&gt;dcbaa.ctx_array[slot_id] = 0</code>）、§4.5 段 slot:8 冲突检测热行（B 被挡的判定点）与 slot:9 DCBAA 装载热行（装载/清零互为正反操作）——本补丁已在基线 d9008e061539 内，贴码即补丁后形态。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=16">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=20">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
   </section>
 
   <section id="s46">
-    <h2><span class="no">§4.6</span>Command Interface 命令接口 <span class="cmt">18 小节逐支短片线 · 已上线机制片+六命令+Reset Device+首支补丁片</span></h2>
+    <h2><span class="no">§4.6</span>Command Interface 命令接口 <span class="cmt">18 小节逐支短片线 · 已上线机制片+十命令+三支补丁片（批 A-C）</span></h2>
     <style>
   .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
   .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
@@ -2251,7 +2251,7 @@ section 4.6.1.2. </blockquote>
         <a class="btn ghost" href="interactive/index.html#m6">模块六 · 命令受理台 →</a>
         <span class="note">单文件自包含 · Zone A 受理剧本（5 代表命令拼 TRB→入环→回执）· Zone B 命令×槽状态合法性矩阵（错配引原文拦截）</span>
       </div>
-      <p class="int-note"><b>补丁片（选做）：</b>首支已落地（ch4606p · commit d6759133e981「Correct last context entry calculation for Configure Endpoint」，R10-SPEC §6 三判据实证通过：真实主线修复 / 三幕 ≤700f 可讲清 / 与 §4.6.6 Context Entries 机制直接相关）；余支批 C 按三判据续选，无可准入者不硬凑。</p>
+      <p class="int-note"><b>补丁片（选做）：</b>三支已落地——ch4606p（d6759133e981 Configure Endpoint Context Entries 重算）· ch4609p（1174d44906d5 Stop EP 完成竞态重发）· ch4610p（0d9f78a92ef5 背靠背 Set TR Deq Ptr 越段挂死，修复函数已退役故无对读段）；准入判据=R10-SPEC §6 三判据（真实主线修复 / 三幕 ≤700f 可讲清 / 与该命令规范机制直接相关），无可准入者不硬凑。</p>
     </div>
     <div class="card b1">
       <div class="bhead"><span class="badge">②</span>18 小节导航（规范序）</div>
@@ -3417,7 +3417,7 @@ Date:   Tue Jun 24 17:14:42 2014 +0300
       <p class="ph">要解决的问题（症状 + 机制）</p>
       <p class="pbody">症状：某些「全部端点被 drop」的配置切换（如切到 Alternate Interface 0）后，Configure Endpoint 命令被 xHC 以 Parameter Error 拒绝，或驱动继续沿用旧值。机制（message 原文）：<code>drop_endpoint()</code> 的增量计算「似乎假定 add_flags 总含新配置的全部端点」——实际 add_flags 只含新配置里<b>新增</b>的端点；且 EP0_FLAG 在设备生命周期里并非恒置。两个假设任一不成立，全 drop 时 Context Entries 就被算成 0（非法值——p111 Parameter Error 判据「Add 的 DCI &gt; Context Entries」直接命中）或 -1（按 LAST_CTX 宏解读为 31，导致继续使用旧的错误值）。</p>
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">把两处增量维护整块删除（add/drop 各一块），改为 <code>xhci_check_bandwidth()</code> 发命令前的终点一步重算：i 自 31 下探，取第一个「ring 存活且未被 Drop」或「Add 旗标置位」的端点写 LAST_CTX(i)；全不命中则 i==1 兜底——LAST_CTX(1) 即「只剩 EP0」。补丁前：每步增量的两处假设任一不成立就写坏值；补丁后：终点一次算清，且 i==1 分支正是规范 p110「全 Disabled → Context Entries=\'1\'」的内核直译。与贴码对读：下方补丁对读段琥珀高亮行（Fix up 注释行）即修复循环所在——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；分帧走读见 ch4606p（scene=17）。</p>
+      <p class="pbody">把两处增量维护整块删除（add/drop 各一块），改为 <code>xhci_check_bandwidth()</code> 发命令前的终点一步重算：i 自 31 下探，取第一个「ring 存活且未被 Drop」或「Add 旗标置位」的端点写 LAST_CTX(i)；全不命中则 i==1 兜底——LAST_CTX(1) 即「只剩 EP0」。补丁前：每步增量的两处假设任一不成立就写坏值；补丁后：终点一次算清，且 i==1 分支正是规范 p110「全 Disabled → Context Entries=\'1\'」的内核直译。与贴码对读：下方补丁对读段琥珀高亮行（Fix up 注释行）即修复循环所在——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；分帧走读见 ch4606p（scene=21）。</p>
       <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 琥珀高亮行 = 修复循环所在</span></h3>
             <div class="exhead2">drivers/usb/host/xhci.c:3078-3174 · xhci_check_bandwidth·补丁对读段 · d9008e061539</div>
       <pre class="codeseg" data-src="xhci.c:3078:3174"><div class="cl" data-line="3078"><span class="ln">3078</span><span class="cd">int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)</span></div>
@@ -3518,12 +3518,1388 @@ Date:   Tue Jun 24 17:14:42 2014 +0300
 <div class="cl" data-line="3173"><span class="ln">3173</span><span class="cd">	return ret;</span></div>
 <div class="cl" data-line="3174"><span class="ln">3174</span><span class="cd">}</span></div></pre>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=17">补丁分帧动画 · 三幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=21">补丁分帧动画 · 三幕走读 →</a>
         <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 §4.6.6 p110 Entries 两分支）</span>
       </div>
       <div class="act">
         <video controls preload="metadata" src="4606-configure-endpoint.mp4"></video>
         <a class="btn" href="player/index.html?scene=10">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进</span>
+      </div>
+    </div>
+
+    <div class="card s46card" id="s46-07">
+      <div class="s46head"><span class="s46no">4.6.7</span><span class="s46ttl">Evaluate Context</span><span class="s46tag core">核心命令</span><span class="s46pg">p112-p114</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L1296-L1303">Evaluate Context 
+The Evaluate Context Command is issued by software to inform the xHC that 
+specific fields in the Device Context data structures have been modified. There 
+are several cases where parameters associated with a Slot Context or the 
+Default Control Endpoint Context are initially unknown, which shall be updated 
+after the slot has entered the Addressed state. for example, the Max Packet 
+Size of the control endpoint may be determined only after software reads the 
+Device Descriptor from the device through the control endpoint. The Device </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1296-L1303（p112）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1304-L1307">Descriptor shall be read to determine whether a device is a hub or not, etc. 
+When an Evaluate Context Command is processed by the xHC it shall only 
+affect the parameters identified by the respective context. Refer to the 
+Evaluate Context Command Usage sub-sections in section 4.5.2 and 6.2.2.3 for </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1304-L1307（p112）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1314-L1317">If the Slot State is Disabled when an Evaluate Context Command is received, 
+the xHC shall generate a Slot Not Enabled Error Event on the Event Ring. 
+Upon successful completion of an Evaluate Context Command, the xHC shall 
+begin executing with the updated context parameters. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1314-L1317（p112）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1417-L1418">The xHC shall consider an Endpoint Context invalid if the DCI of an Add Context flag = ‘1’ is greater 
+than the value of Context Entries. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1417-L1418（p114）</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:2168-2216 · xhci_evaluate_context_result · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:2168:2216"><div class="cl" data-line="2168"><span class="ln">2168</span><span class="cd">static int xhci_evaluate_context_result(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="2169"><span class="ln">2169</span><span class="cd">		struct usb_device *udev, u32 *cmd_status)</span></div>
+<div class="cl" data-line="2170"><span class="ln">2170</span><span class="cd">{</span></div>
+<div class="cl" data-line="2171"><span class="ln">2171</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="2172"><span class="ln">2172</span><span class="cd"></span></div>
+<div class="cl" data-line="2173"><span class="ln">2173</span><span class="cd">	switch (*cmd_status) {</span></div>
+<div class="cl" data-line="2174"><span class="ln">2174</span><span class="cd">	case COMP_COMMAND_ABORTED:</span></div>
+<div class="cl" data-line="2175"><span class="ln">2175</span><span class="cd">	case COMP_COMMAND_RING_STOPPED:</span></div>
+<div class="cl" data-line="2176"><span class="ln">2176</span><span class="cd">		xhci_warn(xhci, "Timeout while waiting for evaluate context command\n");</span></div>
+<div class="cl" data-line="2177"><span class="ln">2177</span><span class="cd">		ret = -ETIME;</span></div>
+<div class="cl" data-line="2178"><span class="ln">2178</span><span class="cd">		break;</span></div>
+<div class="cl hot" data-line="2179" data-hot="cmd46:16"><span class="ln">2179</span><span class="cd">	case COMP_PARAMETER_ERROR:</span></div>
+<div class="cl" data-line="2180"><span class="ln">2180</span><span class="cd">		dev_warn(&amp;udev-&gt;dev,</span></div>
+<div class="cl" data-line="2181"><span class="ln">2181</span><span class="cd">			 "WARN: xHCI driver setup invalid evaluate context command.\n");</span></div>
+<div class="cl" data-line="2182"><span class="ln">2182</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="2183"><span class="ln">2183</span><span class="cd">		break;</span></div>
+<div class="cl hot" data-line="2184" data-hot="cmd46:17"><span class="ln">2184</span><span class="cd">	case COMP_SLOT_NOT_ENABLED_ERROR:</span></div>
+<div class="cl" data-line="2185"><span class="ln">2185</span><span class="cd">		dev_warn(&amp;udev-&gt;dev,</span></div>
+<div class="cl" data-line="2186"><span class="ln">2186</span><span class="cd">			"WARN: slot not enabled for evaluate context command.\n");</span></div>
+<div class="cl" data-line="2187"><span class="ln">2187</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="2188"><span class="ln">2188</span><span class="cd">		break;</span></div>
+<div class="cl hot" data-line="2189" data-hot="cmd46:18"><span class="ln">2189</span><span class="cd">	case COMP_CONTEXT_STATE_ERROR:</span></div>
+<div class="cl" data-line="2190"><span class="ln">2190</span><span class="cd">		dev_warn(&amp;udev-&gt;dev,</span></div>
+<div class="cl" data-line="2191"><span class="ln">2191</span><span class="cd">			"WARN: invalid context state for evaluate context command.\n");</span></div>
+<div class="cl" data-line="2192"><span class="ln">2192</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="2193"><span class="ln">2193</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="2194"><span class="ln">2194</span><span class="cd">	case COMP_INCOMPATIBLE_DEVICE_ERROR:</span></div>
+<div class="cl" data-line="2195"><span class="ln">2195</span><span class="cd">		dev_warn(&amp;udev-&gt;dev,</span></div>
+<div class="cl" data-line="2196"><span class="ln">2196</span><span class="cd">			"ERROR: Incompatible device for evaluate context command.\n");</span></div>
+<div class="cl" data-line="2197"><span class="ln">2197</span><span class="cd">		ret = -ENODEV;</span></div>
+<div class="cl" data-line="2198"><span class="ln">2198</span><span class="cd">		break;</span></div>
+<div class="cl hot" data-line="2199" data-hot="cmd46:19"><span class="ln">2199</span><span class="cd">	case COMP_MAX_EXIT_LATENCY_TOO_LARGE_ERROR:</span></div>
+<div class="cl" data-line="2200"><span class="ln">2200</span><span class="cd">		/* Max Exit Latency too large error */</span></div>
+<div class="cl" data-line="2201"><span class="ln">2201</span><span class="cd">		dev_warn(&amp;udev-&gt;dev, "WARN: Max Exit Latency too large\n");</span></div>
+<div class="cl" data-line="2202"><span class="ln">2202</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="2203"><span class="ln">2203</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="2204"><span class="ln">2204</span><span class="cd">	case COMP_SUCCESS:</span></div>
+<div class="cl" data-line="2205"><span class="ln">2205</span><span class="cd">		xhci_dbg_trace(xhci, trace_xhci_dbg_context_change,</span></div>
+<div class="cl" data-line="2206"><span class="ln">2206</span><span class="cd">				"Successful evaluate context command");</span></div>
+<div class="cl" data-line="2207"><span class="ln">2207</span><span class="cd">		ret = 0;</span></div>
+<div class="cl" data-line="2208"><span class="ln">2208</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="2209"><span class="ln">2209</span><span class="cd">	default:</span></div>
+<div class="cl" data-line="2210"><span class="ln">2210</span><span class="cd">		xhci_err(xhci, "ERROR: unexpected command completion code 0x%x.\n",</span></div>
+<div class="cl" data-line="2211"><span class="ln">2211</span><span class="cd">			*cmd_status);</span></div>
+<div class="cl" data-line="2212"><span class="ln">2212</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="2213"><span class="ln">2213</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="2214"><span class="ln">2214</span><span class="cd">	}</span></div>
+<div class="cl" data-line="2215"><span class="ln">2215</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="2216"><span class="ln">2216</span><span class="cd">}</span></div></pre>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L1326-L1332">To issue an Evaluate Context Command, system software shall perform the 
+following operations: 
+•  
+Allocate and initialize an Input Context data structure for the command. 
+•  
+Insert an Evaluate Context Command on the Command Ring 
+</blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1326-L1332（p112）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1338-L1355">•  
+TRB Type = Evaluate Context Command (refer to Table 6-91). 
+•  
+The Add Context flags shall be initialized to indicate the IDs of the Contexts affected by the 
+command. Refer to sections 6.2.2.3 and 6.2.3.3 for the specific Context fields that shall be 
+evaluated. 
+•  
+Set all Drop Context flags to ‘0’. 
+•  
+Slot ID = ID of the target Device Slot. 
+•  
+Input Context Pointer = The base address of the Input Context data structure. 
+•  
+Clear all other fields of the command TRB to ‘0’. 
+•  
+Cycle bit = Command Ring’s PCS flag. 
+•  
+Write the Host Controller Doorbell with DB Target = Host Controller Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1338-L1355（p113）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1356-L1409">When an Evaluate Context Command is executed by the xHC it shall perform 
+the following operations: 
+•  
+Insert a Command Completion Event on the Event Ring. 
+•  
+TRB Type = Command Completion Event (refer to Table 6-91). 
+•  
+Command TRB Pointer = The address of the Evaluate Context Command TRB. 
+•  
+Slot ID = The value of the command’s Slot ID. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+If the Device Slot identified by the Slot ID fields has been previously enabled by an Enable Slot 
+Command: 
+•  
+Retrieve the Output Device Context of the selected Device Slot. 
+•  
+If the Output Slot State is equal to Default, Addressed or Configured: 
+•  
+For each Context designated by an Add Context flag = '1': 
+•  
+Evaluate the parameter settings defined by the selected Contexts. 
+•  
+If the Context parameters are not valid: 
+•  
+Completion Code = Parameter Error. 
+•  
+If the Max Exit Latency is non-zero: 
+•  
+Calculate the Isoch Scheduling Delay. 
+•  
+If the Max Exit Latency + Isoch Scheduling Delay does not allow an Isoch endpoint to 
+be scheduled: 
+•  
+Completion Code = Max Exit Latency Too Large Error. 
+•  
+If Completion Code = Success: 
+•  
+For each Endpoint Context designated by a Add Context flag = '1': 
+•  
+Update Output Device Context parameters. 
+•  
+else // The Output Slot State is not equal to Default, Addressed or Configured 
+•  
+Completion Code = Context State Error. 
+•  
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error. 
+•  
+Clear all other fields of the event TRB to ‘0’. 
+•  
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1356-L1409（p113）</div>
+            <div class="act">
+        <video controls preload="metadata" src="4607-evaluate-context.mp4"></video>
+        <a class="btn" href="player/index.html?scene=11">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进</span>
+      </div>
+    </div>
+
+    <div class="card s46card" id="s46-08">
+      <div class="s46head"><span class="s46no">4.6.8</span><span class="s46ttl">Reset Endpoint</span><span class="s46tag core">核心命令</span><span class="s46pg">p114-p118</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L1436-L1437">The Reset Endpoint Command is issued by software to recover from a halted 
+condition on an endpoint. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1436-L1437（p114）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1441-L1444">When a Transfer Ring or Stream is halted; the associated endpoint is removed 
+from the xHC’s Pipe Schedule, the Doorbell Register for that pipe is disabled, 
+the state of the associated Endpoint Context is set to Halted, and any 
+subsequent packets received for the endpoint will be silently dropped. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1441-L1444（p114）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1486-L1487">After the command completes, the Transfer Ring will be reinstated on the 
+xHC’s Pipe Schedule the next time its doorbell is rung. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1486-L1487（p115）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1620-L1624">Note: The Reset Endpoint Command may only be issued to endpoints in the Halted 
+state. If software wishes to reset the Data Toggle or Sequence Number of an 
+endpoint that isn't in the Halted state, then software may issue a Configure 
+Endpoint Command with the Drop and Add bits set for the target endpoint 
+that is in the Stopped state or Running but Idle state. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1620-L1624（p117）</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:1571-1603 · xhci_handle_cmd_reset_ep · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1571:1603"><div class="cl" data-line="1571"><span class="ln">1571</span><span class="cd">static void xhci_handle_cmd_reset_ep(struct xhci_hcd *xhci, int slot_id,</span></div>
+<div class="cl" data-line="1572"><span class="ln">1572</span><span class="cd">		union xhci_trb *trb, u32 cmd_comp_code)</span></div>
+<div class="cl" data-line="1573"><span class="ln">1573</span><span class="cd">{</span></div>
+<div class="cl" data-line="1574"><span class="ln">1574</span><span class="cd">	struct xhci_virt_ep *ep;</span></div>
+<div class="cl" data-line="1575"><span class="ln">1575</span><span class="cd">	struct xhci_ep_ctx *ep_ctx;</span></div>
+<div class="cl" data-line="1576"><span class="ln">1576</span><span class="cd">	unsigned int ep_index;</span></div>
+<div class="cl" data-line="1577"><span class="ln">1577</span><span class="cd"></span></div>
+<div class="cl" data-line="1578"><span class="ln">1578</span><span class="cd">	ep_index = TRB_TO_EP_INDEX(le32_to_cpu(trb-&gt;generic.field[3]));</span></div>
+<div class="cl" data-line="1579"><span class="ln">1579</span><span class="cd">	ep = xhci_get_virt_ep(xhci, slot_id, ep_index);</span></div>
+<div class="cl" data-line="1580"><span class="ln">1580</span><span class="cd">	if (!ep)</span></div>
+<div class="cl" data-line="1581"><span class="ln">1581</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1582"><span class="ln">1582</span><span class="cd"></span></div>
+<div class="cl" data-line="1583"><span class="ln">1583</span><span class="cd">	ep_ctx = xhci_get_ep_ctx(xhci, ep-&gt;vdev-&gt;out_ctx, ep_index);</span></div>
+<div class="cl" data-line="1584"><span class="ln">1584</span><span class="cd">	trace_xhci_handle_cmd_reset_ep(ep_ctx);</span></div>
+<div class="cl" data-line="1585"><span class="ln">1585</span><span class="cd"></span></div>
+<div class="cl" data-line="1586"><span class="ln">1586</span><span class="cd">	/* This command will only fail if the endpoint wasn't halted,</span></div>
+<div class="cl" data-line="1587"><span class="ln">1587</span><span class="cd">	 * but we don't care.</span></div>
+<div class="cl" data-line="1588"><span class="ln">1588</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="1589"><span class="ln">1589</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_reset_ep,</span></div>
+<div class="cl hot" data-line="1590" data-hot="cmd46:20"><span class="ln">1590</span><span class="cd">		"Ignoring reset ep completion code of %u", cmd_comp_code);</span></div>
+<div class="cl" data-line="1591"><span class="ln">1591</span><span class="cd"></span></div>
+<div class="cl" data-line="1592"><span class="ln">1592</span><span class="cd">	/* Cleanup cancelled TDs as ep is stopped. May queue a Set TR Deq cmd */</span></div>
+<div class="cl hot" data-line="1593" data-hot="cmd46:21"><span class="ln">1593</span><span class="cd">	xhci_invalidate_cancelled_tds(xhci, ep);</span></div>
+<div class="cl" data-line="1594"><span class="ln">1594</span><span class="cd"></span></div>
+<div class="cl" data-line="1595"><span class="ln">1595</span><span class="cd">	/* Clear our internal halted state */</span></div>
+<div class="cl" data-line="1596"><span class="ln">1596</span><span class="cd">	ep-&gt;ep_state &amp;= ~EP_HALTED;</span></div>
+<div class="cl" data-line="1597"><span class="ln">1597</span><span class="cd"></span></div>
+<div class="cl" data-line="1598"><span class="ln">1598</span><span class="cd">	xhci_giveback_invalidated_tds(xhci, ep);</span></div>
+<div class="cl" data-line="1599"><span class="ln">1599</span><span class="cd"></span></div>
+<div class="cl" data-line="1600"><span class="ln">1600</span><span class="cd">	/* if this was a soft reset, then restart */</span></div>
+<div class="cl hot" data-line="1601" data-hot="cmd46:22"><span class="ln">1601</span><span class="cd">	if ((le32_to_cpu(trb-&gt;generic.field[3])) &amp; TRB_TSP)</span></div>
+<div class="cl" data-line="1602"><span class="ln">1602</span><span class="cd">		xhci_ring_doorbell_for_active_rings(xhci, slot_id, ep_index);</span></div>
+<div class="cl" data-line="1603"><span class="ln">1603</span><span class="cd">}</span></div></pre>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L1448-L1466">The xHC shall perform the following operations when Resetting an endpoint: 
+•  
+If the endpoint is not in the Halted state when an Reset Endpoint Command is executed: 
+•  
+The xHC shall reject the command and generate a Command Completion Event with the 
+Completion Code set to Context State Error. 
+•  
+else 
+•  
+If the Transfer State Preserve (TSP) flag is ‘0’: 
+•  
+Reset the Data Toggle for USB2 devices or the Sequence Number for USB3 devices. 
+•  
+Reset any USB2 split transaction state associated with the endpoint. 
+•  
+Invalidate any xHC TDs that may be cached, forcing xHC to fetch Transfer TRBs from memory 
+when the pipe transitions from the Stopped to Running state. 
+•  
+else // TSP = ‘1’ </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1448-L1466（p114）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1473-L1485">•  
+The USB2 Data Toggle or the USB3 Sequence Number for the pipe shall be preserved. 
+•  
+Maintain any USB2 split transaction state associated with the endpoint. 
+•  
+The endpoint shall continue execution by retrying the last transaction the next time the 
+doorbell is rung, if no other commands have been issued to the endpoint. 
+•  
+Set the Endpoint Context EP State field to Stopped. 
+•  
+Enable the Doorbell Register for the pipe. 
+•  
+Generate a Command Completion Event with the Completion Code set to Success. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1473-L1485（p115）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1503-L1525">Note: Software shall execute the following sequence to “reset a pipe”, that is, clear 
+the xHC endpoint halt condition, reset the host-side Data Toggle/Sequence 
+Number, clear a stall on the device, and reset the device-side Data 
+Toggle/Sequence Number. Also, if the device was behind a TT, the TT buffer 
+would also need to be cleared. 
+•  
+Reset Endpoint Command (TSP = ‘0’). 
+•  
+If the device was behind a TT and it is a Control or Bulk endpoint: 
+•  
+Issue a ClearFeature(CLEAR_TT_BUFFER) request to the hub. 
+•  
+If not a Control endpoint: 
+•  
+Issue a ClearFeature(ENDPOINT_HALT) request to device. 
+•  
+Issue a Set TR Dequeue Pointer Command, clear the endpoint state and reference the TRB to 
+start. 
+•  
+Ring Doorbell to restart the pipe. 
+The Set TR Dequeue Pointer Command resets the state of the endpoint so that the xHC starts 
+transferring data at the beginning of the TRB referenced by the TR Dequeue Pointer (rather than 
+at the location associated with the previous packet that caused the halt) when the doorbell is </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1503-L1525（p115）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1626-L1650">Soft Retry 
+A Soft Retry may effectively be used to recover from a USB Transaction Error 
+that was due to a temporary error condition (for example, electrical 
+interference caused by a cell phone transmitting too close to a USB cable). 
+Often the delay introduced between software detecting the error and 
+attempting a Soft Retry is enough to let the temporary condition clear and 
+allow a successful transfer. 
+Section 4.10.2.3 describes how the xHC shall halt an endpoint with a USB 
+Transaction Error after CErr retries have been performed. The USB device is 
+not aware that the xHC has halted the endpoint, and will be waiting for another 
+retry, so a Soft Retry may be used to perform additional retries and recover 
+from an error which has caused the xHC to halt an endpoint. 
+Software performs a Soft Retry with the following operations: 
+1. 
+Issue a Reset Endpoint Command with the TSP flag set to ‘1’. This causes 
+the endpoint to advance from the Halted to the Stopped state, but does not 
+change the state of the Data Toggle or Sequence Number, and allows the xHC 
+to continue the retry process another CErr times. 
+2. 
+Ring the doorbell for the endpoint to initiate up to another CErr retries. 
+To support Soft Retry, the state of a partially completed TRB transfer (for 
+example, if 1K of a 4K TRB has been moved) shall be maintained by a Reset 
+Endpoint Command if TSP = ‘1’. 
+Note: Soft Retry attempts shall not be performed on Isoch endpoints. Any attempt 
+to do so may result in undefined behavior. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1626-L1650（p117）</div>
+            <div class="act">
+        <video controls preload="metadata" src="4608-reset-endpoint.mp4"></video>
+        <a class="btn" href="player/index.html?scene=12">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进</span>
+      </div>
+    </div>
+
+    <div class="card s46card" id="s46-09">
+      <div class="s46head"><span class="s46no">4.6.9</span><span class="s46ttl">Stop Endpoint</span><span class="s46tag core">核心命令</span><span class="s46pg">p118-p125</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L1666-L1669">The Stop Endpoint Command is issued by software to stop the xHC execution 
+of the TDs on an endpoint. An endpoint may be stopped by software so that it 
+can temporarily take ownership of Transfer Ring TDs that had previously been 
+passed to the xHC, or to stop USB activity prior to powering down the xHC. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1666-L1669（p118）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1670-L1674">While the endpoint is stopped, software may add, delete, or otherwise 
+rearrange TDs on an associated Transfer Ring. For example, this command 
+allows software to insert “high-priority” TDs at the Dequeue Pointer so they will 
+be executed immediately when the ring is restarted, or to “abort” one or more 
+TDs by removing them from the ring. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1670-L1674（p118）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1675-L1687">The Stop Endpoint Command is expected to stop endpoint activity as soon as 
+possible, which may mean that it stops in the middle of a TRB. When the 
+endpoint stops, it saves the value of the TR Dequeue Pointer and DCS fields 
+(and possibly other “Opaque” state) in the Endpoint/Stream Context so that it 
+can pick up where it left off the next time its doorbell is rung, for example, if 
+the endpoint stopped after moving the first 1KB of data in a 4KB TRB, then 
+transfer related state maintained by the xHC will allow it to transfer the 
+remaining 3KB of data when the doorbell is rung. If a Set TR Dequeue Pointer 
+Command is issued while an endpoint is in the Stopped state, the transfer 
+related state of the endpoint will be dumped when the Output Endpoint/Stream 
+Context TR Dequeue Pointer and DCS fields are overwritten. The next time the 
+doorbell is rung, the endpoint shall start execution at the beginning of the TRB 
+referenced by the TR Dequeue Pointer. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1675-L1687（p118）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1859-L1865">The xHC shall generate a Stopped Transfer Event every time a Transfer Ring is 
+stopped with a Stop Endpoint Command. This operation is referred to as Force 
+Stopped Event (FSE). The forced Stopped Transfer Event explicitly indicates to 
+software that the selected Transfer Ring has stopped. If a Transfer Ring is 
+empty when a Stop Endpoint Command is issued, a Stopped Transfer Event 
+shall be generated on the Event Ring indicated by the Slot Context Interrupter 
+Target field. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1859-L1865（p121）</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:2895-2938 · xhci_stop_endpoint_sync · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:2895:2938"><div class="cl" data-line="2895"><span class="ln">2895</span><span class="cd">int xhci_stop_endpoint_sync(struct xhci_hcd *xhci, struct xhci_virt_ep *ep, int suspend,</span></div>
+<div class="cl" data-line="2896"><span class="ln">2896</span><span class="cd">			    gfp_t gfp_flags)</span></div>
+<div class="cl" data-line="2897"><span class="ln">2897</span><span class="cd">{</span></div>
+<div class="cl" data-line="2898"><span class="ln">2898</span><span class="cd">	struct xhci_command *command;</span></div>
+<div class="cl" data-line="2899"><span class="ln">2899</span><span class="cd">	struct xhci_ep_ctx *ep_ctx;</span></div>
+<div class="cl" data-line="2900"><span class="ln">2900</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="2901"><span class="ln">2901</span><span class="cd">	int ret = -ENODEV;</span></div>
+<div class="cl" data-line="2902"><span class="ln">2902</span><span class="cd"></span></div>
+<div class="cl" data-line="2903"><span class="ln">2903</span><span class="cd">	command = xhci_alloc_command(xhci, true, gfp_flags);</span></div>
+<div class="cl" data-line="2904"><span class="ln">2904</span><span class="cd">	if (!command)</span></div>
+<div class="cl" data-line="2905"><span class="ln">2905</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="2906"><span class="ln">2906</span><span class="cd"></span></div>
+<div class="cl" data-line="2907"><span class="ln">2907</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="2908"><span class="ln">2908</span><span class="cd"></span></div>
+<div class="cl" data-line="2909"><span class="ln">2909</span><span class="cd">	/* make sure endpoint exists and is running before stopping it */</span></div>
+<div class="cl" data-line="2910"><span class="ln">2910</span><span class="cd">	if (ep-&gt;ring) {</span></div>
+<div class="cl" data-line="2911"><span class="ln">2911</span><span class="cd">		ep_ctx = xhci_get_ep_ctx(xhci, ep-&gt;vdev-&gt;out_ctx, ep-&gt;ep_index);</span></div>
+<div class="cl hot" data-line="2912" data-hot="cmd46:23"><span class="ln">2912</span><span class="cd">		if (GET_EP_CTX_STATE(ep_ctx) == EP_STATE_RUNNING)</span></div>
+<div class="cl" data-line="2913"><span class="ln">2913</span><span class="cd">			ret = xhci_queue_stop_endpoint(xhci, command,</span></div>
+<div class="cl" data-line="2914"><span class="ln">2914</span><span class="cd">						       ep-&gt;vdev-&gt;slot_id,</span></div>
+<div class="cl" data-line="2915"><span class="ln">2915</span><span class="cd">						       ep-&gt;ep_index, suspend);</span></div>
+<div class="cl" data-line="2916"><span class="ln">2916</span><span class="cd">	}</span></div>
+<div class="cl" data-line="2917"><span class="ln">2917</span><span class="cd"></span></div>
+<div class="cl" data-line="2918"><span class="ln">2918</span><span class="cd">	if (ret &lt; 0) {</span></div>
+<div class="cl" data-line="2919"><span class="ln">2919</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="2920"><span class="ln">2920</span><span class="cd">		goto out;</span></div>
+<div class="cl" data-line="2921"><span class="ln">2921</span><span class="cd">	}</span></div>
+<div class="cl" data-line="2922"><span class="ln">2922</span><span class="cd"></span></div>
+<div class="cl" data-line="2923"><span class="ln">2923</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="2924"><span class="ln">2924</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="2925"><span class="ln">2925</span><span class="cd"></span></div>
+<div class="cl" data-line="2926"><span class="ln">2926</span><span class="cd">	wait_for_completion(command-&gt;completion);</span></div>
+<div class="cl" data-line="2927"><span class="ln">2927</span><span class="cd"></span></div>
+<div class="cl hot" data-line="2928" data-hot="cmd46:24"><span class="ln">2928</span><span class="cd">	/* No handling for COMP_CONTEXT_STATE_ERROR done at command completion*/</span></div>
+<div class="cl" data-line="2929"><span class="ln">2929</span><span class="cd">	if (command-&gt;status == COMP_COMMAND_ABORTED ||</span></div>
+<div class="cl" data-line="2930"><span class="ln">2930</span><span class="cd">	    command-&gt;status == COMP_COMMAND_RING_STOPPED) {</span></div>
+<div class="cl" data-line="2931"><span class="ln">2931</span><span class="cd">		xhci_warn(xhci, "Timeout while waiting for stop endpoint command\n");</span></div>
+<div class="cl" data-line="2932"><span class="ln">2932</span><span class="cd">		ret = -ETIME;</span></div>
+<div class="cl" data-line="2933"><span class="ln">2933</span><span class="cd">	}</span></div>
+<div class="cl" data-line="2934"><span class="ln">2934</span><span class="cd">out:</span></div>
+<div class="cl" data-line="2935"><span class="ln">2935</span><span class="cd">	xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="2936"><span class="ln">2936</span><span class="cd"></span></div>
+<div class="cl" data-line="2937"><span class="ln">2937</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="2938"><span class="ln">2938</span><span class="cd">}</span></div></pre>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L1721-L1748">Depending on the timing of the execution of the Stop Endpoint command 
+relative to the execution of the TDs on the ring, one of three of scenarios may 
+result: 
+• 
+If the command is executed between TDs, then the xHC shall perform a 
+Force Stopped Event (FSE) operation by generating a Transfer Event for 
+the endpoint with Condition Code = Stopped - Invalid Length, TRB Pointer 
+= current Dequeue Pointer value, and TRB Transfer Length = 0, then 
+generate a Success Command Completion Event for the command. 
+• 
+If SPC = '1' and the command is executed, after a Short Packet condition 
+has been detected, but before the end of the TD has been reached, (that 
+is, the TD is in progress for the pipe), then a Transfer Event TRB with its 
+Completion Code set to Stopped - Short Packet and its TRB Transfer Length 
+set to the value of the EDTLA shall be forced for the interrupted TRB, 
+irrespective of whether its IOC or ISP flags are set. This Transfer Event TRB 
+will precede the Command Completion Event TRB for the command, and is 
+referred to as a Stopped Transfer Event. 
+• 
+If a TD is in progress for the pipe when the command is executed, and a 
+Short Packet condition has not been detected or SPC = ‘0’ and a Short 
+Packet condition has been detected, then a Transfer Event TRB with its 
+Completion Code set to Stopped, TRB Pointer = current Dequeue Pointer 
+value, and TRB Transfer Length set to the residual bytes to transfer, shall 
+be forced for the interrupted TRB, irrespective of whether its IOC or ISP 
+flags are set. This Transfer Event TRB will precede the Command 
+Completion Event TRB for the command, and is also referred to as a 
+Stopped Transfer Event. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1721-L1748（p120）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1751-L1753">Note that when an endpoint is stopped, the xHC maintains the state necessary 
+to restart the last active Transfer Ring where it left off, however software may 
+not want to do this. The options are discussed below: </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1751-L1753（p119）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1760-L1782">1. 
+Temporarily Stop Transfer Ring Activity - If the intent of software in 
+issuing the Stop Endpoint Command was just to temporarily stop activity on 
+the Transfer Ring, then software may restart the stopped ring where it left off 
+by simply ringing its doorbell. 
+2. 
+Aborting a Transfer - If, because of a timeout or other reason, software 
+issued the Stop Endpoint Command to abort the current TD. Then the Set TR 
+Dequeue Pointer Command may be used to force the xHC to dump any internal 
+state that it has for the ring and restart activity at the new Transfer Ring 
+location specified by the Set TR Dequeue Pointer Command. 
+3. 
+Modifying the order of execution of TDs on a Transfer Ring - It may be 
+necessary for software to place a “high priority” TD on a ring, by inserting a TD 
+ahead of any pending TDs. To safely modify the order of execution of TDs on a 
+ring, software shall first stop the endpoint. When an endpoint is stopped, 
+software may examine the Event Ring to determine the current state of TDs on 
+the associated Transfer Ring(s). If the xHC stopped in the middle of a TD, then 
+that TD may not be modified by software, however any other TDs on the ring 
+may be. If the xHC stopped between TDs, then it may modify any TD on the 
+transfer ring. After the TDs are inserted, removed, or rearranged to the 
+satisfaction of software, it may ring the doorbell to restart operation on the 
+ring. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1760-L1782（p120）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1792-L1816">The xHC shall perform the following operations when Stopping an endpoint: 
+•  
+The xHC shall stop the USB activity for the pipe. 
+•  
+If a USB IN or OUT transaction is in-flight, it shall be completed. 
+•  
+ERDYs shall be ignored on the pipe for that endpoint. 
+•  
+If LS, FS, or HS, then polling of the pipe shall cease. 
+•  
+If an SS pipe is waiting for an ERDY, the xHC shall clear the flow control condition and cease 
+waiting for the ERDY. 
+ 
+A Set TR Dequeue Pointer Command clears any transfer related state associated with an endpoint. 
+If an SS pipe was waiting for an ERDY when the endpoint was stopped, then if the endpoint 
+transfer state was not cleared by a Set TR Dequeue Pointer Command, the xHC shall reissue an IN 
+or OUT for the pipe when the ring is restarted. 
+•  
+The current endpoint Service Opportunity (SO) shall be terminated. 
+•  
+Stop the Transfer Ring activity for the pipe. Refer to Table 4-2 for Stop conditions and Actions. 
+•  
+Remove the endpoint from the xHC’s Pipe Schedule. 
+•  
+Generate a Command Completion Event. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1792-L1816（p120）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1888-L1952">Table 4-2: Stop Endpoint Command TRB Handling 
+TRB Type referenced 
+by TR Dequeue 
+Pointer 
+Chain 
+bit 
+(CH) 
+Condition 
+Action 
+Advance TR 
+Dequeue Pointer on 
+Doorbell Ring 
+Transfer TRB16 
+(Completed) 
+Residual Length = 0 
+1 
+Stopped on TRB 
+boundary within 
+a TD17. 
+Generate Transfer Event. 
+An ISSE18 else 
+Length = 0, 
+CC = Stopped. 
+Yes 
+0 
+Stopped on TD 
+boundary.19 
+Generate event if IOC 
+flag set. 
+FSE20. 
+Yes 
+Transfer TRB 
+(Incomplete) 
+Residual Length &gt; 0 
+X 
+Stopped within 
+a TRB 
+Generate Transfer Event. 
+An ISSE18 else 
+Length = Residual bytes 
+to transfer, 
+CC = Stopped. 
+No 
+Event Data 
+1 
+Stopped on 
+intermediate 
+Event Data TRB 
+Generate Transfer Event. 
+An ISSE18 else 
+ED = 1, 
+Length = EDTLA, 
+CC = Stopped. 
+Yes 
+ 
+16A “Transfer” TRB is a Normal, Setup Stage, Data Stage, Status Stage, or Isoch TRB. Note, this row identifies the case where the endpoint 
+has stopped on a TRB (that is not the last TRB of a TD), where all the data associated with the TRB has already been transferred. 
+17This condition is interpreted identically to a “Transfer TRB (Incomplete)”, where 0 bytes have been transferred. 
+18 ISSE - If SPC = ‘1’, and a Short Packet condition has been detected, and the end of the TD has not been reached, then the xHC shall 
+perform an Intermediate Short Stopped Event (ISSE) operation, generating a Transfer Event for the endpoint with Condition Code = 
+Stopped - Short Packet, TRB Pointer = current Dequeue Pointer value, and TRB Transfer Length = EDTLA. 
+19In this case the xHC is expected to complete the TD normally (for example, generate a Transfer Event with CC = Success if the IOC flag is 
+set and the transfer was successful) and then perform a Force Stopped Event (FSE) operation. 
+20FSE - The xHC shall perform a Force Stopped Event (FSE) operation by generating a Transfer Event for the endpoint with Condition Code 
+= Stopped - Invalid Length, TRB Pointer = current Dequeue Pointer value, and TRB Transfer Length = 0. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1888-L1952（p122）</div>
+      <blockquote data-ck="spec:spec-46.txt:L1959-L2034">TRB Type referenced 
+by TR Dequeue 
+Pointer 
+Chain 
+bit 
+(CH) 
+Condition 
+Action 
+Advance TR 
+Dequeue Pointer on 
+Doorbell Ring 
+0 
+Stopped on 
+terminating 
+Event Data 
+TRB21 
+Generate Transfer Event. 
+ED = 1. 
+Length = EDTLA.  
+CC = previous Transfer 
+TRB CC. 
+FSE20 
+Yes 
+Link 
+1 
+Stopped on Link 
+TRB within a TD 
+Generate Transfer Event. 
+An ISSE18 else 
+Length = 0.  
+CC = Stopped, Length 
+Invalid. 
+Yes22 
+0 
+Stopped on Link 
+TD 
+Generate event if IOC 
+flag set. 
+FSE20. 
+Yes22 
+No Op 
+X 
+Stopped on 
+Terminating No 
+Op TRB 
+Generate Transfer Event 
+if IOC flag set. 
+FSE20. 
+Yes 
+Vendor Defined 
+X 
+Stopped on 
+Vendor Defined 
+TRB 
+Vendor defined. 
+FSE20. 
+Vendor Defined 
+Invalid TRB 
+(C != DCS) 
+Prev TRB23 
+CH = 1 
+Stopped while 
+waiting for more 
+TRBs to be posted 
+for TD 
+Generate Transfer Event.24 
+Length = 0.  
+CC = Stopped - Length 
+Invalid. 
+No 
+Prev23 TRB 
+CH = 0 
+Stopped on TD 
+boundary 
+FSE20. 
+No </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L1959-L2034（p123）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2038-L2049">To issue a Stop Endpoint Command system software shall perform the 
+following operations. 
+Insert a Stop Endpoint Command on the Command Ring and initialize the 
+following fields: 
+ 
+21Force normal completion of Event Data TRB before generating Command Completion Event. 
+22When the Dequeue Pointer is advanced, the xHC shall begin parsing TRBs at the address identified by the Link TRB Ring Segment 
+Pointer field. 
+23In this case the TRB referenced by the TR Dequeue Pointer is invalid, so use the state of the Chain (CH) bit from the last executed TRB. If 
+no TRBs had been executed previously, assume C = ‘0’ case. 
+24The event generated by the “Stopped while waiting for more TRBs to be posted for TD.” condition uses the Slot Context Interrupter 
+Target field to identify the target Event Ring. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2038-L2049（p123）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2056-L2068">• 
+TRB Type = Stop Endpoint Command (refer to Table 6-91). 
+o 
+Endpoint ID = ID of the target endpoint. 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2056-L2068（p124）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2069-L2104">When a Stop Endpoint Command is executed by the xHC it shall perform the 
+following operations. 
+If the Stop Endpoint Command interrupted the execution of a TD, then insert a 
+Transfer Event on the Event Ring and initialize the following fields: 
+o 
+TRB Type = Transfer Event. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+Endpoint ID = The value of the command’s Endpoint ID. 
+o 
+If the TRB referenced by the TR Dequeue Pointer is an Event Data TRB: 
+•  
+ED = ‘1’. 
+•  
+Parameter Component (TRB Pointer) = 64 bits of Event Data TRB 
+Parameter component. 
+•  
+Length = The value of the Event Data Transfer Length Accumulator 
+(EDTLA). Refer to section 4.11.5.2 for a description of EDTLA. 
+o 
+else // The TRB referenced by the TR Dequeue Pointer is not an Event 
+Data TRB 
+•  
+ED = ‘0’. 
+•  
+TRB Pointer = The address of the TRB interrupted by the command. 
+•  
+Length = The number of bytes remaining to be moved for the 
+interrupted TRB. 
+o 
+Completion Code = Stopped (refer to Table 6-90). 
+o 
+Clear all other fields of the event TRB to ‘0’. 
+o 
+Cycle bit = Event Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2069-L2104（p124）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2106-L2119">Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event. 
+o 
+Command TRB Pointer = The address of the Stop Endpoint Command 
+TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+If the Device Slot identified by the Slot ID has been previously enabled 
+by an Enable Slot Command: 
+•  
+Retrieve the Device Context of the selected Device Slot. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2106-L2119（p124）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2126-L2165">•  
+If the Slot State is set to Default, Configured, or Addressed: 
+•  
+If the Endpoint State (EP State) field equals Running: 
+•  
+Stop the USB activity for the pipe as described above. 
+•  
+Stop the Transfer Ring activity for the pipe as described above. 
+•  
+Write Dequeue Pointer value to the Output Endpoint or Stream 
+Context TR Dequeue Pointer field. 
+•  
+Write CCS value to the Output Endpoint or Stream Context Dequeue 
+Cycle State (DCS) field. 
+•  
+Removed the endpoint from the xHC’s Pipe Schedule. 
+•  
+Set the Endpoint State (EP State) field to Stopped. 
+•  
+Completion Code = Success. 
+•  
+else // The Endpoint State (EP State) field is not Running 
+•  
+Completion Code = Context State Error. 
+• 
+else // The Slot State is not set to Default, Configured, or Addressed 
+o 
+Completion Code = Context State Error. 
+• 
+else // The slot has not been enabled by an Enable Slot Command 
+o 
+Completion Code = Slot Not Enabled Error 
+• 
+Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+Note: The xHC resources and bandwidth associated with an endpoint are not 
+released by the Stop Endpoint Command. 
+Note: The xHC shall wait for any partially completed USB2 split transactions to finish 
+before completing the Stop Endpoint Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2126-L2165（p125）</div>
+            <div class="phead">上游 commit 1174d44906d517ddb4f98bbe58a44d4554d0ef90 · 2021-01-29 · Mathias Nyman（Intel） · drivers/usb/host/xhci-ring.c 1 文件 +13/-0 · hunks @@ -983,6 +983,7 @@ / @@ -1029,6 +1030,18 @@（均在 xhci_handle_cmd_stop_ep）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:1174d44906d517ddb4f98bbe58a44d4554d0ef90">commit 1174d44906d517ddb4f98bbe58a44d4554d0ef90
+Author: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+Date:   Fri Jan 29 15:00:40 2021 +0200
+
+    xhci: handle stop endpoint command completion with endpoint in running state.
+    
+    Handle race where a stop endpoint command fails with "context state error"
+    as hardware hasn't actually started the ring yet after a previous urb
+    cancellation completed and restarted the endpoint.
+    Flushing the doorbell write that restart the endpoint reduced these cases,
+    but didn't completely resolve them.
+    
+    Check if the ring is running in the stop endpoint completion handler, and
+    issue a new stop endpoint command in this case.
+    
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20210129130044.206855-24-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index 3ba91580e222..307ccd40ccac 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -983,6 +983,7 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,</span>
+<span class="d-ctx"> 	struct xhci_ep_ctx *ep_ctx;</span>
+<span class="d-ctx"> 	struct xhci_td *td = NULL;</span>
+<span class="d-ctx"> 	enum xhci_ep_reset_type reset_type;</span>
+<span class="d-add">+	struct xhci_command *command;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	if (unlikely(TRB_TO_SUSPEND_PORT(le32_to_cpu(trb-&gt;generic.field[3])))) {</span>
+<span class="d-ctx"> 		if (!xhci-&gt;devs[slot_id])</span>
+<span class="d-hunk">@@ -1029,6 +1030,18 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,</span>
+<span class="d-ctx"> 			/* reset ep, reset handler cleans up cancelled tds */</span>
+<span class="d-ctx"> 			xhci_handle_halted_endpoint(xhci, ep, 0, td, reset_type);</span>
+<span class="d-ctx"> 			xhci_stop_watchdog_timer_in_irq(xhci, ep);</span>
+<span class="d-add">+			return;</span>
+<span class="d-add">+		case EP_STATE_RUNNING:</span>
+<span class="d-add">+			/* Race, HW handled stop ep cmd before ep was running */</span>
+<span class="d-add">+			command = xhci_alloc_command(xhci, false, GFP_ATOMIC);</span>
+<span class="d-add">+			if (!command)</span>
+<span class="d-add">+				xhci_stop_watchdog_timer_in_irq(xhci, ep);</span>
+<span class="d-add">+</span>
+<span class="d-add">+			mod_timer(&amp;ep-&gt;stop_cmd_timer,</span>
+<span class="d-add">+				  jiffies + XHCI_STOP_EP_CMD_TIMEOUT * HZ);</span>
+<span class="d-add">+			xhci_queue_stop_endpoint(xhci, command, slot_id, ep_index, 0);</span>
+<span class="d-add">+			xhci_ring_cmd_db(xhci);</span>
+<span class="d-add">+</span>
+<span class="d-ctx"> 			return;</span>
+<span class="d-ctx"> 		default:</span>
+<span class="d-ctx"> 			break;</span></pre>
+      <p class="ph">背景（何时 / 谁修 / 为什么是它）</p>
+      <p class="pbody">2021 年 1 月，Intel Mathias Nyman 提交（halted endpoint 修复系列之一，lore 20210129130044.206855-24）。场景：上一轮 URB 取消完成并重启端点后，硬件可能尚未真正开始跑环；此时软件再发 Stop Endpoint，完成码报 "context state error" 假失败——重启用的门铃写已做 flush，降低了概率但未根除（message 原文）。对应 §4.6.9 停止链的完成处理面：本卡贴码的 sync 包装只受理 Running 并等完成，完成态里的竞态归完成处理器管。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：取消风暴场景下 Stop Endpoint 假失败残留——完成码 Context State Error 但环实际已在跑，端点停在「半停」态。机制：完成处理器的 COMP_CONTEXT_STATE_ERROR 分支此前只按「真的没停下来」处理；规范 p122 竞态 Note（L1881-1887）明确 Context State Error 可能来自 Busy 端点的异步翻转——本补丁修的正是其反向形态：EP 实际 Running、命令却报错=竞态败给了取消重启。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">EP_STATE_RUNNING case 补竞态分支（+11）：原地 GFP_ATOMIC 分配命令、重挂 stop_cmd_timer、重发 Stop Endpoint 命令、重敲命令环门铃；halted case 补 <code>return;</code> 止住串入。补丁后：假失败当场自愈，端点必达 Stopped。与贴码对读：下方补丁对读段琥珀行（race 注释/重发命令）即本修复块——本补丁已在基线 d9008e061539 内（后续 42b758137601 加 100ms 重试上限与 fallthrough，语义同源）；本卡贴码 det:24 热行（完成侧无处理注释）即修复前的入口；分帧走读见 ch4609p（scene=23）。</p>
+      <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 琥珀高亮行 = 竞态重发块所在</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:1194-1319 · xhci_handle_cmd_stop_ep·补丁对读段 · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1194:1319"><div class="cl" data-line="1194"><span class="ln">1194</span><span class="cd">static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,</span></div>
+<div class="cl" data-line="1195"><span class="ln">1195</span><span class="cd">				    union xhci_trb *trb, u32 comp_code)</span></div>
+<div class="cl" data-line="1196"><span class="ln">1196</span><span class="cd">{</span></div>
+<div class="cl" data-line="1197"><span class="ln">1197</span><span class="cd">	unsigned int ep_index;</span></div>
+<div class="cl" data-line="1198"><span class="ln">1198</span><span class="cd">	struct xhci_virt_ep *ep;</span></div>
+<div class="cl" data-line="1199"><span class="ln">1199</span><span class="cd">	struct xhci_ep_ctx *ep_ctx;</span></div>
+<div class="cl" data-line="1200"><span class="ln">1200</span><span class="cd">	struct xhci_td *td = NULL;</span></div>
+<div class="cl" data-line="1201"><span class="ln">1201</span><span class="cd">	enum xhci_ep_reset_type reset_type;</span></div>
+<div class="cl" data-line="1202"><span class="ln">1202</span><span class="cd">	struct xhci_command *command;</span></div>
+<div class="cl" data-line="1203"><span class="ln">1203</span><span class="cd">	int err;</span></div>
+<div class="cl" data-line="1204"><span class="ln">1204</span><span class="cd"></span></div>
+<div class="cl" data-line="1205"><span class="ln">1205</span><span class="cd">	if (unlikely(TRB_TO_SUSPEND_PORT(le32_to_cpu(trb-&gt;generic.field[3])))) {</span></div>
+<div class="cl" data-line="1206"><span class="ln">1206</span><span class="cd">		if (!xhci-&gt;devs[slot_id])</span></div>
+<div class="cl" data-line="1207"><span class="ln">1207</span><span class="cd">			xhci_warn(xhci, "Stop endpoint command completion for disabled slot %u\n",</span></div>
+<div class="cl" data-line="1208"><span class="ln">1208</span><span class="cd">				  slot_id);</span></div>
+<div class="cl" data-line="1209"><span class="ln">1209</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1210"><span class="ln">1210</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1211"><span class="ln">1211</span><span class="cd"></span></div>
+<div class="cl" data-line="1212"><span class="ln">1212</span><span class="cd">	ep_index = TRB_TO_EP_INDEX(le32_to_cpu(trb-&gt;generic.field[3]));</span></div>
+<div class="cl" data-line="1213"><span class="ln">1213</span><span class="cd">	ep = xhci_get_virt_ep(xhci, slot_id, ep_index);</span></div>
+<div class="cl" data-line="1214"><span class="ln">1214</span><span class="cd">	if (!ep)</span></div>
+<div class="cl" data-line="1215"><span class="ln">1215</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1216"><span class="ln">1216</span><span class="cd"></span></div>
+<div class="cl" data-line="1217"><span class="ln">1217</span><span class="cd">	ep_ctx = xhci_get_ep_ctx(xhci, ep-&gt;vdev-&gt;out_ctx, ep_index);</span></div>
+<div class="cl" data-line="1218"><span class="ln">1218</span><span class="cd"></span></div>
+<div class="cl" data-line="1219"><span class="ln">1219</span><span class="cd">	trace_xhci_handle_cmd_stop_ep(ep_ctx);</span></div>
+<div class="cl" data-line="1220"><span class="ln">1220</span><span class="cd"></span></div>
+<div class="cl" data-line="1221"><span class="ln">1221</span><span class="cd">	if (comp_code == COMP_CONTEXT_STATE_ERROR) {</span></div>
+<div class="cl" data-line="1222"><span class="ln">1222</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="1223"><span class="ln">1223</span><span class="cd">	 * If stop endpoint command raced with a halting endpoint we need to</span></div>
+<div class="cl" data-line="1224"><span class="ln">1224</span><span class="cd">	 * reset the host side endpoint first.</span></div>
+<div class="cl" data-line="1225"><span class="ln">1225</span><span class="cd">	 * If the TD we halted on isn't cancelled the TD should be given back</span></div>
+<div class="cl" data-line="1226"><span class="ln">1226</span><span class="cd">	 * with a proper error code, and the ring dequeue moved past the TD.</span></div>
+<div class="cl" data-line="1227"><span class="ln">1227</span><span class="cd">	 * If streams case we can't find hw_deq, or the TD we halted on so do a</span></div>
+<div class="cl" data-line="1228"><span class="ln">1228</span><span class="cd">	 * soft reset.</span></div>
+<div class="cl" data-line="1229"><span class="ln">1229</span><span class="cd">	 *</span></div>
+<div class="cl" data-line="1230"><span class="ln">1230</span><span class="cd">	 * Proper error code is unknown here, it would be -EPIPE if device side</span></div>
+<div class="cl" data-line="1231"><span class="ln">1231</span><span class="cd">	 * of enadpoit halted (aka STALL), and -EPROTO if not (transaction error)</span></div>
+<div class="cl" data-line="1232"><span class="ln">1232</span><span class="cd">	 * We use -EPROTO, if device is stalled it should return a stall error on</span></div>
+<div class="cl" data-line="1233"><span class="ln">1233</span><span class="cd">	 * next transfer, which then will return -EPIPE, and device side stall is</span></div>
+<div class="cl" data-line="1234"><span class="ln">1234</span><span class="cd">	 * noted and cleared by class driver.</span></div>
+<div class="cl" data-line="1235"><span class="ln">1235</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="1236"><span class="ln">1236</span><span class="cd">		switch (GET_EP_CTX_STATE(ep_ctx)) {</span></div>
+<div class="cl" data-line="1237"><span class="ln">1237</span><span class="cd">		case EP_STATE_HALTED:</span></div>
+<div class="cl" data-line="1238"><span class="ln">1238</span><span class="cd">			xhci_dbg(xhci, "Stop ep completion raced with stall\n");</span></div>
+<div class="cl" data-line="1239"><span class="ln">1239</span><span class="cd">			/*</span></div>
+<div class="cl" data-line="1240"><span class="ln">1240</span><span class="cd">			 * If the halt happened before Stop Endpoint failed, its transfer event</span></div>
+<div class="cl" data-line="1241"><span class="ln">1241</span><span class="cd">			 * should have already been handled and Reset Endpoint should be pending.</span></div>
+<div class="cl" data-line="1242"><span class="ln">1242</span><span class="cd">			 */</span></div>
+<div class="cl" data-line="1243"><span class="ln">1243</span><span class="cd">			if (ep-&gt;ep_state &amp; EP_HALTED)</span></div>
+<div class="cl" data-line="1244"><span class="ln">1244</span><span class="cd">				goto reset_done;</span></div>
+<div class="cl" data-line="1245"><span class="ln">1245</span><span class="cd"></span></div>
+<div class="cl" data-line="1246"><span class="ln">1246</span><span class="cd">			if (ep-&gt;ep_state &amp; EP_HAS_STREAMS) {</span></div>
+<div class="cl" data-line="1247"><span class="ln">1247</span><span class="cd">				reset_type = EP_SOFT_RESET;</span></div>
+<div class="cl" data-line="1248"><span class="ln">1248</span><span class="cd">			} else {</span></div>
+<div class="cl" data-line="1249"><span class="ln">1249</span><span class="cd">				reset_type = EP_HARD_RESET;</span></div>
+<div class="cl" data-line="1250"><span class="ln">1250</span><span class="cd">				td = find_halted_td(xhci, ep);</span></div>
+<div class="cl" data-line="1251"><span class="ln">1251</span><span class="cd">				if (td)</span></div>
+<div class="cl" data-line="1252"><span class="ln">1252</span><span class="cd">					td-&gt;status = -EPROTO;</span></div>
+<div class="cl" data-line="1253"><span class="ln">1253</span><span class="cd">			}</span></div>
+<div class="cl" data-line="1254"><span class="ln">1254</span><span class="cd">			/* reset ep, reset handler cleans up cancelled tds */</span></div>
+<div class="cl" data-line="1255"><span class="ln">1255</span><span class="cd">			err = xhci_handle_halted_endpoint(xhci, ep, td, reset_type);</span></div>
+<div class="cl" data-line="1256"><span class="ln">1256</span><span class="cd">			xhci_dbg(xhci, "Stop ep completion resetting ep, status %d\n", err);</span></div>
+<div class="cl" data-line="1257"><span class="ln">1257</span><span class="cd">			if (err)</span></div>
+<div class="cl" data-line="1258"><span class="ln">1258</span><span class="cd">				break;</span></div>
+<div class="cl" data-line="1259"><span class="ln">1259</span><span class="cd">reset_done:</span></div>
+<div class="cl" data-line="1260"><span class="ln">1260</span><span class="cd">			/* Reset EP handler will clean up cancelled TDs */</span></div>
+<div class="cl" data-line="1261"><span class="ln">1261</span><span class="cd">			ep-&gt;ep_state &amp;= ~EP_STOP_CMD_PENDING;</span></div>
+<div class="cl" data-line="1262"><span class="ln">1262</span><span class="cd">			return;</span></div>
+<div class="cl" data-line="1263"><span class="ln">1263</span><span class="cd">		case EP_STATE_STOPPED:</span></div>
+<div class="cl" data-line="1264"><span class="ln">1264</span><span class="cd">			/*</span></div>
+<div class="cl" data-line="1265"><span class="ln">1265</span><span class="cd">			 * Per xHCI 4.6.9, Stop Endpoint command on a Stopped</span></div>
+<div class="cl" data-line="1266"><span class="ln">1266</span><span class="cd">			 * EP is a Context State Error, and EP stays Stopped.</span></div>
+<div class="cl" data-line="1267"><span class="ln">1267</span><span class="cd">			 *</span></div>
+<div class="cl" data-line="1268"><span class="ln">1268</span><span class="cd">			 * But maybe it failed on Halted, and somebody ran Reset</span></div>
+<div class="cl" data-line="1269"><span class="ln">1269</span><span class="cd">			 * Endpoint later. EP state is now Stopped and EP_HALTED</span></div>
+<div class="cl" data-line="1270"><span class="ln">1270</span><span class="cd">			 * still set because Reset EP handler will run after us.</span></div>
+<div class="cl" data-line="1271"><span class="ln">1271</span><span class="cd">			 */</span></div>
+<div class="cl" data-line="1272"><span class="ln">1272</span><span class="cd">			if (ep-&gt;ep_state &amp; EP_HALTED)</span></div>
+<div class="cl" data-line="1273"><span class="ln">1273</span><span class="cd">				break;</span></div>
+<div class="cl" data-line="1274"><span class="ln">1274</span><span class="cd">			/*</span></div>
+<div class="cl" data-line="1275"><span class="ln">1275</span><span class="cd">			 * On some HCs EP state remains Stopped for some tens of</span></div>
+<div class="cl" data-line="1276"><span class="ln">1276</span><span class="cd">			 * us to a few ms or more after a doorbell ring, and any</span></div>
+<div class="cl" data-line="1277"><span class="ln">1277</span><span class="cd">			 * new Stop Endpoint fails without aborting the restart.</span></div>
+<div class="cl" data-line="1278"><span class="ln">1278</span><span class="cd">			 * This handler may run quickly enough to still see this</span></div>
+<div class="cl" data-line="1279"><span class="ln">1279</span><span class="cd">			 * Stopped state, but it will soon change to Running.</span></div>
+<div class="cl" data-line="1280"><span class="ln">1280</span><span class="cd">			 *</span></div>
+<div class="cl" data-line="1281"><span class="ln">1281</span><span class="cd">			 * Assume this bug on unexpected Stop Endpoint failures.</span></div>
+<div class="cl" data-line="1282"><span class="ln">1282</span><span class="cd">			 * Keep retrying until the EP starts and stops again or</span></div>
+<div class="cl" data-line="1283"><span class="ln">1283</span><span class="cd">			 * up to a timeout (a defective HC may never start, or a</span></div>
+<div class="cl" data-line="1284"><span class="ln">1284</span><span class="cd">			 * driver bug may cause stopping an already stopped EP).</span></div>
+<div class="cl" data-line="1285"><span class="ln">1285</span><span class="cd">			 */</span></div>
+<div class="cl" data-line="1286"><span class="ln">1286</span><span class="cd">			if (time_is_before_jiffies(ep-&gt;stop_time + msecs_to_jiffies(100)))</span></div>
+<div class="cl" data-line="1287"><span class="ln">1287</span><span class="cd">				break;</span></div>
+<div class="cl" data-line="1288"><span class="ln">1288</span><span class="cd">			fallthrough;</span></div>
+<div class="cl" data-line="1289"><span class="ln">1289</span><span class="cd">		case EP_STATE_RUNNING:</span></div>
+<div class="cl hot" data-line="1290" data-hot="cmd46:29"><span class="ln">1290</span><span class="cd">			/* Race, HW handled stop ep cmd before ep was running */</span></div>
+<div class="cl" data-line="1291"><span class="ln">1291</span><span class="cd">			xhci_dbg(xhci, "Stop ep completion ctx error, ctx_state %d\n",</span></div>
+<div class="cl" data-line="1292"><span class="ln">1292</span><span class="cd">					GET_EP_CTX_STATE(ep_ctx));</span></div>
+<div class="cl" data-line="1293"><span class="ln">1293</span><span class="cd"></span></div>
+<div class="cl" data-line="1294"><span class="ln">1294</span><span class="cd">			command = xhci_alloc_command(xhci, false, GFP_ATOMIC);</span></div>
+<div class="cl" data-line="1295"><span class="ln">1295</span><span class="cd">			if (!command) {</span></div>
+<div class="cl" data-line="1296"><span class="ln">1296</span><span class="cd">				ep-&gt;ep_state &amp;= ~EP_STOP_CMD_PENDING;</span></div>
+<div class="cl" data-line="1297"><span class="ln">1297</span><span class="cd">				return;</span></div>
+<div class="cl" data-line="1298"><span class="ln">1298</span><span class="cd">			}</span></div>
+<div class="cl hot" data-line="1299" data-hot="cmd46:30"><span class="ln">1299</span><span class="cd">			xhci_queue_stop_endpoint(xhci, command, slot_id, ep_index, 0);</span></div>
+<div class="cl" data-line="1300"><span class="ln">1300</span><span class="cd">			xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="1301"><span class="ln">1301</span><span class="cd"></span></div>
+<div class="cl" data-line="1302"><span class="ln">1302</span><span class="cd">			return;</span></div>
+<div class="cl" data-line="1303"><span class="ln">1303</span><span class="cd">		default:</span></div>
+<div class="cl" data-line="1304"><span class="ln">1304</span><span class="cd">			break;</span></div>
+<div class="cl" data-line="1305"><span class="ln">1305</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1306"><span class="ln">1306</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1307"><span class="ln">1307</span><span class="cd"></span></div>
+<div class="cl" data-line="1308"><span class="ln">1308</span><span class="cd">	/* link is inactive or disconnected, ep is not running and shouldn't be restarted */</span></div>
+<div class="cl" data-line="1309"><span class="ln">1309</span><span class="cd">	if (ep-&gt;vdev-&gt;rhub_port-&gt;link_inactive || !ep-&gt;vdev-&gt;rhub_port-&gt;connected)</span></div>
+<div class="cl" data-line="1310"><span class="ln">1310</span><span class="cd">		ep-&gt;ep_state |= EP_DROP_PENDING;</span></div>
+<div class="cl" data-line="1311"><span class="ln">1311</span><span class="cd"></span></div>
+<div class="cl" data-line="1312"><span class="ln">1312</span><span class="cd">	/* will queue a set TR deq if stopped on a cancelled, uncleared TD */</span></div>
+<div class="cl" data-line="1313"><span class="ln">1313</span><span class="cd">	xhci_invalidate_cancelled_tds(xhci, ep);</span></div>
+<div class="cl" data-line="1314"><span class="ln">1314</span><span class="cd">	ep-&gt;ep_state &amp;= ~EP_STOP_CMD_PENDING;</span></div>
+<div class="cl" data-line="1315"><span class="ln">1315</span><span class="cd"></span></div>
+<div class="cl" data-line="1316"><span class="ln">1316</span><span class="cd">	/* Otherwise ring the doorbell(s) to restart queued transfers */</span></div>
+<div class="cl" data-line="1317"><span class="ln">1317</span><span class="cd">	xhci_giveback_invalidated_tds(xhci, ep);</span></div>
+<div class="cl" data-line="1318"><span class="ln">1318</span><span class="cd">	xhci_ring_doorbell_for_active_rings(xhci, slot_id, ep_index);</span></div>
+<div class="cl" data-line="1319"><span class="ln">1319</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=23">补丁分帧动画 · 三幕走读 →</a>
+        <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 §4.6.9 p122 竞态 Note）</span>
+      </div>
+      <div class="act">
+        <video controls preload="metadata" src="4609-stop-endpoint.mp4"></video>
+        <a class="btn" href="player/index.html?scene=13">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进</span>
+      </div>
+    </div>
+
+    <div class="card s46card" id="s46-10">
+      <div class="s46head"><span class="s46no">4.6.10</span><span class="s46ttl">Set TR Dequeue Pointer</span><span class="s46tag core">核心命令</span><span class="s46pg">p125-p128</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2168-L2169">The Set TR Dequeue Pointer Command is issued by software to modify the TR 
+Dequeue Pointer field of an Endpoint or Stream Context. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2168-L2169（p125）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2170-L2174">The Slot ID and Endpoint ID fields of the Set TR Dequeue Pointer Command 
+TRB identify the USB device, and the endpoint of that device, that is the target 
+of the command. If Streams are enabled for the endpoint, the Set TR Dequeue 
+Pointer Command TRB Stream ID field identifies the Stream Context that shall 
+be modified. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2170-L2174（p125）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2175-L2176">This command may be executed only if the target endpoint is in the Error or 
+Stopped state. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2175-L2176（p125）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2213-L2215">Note: If, when the Transfer Ring was stopped a TD was only partially executed, then 
+any remaining TRBs in that TD shall not be executed when the endpoints’ TR 
+Dequeue Pointer is updated by the Set TR Dequeue Pointer Command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2213-L2215（p126）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2330-L2338">Note: Consider the case where there are multiple TDs posted for pipe for a single 
+data transfer and an error condition on one TD means that the data transfer 
+is terminated, and that the subsequent TDs associated with the data transfer 
+are now invalid. The xHC may have read ahead on the Transfer Ring and 
+cached the subsequent TDs. To ensure that xHC frees any cached information 
+associated with a pipe in a timely manner (so that it can reuse the cache 
+space for other pipes), software shall issue a Set TR Dequeue Pointer 
+Command for the pipe when the data transfer is terminated, vs. waiting for 
+the next data transfer to be ready before issuing the command. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2330-L2338（p128）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2339-L2342">Note: If software issues a Set TR Dequeue Pointer Command that points to a TRB 
+that had previously been partially completed TD, the xHC shall treat that TRB 
+as the first TRB of the TD. that is, any prior state associated with a partially 
+completed TRB is lost. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2339-L2342（p128）</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:1431-1569 · xhci_handle_cmd_set_deq · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1431:1569"><div class="cl" data-line="1431"><span class="ln">1431</span><span class="cd">static void xhci_handle_cmd_set_deq(struct xhci_hcd *xhci, int slot_id,</span></div>
+<div class="cl" data-line="1432"><span class="ln">1432</span><span class="cd">		union xhci_trb *trb, u32 cmd_comp_code)</span></div>
+<div class="cl" data-line="1433"><span class="ln">1433</span><span class="cd">{</span></div>
+<div class="cl" data-line="1434"><span class="ln">1434</span><span class="cd">	unsigned int ep_index;</span></div>
+<div class="cl" data-line="1435"><span class="ln">1435</span><span class="cd">	unsigned int stream_id;</span></div>
+<div class="cl" data-line="1436"><span class="ln">1436</span><span class="cd">	struct xhci_ring *ep_ring;</span></div>
+<div class="cl" data-line="1437"><span class="ln">1437</span><span class="cd">	struct xhci_virt_ep *ep;</span></div>
+<div class="cl" data-line="1438"><span class="ln">1438</span><span class="cd">	struct xhci_ep_ctx *ep_ctx;</span></div>
+<div class="cl" data-line="1439"><span class="ln">1439</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="1440"><span class="ln">1440</span><span class="cd">	struct xhci_stream_ctx *stream_ctx;</span></div>
+<div class="cl" data-line="1441"><span class="ln">1441</span><span class="cd">	struct xhci_td *td, *tmp_td;</span></div>
+<div class="cl" data-line="1442"><span class="ln">1442</span><span class="cd"></span></div>
+<div class="cl" data-line="1443"><span class="ln">1443</span><span class="cd">	ep_index = TRB_TO_EP_INDEX(le32_to_cpu(trb-&gt;generic.field[3]));</span></div>
+<div class="cl" data-line="1444"><span class="ln">1444</span><span class="cd">	stream_id = TRB_TO_STREAM_ID(le32_to_cpu(trb-&gt;generic.field[2]));</span></div>
+<div class="cl" data-line="1445"><span class="ln">1445</span><span class="cd">	ep = xhci_get_virt_ep(xhci, slot_id, ep_index);</span></div>
+<div class="cl" data-line="1446"><span class="ln">1446</span><span class="cd">	if (!ep)</span></div>
+<div class="cl" data-line="1447"><span class="ln">1447</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1448"><span class="ln">1448</span><span class="cd"></span></div>
+<div class="cl" data-line="1449"><span class="ln">1449</span><span class="cd">	ep_ring = xhci_virt_ep_to_ring(xhci, ep, stream_id);</span></div>
+<div class="cl" data-line="1450"><span class="ln">1450</span><span class="cd">	if (!ep_ring) {</span></div>
+<div class="cl" data-line="1451"><span class="ln">1451</span><span class="cd">		xhci_warn(xhci, "WARN Set TR deq ptr command for freed stream ID %u\n",</span></div>
+<div class="cl" data-line="1452"><span class="ln">1452</span><span class="cd">				stream_id);</span></div>
+<div class="cl" data-line="1453"><span class="ln">1453</span><span class="cd">		/* XXX: Harmless??? */</span></div>
+<div class="cl" data-line="1454"><span class="ln">1454</span><span class="cd">		goto cleanup;</span></div>
+<div class="cl" data-line="1455"><span class="ln">1455</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1456"><span class="ln">1456</span><span class="cd"></span></div>
+<div class="cl" data-line="1457"><span class="ln">1457</span><span class="cd">	ep_ctx = xhci_get_ep_ctx(xhci, ep-&gt;vdev-&gt;out_ctx, ep_index);</span></div>
+<div class="cl" data-line="1458"><span class="ln">1458</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, ep-&gt;vdev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="1459"><span class="ln">1459</span><span class="cd">	trace_xhci_handle_cmd_set_deq(slot_ctx);</span></div>
+<div class="cl" data-line="1460"><span class="ln">1460</span><span class="cd">	trace_xhci_handle_cmd_set_deq_ep(ep_ctx);</span></div>
+<div class="cl" data-line="1461"><span class="ln">1461</span><span class="cd"></span></div>
+<div class="cl" data-line="1462"><span class="ln">1462</span><span class="cd">	if (ep-&gt;ep_state &amp; EP_HAS_STREAMS) {</span></div>
+<div class="cl" data-line="1463"><span class="ln">1463</span><span class="cd">		stream_ctx = &amp;ep-&gt;stream_info-&gt;stream_ctx_array[stream_id];</span></div>
+<div class="cl" data-line="1464"><span class="ln">1464</span><span class="cd">		trace_xhci_handle_cmd_set_deq_stream(ep-&gt;stream_info, stream_id);</span></div>
+<div class="cl" data-line="1465"><span class="ln">1465</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1466"><span class="ln">1466</span><span class="cd"></span></div>
+<div class="cl hot" data-line="1467" data-hot="cmd46:25"><span class="ln">1467</span><span class="cd">	if (cmd_comp_code != COMP_SUCCESS) {</span></div>
+<div class="cl" data-line="1468"><span class="ln">1468</span><span class="cd">		unsigned int ep_state;</span></div>
+<div class="cl" data-line="1469"><span class="ln">1469</span><span class="cd">		unsigned int slot_state;</span></div>
+<div class="cl" data-line="1470"><span class="ln">1470</span><span class="cd"></span></div>
+<div class="cl" data-line="1471"><span class="ln">1471</span><span class="cd">		switch (cmd_comp_code) {</span></div>
+<div class="cl" data-line="1472"><span class="ln">1472</span><span class="cd">		case COMP_TRB_ERROR:</span></div>
+<div class="cl" data-line="1473"><span class="ln">1473</span><span class="cd">			xhci_warn(xhci, "WARN Set TR Deq Ptr cmd invalid because of stream ID configuration\n");</span></div>
+<div class="cl" data-line="1474"><span class="ln">1474</span><span class="cd">			break;</span></div>
+<div class="cl" data-line="1475"><span class="ln">1475</span><span class="cd">		case COMP_CONTEXT_STATE_ERROR:</span></div>
+<div class="cl" data-line="1476"><span class="ln">1476</span><span class="cd">			xhci_warn(xhci, "WARN Set TR Deq Ptr cmd failed due to incorrect slot or ep state.\n");</span></div>
+<div class="cl" data-line="1477"><span class="ln">1477</span><span class="cd">			ep_state = GET_EP_CTX_STATE(ep_ctx);</span></div>
+<div class="cl" data-line="1478"><span class="ln">1478</span><span class="cd">			slot_state = le32_to_cpu(slot_ctx-&gt;dev_state);</span></div>
+<div class="cl" data-line="1479"><span class="ln">1479</span><span class="cd">			slot_state = GET_SLOT_STATE(slot_state);</span></div>
+<div class="cl" data-line="1480"><span class="ln">1480</span><span class="cd">			xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,</span></div>
+<div class="cl" data-line="1481"><span class="ln">1481</span><span class="cd">					"Slot state = %u, EP state = %u",</span></div>
+<div class="cl" data-line="1482"><span class="ln">1482</span><span class="cd">					slot_state, ep_state);</span></div>
+<div class="cl" data-line="1483"><span class="ln">1483</span><span class="cd">			break;</span></div>
+<div class="cl" data-line="1484"><span class="ln">1484</span><span class="cd">		case COMP_SLOT_NOT_ENABLED_ERROR:</span></div>
+<div class="cl" data-line="1485"><span class="ln">1485</span><span class="cd">			xhci_warn(xhci, "WARN Set TR Deq Ptr cmd failed because slot %u was not enabled.\n",</span></div>
+<div class="cl" data-line="1486"><span class="ln">1486</span><span class="cd">					slot_id);</span></div>
+<div class="cl" data-line="1487"><span class="ln">1487</span><span class="cd">			break;</span></div>
+<div class="cl" data-line="1488"><span class="ln">1488</span><span class="cd">		default:</span></div>
+<div class="cl" data-line="1489"><span class="ln">1489</span><span class="cd">			xhci_warn(xhci, "WARN Set TR Deq Ptr cmd with unknown completion code of %u.\n",</span></div>
+<div class="cl" data-line="1490"><span class="ln">1490</span><span class="cd">					cmd_comp_code);</span></div>
+<div class="cl" data-line="1491"><span class="ln">1491</span><span class="cd">			break;</span></div>
+<div class="cl" data-line="1492"><span class="ln">1492</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1493"><span class="ln">1493</span><span class="cd">		/* OK what do we do now?  The endpoint state is hosed, and we</span></div>
+<div class="cl" data-line="1494"><span class="ln">1494</span><span class="cd">		 * should never get to this point if the synchronization between</span></div>
+<div class="cl" data-line="1495"><span class="ln">1495</span><span class="cd">		 * queueing, and endpoint state are correct.  This might happen</span></div>
+<div class="cl" data-line="1496"><span class="ln">1496</span><span class="cd">		 * if the device gets disconnected after we've finished</span></div>
+<div class="cl" data-line="1497"><span class="ln">1497</span><span class="cd">		 * cancelling URBs, which might not be an error...</span></div>
+<div class="cl" data-line="1498"><span class="ln">1498</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="1499"><span class="ln">1499</span><span class="cd">	} else {</span></div>
+<div class="cl" data-line="1500"><span class="ln">1500</span><span class="cd">		u64 deq;</span></div>
+<div class="cl hot" data-line="1501" data-hot="cmd46:26"><span class="ln">1501</span><span class="cd">		/* 4.6.10 deq ptr is written to the stream ctx for streams */</span></div>
+<div class="cl" data-line="1502"><span class="ln">1502</span><span class="cd">		if (ep-&gt;ep_state &amp; EP_HAS_STREAMS) {</span></div>
+<div class="cl" data-line="1503"><span class="ln">1503</span><span class="cd">			deq = le64_to_cpu(stream_ctx-&gt;stream_ring) &amp; TR_DEQ_PTR_MASK;</span></div>
+<div class="cl" data-line="1504"><span class="ln">1504</span><span class="cd"></span></div>
+<div class="cl" data-line="1505"><span class="ln">1505</span><span class="cd">			/*</span></div>
+<div class="cl" data-line="1506"><span class="ln">1506</span><span class="cd">			 * Cadence xHCI controllers store some endpoint state</span></div>
+<div class="cl" data-line="1507"><span class="ln">1507</span><span class="cd">			 * information within Rsvd0 fields of Stream Endpoint</span></div>
+<div class="cl" data-line="1508"><span class="ln">1508</span><span class="cd">			 * context. This field is not cleared during Set TR</span></div>
+<div class="cl" data-line="1509"><span class="ln">1509</span><span class="cd">			 * Dequeue Pointer command which causes XDMA to skip</span></div>
+<div class="cl" data-line="1510"><span class="ln">1510</span><span class="cd">			 * over transfer ring and leads to data loss on stream</span></div>
+<div class="cl" data-line="1511"><span class="ln">1511</span><span class="cd">			 * pipe.</span></div>
+<div class="cl" data-line="1512"><span class="ln">1512</span><span class="cd">			 * To fix this issue driver must clear Rsvd0 field.</span></div>
+<div class="cl" data-line="1513"><span class="ln">1513</span><span class="cd">			 */</span></div>
+<div class="cl" data-line="1514"><span class="ln">1514</span><span class="cd">			if (xhci-&gt;quirks &amp; XHCI_CDNS_SCTX_QUIRK) {</span></div>
+<div class="cl" data-line="1515"><span class="ln">1515</span><span class="cd">				stream_ctx-&gt;reserved[0] = 0;</span></div>
+<div class="cl" data-line="1516"><span class="ln">1516</span><span class="cd">				stream_ctx-&gt;reserved[1] = 0;</span></div>
+<div class="cl" data-line="1517"><span class="ln">1517</span><span class="cd">			}</span></div>
+<div class="cl" data-line="1518"><span class="ln">1518</span><span class="cd">		} else {</span></div>
+<div class="cl" data-line="1519"><span class="ln">1519</span><span class="cd">			deq = le64_to_cpu(ep_ctx-&gt;deq) &amp; TR_DEQ_PTR_MASK;</span></div>
+<div class="cl" data-line="1520"><span class="ln">1520</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1521"><span class="ln">1521</span><span class="cd">		xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,</span></div>
+<div class="cl" data-line="1522"><span class="ln">1522</span><span class="cd">			"Successful Set TR Deq Ptr cmd, deq = @%08llx", deq);</span></div>
+<div class="cl" data-line="1523"><span class="ln">1523</span><span class="cd">		if (xhci_trb_virt_to_dma(ep-&gt;queued_deq_seg,</span></div>
+<div class="cl" data-line="1524"><span class="ln">1524</span><span class="cd">					 ep-&gt;queued_deq_ptr) == deq) {</span></div>
+<div class="cl" data-line="1525"><span class="ln">1525</span><span class="cd">			/* Update the ring's dequeue segment and dequeue pointer</span></div>
+<div class="cl" data-line="1526"><span class="ln">1526</span><span class="cd">			 * to reflect the new position.</span></div>
+<div class="cl" data-line="1527"><span class="ln">1527</span><span class="cd">			 */</span></div>
+<div class="cl hot" data-line="1528" data-hot="cmd46:27"><span class="ln">1528</span><span class="cd">			ep_ring-&gt;deq_seg = ep-&gt;queued_deq_seg;</span></div>
+<div class="cl" data-line="1529"><span class="ln">1529</span><span class="cd">			ep_ring-&gt;dequeue = ep-&gt;queued_deq_ptr;</span></div>
+<div class="cl" data-line="1530"><span class="ln">1530</span><span class="cd">		} else {</span></div>
+<div class="cl" data-line="1531"><span class="ln">1531</span><span class="cd">			xhci_warn(xhci, "Mismatch between completed Set TR Deq Ptr command &amp; xHCI internal state.\n");</span></div>
+<div class="cl" data-line="1532"><span class="ln">1532</span><span class="cd">			xhci_warn(xhci, "ep deq seg = %p, deq ptr = %p\n",</span></div>
+<div class="cl" data-line="1533"><span class="ln">1533</span><span class="cd">				  ep-&gt;queued_deq_seg, ep-&gt;queued_deq_ptr);</span></div>
+<div class="cl" data-line="1534"><span class="ln">1534</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1535"><span class="ln">1535</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="1536" data-hot="cmd46:28"><span class="ln">1536</span><span class="cd">	/* HW cached TDs cleared from cache, give them back */</span></div>
+<div class="cl" data-line="1537"><span class="ln">1537</span><span class="cd">	list_for_each_entry_safe(td, tmp_td, &amp;ep-&gt;cancelled_td_list,</span></div>
+<div class="cl" data-line="1538"><span class="ln">1538</span><span class="cd">				 cancelled_td_list) {</span></div>
+<div class="cl" data-line="1539"><span class="ln">1539</span><span class="cd">		ep_ring = xhci_urb_to_transfer_ring(xhci, td-&gt;urb);</span></div>
+<div class="cl" data-line="1540"><span class="ln">1540</span><span class="cd">		if (td-&gt;cancel_status == TD_CLEARING_CACHE) {</span></div>
+<div class="cl" data-line="1541"><span class="ln">1541</span><span class="cd">			td-&gt;cancel_status = TD_CLEARED;</span></div>
+<div class="cl" data-line="1542"><span class="ln">1542</span><span class="cd">			xhci_dbg(xhci, "%s: Giveback cancelled URB %p TD\n",</span></div>
+<div class="cl" data-line="1543"><span class="ln">1543</span><span class="cd">				 __func__, td-&gt;urb);</span></div>
+<div class="cl" data-line="1544"><span class="ln">1544</span><span class="cd">			xhci_td_cleanup(xhci, td, ep_ring, td-&gt;status);</span></div>
+<div class="cl" data-line="1545"><span class="ln">1545</span><span class="cd">		} else {</span></div>
+<div class="cl" data-line="1546"><span class="ln">1546</span><span class="cd">			xhci_dbg(xhci, "%s: Keep cancelled URB %p TD as cancel_status is %d\n",</span></div>
+<div class="cl" data-line="1547"><span class="ln">1547</span><span class="cd">				 __func__, td-&gt;urb, td-&gt;cancel_status);</span></div>
+<div class="cl" data-line="1548"><span class="ln">1548</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1549"><span class="ln">1549</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1550"><span class="ln">1550</span><span class="cd">cleanup:</span></div>
+<div class="cl" data-line="1551"><span class="ln">1551</span><span class="cd">	ep-&gt;ep_state &amp;= ~SET_DEQ_PENDING;</span></div>
+<div class="cl" data-line="1552"><span class="ln">1552</span><span class="cd">	ep-&gt;queued_deq_seg = NULL;</span></div>
+<div class="cl" data-line="1553"><span class="ln">1553</span><span class="cd">	ep-&gt;queued_deq_ptr = NULL;</span></div>
+<div class="cl" data-line="1554"><span class="ln">1554</span><span class="cd"></span></div>
+<div class="cl" data-line="1555"><span class="ln">1555</span><span class="cd">	/* Check for deferred or newly cancelled TDs */</span></div>
+<div class="cl" data-line="1556"><span class="ln">1556</span><span class="cd">	if (!list_empty(&amp;ep-&gt;cancelled_td_list)) {</span></div>
+<div class="cl" data-line="1557"><span class="ln">1557</span><span class="cd">		xhci_dbg(xhci, "%s: Pending TDs to clear, continuing with invalidation\n",</span></div>
+<div class="cl" data-line="1558"><span class="ln">1558</span><span class="cd">			 __func__);</span></div>
+<div class="cl" data-line="1559"><span class="ln">1559</span><span class="cd">		xhci_invalidate_cancelled_tds(xhci, ep);</span></div>
+<div class="cl" data-line="1560"><span class="ln">1560</span><span class="cd">		/* Try to restart the endpoint if all is done */</span></div>
+<div class="cl" data-line="1561"><span class="ln">1561</span><span class="cd">		xhci_ring_doorbell_for_active_rings(xhci, slot_id, ep_index);</span></div>
+<div class="cl" data-line="1562"><span class="ln">1562</span><span class="cd">		/* Start giving back any TDs invalidated above */</span></div>
+<div class="cl" data-line="1563"><span class="ln">1563</span><span class="cd">		xhci_giveback_invalidated_tds(xhci, ep);</span></div>
+<div class="cl" data-line="1564"><span class="ln">1564</span><span class="cd">	} else {</span></div>
+<div class="cl" data-line="1565"><span class="ln">1565</span><span class="cd">		/* Restart any rings with pending URBs */</span></div>
+<div class="cl" data-line="1566"><span class="ln">1566</span><span class="cd">		xhci_dbg(xhci, "%s: All TDs cleared, ring doorbell\n", __func__);</span></div>
+<div class="cl" data-line="1567"><span class="ln">1567</span><span class="cd">		xhci_ring_doorbell_for_active_rings(xhci, slot_id, ep_index);</span></div>
+<div class="cl" data-line="1568"><span class="ln">1568</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1569"><span class="ln">1569</span><span class="cd">}</span></div></pre>
+      <p class="ph">规范算法全文收纳（短片降密度：片内只讲机制主线，全文在此逐字备查）</p>
+      <blockquote data-ck="spec:spec-46.txt:L2181-L2182">The xHC shall perform the following operations when setting a ring address: 
+</blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2181-L2182（p125）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2188-L2209">• 
+If the endpoint is not in the Error or Stopped state when the Set TR 
+Dequeue Pointer Command is executed: 
+o 
+The xHC shall reject the command and generate a Command 
+Completion Event with the Completion Code set to Context State Error. 
+• 
+else // The endpoint is in the Error or Stopped state 
+o 
+Set the Dequeue Pointer to the value of the New TR Dequeue Pointer 
+field in the Set TR Dequeue Pointer TRB. 
+o 
+Invalidate any xHC TDs that may be cached, forcing xHC to fetch 
+Transfer TRBs from memory when the pipe transitions from the 
+Stopped to the Running state. 
+• 
+Copy the value of the New TR Dequeue Pointer field in the Set TR Dequeue 
+Pointer TRB to the TR Dequeue Pointer field of the target Endpoint or 
+Stream Context. 
+o 
+Clear any prior transfer state, for example, setting the EDTLA to 0, 
+clearing any partially completed USB2 split transactions, etc. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2188-L2209（p126）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2220-L2243">To issue a Set TR Dequeue Pointer Command system software shall perform 
+the following operations: 
+• 
+Insert a Set TR Dequeue Pointer Command on the Command Ring and 
+initialize the following fields: 
+o 
+TRB Type = Set TR Dequeue Pointer Command (refer to Table 6-91). 
+o 
+Endpoint ID = ID of the target endpoint. 
+o 
+Stream ID = ID of the target Stream Context or ‘0’ if MaxPStreams = 
+‘0’. 
+o 
+Slot ID = ID of the target Device Slot. 
+o 
+New TR Dequeue Pointer = The new TR Dequeue Pointer field value for 
+the target endpoint. 
+o 
+Dequeue Cycle State (DCS) = The state of the xHCI CCS flag for the 
+TRB pointed to by the TR Dequeue Pointer field. 
+o 
+Clear all other fields of the command TRB to ‘0’. 
+o 
+Cycle bit = Command Ring’s PCS flag. </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2220-L2243（p126）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2253-L2319">When a Set TR Dequeue Pointer Command is executed by the xHC it shall 
+perform the following operations: 
+• 
+Insert a Command Completion Event on the Event Ring and initialize the 
+following fields: 
+o 
+TRB Type = Command Completion Event (refer to Table 6-91). 
+o 
+Command TRB Pointer = The address of the Set TR Dequeue Pointer 
+Command TRB. 
+o 
+Slot ID = The value of the command’s Slot ID. 
+o 
+If the Device Slot identified by the Slot ID has been enabled by an 
+Enable Slot Command: 
+•  
+Retrieve the Device Context of the selected Device Slot. 
+•  
+If the Slot State is set to Default, Configured, or Addressed: 
+o 
+If the Endpoint State (EP State) field equals Stopped or Error: 
+•  
+If the Stream ID field is non-zero a Stream Context is referenced so 
+perform a Stream ID boundary check as described in section 
+4.12.2.1: 
+•  
+If the Stream ID is valid: 
+•  
+Copy the value of the New TR Dequeue Pointer field to the TR 
+Dequeue Pointer field of the target Stream Context. 
+•  
+Copy the value of the Dequeue Cycle State (DCS) field to the Dequeue 
+Cycle State (DCS) field of the target Stream Context. 
+•  
+Completion Code = Success (refer to Table 6-90). 
+•  
+else // The Stream ID is invalid 
+•  
+Completion Code = TRB Error. 
+•  
+else (Stream ID = ‘0’) 
+•  
+If MaxPStreams = ‘0’: 
+•  
+Copy the value of the New TR Dequeue Pointer field to the TR Dequeue 
+Pointer field of the target Endpoint Context. 
+•  
+Copy the value of the Dequeue Cycle State (DCS) field to the Dequeue 
+Cycle State (DCS) field of the target Endpoint Context. 
+•  
+Completion Code = Success. 
+•  
+else // MaxPStreams &gt; ‘0’ 
+•  
+Completion Code = TRB Error. 
+o 
+else // The Endpoint State (EP State) field is not Stopped or Error 
+•  
+Completion Code = Context State Error. 
+• 
+else // The Slot State is not set to Default, Configured, or Addressed 
+• 
+Completion Code = Context State Error. 
+o 
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2253-L2319（p127）</div>
+      <blockquote data-ck="spec:spec-46.txt:L2327-L2346">Clear all other fields of the event TRB to ‘0’. 
+• 
+Cycle bit = Event Ring’s PCS flag. 
+Note: Consider the case where there are multiple TDs posted for pipe for a single 
+data transfer and an error condition on one TD means that the data transfer 
+is terminated, and that the subsequent TDs associated with the data transfer 
+are now invalid. The xHC may have read ahead on the Transfer Ring and 
+cached the subsequent TDs. To ensure that xHC frees any cached information 
+associated with a pipe in a timely manner (so that it can reuse the cache 
+space for other pipes), software shall issue a Set TR Dequeue Pointer 
+Command for the pipe when the data transfer is terminated, vs. waiting for 
+the next data transfer to be ready before issuing the command. 
+Note: If software issues a Set TR Dequeue Pointer Command that points to a TRB 
+that had previously been partially completed TD, the xHC shall treat that TRB 
+as the first TRB of the TD. that is, any prior state associated with a partially 
+completed TRB is lost. 
+Note: The xHC does not maintain knowledge of which Streams are active or non-
+active. If software issues a Set TR Dequeue Pointer Command that targets an 
+active Stream of an endpoint, undefined behavior may occur. Refer to section 
+4.12 for active vs. non-active Stream Context information) </blockquote>
+      <div class="qsrc">—— evidence/spec-46.txt L2327-L2346（p128）</div>
+            <div class="phead">上游 commit 0d9f78a92ef5e97d9fe51d9215ebe22f6f0d289d · 2012-06-21 · Sarah Sharp（Intel） · drivers/usb/host/xhci-ring.c 1 文件 +11/-0 · hunk @@ -885,6 +885,17 @@（update_ring_for_set_deq_completion）· Cc: stable，回移至 3.4+</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:0d9f78a92ef5e97d9fe51d9215ebe22f6f0d289d">commit 0d9f78a92ef5e97d9fe51d9215ebe22f6f0d289d
+Author: Sarah Sharp &lt;sarah.a.sharp@linux.intel.com&gt;
+Date:   Thu Jun 21 16:28:30 2012 -0700
+
+    xhci: Fix hang on back-to-back Set TR Deq Ptr commands.
+    
+    The Microsoft LifeChat 3000 USB headset was causing a very reproducible
+    hang whenever it was plugged in.  At first, I thought the host
+    controller was producing bad transfer events, because the log was filled
+    with errors like:
+    
+    xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr not part of current TD
+    
+    However, it turned out to be an xHCI driver bug in the ring expansion
+    patches.  The bug is triggered When there are two ring segments, and a
+    TD that ends just before a link TRB, like so:
+    
+     ______________                     _____________
+    |              |              ---&gt; | setup TRB B |
+     ______________               |     _____________
+    |              |              |    |  data TRB B |
+     ______________               |     _____________
+    | setup TRB A  | &lt;-- deq      |    |  data TRB B |
+     ______________               |     _____________
+    | data TRB A   |              |    |             | &lt;-- enq, deq''
+     ______________               |     _____________
+    | status TRB A |              |    |             |
+     ______________               |     _____________
+    |  link TRB    |---------------    |  link TRB   |
+     _____________  &lt;--- deq'           _____________
+    
+    TD A (the first control transfer) stalls on the data phase.  That halts
+    the ring.  The xHCI driver moves the hardware dequeue pointer to the
+    first TRB after the stalled transfer, which happens to be the link TRB.
+    
+    Once the Set TR dequeue pointer command completes, the function
+    update_ring_for_set_deq_completion runs.  That function is supposed to
+    update the xHCI driver's dequeue pointer to match the internal hardware
+    dequeue pointer.  On the first call this would work fine, and the
+    software dequeue pointer would move to deq'.
+    
+    However, if the transfer immediately after that stalled (TD B in this
+    case), another Set TR Dequeue command would be issued.  That would move
+    the hardware dequeue pointer to deq''.  Once that command completed,
+    update_ring_for_set_deq_completion would run again.
+    
+    The original code would unconditionally increment the software dequeue
+    pointer, which moved the pointer off the ring segment into la-la-land.
+    The while loop would happy increment the dequeue pointer (possibly
+    wrapping it) until it matched the hardware pointer value.
+    
+    The while loop would also access all the memory in between the first
+    ring segment and the second ring segment to determine if it was a link
+    TRB.  This could cause general protection faults, although it was
+    unlikely because the ring segments came from a DMA pool, and would often
+    have consecutive memory addresses.
+    
+    If nothing in that space looked like a link TRB, the deq_seg pointer for
+    the ring would remain on the first segment.  Thus, the deq_seg and the
+    software dequeue pointer would get out of sync.
+    
+    When the next transfer event came in after the stalled transfer, the
+    xHCI driver code would attempt to convert the software dequeue pointer
+    into a DMA address in order to compare the DMA address for the completed
+    transfer.  Since the deq_seg and the dequeue pointer were out of sync,
+    xhci_trb_virt_to_dma would return NULL.
+    
+    The transfer event would get ignored, the transfer would eventually
+    timeout, and we would mistakenly convert the finished transfer to no-op
+    TRBs.  Some kernel driver (maybe xHCI?) would then get stuck in an
+    infinite loop in interrupt context, and the whole machine would hang.
+    
+    This patch should be backported to kernels as old as 3.4, that contain
+    the commit b008df60c6369ba0290fa7daa177375407a12e07 "xHCI: count free
+    TRBs on transfer ring"
+    
+    Signed-off-by: Sarah Sharp &lt;sarah.a.sharp@linux.intel.com&gt;
+    Cc: Andiry Xu &lt;andiry.xu@amd.com&gt;
+    Cc: stable@vger.kernel.org
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index 23b4aefd1036..8275645889da 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -885,6 +885,17 @@ static void update_ring_for_set_deq_completion(struct xhci_hcd *xhci,</span>
+<span class="d-ctx"> 	num_trbs_free_temp = ep_ring-&gt;num_trbs_free;</span>
+<span class="d-ctx"> 	dequeue_temp = ep_ring-&gt;dequeue;</span>
+<span class="d-ctx"> </span>
+<span class="d-add">+	/* If we get two back-to-back stalls, and the first stalled transfer</span>
+<span class="d-add">+	 * ends just before a link TRB, the dequeue pointer will be left on</span>
+<span class="d-add">+	 * the link TRB by the code in the while loop.  So we have to update</span>
+<span class="d-add">+	 * the dequeue pointer one segment further, or we'll jump off</span>
+<span class="d-add">+	 * the segment into la-la-land.</span>
+<span class="d-add">+	 */</span>
+<span class="d-add">+	if (last_trb(xhci, ep_ring, ep_ring-&gt;deq_seg, ep_ring-&gt;dequeue)) {</span>
+<span class="d-add">+		ep_ring-&gt;deq_seg = ep_ring-&gt;deq_seg-&gt;next;</span>
+<span class="d-add">+		ep_ring-&gt;dequeue = ep_ring-&gt;deq_seg-&gt;trbs;</span>
+<span class="d-add">+	}</span>
+<span class="d-add">+</span>
+<span class="d-ctx"> 	while (ep_ring-&gt;dequeue != dev-&gt;eps[ep_index].queued_deq_ptr) {</span>
+<span class="d-ctx"> 		/* We have more usable TRBs */</span>
+<span class="d-ctx"> 		ep_ring-&gt;num_trbs_free++;</span></pre>
+      <p class="ph">背景（何时 / 谁修 / 为什么是它）</p>
+      <p class="pbody">2012 年 6 月，Intel Sarah Sharp 提交。Microsoft LifeChat 3000 耳机一插就稳定挂死，日志刷屏 "ERROR Transfer event TRB DMA ptr not part of current TD"。触发面=双段环 + TD 恰好结束在 link TRB 之前：第一次 stall 后 Set TR Deq 把硬件出队指针停在 link TRB 上；紧接着又一次 stall、又一次 Set TR Deq（背靠背）。对应 §4.6.10 换起点链：命令的硬件面职责是改指针+失效缓存（p126），软件侧簿记（命令完成后 sw 出队指针对齐硬件实际位置）是本补丁的战场。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：整机挂死。机制（message 原文）：update_ring_for_set_deq_completion 无条件推进软件出队指针——指针已停在 link TRB（段尾）时一推即越出段外（la-la-land），while 循环在段间内存里狂找匹配（顺带 GPF 隐患），deq_seg 与 dequeue 失同步 → <code>xhci_trb_virt_to_dma</code> 返回 NULL → 后续传输事件被忽略 → 超时转 No-Op → 中断上下文死循环。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">while 循环前补 last_trb 段尾守卫（+11）：软件出队指针停在 link TRB 时，先把 deq_seg 前进一段、dequeue 回新段首，while 从正确的段出发找 queued_deq_ptr——越段扫描、失同步、挂死三点全堵。沿革（诚实注记）：该函数已于 2025-03-06 被 856563be98b2 移除（deq_seg/deq_ptr 直接存 queued_deq_seg/queued_deq_ptr，无需再搜），基线不含修复后形态，故本卡无对读段；本支判据=diff 原文（drafts/patch-48.txt）。与贴码对读：本卡贴码 set:27 热行（deq_seg 从 queued_* 取回）即该簿记的现代形态——修复保护的语义延续至今；分帧走读见 ch4610p（scene=22）。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=22">补丁分帧动画 · 三幕走读 →</a>
+        <span class="note">背景现场 → diff 逐行走读 → 规范收尾 + 函数沿革注记（无对读段：修复函数已退役）</span>
+      </div>
+      <div class="act">
+        <video controls preload="metadata" src="4610-set-tr-dequeue-pointer.mp4"></video>
+        <a class="btn" href="player/index.html?scene=14">分帧版 · 逐真帧步进 →</a>
         <span class="note">与视频 1:1 同源 · 教学拍步进</span>
       </div>
     </div>
@@ -3797,29 +5173,9 @@ Cycle bit = Event Ring’s PCS flag. </blockquote>
       <div class="qsrc">—— evidence/spec-46.txt L2385-L2437（p129）</div>
             <div class="act">
         <video controls preload="metadata" src="4611-reset-device.mp4"></video>
-        <a class="btn" href="player/index.html?scene=11">分帧版 · 逐真帧步进 →</a>
+        <a class="btn" href="player/index.html?scene=15">分帧版 · 逐真帧步进 →</a>
         <span class="note">与视频 1:1 同源 · 教学拍步进</span>
       </div>
-    </div>
-
-    <div class="card s46todo" id="s46-07">
-      <div class="s46head"><span class="s46no">4.6.7</span><span class="s46ttl">Evaluate Context</span><span class="s46tag core">核心命令</span><span class="s46pg">p112-p114</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 C：端点批）。</p>
-    </div>
-
-    <div class="card s46todo" id="s46-08">
-      <div class="s46head"><span class="s46no">4.6.8</span><span class="s46ttl">Reset Endpoint</span><span class="s46tag core">核心命令</span><span class="s46pg">p114-p118</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 C：端点批）。</p>
-    </div>
-
-    <div class="card s46todo" id="s46-09">
-      <div class="s46head"><span class="s46no">4.6.9</span><span class="s46ttl">Stop Endpoint</span><span class="s46tag core">核心命令</span><span class="s46pg">p118-p125</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 C：端点批）。</p>
-    </div>
-
-    <div class="card s46todo" id="s46-10">
-      <div class="s46head"><span class="s46no">4.6.10</span><span class="s46ttl">Set TR Dequeue Pointer</span><span class="s46tag core">核心命令</span><span class="s46pg">p125-p128</span></div>
-      <p class="int-note">短片制作中——R10 后续批次上线（批 C：端点批）。</p>
     </div>
 
     <div class="card s46todo" id="s46-12">
@@ -4431,6 +5787,138 @@ Set the Slot State in the Output Slot Context to Configured.
 Set the Context Entries field in the Output Slot Context to the index of 
 the last valid Endpoint Context in its Output Device Context structure. </blockquote>
 <div class="qsrc">—— evidence/spec-46.txt L1193-L1204（p110）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-16">
+<p class="tipnote">完成码翻译：参数无效=Parameter Error——dev_warn 直说「xHCI driver setup invalid evaluate context command」，-EINVAL；xHC 逐 Add 评估参数（p113），驱动侧把 CC 翻成 errno。</p>
+<blockquote data-ck="spec:spec-46.txt:L1380-L1382">If the Context parameters are not valid: 
+•  
+Completion Code = Parameter Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1380-L1382（p113）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-17">
+<p class="tipnote">完成码翻译：槽从未被 Enable Slot 使能→Slot Not Enabled Error→-EINVAL——对应规范执行算法 else 分支（p113 L1403-1405）。</p>
+<blockquote data-ck="spec:spec-46.txt:L1399-L1405">else // The Output Slot State is not equal to Default, Addressed or Configured 
+•  
+Completion Code = Context State Error. 
+•  
+else // The slot has not been enabled by an Enable Slot Command 
+•  
+Completion Code = Slot Not Enabled Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1399-L1405（p113）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-18">
+<p class="tipnote">完成码翻译：输出槽态不在 Default/Addressed/Configured→Context State Error→-EINVAL——评估只受理三态槽（p113 L1399-1401）。</p>
+<blockquote data-ck="spec:spec-46.txt:L1399-L1401">else // The Output Slot State is not equal to Default, Addressed or Configured 
+•  
+Completion Code = Context State Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1399-L1401（p113）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-19">
+<p class="tipnote">完成码翻译：MEL≠0 时 xHC 算 Isoch 排程延迟，MEL+延迟排不下周期端点→Max Exit Latency Too Large Error→-EINVAL（p113 L1384-1391）。</p>
+<blockquote data-ck="spec:spec-46.txt:L1384-L1391">If the Max Exit Latency is non-zero: 
+•  
+Calculate the Isoch Scheduling Delay. 
+•  
+If the Max Exit Latency + Isoch Scheduling Delay does not allow an Isoch endpoint to 
+be scheduled: 
+•  
+Completion Code = Max Exit Latency Too Large Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1384-L1391（p113）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-20">
+<p class="tipnote">驱动对 Reset Endpoint 完成码显式「不关心」：规范规定非 Halted→Context State Error（p114），xHC 以完成码报态即可，恢复动作全在软件侧。</p>
+<blockquote data-ck="spec:spec-46.txt:L1450-L1453">If the endpoint is not in the Halted state when an Reset Endpoint Command is executed: 
+•  
+The xHC shall reject the command and generate a Command Completion Event with the 
+Completion Code set to Context State Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1450-L1453（p114）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-21">
+<p class="tipnote">清理已取消 TD（注释原文：May queue a Set TR Deq cmd）——Reset Endpoint 与 Set TR Dequeue Pointer 的规范配合点（p115 reset-a-pipe 第④步）。</p>
+<blockquote data-ck="spec:spec-46.txt:L1496-L1502">Note: Prior to restarting the Transfer Ring, software may use the Set TR Dequeue 
+Pointer Command to modify the value of the TR Dequeue Pointer field of the 
+Endpoint Context and clear the endpoint state associated with the previously 
+executed packet. If the Reset Endpoint Command is followed with a Set TR 
+Dequeue Pointer Command, the endpoint shall start execution at the 
+beginning of the TRB referenced by the TR Dequeue Pointer the next time the 
+doorbell is rung. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1496-L1502（p115）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-22">
+<p class="tipnote">TSP='1'（Soft Reset）→ 完成后直接敲端点门铃重启=Soft Retry 的 xHC 侧动作；TSP='0' 的账本清理由 xHC 在命令内完成（p114）。</p>
+<blockquote data-ck="spec:spec-46.txt:L1457-L1459">If the Transfer State Preserve (TSP) flag is ‘0’: 
+•  
+Reset the Data Toggle for USB2 devices or the Sequence Number for USB3 devices. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1457-L1459（p114）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-23">
+<p class="tipnote">同步包装只受理 Running 端点——发令前的前置检查（p125：EP State 非 Running→Context State Error）。</p>
+<blockquote data-ck="spec:spec-46.txt:L2129-L2131">If the Endpoint State (EP State) field equals Running: 
+•  
+Stop the USB activity for the pipe as described above. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L2129-L2131（p125）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-24">
+<p class="tipnote">完成侧对 COMP_CONTEXT_STATE_ERROR 无处理（竞态假失败的入口）：完成处理器内 1174d44906d5 补了环在跑=重发命令的自愈分支。</p>
+<blockquote data-ck="spec:spec-46.txt:L1881-L1887">A possible race condition may occur if software, thinking an endpoint is in the 
+Running state, issues a Stop Endpoint Command however at the same time 
+the xHC asynchronously transitions the endpoint to the Halted or Error state. 
+In this case, a Context State Error may be generated for the command 
+completion. Software may verify that this case occurred by inspecting the EP 
+State for Halted or Error when a Stop Endpoint Command results in a Context 
+State Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1881-L1887（p122）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-25">
+<p class="tipnote">Set TR Deq Ptr 完成分派：非 Success 走告警分派（TRB Error/Context State Error/Slot Not Enabled），Success 才更新软件簿记（p127 CC 四族）。</p>
+<blockquote data-ck="spec:spec-46.txt:L2175-L2176">This command may be executed only if the target endpoint is in the Error or 
+Stopped state. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L2175-L2176（p125）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-26">
+<p class="tipnote">流端点：出队指针写在 Stream Context——驱动注释直引规范小节号（p125 Stream ID 寻址语义）。</p>
+<blockquote data-ck="spec:spec-46.txt:L2170-L2174">The Slot ID and Endpoint ID fields of the Set TR Dequeue Pointer Command 
+TRB identify the USB device, and the endpoint of that device, that is the target 
+of the command. If Streams are enabled for the endpoint, the Set TR Dequeue 
+Pointer Command TRB Stream ID field identifies the Stream Context that shall 
+be modified. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L2170-L2174（p125）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-27">
+<p class="tipnote">Success 后软件簿记对齐：deq_seg/dequeue 从 queued_* 取回——0d9f78a92ef5 历史挂死的位置（update_ring_for_set_deq_completion 已于 856563be98b2 退役，现形态直接存 queued_*）。</p>
+<blockquote data-ck="spec:spec-46.txt:L2204-L2206">Copy the value of the New TR Dequeue Pointer field in the Set TR Dequeue 
+Pointer TRB to the TR Dequeue Pointer field of the target Endpoint or 
+Stream Context. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L2204-L2206（p126）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-28">
+<p class="tipnote">缓存 TD 已失效归零后的回执处理——规范「Invalidate any xHC TDs that may be cached」的驱动侧落点（p126）。</p>
+<blockquote data-ck="spec:spec-46.txt:L2200-L2202">Invalidate any xHC TDs that may be cached, forcing xHC to fetch 
+Transfer TRBs from memory when the pipe transitions from the 
+Stopped to the Running state. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L2200-L2202（p126）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-29">
+<p class="tipnote">竞态分支入口（1174d44906d5 修复块，至今存活）：完成报 Context State Error 但环实际在跑=停止败给了取消重启——规范 p122 竞态 Note 的驱动侧实修。</p>
+<blockquote data-ck="spec:spec-46.txt:L1881-L1887">A possible race condition may occur if software, thinking an endpoint is in the 
+Running state, issues a Stop Endpoint Command however at the same time 
+the xHC asynchronously transitions the endpoint to the Halted or Error state. 
+In this case, a Context State Error may be generated for the command 
+completion. Software may verify that this case occurred by inspecting the EP 
+State for Halted or Error when a Stop Endpoint Command results in a Context 
+State Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1881-L1887（p122）</div>
+</div>
+<div class="tipdoc" id="tip-cmd46-30">
+<p class="tipnote">竞态自愈动作：GFP_ATOMIC 原地分配命令、重挂 stop_cmd_timer、重发 Stop Endpoint、重敲命令环门铃。</p>
+<blockquote data-ck="spec:spec-46.txt:L1881-L1887">A possible race condition may occur if software, thinking an endpoint is in the 
+Running state, issues a Stop Endpoint Command however at the same time 
+the xHC asynchronously transitions the endpoint to the Halted or Error state. 
+In this case, a Context State Error may be generated for the command 
+completion. Software may verify that this case occurred by inspecting the EP 
+State for Halted or Error when a Stop Endpoint Command results in a Context 
+State Error. </blockquote>
+<div class="qsrc">—— evidence/spec-46.txt L1881-L1887（p122）</div>
 </div>
 </div>
 <div id="codetip" hidden><div class="tipbody"></div></div>

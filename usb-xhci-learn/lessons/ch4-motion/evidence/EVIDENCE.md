@@ -270,3 +270,97 @@
   按降密度原则归错误族卡/注记一行带过，全文在 landing 卡引文（s46-05/06 full 区间）。
 - ch4606 ELD 数值语义（μs）上屏，granularity 报 '1' 细则（L1292-1294）归本注记。
 - ch4611 6.2.2.4/6.2.3.7（复位后 Slot/EP0 Context 字段值细则）只指路不展开。
+
+## 4607-evaluate-context.mp4（§4.6.7 Evaluate Context · p112-114；R10 批 C TrackA 终订=成片上屏内容）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 片头：§4.6.7 Evaluate Context · p112-114；示例声明「Slot ID=1（Addressed 槽，Add 旗标点名 EP1/EP2）——课程示例值」 | spec-46.txt L1295-1296（节题）；示例值=课程口径 |
+| ① 目的引文 "The Evaluate Context Command is issued by software to inform the xHC that specific fields in the Device Context data structures have been modified. … the Max Packet Size of the control endpoint may be determined only after software reads the Device Descriptor …"（逐字节选） | spec-46.txt L1296-1303（p112） |
+| ② Input Context 合同注记：Add 旗标点名评估对象 / Drop 全清 '0' 不适用 / 未被 Add 引用的 Context 全部忽略 | spec-46.txt L1318-1325（p112） |
+| ③ EvalCtx TRB 卡（TRB Type / Slot ID=1 / Input Context Ptr / Add flags=A1+A2·Drop=全'0' / Cycle=PCS）+ 入环+门铃 + 发行引文（逐字节选） | spec-46.txt L1326-1355（p112-113） |
+| ④ 执行分支卡（受理槽态三态内 / 逐 Add 评估·无效→Parameter Error / MEL+Isoch 排不下→Too Large / 槽态外·未使能→两族 Error）+ 执行引文（逐字节选） | spec-46.txt L1356-1405（p113） |
+| ⑤ 完成事件卡（CC=Success 才逐 Add 端点更新 Output / 任一错误输出侧一字节不改 / MEL 改动 Isoch TD 数据不弃）+ 引文（逐字节选） | spec-46.txt L1393-1397、L1420-1421、L1423-1425（p113-114） |
+| ⑥ 槽字段翻转动画（Max Exit Latency 旧值→新值）+ DCI 守卫引文 "The xHC shall consider an Endpoint Context invalid if the DCI of an Add Context flag = '1' is greater than the value of Context Entries."（逐字） | spec-46.txt L1417-1418（p114） |
+| 收口卡：用途（报备上下文参数事后更新）/评估对象（Add 点名）/执行（槽三态内逐 Add 评估）/事件（Success 才更新）；转场「下一支：§4.6.8 Reset Endpoint（本批）」 | spec-46.txt L1296-1425 汇总 |
+
+## 4608-reset-endpoint.mp4（§4.6.8 Reset Endpoint · p114-118；R10 批 C TrackA 终订=成片上屏内容）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 片头：§4.6.8 Reset Endpoint · p114-118；示例声明「Slot ID=1、Endpoint ID=2（Halted 端点）——课程示例值」 | spec-46.txt L1434-1435（节题）；示例值=课程口径 |
+| ① 目的引文 "The Reset Endpoint Command is issued by software to recover from a halted condition on an endpoint. … removed from the xHC's Pipe Schedule, the Doorbell Register for that pipe is disabled, … set to Halted, … silently dropped."（逐字节选） | spec-46.txt L1436-1444（p114） |
+| ② 前提分支卡（非 Halted→Context State Error / TSP='0'→清 Toggle/SeqNum+失效缓存 TD / TSP='1'→保留+软重试）+ TSP 引文（逐字节选） | spec-46.txt L1450-1466（p114） |
+| ③ Reset EP TRB 卡（TRB Type / TSP='0'（'1'=SoftRetry）/ Endpoint ID=2 / Slot ID=1 / Cycle=PCS）+ 入环+门铃 + 发行引文（逐字节选） | spec-46.txt L1537-1554（p116） |
+| ④ 完成事件：EP 卡翻转（Halted→Stopped / Doorbell 已使能）+ 事件环推进 + 完成引文 "…Set the Endpoint State (EP State) field to Stopped. … Enable the Doorbell register for the endpoint. Completion Code = Success"（逐字节选） | spec-46.txt L1555-1587（p116） |
+| ⑤ reset-a-pipe 五步注记（两段分时）：①Reset Endpoint（TSP='0'）②CLEAR_TT_BUFFER（TT 后 Control/Bulk）③ENDPOINT_HALT（非 Control）④Set TR Dequeue Pointer ⑤Ring Doorbell——第④步=下一支命令 | spec-46.txt L1503-1525（p115） |
+| ⑥ Soft Retry 卡（场景=临时性 Trx Error / 两步=TSP='1'→门铃 / 收益=再得 CErr 次 / 禁忌=Isoch·TT 后·限次）+ Soft Retry 引文（逐字节选） | spec-46.txt L1626-1650（p117）；禁忌 L1649-1650/L1657-1659/L1662-1663 |
+| 收口卡：用途（从 halted 恢复·仅限 Halted 态）/TSP 两分支/事件（EP→Stopped·门铃使能·Success）；转场「下一支：§4.6.9 Stop Endpoint（本批）」 | spec-46.txt L1436-1663 汇总；仅限 Halted L1620-1624 |
+
+## 4609-stop-endpoint.mp4（§4.6.9 Stop Endpoint · p118-125；R10 批 C 巨头 TrackA 终订=成片上屏内容）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 片头：§4.6.9 Stop Endpoint · p118-125；示例声明「Slot ID=1、Endpoint ID=2（Running 端点）——课程示例值」 | spec-46.txt L1664-1665（节题）；示例值=课程口径 |
+| ① 目的引文 "…issued by software to stop the xHC execution of the TDs on an endpoint. … temporarily take ownership of Transfer Ring TDs … or to stop USB activity prior to powering down the xHC."（逐字节选） | spec-46.txt L1666-1669（p118） |
+| ② 断点续传注记（四行）：快到可能停在 TRB 中间 / TR Dequeue Pointer+DCS（及 Opaque）写回上下文 / 4KB TRB 停在 1KB 处例 / Set TR Deq 覆盖断点=旧进度作废 | spec-46.txt L1675-1687（p118） |
+| ③ 三场景卡（TD 之间→FSE·Stopped-Invalid Len / 短包已检出·SPC='1'→Stopped-Short Packet / TD 进行中→Stopped·Len=残余 / 共同点=Stopped Event 先于 CC Event）+ FSE 引文（逐字节选） | spec-46.txt L1721-1748（p120） |
+| ④ xHC 停止动作卡（in-flight 先完成 / ERDY·轮询 忽略·收手 / SS 等 ERDY 清流控 / SO·Schedule 终止·移出） | spec-46.txt L1792-1816（p120） |
+| ⑤ Stop EP TRB 卡（TRB Type / Endpoint ID=2 / Slot ID=1 / SP 旗标=挂起场景'1' / Cycle=PCS）+ 入环+门铃 + 发行引文（逐字节选） | spec-46.txt L2038-2068（p123-124）；SP L1789-1791 |
+| ⑥ 完成事件双件卡（先 Transfer Event·CC=Stopped / 后 Command Completion / 写回 DeqPtr+DCS·EP→Stopped）+ 双事件环推进 + EP 卡三行翻转（Running→Stopped / 内部→已写回 / 在列→已移出） | spec-46.txt L2069-2161（p124-125） |
+| ⑦ 竞态暗礁引文 "A possible race condition may occur if software, thinking an endpoint is in the Running state, issues a Stop Endpoint Command however at the same time the xHC asynchronously transitions…"（逐字节选）——为 ch4609p 补丁铺路 | spec-46.txt L1881-1887（p122） |
+| ⑧ 软件三选项注记（四行）：暂停意图=直接门铃续跑 / 中止 TD=Set TR Deq 换起点 / 重排 TD=先看事件环定位、停点 TRB 不可改 | spec-46.txt L1760-1782（p120） |
+| 收口卡：用途（停管道拿回控制权）/断点（Deq Ptr+DCS 写回）/回执（Stopped 先于 CC）/竞态（异步 Halted/Error）；转场「下一支：§4.6.10 Set TR Dequeue Pointer（本批）」 | spec-46.txt L1666-2165 汇总 |
+
+## 4610-set-tr-dequeue-pointer.mp4（§4.6.10 Set TR Dequeue Pointer · p125-128；R10 批 C TrackA 终订=成片上屏内容）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 片头：§4.6.10 Set TR Dequeue Pointer · p125-128；示例声明「Slot ID=1、Endpoint ID=2（Stopped 端点）——课程示例值」 | spec-46.txt L2166-2167（节题）；示例值=课程口径 |
+| ① 目的引文 "…issued by software to modify the TR Dequeue Pointer field of an Endpoint or Stream Context. … may be executed only if the target endpoint is in the Error or Stopped state."（逐字节选） | spec-46.txt L2168-2176（p125） |
+| ② xHC 三件事注记：出队指针改写为 TRB 新值 / 失效全部缓存 TD（回内存重取）/ 清残余传输状态（EDTLA 归 0·split 清）→ CC=Success | spec-46.txt L2197-2212（p126） |
+| ③ SetDeqPtr TRB 卡（TRB Type / EP·Slot ID=2/1 / Stream ID='0' / New Deq Ptr·DCS=新起点+配套 CCS / Cycle=PCS）+ 入环+门铃 + 发行引文（逐字节选） | spec-46.txt L2220-2252（p126-127） |
+| ④ 完成事件分支卡（受理前提=Stopped/Error / Stream 有效→拷 NewDeq+DCS·Success / Stream 无效→TRB Error / EP 非两态→Context State Error）+ 事件环推进 + 分支引文（逐字节选） | spec-46.txt L2253-2319（p127） |
+| ⑤ 输出侧翻转动画（TR Deq Ptr 旧→新 / DCS 旧→新 / 残余状态→已清零）+ 拷贝引文（逐字节选） | spec-46.txt L2281-2303（p127）+ L2204-2209（p126） |
+| ⑥ 时机三条注记：部分执行 TD 剩余 TRB 不再执行 / 指向部分完成 TRB=当 TD 首个 TRB（先前进度作废）/ 传输终止后尽快发（释放读-ahead 缓存）+ 与 §4.6.8 reset-a-pipe 第④步配合 | spec-46.txt L2213-2215（p126）、L2330-2342（p128）；配合 L1519-1525（p115） |
+| 收口卡：用途（改出队指针·Error/Stopped 态）/动作（改指针+失效缓存+清残余）/TRB（New Deq Ptr 与 DCS 配套）/事件（Stream ID 分支+CC 四族）；转场「下一支：§4.6.11 Reset Device（已上线）」 | spec-46.txt L2168-2346 汇总 |
+
+## ch4609p 补丁分帧（1174d44906d5 "xhci: handle stop endpoint command completion with endpoint in running state."；R10 批 C 补丁第二支）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 幕① 背景：上一轮 URB 取消完成并重启端点后硬件可能未真正跑环；再发 Stop Endpoint 报 "context state error" 假失败；门铃写 flush 降概率未根除；修法=完成处理查环在跑即重发（message 原文逐字） | git show 1174d44906d5 message（drafts/patch-47.txt） |
+| 幕② diff 面板：@@ -983,6 +983,7 @@ 新增 command 局部变量 / @@ -1029,6 +1030,18 @@ EP_STATE_RUNNING case 补 race 注释+GFP_ATOMIC 分配+重挂 stop_cmd_timer+重发 Stop Endpoint+重敲命令环门铃；halted case 补 return（diff 逐字） | git show 1174d44906d5 diff（drafts/patch-47.txt） |
+| 幕② 逻辑注记卡：环在跑=假 Context State Error——原地重发命令+重挂 timer+止住 halted case 串入 | 同上 diff L1030-1043 |
+| 幕③ 规范收尾引文 "…a Context State Error may be generated for the command completion."（逐字节选）——竞态 Note 的驱动侧实修（反向形态：环实际 Running）；修复块至今存活于基线对读段 | spec-46.txt L1881-1887（p122） |
+| 总结卡：改动（完成处理 EP_STATE_RUNNING case +13/-0）/动作（重挂 timer+原地重发）/堵漏（假 Context State Error 自愈）/对齐（竞态 Note 驱动侧实修） | git show 1174d44906d5 |
+
+## ch4610p 补丁分帧（0d9f78a92ef5 "xhci: Fix hang on back-to-back Set TR Deq Ptr commands."；R10 批 C 补丁第三支）
+
+| 画面/字幕断言 | 规范出处 |
+|---|---|
+| 幕① 背景（两段分时）：LifeChat 3000 耳机稳定挂死+日志刷屏 "ERROR Transfer event TRB DMA ptr not part of current TD"；触发面=双段环+TD 恰好结束在 link TRB 前+背靠背两次 Set TR Deq（message 原文逐字）；后果链=无条件推进越段（la-la-land）→ deq_seg/dequeue 失同步 → virt_to_dma NULL → 事件被忽略 → 超时转 No-Op → 中断上下文死循环 → 整机挂死 | git show 0d9f78a92ef5 message（drafts/patch-48.txt） |
+| 幕② diff 面板：while 前补 last_trb 段尾守卫（+11）——软件指针停在 link TRB 时先跨段回段首（diff 逐字） | git show 0d9f78a92ef5 diff（drafts/patch-48.txt） |
+| 幕② 逻辑注记卡：守卫=段尾先跨段回段首再进 while，不再越段扫内存 | 同上 diff L889-898 |
+| 幕③ 规范收尾引文 "Set the Dequeue Pointer … Invalidate any xHC TDs that may be cached…"（逐字节选）——补丁修的=软件簿记与硬件对齐；沿革注记：修复函数已由 856563be98b2（2025-03-06）退役（queued_* 直存），基线无修复后形态，判据=diff 原文 | spec-46.txt L2197-2202（p126）；856563be98b2=message 原文 |
+| 总结卡：改动（while 前补 last_trb 段尾守卫 +11）/动作（段尾先跨段、dequeue 回段首）/堵漏（越段扫描/失同步/整机挂死）/沿革（2025-03 函数退役） | git show 0d9f78a92ef5 |
+
+### R10 批 C 口径注记
+
+- ch4607 Add 旗标点名 EP1/EP2、ch4608 Endpoint ID=2、ch4609 Endpoint ID=2、ch4610 EP ID=2/Stream ID='0' 皆为课程示例值（规范未定具体值）。
+- 批 C 补丁片两支的三判据实证（R10-SPEC §6）：1174d44906d5（Mathias Nyman 2021-01-29，halted endpoint 系列，完成处理竞态实修；lore 20210129130044.206855-24）/ 0d9f78a92ef5（Sarah Sharp 2012-06-21，Cc stable 回移 3.4+，整机挂死修复）。
+- ch4610p 无基线对读段=诚实处置：修复函数 update_ring_for_set_deq_completion 已被 856563be98b2（2025-03-06）删除
+  （TRB/段出队指针此后直接存 queued_deq_seg/queued_deq_ptr），基线不含修复后形态，硬凑对读段=造伪；landing s46-10 卡逻辑段注记沿革，分帧走读以 diff 原文为判据。
+- ch4608 Soft Retry 三禁忌（Isoch L1649-1650 / TT 后 L1657-1659 / 限次 L1662-1663）与 undefined behavior TSP='0' 注（L1533-1536）、
+  资源不释放注（L1599-1600）、recovery interval 软件计时注（L1610-1611）、控制端点后必发 Set TR Deq 注（L1612-1614）、
+  部分完成传输清理注（L1615-1619）按降密度原则归 Soft Retry 卡禁忌行/EVIDENCE 注记，全文在 landing s46-08 full 区间。
+- ch4609 stopped 时 EDTLA 细则（L1688-1691 Event Data TRB 先执行）、SEC 能力注（L1692-1710）、
+  字节数计算四分支 Note（L1830-1848）、Event Data 模拟注（L1849-1855）、USB2 split 等待注（L2164-2165）
+  按降密度原则归三场景卡/双件卡一行带过，全文在 landing s46-09 full 区间（含 Table 4-2 全表 (1888,1952)+(1959,2034)）。
+- ch4610 非 active Stream Context 修改注（L2216-2219）、active Stream 目标=未定义行为注（L2343-2346）
+  归时机注记/landing full 区间；MaxPStreams>'0' 且 Stream ID='0' → TRB Error 分支在 landing 卡引文（s46-10 full (2253,2319)）。
+- ch4607 Interrupter Target 修改前须全端点 Stopped 注（L1427-1429）归 EVIDENCE 注记；MEL Isoch 不弃数据注（L1423-1425）上屏完成事件卡。
+- 批 C 帧预算对照（R10-SPEC §3）：ch4607=1340f（中档 900-1600 ✓）/ ch4608=1428f（大档 1400-1800 ✓）/
+  ch4609=1673f（巨头档 2000-2400，低于下限 327f≈10.9s——降密度收得比预算紧，机制面全覆盖（8 段+收口），
+  pace/probe/fullwalk 三硬门全绿，预算偏差记档不返工）/ ch4610=1250f（中档 900-1600 ✓）/
+  ch4609p=847f、ch4610p=976f（R9 形态 ~650f 上浮，三幕结构同 ch4606p）。

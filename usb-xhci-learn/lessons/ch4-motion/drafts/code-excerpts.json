@@ -484,6 +484,96 @@
    "line": 3123,
    "code": "\t/* Fix up Context Entries field. Minimum value is EP0 == BIT(1). */",
    "note": "Context Entries 终点重算（d6759133e981 修复形态）：i 自 31 下探找第一个「活」端点，i==1 兜底=只剩 EP0——规范 p110「全 Disabled→Entries='1'/否则=最后有效上下文索引」的内核直译。"
+  },
+  {
+   "file": "drivers/usb/host/xhci.c",
+   "line": 2179,
+   "code": "\tcase COMP_PARAMETER_ERROR:",
+   "note": "完成码翻译：参数无效=Parameter Error——dev_warn 直说「xHCI driver setup invalid evaluate context command」，-EINVAL；xHC 逐 Add 评估参数（p113），驱动侧把 CC 翻成 errno。"
+  },
+  {
+   "file": "drivers/usb/host/xhci.c",
+   "line": 2184,
+   "code": "\tcase COMP_SLOT_NOT_ENABLED_ERROR:",
+   "note": "完成码翻译：槽从未被 Enable Slot 使能→Slot Not Enabled Error→-EINVAL——对应规范执行算法 else 分支（p113 L1403-1405）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci.c",
+   "line": 2189,
+   "code": "\tcase COMP_CONTEXT_STATE_ERROR:",
+   "note": "完成码翻译：输出槽态不在 Default/Addressed/Configured→Context State Error→-EINVAL——评估只受理三态槽（p113 L1399-1401）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci.c",
+   "line": 2199,
+   "code": "\tcase COMP_MAX_EXIT_LATENCY_TOO_LARGE_ERROR:",
+   "note": "完成码翻译：MEL≠0 时 xHC 算 Isoch 排程延迟，MEL+延迟排不下周期端点→Max Exit Latency Too Large Error→-EINVAL（p113 L1384-1391）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1590,
+   "code": "\t\t\"Ignoring reset ep completion code of %u\", cmd_comp_code);",
+   "note": "驱动对 Reset Endpoint 完成码显式「不关心」：规范规定非 Halted→Context State Error（p114），xHC 以完成码报态即可，恢复动作全在软件侧。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1593,
+   "code": "\txhci_invalidate_cancelled_tds(xhci, ep);",
+   "note": "清理已取消 TD（注释原文：May queue a Set TR Deq cmd）——Reset Endpoint 与 Set TR Dequeue Pointer 的规范配合点（p115 reset-a-pipe 第④步）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1601,
+   "code": "\tif ((le32_to_cpu(trb->generic.field[3])) & TRB_TSP)",
+   "note": "TSP='1'（Soft Reset）→ 完成后直接敲端点门铃重启=Soft Retry 的 xHC 侧动作；TSP='0' 的账本清理由 xHC 在命令内完成（p114）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci.c",
+   "line": 2912,
+   "code": "\t\tif (GET_EP_CTX_STATE(ep_ctx) == EP_STATE_RUNNING)",
+   "note": "同步包装只受理 Running 端点——发令前的前置检查（p125：EP State 非 Running→Context State Error）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci.c",
+   "line": 2928,
+   "code": "\t/* No handling for COMP_CONTEXT_STATE_ERROR done at command completion*/",
+   "note": "完成侧对 COMP_CONTEXT_STATE_ERROR 无处理（竞态假失败的入口）：完成处理器内 1174d44906d5 补了环在跑=重发命令的自愈分支。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1467,
+   "code": "\tif (cmd_comp_code != COMP_SUCCESS) {",
+   "note": "Set TR Deq Ptr 完成分派：非 Success 走告警分派（TRB Error/Context State Error/Slot Not Enabled），Success 才更新软件簿记（p127 CC 四族）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1501,
+   "code": "\t\t/* 4.6.10 deq ptr is written to the stream ctx for streams */",
+   "note": "流端点：出队指针写在 Stream Context——驱动注释直引规范小节号（p125 Stream ID 寻址语义）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1528,
+   "code": "\t\t\tep_ring->deq_seg = ep->queued_deq_seg;",
+   "note": "Success 后软件簿记对齐：deq_seg/dequeue 从 queued_* 取回——0d9f78a92ef5 历史挂死的位置（update_ring_for_set_deq_completion 已于 856563be98b2 退役，现形态直接存 queued_*）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1536,
+   "code": "\t/* HW cached TDs cleared from cache, give them back */",
+   "note": "缓存 TD 已失效归零后的回执处理——规范「Invalidate any xHC TDs that may be cached」的驱动侧落点（p126）。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1290,
+   "code": "\t\t\t/* Race, HW handled stop ep cmd before ep was running */",
+   "note": "竞态分支入口（1174d44906d5 修复块，至今存活）：完成报 Context State Error 但环实际在跑=停止败给了取消重启——规范 p122 竞态 Note 的驱动侧实修。"
+  },
+  {
+   "file": "drivers/usb/host/xhci-ring.c",
+   "line": 1299,
+   "code": "\t\t\txhci_queue_stop_endpoint(xhci, command, slot_id, ep_index, 0);",
+   "note": "竞态自愈动作：GFP_ATOMIC 原地分配命令、重挂 stop_cmd_timer、重发 Stop Endpoint、重敲命令环门铃。"
   }
  ]
 }
