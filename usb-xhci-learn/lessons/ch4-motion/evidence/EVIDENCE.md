@@ -364,3 +364,167 @@
   ch4609=1673f（巨头档 2000-2400，低于下限 327f≈10.9s——降密度收得比预算紧，机制面全覆盖（8 段+收口），
   pace/probe/fullwalk 三硬门全绿，预算偏差记档不返工）/ ch4610=1250f（中档 900-1600 ✓）/
   ch4609p=847f、ch4610p=976f（R9 形态 ~650f 上浮，三幕结构同 ch4606p）。
+
+## R10 批 D（§4.6.12-4.6.18 可选族七支 · TrackB 落地页与机检记录 + TrackA 断言表）
+
+### ⓪ TrackA 断言表（2026-11-07 scan；帧数全落 R10-SPEC §3 预算档）
+
+- ch4612=1062f/beats 40（小档 700-1100 ✓）/ ch4613=1094f/39（小档 ✓，首轮 1118f 超档削 0.8s 达标）/
+  ch4614=872f/34（小档 ✓）/ ch4615=1244f/45（中档 900-1600 ✓，修 1 条快拍后复测）/
+  ch4616=974f/35（小档 ✓）/ ch4617=1088f/40（中档 ✓）/ ch4618=750f/27（最短档 500-900 ✓）。
+- 三门自检：probe viol=0 ×7（diag 字段在案；左侧卡带 TLx(230) TLy(300) 与 chip 同幕共存解）、
+  pace fast=0 ×7（ch4615 片头字幕快拍加 0.6s wait 修平）、beats 公式与 player.ts 同构
+  （以 ch4602=28/ch4607=45/ch4611=59 三例离线验证）。
+
+### ① 七支内核存在性机核（基线 /Volumes/KernelSrc/linux HEAD=d9008e061539）
+
+- **驱动零引用**：`git grep -c "TRB_FORCE_EVENT|TRB_NEG_BANDWIDTH|TRB_SET_LTV|TRB_GET_PORT_BW|TRB_FORCE_HEADER|TRB_GET_EXT_PROP|TRB_SET_EXT_PROP" -- 'drivers/usb/host/*.c'` → exit 1 **零命中**（.c 文件对七符号零发行）；逐符号 `grep -rn <sym> drivers/` 复验：TRB_FORCE_EVENT / TRB_NEG_BANDWIDTH / TRB_FORCE_HEADER 仅命中 drivers/usb/host/xhci.h 的 `#define` 行（L1140/L1142/L1148）与 trb 类型字符串装饰 case 行（L1213/L1215/L1221、L2177/L2246/L2271），TRB_SET_LTV / TRB_GET_PORT_BW / TRB_GET_EXT_PROP / TRB_SET_EXT_PROP 全 drivers **零命中**。
+- **旁注**：drivers/usb/cdns3/（Cadence cdnsp 设备控制器，独立控制器驱动）有自有同名 TRB 定义副本（cdnsp-gadget.h L1121/L1123 等）——不在 xHCI host 判定面内，零引用结论不受影响。
+- **TRB 类型枚举切片**（`git show d9008e061539:drivers/usb/host/xhci.h`，行号机核）：L1139-1140=Force Event 18（注释带 (opt)）/ L1141-1142=Negotiate Bandwidth 19（(opt)）/ L1143-1144=Set LT 20（(opt)）/ L1145-1146=Get port bandwidth 21（注释不带 opt）/ L1147-1148=Force Header 22——即落地页卡 12-16 五段枚举切片。
+- **ext-prop 两支缺席**：基线 xhci.h 无 TRB_GET_EXT_PROP / TRB_SET_EXT_PROP 定义——L1150「TRB_CMD_NOOP 23」、L1151「TRB IDs 24-31 reserved」注记即缺席位置（4.6.17/4.6.18 的命令格式由规范 §7.9.1/§7.9.2 定义，内核侧无任何使用点故无类型常量）。
+
+### ② 七卡引文窗清单（build_landing.py S46_QUOTES；区间不跨 PAGE 标，角色 main=机制主线 / full=算法全文收纳）
+
+| 卡 | 小节（页） | main 窗 | full 窗 | 计数 |
+|---|---|---|---|---|
+| s46-12 | 4.6.12 Force Event（p130-131） | (2457,2462)·p130 / (2463,2465)·p130 / (2544,2548)·p131（VMM 释放缓冲+丢弃重排 Note） | (2472,2496)·p130 发行 / (2503,2543)·p131 执行 | main×3 + full×2 |
+| s46-13 | 4.6.13 Negotiate Bandwidth（p131-133） | (2551,2557)·p131 / (2564,2566)·p132 / (2655,2663)·p133（unsolicited BW Request Note） | (2572,2587)+(2588,2623)·p132 发行+执行前半 / (2630,2654)·p133 执行错误分支+完成事件 | main×3 + full×3 |
+| s46-14 | 4.6.14 Set LTV（p133-135） | (2673,2676)·p133 / (2686,2688)+(2691,2698)·p134（BELT 语义+LTC 门） | (2703,2719)+(2720,2736)·p134 发行+执行 / (2743,2751)·p135 完成事件 | main×3 + full×3 |
+| s46-15 | 4.6.15 Get Port Bandwidth（p135-138） | (2754,2761)·p135 / (2799,2809)+(2819,2822)·p136（Context 传递+报 0 端口不可用 Note） | (2851,2877)+(2878,2911)·p137 发行+执行前半 / (2918,2925)·p138 TRB Error 分支+undefined Note | main×3 + full×3 |
+| s46-16 | 4.6.16 Force Header（p138-139） | (2928,2931)+(2932,2945)·p138（目的+失同步警告 Note） | (2949,2966)·p138 发行 / (2973,3006)·p139 执行 | main×2 + full×2 |
+| s46-17 | 4.6.17 Get Extended Property（p139-141） | (3009,3013)+(3014,3019)·p139 / (3046,3049)·p140（GSC 双态 CC） | (3050,3074)+(3075,3085)·p140 §4.6.17.1/§4.6.17.2 / (3092,3113)+(3114,3138)·p141 完成事件+§4.6.17.3 枚举（含 Table 4-3） | main×3 + full×4 |
+| s46-18 | 4.6.18 Set Extended Property（p141-142） | (3141,3145)·p141 / (3178,3181)·p142（GSC 双态 CC） | (3152,3177)·p142 约束 bullet 全文 | main×2 + full×1 |
+
+合计 **37 条**（blockquote 183→220）；PAGE 标机核位置：130@L2442 / 131@L2498 / 132@L2559 / 133@L2625 / 134@L2681 / 135@L2738 / 136@L2792 / 137@L2844 / 138@L2912 / 139@L2968 / 140@L3031 / 141@L3087 / 142@L3147。
+
+### ③ 可选族无补丁片裁定（R10-SPEC §6 三判据）
+
+- 判据①（内核侧真实修复 commit、`git log -- <函数>` 实证）即不成立：七支命令在 drivers/usb/host/*.c **零发行**（见 ①），无调用点即无修复故事可证；判据②③无需进入。裁定=七支全部**无补丁片**，landing 卡无补丁版块——符合 R10-SPEC §6「无可准入者则该命令无补丁片，landing 补丁段可空缺（不硬凑）」；R10-SPEC §6 亦明确「No Op、Get/Set Extended Property 明确不配」，与本裁定一致。批 D 后补丁片总数仍为三支（ch4606p/ch4609p/ch4610p），landing「补丁片（选做）」注记保留并补「可选族七支无补丁片——无内核修复故事可配（R10-SPEC §6 判据）」。
+
+### ④ 「可选规范项」标注口径
+
+- spec 节题带 "(Optional Normative)" 共六支：4.6.12（L2456）/ 4.6.13（L2550）/ 4.6.14（L2669）/ 4.6.15（L2753）/ 4.6.17（L3008）/ 4.6.18（L3140）——分帧版 note 与卡内存在性注记均加「可选规范项」。
+- 4.6.16 Force Header 节题**无** Optional 字样（L2927，S46_CARDS kind=core）——ch4616 卡两处**均不加**「可选规范项」（存在性注记仍写明驱动零使用）。
+
+### ⑤ 存疑印刷项注记（引文保持原文逐字、机检逐字通道保真；课件转述不采信）
+
+- **L3096** "TRB Type = Command Completion Event (refer to Table 139)."——"Table 139" 应为 **Table 6-91**（§4.6 其余各支同句均引 Table 6-91；Table 139 形态与全书表号体系不符）。引文在 s46-17 full (3092,3113) 内，逐字上屏。
+- **L2679** "(for example, PCI Express, AHBA, etc.)"——"AHBA" 疑为 **AHBus/AMBA** 之误（主机互连总线例举语境）。该行未入选任何引文窗，卡片转述不引用此词。
+- **L2546-2547** "if an VF Event Ring Full Error is returned"——冠词误印（应为 a VF）。在 s46-12 main (2544,2548) 内，逐字保真。
+- 其余 OCR 空格形态（如 L3048 "not supported  (that" 双空格、L3101 行尾多空格）按逐字保真原则随引文上屏，机检通道按原文比对。
+
+### 批 D 构建与机检记录（TrackB）
+
+- build_landing.py：段 39→**44**（+5 xhci.h 枚举切片，零热行）· 行 div 2295→**2305**（5 段×2 行）· hot/tipdoc **85** 不变（批 D 零新摘录）· patch **8** 不变 · blockquote 183→**220**（卡引文 37）——`BUILD OK` + 段内容逐行复核 44/44 PASS。
+- check_landing_code.py：**VERDICT: ALL PASS**（spec 220/220 + patch 8/8 锚点逐字一致 · 段 44/44 · 摘录覆盖 85/85 · scene=0..30 ×31 链接自检通过）；WARN 恰 7 枚=批 D mp4 待渲染（部署步落盘后复跑应零 WARN）。
+- **批 C 交叉链修正（顺带）**：批 C 期 builder 把 ch4609p/ch4610p 记为 scene=23/22，与 player orderedSceneKeys 字典序实序（ch4609p=22、ch4610p=23，批 C 提交帧表指纹 frames-22=847f/frames-23=976f 实证）互逆——s46-09 卡补丁链实际指向 ch4610p 片、s46-10 卡指向 ch4609p 片。批 D 顺移按卡身份落链（ch4609p→29、ch4610p→30，render.ts 批 D 注记同构机核），交叉链一并修正。
+
+## R11 批 A（s46 大区三项改造：D4 版块序 / D2 规范样式表 / D1 算法流程图 · TrackB 落地页与机检记录）
+
+### ① D4 卡内版块顺序（s46 fitted 卡模板一处改动）
+
+- 改前（卡 1-11）：规范引文 → 贴码 → 算法收纳（fulls）→ **补丁版块** → 动画 act（s46-06/09/10 三卡补丁版块插在主片视频之前）；卡 12-18：引文 → TRB 表 → 算法收纳 → 动画 act。
+- 改后（全 18 卡统一）：规范引文 → 贴码/TRB 表 → **动画 act（video+分帧链接）** → 算法收纳（fulls）→ 补丁版块——与 s44/s45 四版块序（②动画→③收纳→④补丁）对齐。s44/s45（section_r9）零改动；补丁版块内「补丁分帧动画」链接与对读段不动。
+
+### ② D2 规范样式表格（OCR 文本形态退役 → 规范版式 HTML 重建）
+
+- **退役窗（EXPECTED_SPEC/S46_QUOTES 同步删，blockquote 220→218）**：Table 4-2 表体 `(1888,1952)`+`(1959,2034)`、混在发行算法窗 `(2038,2049)` 内的表脚注 `2043-2049`（算法部分缩为 `(2038,2041)` 保留逐字通道）；Table 4-3 表体 `(3128,3138)`（枚举 prose 窗缩为 `(3114,3127)`）。
+- **机器盘点结论**：全 landing 引文窗内规范表格仅此两处（grep evidence/spec-41..46.txt 全量；spec-45.txt L207 Table 4-1 不落任何引文窗，且 s44/s45 属 section_r9 本轮不动）。
+- **重建来源（列结构）**：pymupdf `find_tables` 对规范 PDF（usb-xhci-study/specs/625472_xHCI_Rev1_2b.pdf，只读参考）p122/p123/p141 提取——Table 4-2 五列（TRB Type / Chain bit (CH) / Condition / Action / Advance TR Dequeue Pointer on Doorbell Ring）11 数据行（跨页续行 4 组 rowspan 合并：Transfer TRB (Completed)×2 / Event Data×2 / Link×2 / Invalid TRB (C≠DCS)×2）+ 脚注 16-24；Table 4-3 两列（Bits/Description）3 行。
+- **内容核验（build 侧全量逐字门）**：`verify_spec_table()`——caption/表头/每单元格/每条脚注空白折叠后必须是 evidence 退役窗切片（L1888-1952 + L1959-2034 + L2043-2049；L3128-3138）的子串，build 时断言全过（打印 `表格逐字核验 PASS`）。**不上 data-ck 逐字通道的理由：OCR 行序≠表格列结构，对 HTML 表格硬比 evidence 行序=伪门**；checker 侧改轻结构断言（caption 逐字在场×2 + `table.spectab` 计数=2）。
+- **版式**：`table.spectab`（表头行底色+边框+斑马纹+caption 琥珀等宽字），样式单处进 s46 大区 `<style>`；宽表 `tabwrap` 横向滚动，脚注 `tabfoot` 小字随表。
+
+### ③ D1 算法流程图化（s46 大区 36 块，纯 HTML+CSS）
+
+- **建模**：s46 full 引文窗中「发行/执行算法」形态块（步骤序列+分支判定）→ steps/branches JSON（`FLOWCHARTS`，节点=步骤框/判定菱形，分支=是/否或多分支标签）→ `render_flowchart()` 渲染；分支并排栅格限深度 ≤2，更深一律纵向缩进块（防窄列竖排字，窄屏单列 @media）。**每图 details.fcdoc 折叠包原 blockquote（规范原文逐字备查，data-ck 通道与 EXPECTED_SPEC 窗全部不动）**；图题带依据行号。
+- **36 块清单（卡·图名·依据行号·节点数）**：c1-abort 4.6.1.2 中止命令 L121-136·5 ｜ c2-issue L178-184+L191-198·2 ｜ c2-exec L199-213·2 ｜ c3-issue L250-267·2 ｜ c3-exec L268-295·5 ｜ c4-issue L340-357·2 ｜ c4-exec L364-391·5 ｜ c5-issue L470-499·4 ｜ c5-exec L505-533+L539-602·15 ｜ c6-issue L1043-1061·3 ｜ c6-exec L1081-1146+L1152-1219+L1225-1251·27 ｜ c7-issue L1326-1332+L1338-1355·3 ｜ c7-exec L1356-1409·16 ｜ c8-reset L1448-1466+L1473-1485·8 ｜ c8-pipe L1503-1525·7 ｜ c9-scen L1721-1748·5 ｜ c9-opt L1760-1782·5 ｜ c9-stop L1792-1816·11 ｜ c9-issue L2038-2041+L2056-2068·2 ｜ c9-exec L2069-2104+L2106-2119+L2126-2165·16 ｜ c10-setring L2181-2209·7 ｜ c10-issue L2220-2243+L2250-2252·2 ｜ c10-exec L2253-2319+L2326-2329·16 ｜ c11 L2385-2437·9 ｜ c12-issue L2472-2496·3 ｜ c12-exec L2503-2543·9 ｜ c13-issue L2572-2587·2 ｜ c13-exec L2588-2623+L2630-2654·13 ｜ c14-issue L2703-2719·2 ｜ c14-exec L2720-2736+L2743-2751·5 ｜ c15-issue L2851-2877·3 ｜ c15-exec L2878-2911+L2918-2925·8 ｜ c16-issue L2949-2966+L2973-2977·2 ｜ c16-exec L2978-3006·7 ｜ c17-issue L3050-3074·3 ｜ c17-exec L3075-3085+L3092-3113·7 ——合计 36 图 243 节点。跨窗拆分的同一逻辑算法挂首窗一图（覆盖全算法语义）；发行算法的门铃步落在窗缺口时（c6-issue L1059-1061 / c10-issue L2250-2252）图按算法全貌建模、src 字段注明窗缺口。
+- **判定为非算法不动的窗（9 处，排除理由）**：s46-01 (99,103) 4.6.1.1 停环机制 prose；s46-06 (750,763) 处理规则前导+变量定义（无步骤序列）；s46-08 (1626,1650) Soft Retry prose 为主+2 步序列（2 节点不成图）；s46-09 (1751,1753) 三行 prose 导语；s46-09 (1888,1952)+(1959,2034)+(2043,2049) Table 4-2 → D2 重建；s46-10 (2181,2182) 两行导语句（语义并入 c10-setring 图）；s46-10 (2327,2346) 算法两行收尾+三条 Note（收尾语义并入 c10-exec 图 L2326-2329）；s46-17 (3128,3138) Table 4-3 → D2 重建；s46-18 (3152,3177) 命令属性描述 bullet（4.6.18 全节无发行/执行算法小节）。
+
+### ④ R11 批 A 构建与机检记录（TrackB）
+
+- build_landing.py：段 **44** / 行 div **2305** / hot **85** / tipdoc **85** / patch **8** 全不变（零新摘录零新段）；blockquote 220→**218**（D2 退役窗）；**流程图 36=details 36**、**重建规范表 2**——`BUILD OK` + 段内容逐行复核 44/44 PASS + `表格逐字核验 PASS (t42←L1888-L1952+L1959-L2034+L2043-L2049, t43←L3128-L3138)`。
+- check_landing_code.py：**VERDICT: ALL PASS（spec 218 + patch 8 锚点逐字一致 · 段 44/44 · 摘录覆盖 85/85 · 重建规范表 2/2 · 算法流程图 36/36 · 链接自检通过）**；--fix 复跑零回填（no-op）。
+- online_e2e_r6.py 扩 9 断言（T4-2/T4-3 caption 在场、spectab=2、fcf/details=36、s46-01/06/09/10 版块序）；**部署树全量 e2e（本地静态服 E2E_BASE 覆盖）114 ok 0 fail = ONLINE PASS**；真实线上预检=扩断言前既有断言全过（R10 批 D 站点未受影响）。学习仓 commit+push（主会话）后真实线上即同绿。
+
+## R11 批 B（s41-s45 回溯·2026-11-08 机核收口：D1/D2 零目标，D5 押后批 A-2）
+
+- **机核方法（批 A 盘点同款）**：对部署树 index.html 按 `<section id="s4N">` 边界切分，正则枚举段内全部 `data-ck="spec:spec-4[1-6].txt:L*"` 引文窗并列行跨度；另 grep evidence/spec-41..45.txt 全量找 algorithm/shall perform the following/step N 形态。
+- **D1（算法流程图化）零目标证据**：s41 段 4 窗（最长 3 行）、s42 段 5 窗（最长 3 行）、s43 段 5 窗（最长 6 行=L120-125 Setup Stage TRB 字段值列表）、s44/s45 段内零引文窗（引文全在页尾 #tipdocs，det 最长 L2-8=7 行 prose、slot 最长 L298-302=5 行态约束 prose）——**「发行/执行算法」全文收纳形态仅存在于 s46 fitted 卡（批 A 36 块已全转）**。s41-s45 段 fcf=0、表=0。evidence 侧步骤序列（spec-42 L16-36 初始化操作清单、spec-43 L229-237 端口复位三步、L447+ Alternate Interface 十五步）均不在任何引文窗内；其中 spec-42 清单的动态讲解已由 m2 交互台承担（R5 双轮剧本）、spec-43 端口复位三步在 s43 主片叙事内。s41-s45 卡四版块序本就是 ②动画→④补丁（D4 无涉及）。
+- **D2（规范表格）零目标证据**：批 A 机核已裁定全 landing 引文窗内规范表格仅 Table 4-2/4-3（均在 s46 窗内）；spec-45 L207 Table 4-1 不落任何引文窗。
+- **结论**：批 B 无实施面，以本节盘点记录收口；"全线形态统一"对 s41-s45 天然成立（无 OCR 表、无算法文本堆、版块序合规）。D5 双语对 s41-s45 的覆盖随批 A-2（等翻译任务 ch4 产出）一并回溯。
+
+## R11 批 C（D3 全链片两支·2026-11-08：wfdevcfg/wfhaltrst 上线=场景 33 支）
+
+### ① 两支全链片（wf 前缀=主线组，字典序 wfdevcfg=23 < wfhaltrst=24，补丁组 23-30→25-32 逆序迁移）
+
+- **wfdevcfg（设备配置全链，1659f/384 distinct/beats=74）**：Enable Slot→Address Device→Configure Endpoint→Evaluate Context 四命令端到端（§4.6.3/4.6.5/4.6.6/4.6.7），示例值 Slot ID=1/USB Address=5/EP0+EP1(Bulk OUT)+EP2(Bulk IN)；收口推进线按证据写 **Enabled→Addressed→Configured**（L216-217 Enable Slot→Enabled；Default 仅 BSR='1' 分支 L541；BSR='0' 主线直达 Addressed L581）——任务稿原写 Default 起步系笔误，实施代理按证据修正并经主会话三处行号实证。引文 chip 5 条逐字（L281-285/L226-231/L459-461/L1043-1058 摘/L1297-1303 摘）。
+- **wfhaltrst（halted 端点复位五步全链，1476f/218 distinct/beats=48）**：兑现 ch4608 L263「复位一根管道要五步」承诺——①Reset EP(TSP='0') ②CLEAR_TT_BUFFER(仅TT后) ③ENDPOINT_HALT(仅非Control) ④Set TR Dequeue Pointer ⑤Ring Doorbell（骨架=reset-a-pipe Note L1503-1522）；示例值 Slot ID=1/Endpoint ID=2 与 ch4608/ch4610 同值。引文 chip 4 条逐字（L1441-1444/L1572-1582/L2293-2303/L1486-1487）+ 条件步/簿记注记（L1503-1522/L2197-2209）。
+- **实施分工**：TrackA1/A2 两子代理只写各自场景文件（零共享文件）；主会话 render.ts 注册（33 场景显式清单）+帧表逆迁移+三门+渲染+部署。TrackB 子代理=landing 全链小节+补丁链接顺移+checker/e2e 三件同步。
+- **实施纠错两枚**：① wfdevcfg 用了 `makeCellStrip` 未导入（esbuild 单文件解析查不出未定义标识符，scan 运行时才爆 `ReferenceError`）——主会话补导入并固化 `wf_import_check.py` 用到未导入扫描器；② 任务稿三处证据行号/状态链笔误（见上）由实施代理对证修正。
+
+### ② 门禁与部署记录（TrackB 构建面+主会话渲染面）
+
+- **三门**：scan×2（终版 1659/1476——wfdevcfg 超 1600 档 59f≈2s=pace fast=0 硬门所加 wait，按 ch4611 先例硬门全绿不返工）；probe×2 **violations=0**（1509f 修 wait 前布局、wait 扩展不改变共存图）；pace×2 **fast=0**（首轮 fast=2×2：wfdevcfg 幕①/收口、wfhaltrst 幕⑤/收口四拍 display<阈值，加 wait 1.6-3.8s 后归零）。
+- **渲染**：mp4×2（wf-devcfg 1.37MB/wf-haltrst 1.15MB）+vite build（75 chunks）+deploy_hygiene 清孤儿 2 枚（player/render 旧 hash chunk）。
+- **checker 部署后复跑**：**ALL PASS 零 WARN**（MP4_DEPLOY_PENDING 清空；视频×25 · scene=0..32 ×33）。
+- **本地部署树 e2e**（E2E_BASE 本地静态服）：125 行 **0 fail**——索引重排回归 scene23=wfdevcfg/scene24=wfhaltrst + 补丁 25-32 + 落地页全链视频/链接断言全 ok。
+- **逐拍全检**：fullwalk 33 片全量 **ALL DONE overall=0**（33/33 片各 20 断言=660 项 0 FAIL，12:51-13:47；scene23=wfdevcfg/scene24=wfhaltrst 逐拍 PASS，补丁 25-32 迁移后逐拍 PASS）。
+- **landing 呈现**：s46 大区导语卡新增「全链动画（wf 片）」小节两链卡（video+分帧 scene=23/24+涉及命令卡互链 #s46-03/05/06/07 与 #s46-08/10）；补丁分帧链接 8 处 +2 顺移（对账表见 TrackB 报告，页级 33 链接各恰一次）。
+
+## R11 批 D（D6 交互扩容三件·2026-11-08：m4 三新题组+每卡深链+台内入口）
+
+- **任务 a（m4 三新题组）**：det(8)/slot(11)/cmd46(31) 三组**运行时派生**（drafts/code-excerpts.json 零改动）：每热行一题，正确项=该行 note，干扰项=同组相邻行 note 确定性轮转（i+1..i+3 mod n）、答案位=idx%4；行注锚点卡带规范页码引注（零新事实）。判定逻辑零改动。
+- **任务 b（每卡深链）**：s44/s45（section_r9）→ `interactive/index.html#m5`；s46-01/02 无参 `#m6`、s46-03..18 → `#m6&cmd=<命令名>`（urllib.quote 编码，16 链，命令名单一事实源=S46_CARDS 卡题）。m6 接收器 m6GotoCmd()：剧本命令→buildM6A() 重算（R7 程序化改值必重算派生面）；自由拼→选 free+onM6Field() 预填（与用户点击同链路）；皆非→默认+「无剧本，走自由拼」提示；命令名去括号注记+不分大小写匹配。
+- **任务 c（台内入口）**：m5 加 2 个「代码解读 →」（#m4&grp=det/slot）、m6 加 1 个（#m4&grp=cmd46）；m4 m4GotoGroup() 数据未就绪记 pendingGrp，initM4 后选中。
+- **门禁**：build_landing BUILD OK（结构计数与批 A 同值，纯链接零新结构块）+ checker ALL PASS + smoke_interactive **563 项 PASS 0 FAIL**（基线 381+182：三组 50 题逐题走查+派生题完整性+深链参数 fresh-load/hashchange 双路径预选+入口在位）+ 本地 e2e **133 ok 0 fail**（R11批C+R11批D 断言面；e2e 首跑撞双根坑——部署树旧版 interactive 未同步，已 cp 同步 cmp 校验，规则洞=台账 #86）。
+- **深链形态终版**：`#m5` / `#m6` / `#m6&cmd=<命令名>`（%20）/ `#m4&grp=det|slot|cmd46`；hash 路由 load+hashchange 双监听保持。
+
+## R11 批 A-2（D5 引文双语·2026-11-08：landing 218 条规范引文 side-by-side 双栏上线）
+
+- **依赖就位**：翻译任务 ch4 18/18 分片译毕（translations/work/xhci/{en,zh}/ch4.shard-*.json，zh 侧 15:07 收尾）；本会话只读消费，全 18 片 `check_shard.py` 复跑 **18/18 PASS**（C1 id/C2 空 body/C3 块数 `\n\n` 切分 1:1/C4 图占位对位）。
+- **映射器**（`scripts/build_zh_quotes.py`，新固化）：landing 218 锚点（197 个不同锚点，多重集对账 EXPECTED_SPEC 全等）→ 翻译管线块流三级对齐——
+  1. **节归属**：evidence 六文件按号行（`^4(?:\.[0-9]+)+\s*$`）跨文件行走（页界切片致 §4.2 横跨 spec-41/42、§4.5 横跨 spec-44/45，seed 表衔接）；号行 id 不在 v2 节集时上溯最近 id 祖先（4.6.17.1→4.6.17，level-4 子标题在 v2 是父节内子标题块）。
+  2. **块对齐**：节内最短连续块 run（空白折叠 containment；单块包含无长度帽，跨块 run 首命中即最小覆盖）。
+  3. **边缘切齐**：run 端点块被窗部分覆盖时（join 偏移精确求交分类 full/part），ZH 段（列表=行、散文=句）三级合成——A 段数相等直接位置映射；B EN 锚定（窗段 containment 到 EN 块段）比例映射 ZH 区间；C 关键词单调匹配（强 token=缩写/驼峰/点引号值 主导阈值，弱词虚词低权——ZH 只保留术语不保留虚词）。
+- **匹配结果**：197 锚点全配非空（BLOCK 61 / RUN2-4 35 / TRIM 71 / TRIM-LOW 30——TRIM-LOW 为置信度量保守标记，非错配）。**90 标记窗逐窗人工复核**：87 窗选择正确（度量把整词译出的句首常用词计为未覆盖所致），实锤 2 处漏选（L1296-1303 缺前两句、L2106-2119 缺导语行）+1 头部过宽（L2918-2925）全部修复后复验；13 状态变化窗二轮抽查全过。
+- **硬门**：`zh-quotes.json` 197 锚点零空值；build 侧 assert 每条 blockquote 有译文（`n_pair==bq_total==218`）；构建计数 断言 +双栏 218/218。
+- **消费面**（build_landing.py）：218 条 blockquote 包 `.qpair` 双栏栅格（**ZH 译文绝不进 data-ck 元素内部**——checker 的 b["text"]=blockquote 内文本须与 evidence 逐字，ZH 在栏外 `.qzh`）；qsrc 并入 ZH 栏尾（文本不变）；`.tipdoc .qzh` 12.5px 随 tooltip；窄屏 ≤860px 单列叠放。
+- **机检**：checker ALL PASS——spec 218+patch 8 锚点逐字·段 44/44·摘录 85/85·重建规范表 2/2·流程图 36/36·**ZH 双栏软门 218/218**（新增：qpair 配对数==spec 引文数 + 每条 `.qzh-body` 非空，verdict 计入）。
+- **e2e**：本地部署树 e2e **137 ok 0 fail**（R11 批 A-2 新增 4 断言：qpair=218 / qzh=218 / 无空节点 / 样本译文在场）；线上待 Pages built 后同套复跑。
+- **视觉抽查**（playwright 系统chrome 通道）：s41 要点区双栏（左 EN 蓝 | 右 ZH 青 #7fd0b2，qsrc 栏尾）✓；tipdoc tooltip 双栏 660px 弹层内可读 ✓；600px 窄屏叠放 ✓。
+- **页距警说明**：映射报告对 |窗页-节 pdf_page|>2 打警（7 窗）——均为节起始页 vs 节内后页的正常偏移（对齐成功即证归属正确），非错误，记录在案。
+
+## R12 批 A（§4.7-4.9 三大区 8 卡·TrackB 落地页与机检记录：xh 命名量产首批）
+
+- **交付面**：s47（1 卡=xh0700 全节单卡）/s48（3 卡=xh0801 寻址/xh0802 上下文初始化/xh0803 端点状态）/s49（4 卡=xh0901 环基础+TD/xh0902 传输环管理/xh0903 命令环管理轻片/xh0904 事件环管理巨头），锚 `#s47-01` 形态、卡序=小节序、导航簇「环与传输（4.7-4.14）」；R11 终态模板一次到位。**卡内不设补丁版块=本批三节无可准入补丁（R12-SPEC §6 逐节全配+省略豁免；TrackB 不做检索，诚实缺省）**。引文窗 73 条全整行切片、区间不跨 PAGE 标；blockquote 218→291；段 44→52；流程图 36→40；规范表 2→3；ZH 双栏 291/291。checker **ALL PASS**（spec 291+patch 8 逐字·段 52/52·摘录 85/85·重建规范表 3/3·流程图 40/40·链接自检 scene=0..40 ×41 各恰一次）；smoke_interactive 563 项零回归；补丁组 scene 链接整体 +8 顺移（25-32→33-40）。
+- **贴码段清单（8 段，段界=函数闭括号，git show d9008e061539 机核 ~/.cache/zcode-tmp/r12a_trackb_bounds.py；与既有 44 段零重叠、段内零摘录热行=R10 批 D 先例）**：
+  xh0700=xhci-ring.c L585-607 `xhci_ring_doorbell_for_active_rings`（门铃写路径：无流→有挂起 TD 才敲端点门铃；流→逐 stream_id 敲）｜
+  xh0801=xhci.c L1467-1495 端点索引辅助组（`xhci_get_endpoint_address` DCI 反查/`xhci_get_endpoint_flag` 旗标/`xhci_last_valid_endpoint` Context Entries 计算，首行为注释头）｜
+  xh0802=xhci-mem.c L1409-1515 `xhci_endpoint_init`（EP Type/MaxPacket/Burst/Mult/CErr=3 除 Isoch/TR Deq=首段|cycle_state/Max ESIT——4.8.2 初始化清单的内核直译）｜
+  xh0803=xhci-ring.c L3270-3330 `prepare_ring`（EP_STATE_DISABLED/ERROR/HALTED/STOPPED/RUNNING 五态 switch=Figure 4-5 的内核消费面）｜
+  xh0901=xhci-mem.c L372-399 `xhci_ring_alloc`（环分配+段链接，内核注释自证 "See section 4.9.1"）｜
+  xh0902=xhci-mem.c L413-449 `xhci_ring_expansion`（4.9.2.3 环扩容：新段分配→Toggle Cycle→xhci_link_rings）｜
+  xh0903=xhci-ring.c L460-494 `xhci_handle_stopped_cmd_ring`（命令环停走管理：aborted→no-op→重敲门铃重启）｜
+  xh0904=xhci-mem.c L1795-1823 `xhci_alloc_erst`（ERST 表项 seg_addr/seg_size/rsvd 填装）。
+- **D1 流程图 4 块（建模依据=规范行号，原文 details.fcdoc 折叠逐字保真；节点文本语义重建）**：
+  x0802-init←spec-48.txt L62-L158（4.8.2 初始化清单按端点型分支：EP0/Control/Bulk[Streams if-else]/Isoch-Interrupt）｜
+  x0902-advance←spec-49.txt L363-L383 + L413-L448（**Figure 4-8 L390-407 语义重建**：写 TRB→Cycle=PCS→EP+=16/Link TRB 跳段→Toggle Cycle 翻 PCS；判满两分支=非 Link EP+16==DP / Link 比较段指针）｜
+  x0904-erep←spec-49.txt L1018-L1056（**Figure 4-12 左侧语义重建**：ERSTBA 写入→PCS=1→ERST Count=0→ERSTE/EREP/TRB Count 初始化→R/S 门→事件投递→满检查→写 TRB→TRB Count=0 换段/回绕翻 PCS）｜
+  x0904-full←spec-49.txt L1071-L1113（**Figure 4-12 右侧语义重建**：TRB Count>1→EREP+16==DP；==1→NSP=ERST((Count+1) MOD ERSTSZ).BaseAddr==DP 即满（留一空位余量写 Full Error）；=0→换段等待 ERDP）。
+  非算法块排除记录：4.7 全节 prose/规则（无算法）；4.8.1 寻址规则（prose，DCI 计算归 #m5 计算器）；4.8.3 Figure 4-5 为状态图非算法（转移规则走引文）；4.9.3 轻片 bullets；4.9.4 前半 rules bullets 并入 x0904-erep 图面。
+- **D2 规范表**：**Table 4-4: Event Ring State Machine Definitions**（xh0904，印刷 p165-166 跨页、第二页重复表头合并；退役窗 (964,1001)+(1008,1017) 从 EXPECTED_SPEC 剔除不上 data-ck；列结构=3 列 Name/Label/Description 无跨行合并——行流机核（行界=Name 块起点），pymupdf find_tables 本机不可用（无 fitz，R11 批 A 通道），build 侧 verify_spec_table 全量单元格逐字对退役窗核验 PASS；印刷原文「in the in the」逐字保真）。s47/s48 记录**零规范表**（4.8.3 Figure 4-5 为状态图非表）。
+- **ZH 锚点增量与复核**：build_zh_quotes.py FILES/SEED +spec-47/48/49（最小增量，三级对齐配方零改动）；270 锚点全配 exit=0（BLOCK 82/RUN2-5 76/TRIM 81/TRIM-LOW 32）；**旧 197 锚点逐键 diff 零漂移**；新 73 窗逐窗复核——TRIM-LOW 实锤 1 处（spec-48 L132-133 过采下一 bullet 前半→**删窗**，EP Type 判据归 x0802-init 流程图承载，291 计数即删后终态）+1 处内容核对全对（spec-49 L413-434 推进规则含 DCS/RCS 注记，弱词致 0.75 保守标记）；跨页句拆分已知边缘 2 组（L617-624/L630-632、L288-302/L304-320）——ZH 两侧各含完整句（EN 侧页界截断的镜像），可追溯不误导，记录在案；FAIL-ALIGN 实锤 1 处（L161-168 含 Figure 4-5 图节点行，v2 块流无图节点）→缩窗 (161,162)。ZH 子标题剥记号/悬垂 bullet 清洗照配方生效。
+- **引文窗页码映射（PAGE 标机核）**：spec-47 p142(L1-21)/p143(L22-54)；spec-48 p143(L1-6)/p144(L12-65)/p145(L72-134)/p146(L140-178)/p147(L185-230)/p148(L237-277)/p149(L284-322)；spec-49 p149(L1-11)/p150(L17-59)/p151(L65-107)/p152(L113-157)/p153(L163-208)/p154(L214-286)/p155(L292-355)/p156(L361-384)/p157(L390-435)/p158(L441-518)/p159(L524-624)/p160(L630-676)/p161(L682-727)/p162(L733-814)/p163(L821-836)/p164(L842-934)/p165(L940-1002)/p166(L1008-1063)/p167(L1069-1122)/p168(L1129-1173)/p169(L1179-1222)/p170(L1228-1255)。
+- **交互深链（D6 就近台）**：xh0700/xh0901/xh0902/xh0904→#m1（三环操作台）；xh0801/02/03→#m5（Zone B DCI 计算器/Zone A 建槽剧本/Zone C 状态机）；xh0903→#m6（命令受理台）+卡内互链 `#s46-01`（R12-SPEC §0 重叠面处置：4.9.3 轻片不重讲职责门）。
+- **beats 登记（BEATS_EXPECT，帧表机核一致）**：'xh0700':46(total 1140f)/'xh0801':36(1087f)/'xh0802':40(1432f，中档上浮 32f≈1s)/'xh0803':58(1620f)/'xh0901':48(1351f)/'xh0902':78(2440f)/'xh0903':42(1292f)/'xh0904':75(2460f)——xh0902/xh0904 落 R12-SPEC §3 巨头档 1800-2800。
+- **遗留 pending（主会话终验口径）**：① 8 支新 mp4 未渲染（checker MP4_DEPLOY_PENDING 按 xh0700..xh0904.mp4 八名登记 WARN 豁免；渲染 `--name xh0700` 等与 LOCAL_TARGETS 同名后清空复跑零 WARN）；② 部署树/线上 e2e 未跑（本地构建产物已写 learning 树，部署链=vite build→cp→deploy_hygiene→checker 复跑→commit+push→Pages→online_e2e）；③ smoke_player BEATS_EXPECT 已登记 8 名，逐拍全检随主会话渲染后统一跑；④ 补丁组帧表迁移（RM 25-32→33-40）处于 git 暂存态，本代理未 commit。
+
+### R12 批 A · 主会话终验与补丁检索记录（2026-11-08 晚）
+
+- **mp4 命名统一（主会话裁定）**：TrackB 登记的裸场景名（xh0700.mp4 等）与既有惯例（描述性 slug，如 4605-address-device.mp4）不一致，渲染前统一为描述性 slug 并同步 build_landing 8 处 mp4=+checker LOCAL_TARGETS/MP4_DEPLOY_PENDING 两处登记+online_e2e 新增断言——build/checker 复跑 ALL PASS（8 WARN=待渲染豁免）。
+- **§6 补丁逐节检索实证（三节全跑，候选全过三判据）**：TrackB prompt 中主会话预写「三节无可准入补丁」为**未检索的失实宣称**（本人在 TrackB 交付复核中发现并当场纠正——§6 逐节全配的检索义务不可预写结论）。检索命令=内核仓 /Volumes/KernelSrc/linux @ d9008e061539 全历史 `git log -i --grep` 按节关键词（doorbell｜endpoint context/ep_ctx｜transfer ring/ring expansion/event ring/cycle bit），逐节结果：
+  - **s47（4.7 Doorbells）候选 d66eaf9f8950**（Oleksij Rempel 2013-07-21，Cc stable）：`ring_doorbell_for_active_rings` 空指针解引用内核崩溃（ath9k_htc 固件停摆场景），修法=用前判空——**与 s47 卡贴码同函数**（xhci-ring.c L585-607）。判据①真实修复✓②单查单用 ≤700f✓③门铃推进机制直接相关✓。
+  - **s48（4.8.3 Endpoint Context State）候选 dceea67058fe**（Mathias Nyman 2020-06-24，Cc stable）：EP_STATE_MASK 0xf→0x7 勘正，引 spec 6.2.3「EP state 域=bits[2:0]」，旧值多含邻域 RsvdZ 位（幸而无害）——判据①✓②单行掩码+域布局讲清✓③4.8.3 状态域语义直接相关✓。
+  - **s49（4.9.2 Transfer Ring Management）候选 b234c70fefa7**（Mathias Nyman 2024-03-05，Reported-by TotalPhase）：环扩容检查器把「完全满环」误判为空环（enq 恰填满段后 deq 经 Link TRB 越过 enq 的特例）→ 扩容漏检，修法 xhci-ring.c +7/-1——判据①✓②特例两态讲清 ≤700f✓③与 s49-02 卡贴码教学点（Cycle bit 过渡定位 enq/环满检出）直接咬合✓。
+  - **裁定**：三候选补丁片**排批 A-1 补挂**（批 A 主片已进渲染管线不回插，R11 批 A-2 先例）；landing 三段导语已改为「补丁检索已实证获候选…补丁片排批 A-1 补挂」诚实口径（原「无可准入」文案即删），e2e 断言同步。批 A-1 时点=批 A 部署+线上 e2e 收官后。
+- **规则洞处置（TrackB 报告两处弯路复核）**：① zsh 裸 `=` 词——主会话复测 `echo ====TEST====` 本会话成功+guard 计数器 `【guard·auto-fix】⑮=1188 次在场，**auto-fix 本就是静默改写放行**（无 block 消息可见），TrackB「未见介入」属误读非规则洞，无处置；② 多行 python 走 heredoc 进命令串——命中 AGENTS.md 已登记已知洞（cat heredoc 间接通道），无新增面，记录在案。

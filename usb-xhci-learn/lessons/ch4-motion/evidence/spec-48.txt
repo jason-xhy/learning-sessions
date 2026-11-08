@@ -1,0 +1,322 @@
+4.8 
+Endpoint 
+A USB device supports up to 31 endpoints (EPs): for example,15 IN, 15 OUT, 
+and 1 Control. The Default Control EP (0) is a bidirectional EP defined for all 
+USB devices. 
+
+===== [PAGE 144] =====
+ 
+144 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.8.1 
+Endpoint Addressing 
+Figure 4-4: Endpoint Context Addressing 
+Slot Context
+EP Context 0 BiDir
+Direction = N/A
+EP Context 1 OUT
+Direction = 0
+EP Context 1 IN
+Direction = 1
+...
+EP Context 15 OUT
+Direction = 0
+ EP Context 15 IN
+Direction = 1
+0
+1
+...
+Device Context Index (DCI)
+2
+3
+30
+31
+EP Number 0
+(Bidirectional,
+Direction bit ignored)
+EP Number 1
+EP Number 15
+ 
+An Endpoint Address defined by a USB Endpoint Descriptor allows up to 31 
+possible values, where a 4-bit Endpoint Number is combined with a Direction 
+bit (refer to section 9.6.6 in the USB2 spec). The xHCI parallels this 
+organization by using the Endpoint Number to select one of 16 Endpoint 
+Context data structure pairs, and the Direction bit to select the IN or OUT 
+Endpoint Context of a pair. Refer to Figure 4-4 to the right. 
+A Control endpoint (for example, EP Number 0 in Figure 4-4) is a bidirectional 
+endpoint and, per the USB specification, the Direction bit is “ignored” when 
+calculating its Endpoint Address, that is, only the Endpoint Number is used to 
+calculate the location of a Control Endpoint Context data structure. To 
+accommodate the addressing anomaly of USB bidirectional endpoint addressing 
+the xHC shall use the IN (odd) Endpoint Context of the pair to manage 
+bidirectional endpoints. 
+The USB specification allows a device to define additional Control (bidirectional) 
+endpoints, beyond the Default Control Endpoint (EP 0) required by the USB 
+Framework. Using the rules defined above, the xHCI is capable of supporting 
+additional Control endpoints. 
+For all Endpoint Numbers greater than 0, the xHC shall ignore the OUT (even) 
+Endpoint Context of the pair of any endpoint that declares itself as a 
+bidirectional. Software shall use the IN (odd) Endpoint Context of a pair for 
+managing a Control Endpoint. 
+4.8.2 
+Endpoint Context Initialization 
+All fields of an Input Endpoint Context data structure (including the Reserved 
+fields) shall be initialized to ‘0’ with the following exceptions: 
+
+===== [PAGE 145] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+145 
+4.8.2.1 
+Default Control Endpoint 0 
+•  
+EP Type = Control. Refer to Table 6-9 for the encoding. 
+•  
+Max Packet Size = For USB2 devices: Device Descriptor:bMaxPacketSize0 or for USB3 devices” Device 
+Descriptor:2bMaxPacketSize0. May be set to Default Endpoint Max Packet Size until USB Device Descriptor 
+is retrieved. An Evaluate Endpoint Command shall be used to modify the value of Max Packet Size 
+when the device slot is in the Addressed state. 
+•  
+CErr = 3. Enables 3 retries. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR Dequeue 
+Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs written by software. 
+4.8.2.2 
+Control Endpoints 
+Identical to the Default Control Endpoint except that the Max Packet Size shall 
+be set to the value of the associated Endpoint Descriptor:wMaxPacketSize. 
+4.8.2.3 
+Bulk Endpoints 
+•  
+EP Type = Bulk IN or Bulk OUT. Refer to Table 6-9 for the encoding. 
+•  
+Max Packet Size = Endpoint Descriptor:wMaxPacketSize. 
+•  
+Max Burst Size = For USB3 devices: SuperSpeed Endpoint Companion Descriptor:bMaxBurst, for 
+USB2 devices: ‘0’. 
+•  
+CErr = 3. Enables 3 retries. 
+•  
+If Streams are enabled (that is, SuperSpeed Endpoint Companion Descriptor:bmAttributes 
+MaxStreams field > 0): 
+•  
+Allocate and clear Primary Stream Array. 
+•  
+MaxPStreams = Size of Primary Stream Array. 
+•  
+TR Dequeue Pointer = Start address of Primary Stream Array. 
+•  
+HID = Initialize as required to enable or disable Host Initiated Move Data operations. 
+•  
+LSA = Initialize as required to enable or disable Linear Stream Array operations. 
+•  
+else 
+•  
+MaxPStreams = ‘0’. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer 
+Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR 
+Dequeue Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs 
+written by software. 
+ 
+The Endpoint Context Dequeue Cycle State (DCS) field is not applicable if the Streams are 
+enabled. 
+4.8.2.4 
+Isoch or Interrupt Endpoints 
+•  
+EP Type = Isoch IN, Isoch OUT, Interrupt IN or Interrupt OUT. Refer to Table 6-9 for the encoding. 
+
+===== [PAGE 146] =====
+ 
+146 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+•  
+Max Packet Size = Endpoint Descriptor:wMaxPacketSize & 07FFh. 
+•  
+Max Burst Size = SuperSpeed Endpoint Companion Descriptor:bMaxBurst or (Endpoint Descriptor: 
+wMaxPacketSize & 1800h) >> 11. 
+•  
+Mult = SuperSpeed Endpoint Companion Descriptor:bmAttributes:Mult field. Always ‘0’ for Interrupt 
+endpoints. 
+•  
+CErr = 3 for Interrupt endpoints. Enables 3 retries. 
+CErr = 0 for Isoch endpoints. Retries are not performed for Isoch endpoints. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR 
+Dequeue Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs written 
+by software. 
+•  
+Max ESIT Payload = Refer to section 4.14.2 for value. 
+4.8.3 
+Endpoint Context State 
+The current state of an Endpoint Context is identified by its respective Endpoint 
+State (EP State) field. Figure 4-5 defines the Endpoint States. 
+Figure 4-5: Endpoint State Diagram 
+Running
+Halted
+Stopped
+Error
+Disabled
+ 
+1. The Address Device Command transitions the Default Control Endpoint from the 
+Disabled to the Running state. 
+2. The Configure Endpoint Command (Add (A)= ‘1’and Drop (D) = ‘0’) shall transition 
+an endpoint, except the Default Control Endpoint, from the Disabled to the Running 
+state. 
+3. The Configure Endpoint Command (Add (A)= ‘0’ and Drop (D) = ‘1’) or Reset Device 
+Command shall transition an endpoint, from any state to the Disabled state, except 
+the Default Control Endpoint which may transition from the Stopped to the Running 
+state or remain in the Stopped state. 
+
+===== [PAGE 147] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+147 
+4. The Disable Slot Command shall transition all endpoints of a Device Slot, including 
+the Default Control Endpoint, from any state to the Disabled state. 
+5. In the Running state, a Set TR Dequeue Pointer Command should only be issued to 
+the non-active Transfer Rings of a Stream endpoint. Refer to section 4.12 for active 
+vs. non-active Stream Context information. 
+6. The Configure Endpoint Command (Add (A) = ‘1’ and Drop (D) = ‘1’) shall transition 
+an endpoint, except the Default Control Endpoint, from the Stopped to the Running 
+state. 
+7. In the Stopped state, a Set TR Dequeue Pointer Command may be used to modify 
+the starting TRB of an endpoint or non-active Stream prior to ringing the Doorbell. 
+Refer to section 4.12 for active vs. non-active Stream Context information. 
+Figure 4-5 illustrates the state transitions presented by an endpoint. The 
+Disabled to Running transition for the Default Control Endpoint shall occur due 
+to an Address Device Command, and for all other endpoints the transition shall 
+be invoked by a Configure Endpoint Command. Refer to Appendix E for state 
+machine notation. 
+A Halt condition, for example, a Stall Error, Invalid Stream Type Error, Invalid 
+Stream ID Error, Babble Detected Error, Event Lost Error, USB Transaction 
+Error, or a Split Transaction Error detected on a USB pipe shall cause a 
+Running Endpoint to transition to the Halted state. A Reset Endpoint Command 
+shall be used to clear the Halt condition on the endpoint and transition the 
+endpoint to the Stopped state. A Stop Endpoint Command received while an 
+endpoint is in the Halted state shall have no effect and shall generate a 
+Command Completion Event with the Completion Code set to Context State 
+Error. 
+Note: A STALL detected on any stage (Setup, Data, or Status) of a Default Control 
+Endpoint request shall transition the Endpoint Context to the Halted state. A 
+Default Control Endpoint STALL condition is cleared by a Reset Endpoint 
+Command which transitions the endpoint from the Halted to the Stopped 
+state. The Default Control Endpoint shall return to the Running state when the 
+Doorbell is rung for the next Setup Stage TD sent to the endpoint. 
+ 
+Section 8.5.3.4 of the USB2 spec and section 8.12.2.3 of the USB3 spec state 
+of Control pipes, “Unlike the case of a functional stall, protocol stall does not 
+indicate an error with the device.” The xHC treats a functional stall and 
+protocol stall identically, by Halting the endpoint and requiring software to 
+clear the condition by issuing a Reset Endpoint Command. 
+Note: If the STALL condition is detected on the Setup or Data Stage TD of a 
+request, software shall be responsible for removing the Data Stage or Status 
+Stage TDs, respectively, associated with the request from the Transfer Ring. 
+A TRB Error condition should cause a Running Endpoint to transition to the 
+Error state. A Set TR Dequeue Pointer Command shall be used to transition the 
+endpoint to the Stopped state. A Stop Endpoint Command received while an 
+endpoint is in the Error state shall have no effect and shall generate a 
+Command Completion Event with the Completion Code set to Context State 
+Error. 
+
+===== [PAGE 148] =====
+ 
+148 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Note: An endpoint in the Running state may be Busy (actively processing TRBs on 
+its Transfer Ring) or Idle (the endpoint is not processing TRBs and waiting for 
+a doorbell ring) sub-state, that is, an endpoint does not exit the Running state 
+if it exhausts its Transfer Ring. 
+Note: Some xHC implementations may not handle a TRB Error gracefully, resulting 
+in undefined behavior and possibly the assertion of HCE. It is the 
+responsibility of software to always present correctly formed TRBs to the xHC. 
+A Stop Endpoint Command shall also transition the endpoint to the Stopped 
+state. While in the Stopped state, the ownership of the Transfer Ring is 
+relinquished up by the xHC, allowing software to add, delete, or modify any TD 
+on the ring. 
+If an endpoint is in the Stopped state when the doorbell is rung, it will 
+transition to the Running state. A Configure Endpoint Command shall also 
+transition a Stopped endpoint to the Running state. Note that a Configure 
+Endpoint Command does not affect the Default Control Endpoint, therefore 
+shall not transition the Default Control Endpoint from the Stopped to the 
+Running state. 
+A Configure Endpoint “deconfigure” (DC = ‘1’) or Reset Device Command shall 
+transition all endpoints, except for the Default Control Endpoint, from the 
+Running, Halted, Error, or Stopped states to the Disabled state. 
+A Disable Slot Command shall transition all endpoints, including the Default 
+Control Endpoint, from the Running, Halted, Error, or Stopped states to the 
+Disabled state, as noted by the large bubble. System software is responsible 
+for issuing a Disable Slot Command when a device detach event is detected. 
+A Set TR Dequeue Pointer Command may be issued to a non-active Stream 
+Context of an endpoint to set its Dequeue Pointer while the endpoint is in the 
+Running state. Refer to sections 4.6.10 and 4.12. 
+An endpoint in the Stopped state shall not generate Transfer Events. 
+When an endpoint transitions from the Stopped to the Running state due to a 
+doorbell ring, the EP State field of the Output Endpoint Context shall be 
+updated by the xHC to running before any Transfer Events are generated. 
+Note: If the xHC is reset while an endpoint is not in the Disabled state, the value of 
+the Endpoint State (EP State) field shall be invalid. 
+Note: An Endpoint is considered “enabled” if it is not in the Disabled state. 
+Note: Software shall not write to the Doorbell register with the DB Target field value 
+set to an endpoint that is in the Disabled state. 
+Note: A control, bulk, or Interrupt endpoint shall transition to the Halted state if a 
+tHostTransactionTimeout occurs (refer to Table 8-36 in the USB3 spec). For 
+Isoch transactions the host shall not perform any more transactions to the 
+endpoint in the current Service Interval. And the host shall not halt the 
+endpoint and shall restart transactions to the endpoint in the next Service 
+
+===== [PAGE 149] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+149 
+Interval. And retries are not performed for any endpoint type if a 
+tHostTransactionTimeout occurs. Note that the tHostTransactionTimeout is an 
+xHC implementation specific delay within the range specified in the USB3 
+spec. 
+Note: There are several cases where the EP State field in the Output Endpoint 
+Context may not reflect the current state of an endpoint. The xHC should 
+attempt to keep EP State as current as possible, however it may defer these 
+updates to perform higher priority references to memory, for example, Isoch 
+data transfers, etc. Software should maintain an internal variable that tracks 
+the state of an endpoint and not depend on EP State to represent the 
+instantaneous state of an endpoint. 
+ 
+For example, when a Command that affects EP State is issued, the value of 
+EP State may be updated anytime between when software rings the 
+Command Ring doorbell for a command and when the associated Command 
+Completion Event is placed on the Event Ring by the xHC. The update of EP 
+State may also be delayed relative to a Doorbell ring or error condition (for 
+example, TRB Error, STALL, or USB Transaction Error) that causes an EP 
+State change not generated by a command. 
+ 
+Software should maintain an accurate value for EP State, by tracking it with 
+an internal variable that is driven by Events and Doorbell accesses associated 
+with an endpoint using the following method: 
+• 
+When a command is issued to an endpoint that affects its state, software 
+should use the Command Completion Event to update its image of EP State 
+to the appropriate state. 
+• 
+When a Transfer Event reports a TRB Error, software should update its 
+image of EP State to Error. 
+• 
+When a Transfer Event reports a Stall Error or USB Transaction Error, 
+software should update its image of EP State to Halted. 
+• 
+When software rings the Doorbell of an endpoint to transition it from the 
+Stopped to Running state, it should update its image of EP State to 
+Running. 
+Refer to section 6.2.3 for more information on the Endpoint Context data 
+structure. 

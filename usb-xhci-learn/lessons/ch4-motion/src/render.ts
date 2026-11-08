@@ -32,11 +32,36 @@ import ch4607 from './scenes/ch4607?scene';
 import ch4608 from './scenes/ch4608?scene';
 import ch4609 from './scenes/ch4609?scene';
 import ch4610 from './scenes/ch4610?scene';
+// R10 批 D：可选族七支（ch4612..ch4618）尾插 ch4611 后——主线 16-22，补丁表顺移 23-30
+import ch4612 from './scenes/ch4612?scene';
+import ch4613 from './scenes/ch4613?scene';
+import ch4614 from './scenes/ch4614?scene';
+import ch4615 from './scenes/ch4615?scene';
+import ch4616 from './scenes/ch4616?scene';
+import ch4617 from './scenes/ch4617?scene';
+import ch4618 from './scenes/ch4618?scene';
+// R11 批 C：全链片两支（D3 工作流全链，wf 前缀归主线组——orderedSceneKeys 判补丁用
+// ^ch\d+p\.tsx$ 不匹配 wf*；字典序 wfdevcfg<wfhaltrst 排主线尾=23/24）
+import wfdevcfg from './scenes/wfdevcfg?scene';
+import wfhaltrst from './scenes/wfhaltrst?scene';
+// R12 批 A：4.7-4.9 环节拍八支（xh 前缀归主线组，尾插 wfhaltrst 后——orderedSceneKeys
+// 比较器扩容 /^(ch\d+p|xh\d{4}[a-z]?p)\.tsx$/ 后字典序自证 wfhaltrst<xh0700<…<xh0904）
+import xh0700 from './scenes/xh0700?scene';
+import xh0801 from './scenes/xh0801?scene';
+import xh0802 from './scenes/xh0802?scene';
+import xh0803 from './scenes/xh0803?scene';
+import xh0901 from './scenes/xh0901?scene';
+import xh0902 from './scenes/xh0902?scene';
+import xh0903 from './scenes/xh0903?scene';
+import xh0904 from './scenes/xh0904?scene';
 // R3 P4：补丁分帧场景接入探针链（TrackA；纯追加，供 render.html 与 P6 全门 probe）
-// R10 批 C：清单扩为廿四场景——主线在前（ch41..ch45=0..4、ch4601..ch4604=5..8、
-// ch4605/ch4606=9..10、ch4607..ch4610=11..14、ch4611=15）、补丁在后
-// （ch41p..ch45p=16..20、ch4606p=21、ch4609p/ch4610p=22..23），
-// 与 src/player.ts orderedSceneKeys 比较器语义一致。
+// R11 批 C：清单扩为卅三场景——主线在前（ch41..ch45=0..4、ch4601..ch4604=5..8、
+// ch4605/ch4606=9..10、ch4607..ch4610=11..14、ch4611=15、ch4612..ch4618=16..22、
+// wfdevcfg/wfhaltrst=23..24）、补丁在后（ch41p..ch45p=25..29、ch4606p=30、
+// ch4609p/ch4610p=31..32），与 src/player.ts orderedSceneKeys 比较器语义一致。
+// R12 批 A 索引段：八支尾插主线=25..32（xh0700..xh0904），补丁组整体顺移 33..40
+// （ch41p..ch45p=33..37、ch4606p=38、ch4609p/ch4610p=39/40），帧表经 renumber_frames.py
+// 倒序迁移+scan 另产。
 import ch41p from './scenes/ch41p?scene';
 import ch42p from './scenes/ch42p?scene';
 import ch43p from './scenes/ch43p?scene';
@@ -209,7 +234,7 @@ function probeFrame(root: any, frame: number): any[] {
   });
 }
 
-const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch4605, ch4606, ch4607, ch4608, ch4609, ch4610, ch4611, ch41p, ch42p, ch43p, ch44p, ch45p, ch4606p, ch4609p, ch4610p];
+const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch4605, ch4606, ch4607, ch4608, ch4609, ch4610, ch4611, ch4612, ch4613, ch4614, ch4615, ch4616, ch4617, ch4618, wfdevcfg, wfhaltrst, xh0700, xh0801, xh0802, xh0803, xh0901, xh0902, xh0903, xh0904, ch41p, ch42p, ch43p, ch44p, ch45p, ch4606p, ch4609p, ch4610p];
 
 const q = new URLSearchParams(location.search);
 const sceneIdx = Math.max(0, Math.min(scenes.length - 1, Number(q.get('scene') ?? 0)));

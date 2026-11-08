@@ -132,7 +132,7 @@
 <div class="wrap">
   <header>
     <h1>xHCI 第 4 章视频课件<span class="tag">R4 四段式 · 2026-11-06</span></h1>
-    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + §4.6 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、4.6.2-4.6.18 十七命令与三支补丁片=18 小节全上线，六支可选规范项）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读）。</p>
+    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + §4.6 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、4.6.2-4.6.18 十七命令与三支补丁片=18 小节全上线，六支可选规范项） + R12 批 A 环与传输三节（§4.7 门铃 / §4.8 端点 / §4.9 TRB 环，xh 命名量产首批 8 卡，R11 终态模板：引文双语+算法流程图+规范样式表+交互深链）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读；4.7-4.9 三节无可准入补丁=§6 省略豁免，不设补丁版块）。</p>
     <div class="meta">
       1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 持续违例</b>（三主片+三补丁片，全帧非抽样）·
       判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
@@ -144,6 +144,10 @@
       <a href="#s44">§4.4 设备拔除</a>
       <a href="#s45">§4.5 设备槽管理</a>
       <a href="#s46">§4.6 命令接口（18 支短片线）</a>
+      <span class="cmt">环与传输（4.7-4.14）</span>
+      <a href="#s47">§4.7 门铃</a>
+      <a href="#s48">§4.8 端点</a>
+      <a href="#s49">§4.9 TRB 环</a>
     </nav>
     <p class="meta">引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），比对见项目仓 <code>scripts/check_landing_code.py</code>。</p>
   </header>
@@ -515,7 +519,7 @@ Date:   Fri Jan 15 18:19:06 2021 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，§4.1 p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=25">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=33">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1085,7 +1089,7 @@ Date:   Fri Oct 9 18:16:14 2026 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">单行改动（<code>drivers/usb/host/xhci.c</code>，<code>xhci_reset</code>）：未 halted 中止分支 <code>return 0</code> → <code>return -EBUSY</code>。补丁前：中止复位被当成成功，调用方在错误状态下继续走初始化。补丁后：-EBUSY 把「主机忙、未停机」如实上抛，调用方走错误处理——<code>xhci_reset</code> 的所有失败出口（未 halted / handshake 超时）语义一致。与代码摘录（drafts/code-excerpts.json init 组 L229，同函数内 <code>xhci_handshake(&amp;xhci-&gt;op_regs-&gt;status, STS_CNR, 0, timeout_us)</code>）对读：那条握手失败会返回超时错误，本补丁让“没进入复位”同样返回错误；凡依赖返回值判断复位成败的调用方（探测、休眠恢复、错误恢复路径）从此拿到一致语义，验收时可直接对 -EBUSY 分支验证未停机场景。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=26">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=34">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1549,7 +1553,7 @@ Date:   Thu Jul 17 10:31:07 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（§4.3.3 p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=27">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=35">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -1764,7 +1768,7 @@ Date:   Thu Mar 5 00:36:37 2026 +0200
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">把两条错误路径的 <code>kfree(command)</code> 改为 <code>xhci_free_command(xhci, command)</code>（+2/-2）：后者同时释放命令结构与关联的 completion 结构；命令结构零初始化使 <code>command-&gt;in_ctx</code> 为 NULL，不会被误释放。补丁前：kfree 只放一半，completion 泄漏；补丁后：错误路径与成功路径（L4183）释放形态统一，任何退出路径都不留孤儿。与贴码对读：det:1 分配行（true=带 completion）、det:5 热行即被改的错误路径之一——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；§4.4 拔除剧本的「异常退出」分支从此与正常分支同构。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=28">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=36">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -2200,7 +2204,7 @@ Date:   Tue Aug 19 15:58:43 2025 +0300
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
       <p class="pbody">把清理前移到命令完成事件的中断上下文：<code>xhci_handle_cmd_disable_slot</code> 增加 cmd_comp_code 形参（TRB_DISABLE_SLOT case 分派行同步传入），COMP_SUCCESS 时即刻清 <code>xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id]</code> 与 <code>xhci-&gt;devs[slot_id]</code>——DCBAA 指针清零即 Disabled 态的规范形态，此后 B 的 Enable Slot 完成时 devs[1] 已空，枚举照常。配套：<code>xhci_free_virt_device</code> 改为显式传 virt_dev 指针、只在数组仍指向本设备时清指针（防误清新主）；新增 <code>xhci_disable_and_free_slot()</code> 收拢全部「禁槽 + 释放」调用对。与贴码对读：§4.4 段 det:6 热行即本补丁在中断上下文清 DCBAA 指针的新增块（基线形态 <code>xhci-&gt;dcbaa.ctx_array[slot_id] = 0</code>）、§4.5 段 slot:8 冲突检测热行（B 被挡的判定点）与 slot:9 DCBAA 装载热行（装载/清零互为正反操作）——本补丁已在基线 d9008e061539 内，贴码即补丁后形态。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=29">补丁分帧动画 · 四幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=37">补丁分帧动画 · 四幕走读 →</a>
         <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
       </div>
     </div>
@@ -3685,7 +3689,7 @@ Date:   Tue Jun 24 17:14:42 2014 +0300
       <p class="ph">要解决的问题（症状 + 机制）</p>
       <p class="pbody">症状：某些「全部端点被 drop」的配置切换（如切到 Alternate Interface 0）后，Configure Endpoint 命令被 xHC 以 Parameter Error 拒绝，或驱动继续沿用旧值。机制（message 原文）：<code>drop_endpoint()</code> 的增量计算「似乎假定 add_flags 总含新配置的全部端点」——实际 add_flags 只含新配置里<b>新增</b>的端点；且 EP0_FLAG 在设备生命周期里并非恒置。两个假设任一不成立，全 drop 时 Context Entries 就被算成 0（非法值——p111 Parameter Error 判据「Add 的 DCI &gt; Context Entries」直接命中）或 -1（按 LAST_CTX 宏解读为 31，导致继续使用旧的错误值）。</p>
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">把两处增量维护整块删除（add/drop 各一块），改为 <code>xhci_check_bandwidth()</code> 发命令前的终点一步重算：i 自 31 下探，取第一个「ring 存活且未被 Drop」或「Add 旗标置位」的端点写 LAST_CTX(i)；全不命中则 i==1 兜底——LAST_CTX(1) 即「只剩 EP0」。补丁前：每步增量的两处假设任一不成立就写坏值；补丁后：终点一次算清，且 i==1 分支正是规范 p110「全 Disabled → Context Entries=\'1\'」的内核直译。与贴码对读：下方补丁对读段琥珀高亮行（Fix up 注释行）即修复循环所在——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；分帧走读见 ch4606p（scene=30）。</p>
+      <p class="pbody">把两处增量维护整块删除（add/drop 各一块），改为 <code>xhci_check_bandwidth()</code> 发命令前的终点一步重算：i 自 31 下探，取第一个「ring 存活且未被 Drop」或「Add 旗标置位」的端点写 LAST_CTX(i)；全不命中则 i==1 兜底——LAST_CTX(1) 即「只剩 EP0」。补丁前：每步增量的两处假设任一不成立就写坏值；补丁后：终点一次算清，且 i==1 分支正是规范 p110「全 Disabled → Context Entries=\'1\'」的内核直译。与贴码对读：下方补丁对读段琥珀高亮行（Fix up 注释行）即修复循环所在——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；分帧走读见 ch4606p（scene=38）。</p>
       <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 琥珀高亮行 = 修复循环所在</span></h3>
             <div class="exhead2">drivers/usb/host/xhci.c:3078-3174 · xhci_check_bandwidth·补丁对读段 · d9008e061539</div>
       <pre class="codeseg" data-src="xhci.c:3078:3174"><div class="cl" data-line="3078"><span class="ln">3078</span><span class="cd">int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)</span></div>
@@ -3786,7 +3790,7 @@ Date:   Tue Jun 24 17:14:42 2014 +0300
 <div class="cl" data-line="3173"><span class="ln">3173</span><span class="cd">	return ret;</span></div>
 <div class="cl" data-line="3174"><span class="ln">3174</span><span class="cd">}</span></div></pre>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=30">补丁分帧动画 · 三幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=38">补丁分帧动画 · 三幕走读 →</a>
         <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 §4.6.6 p110 Entries 两分支）</span>
       </div>
     </div>
@@ -4599,7 +4603,7 @@ Date:   Fri Jan 29 15:00:40 2021 +0200
       <p class="ph">要解决的问题（症状 + 机制）</p>
       <p class="pbody">症状：取消风暴场景下 Stop Endpoint 假失败残留——完成码 Context State Error 但环实际已在跑，端点停在「半停」态。机制：完成处理器的 COMP_CONTEXT_STATE_ERROR 分支此前只按「真的没停下来」处理；规范 p122 竞态 Note（L1881-1887）明确 Context State Error 可能来自 Busy 端点的异步翻转——本补丁修的正是其反向形态：EP 实际 Running、命令却报错=竞态败给了取消重启。</p>
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">EP_STATE_RUNNING case 补竞态分支（+11）：原地 GFP_ATOMIC 分配命令、重挂 stop_cmd_timer、重发 Stop Endpoint 命令、重敲命令环门铃；halted case 补 <code>return;</code> 止住串入。补丁后：假失败当场自愈，端点必达 Stopped。与贴码对读：下方补丁对读段琥珀行（race 注释/重发命令）即本修复块——本补丁已在基线 d9008e061539 内（后续 42b758137601 加 100ms 重试上限与 fallthrough，语义同源）；本卡贴码 det:24 热行（完成侧无处理注释）即修复前的入口；分帧走读见 ch4609p（scene=31）。</p>
+      <p class="pbody">EP_STATE_RUNNING case 补竞态分支（+11）：原地 GFP_ATOMIC 分配命令、重挂 stop_cmd_timer、重发 Stop Endpoint 命令、重敲命令环门铃；halted case 补 <code>return;</code> 止住串入。补丁后：假失败当场自愈，端点必达 Stopped。与贴码对读：下方补丁对读段琥珀行（race 注释/重发命令）即本修复块——本补丁已在基线 d9008e061539 内（后续 42b758137601 加 100ms 重试上限与 fallthrough，语义同源）；本卡贴码 det:24 热行（完成侧无处理注释）即修复前的入口；分帧走读见 ch4609p（scene=39）。</p>
       <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 琥珀高亮行 = 竞态重发块所在</span></h3>
             <div class="exhead2">drivers/usb/host/xhci-ring.c:1194-1319 · xhci_handle_cmd_stop_ep·补丁对读段 · d9008e061539</div>
       <pre class="codeseg" data-src="xhci-ring.c:1194:1319"><div class="cl" data-line="1194"><span class="ln">1194</span><span class="cd">static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,</span></div>
@@ -4729,7 +4733,7 @@ Date:   Fri Jan 29 15:00:40 2021 +0200
 <div class="cl" data-line="1318"><span class="ln">1318</span><span class="cd">	xhci_ring_doorbell_for_active_rings(xhci, slot_id, ep_index);</span></div>
 <div class="cl" data-line="1319"><span class="ln">1319</span><span class="cd">}</span></div></pre>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=31">补丁分帧动画 · 三幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=39">补丁分帧动画 · 三幕走读 →</a>
         <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 §4.6.9 p122 竞态 Note）</span>
       </div>
     </div>
@@ -5205,9 +5209,9 @@ Date:   Thu Jun 21 16:28:30 2012 -0700
       <p class="ph">要解决的问题（症状 + 机制）</p>
       <p class="pbody">症状：整机挂死。机制（message 原文）：update_ring_for_set_deq_completion 无条件推进软件出队指针——指针已停在 link TRB（段尾）时一推即越出段外（la-la-land），while 循环在段间内存里狂找匹配（顺带 GPF 隐患），deq_seg 与 dequeue 失同步 → <code>xhci_trb_virt_to_dma</code> 返回 NULL → 后续传输事件被忽略 → 超时转 No-Op → 中断上下文死循环。</p>
       <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
-      <p class="pbody">while 循环前补 last_trb 段尾守卫（+11）：软件出队指针停在 link TRB 时，先把 deq_seg 前进一段、dequeue 回新段首，while 从正确的段出发找 queued_deq_ptr——越段扫描、失同步、挂死三点全堵。沿革（诚实注记）：该函数已于 2025-03-06 被 856563be98b2 移除（deq_seg/deq_ptr 直接存 queued_deq_seg/queued_deq_ptr，无需再搜），基线不含修复后形态，故本卡无对读段；本支判据=diff 原文（drafts/patch-48.txt）。与贴码对读：本卡贴码 set:27 热行（deq_seg 从 queued_* 取回）即该簿记的现代形态——修复保护的语义延续至今；分帧走读见 ch4610p（scene=32）。</p>
+      <p class="pbody">while 循环前补 last_trb 段尾守卫（+11）：软件出队指针停在 link TRB 时，先把 deq_seg 前进一段、dequeue 回新段首，while 从正确的段出发找 queued_deq_ptr——越段扫描、失同步、挂死三点全堵。沿革（诚实注记）：该函数已于 2025-03-06 被 856563be98b2 移除（deq_seg/deq_ptr 直接存 queued_deq_seg/queued_deq_ptr，无需再搜），基线不含修复后形态，故本卡无对读段；本支判据=diff 原文（drafts/patch-48.txt）。与贴码对读：本卡贴码 set:27 热行（deq_seg 从 queued_* 取回）即该簿记的现代形态——修复保护的语义延续至今；分帧走读见 ch4610p（scene=40）。</p>
       <div class="act">
-        <a class="btn" href="player/index.html?scene=32">补丁分帧动画 · 三幕走读 →</a>
+        <a class="btn" href="player/index.html?scene=40">补丁分帧动画 · 三幕走读 →</a>
         <span class="note">背景现场 → diff 逐行走读 → 规范收尾 + 函数沿革注记（无对读段：修复函数已退役）</span>
       </div>
     </div>
@@ -6369,9 +6373,1529 @@ with the Extended Capability specified in the Extended Capability ID. </blockquo
 
   </section>
 
+  <section id="s47">
+    <h2><span class="no">§4.7</span>Doorbells 门铃 <span class="cmt">R12 批 A · xh 命名首验批 · 最短节单卡</span></h2>
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>大区导语 · 1 卡</div>
+      <p class="pbody">4.7 是门铃机制总节（全章最短、零小节）：门铃寄存器阵列按 Device Slot ID 索引、DB Target 字段说明「为什么敲」，0 号=主机控制器专用，1-255=设备上下文门铃（1:1 映射设备槽）；xHC 内部记录全部门铃写引用、无需清除；Disabled 槽/端点禁写并回 Endpoint Not Enabled Error。本节无算法块（不硬凑流程图）、无规范表；补丁检索已实证获候选（d66eaf9f8950：门铃路径 ring_doorbell_for_active_rings 空指针崩溃修复，与本卡贴码同函数），<b>补丁片排批 A-1 补挂</b>（R12-SPEC §6 逐节全配）。</p>
+      <div class="ch46grid"><a class="ch46g" href="#s47-01"><span class="s46no">4.7</span>Doorbells 门铃<span class="s46tag mech">机制</span></a></div>
+    </div>
+    <div class="card s46card" id="s47-01">
+      <div class="s46head"><span class="s46no">4.7</span><span class="s46ttl">Doorbells 门铃</span><span class="s46tag mech">机制</span><span class="s46pg">p142-p143</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L3-L10">The xHCI presents an array of up to 256 32-bit Doorbell Registers (refer to 
+section 5.6), which reside in MMIO space and are indexed by Device Slot ID. 
+The base of the Doorbell Register Array is pointed to by the Doorbell Offset 
+(DBOFF) register in the xHCI Capability Registers (refer to section 5.3.7). 
+Each Doorbell Register contains a DB Target field, which is used to indicate the 
+reason for a software reference to the register. System software “rings” a 
+doorbell by writing a Doorbell Register with the appropriate value in the DB 
+Target field. </blockquote><div class="qzh"><div class="qzh-body">xHCI 提供了最多 256 个 32 位门铃寄存器（Doorbell Register）构成的数组（参见第 5.6 节），这些寄存器驻留在 MMIO 空间中，并以 Device Slot ID 为索引。门铃寄存器数组的基址由 xHCI 能力寄存器（xHCI Capability Registers）中的门铃偏移（Doorbell Offset，DBOFF）寄存器指向（参见第 5.3.7 节）。
+
+每个门铃寄存器都包含一个 DB Target 字段，用于指示软件访问该寄存器的原因。系统软件通过向门铃寄存器写入、并在 DB Target 字段中填入适当取值来“振铃”（ring）一个门铃。</div><div class="qsrc">—— evidence/spec-47.txt L3-L10（p142）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L11-L13">Doorbell Register 0 is dedicated to the Host Controller. For this register, there 
+is only one valid value for the DB Target field, 0 (Host Controller Command). 
+The remaining values (1-255) are reserved. </blockquote><div class="qzh"><div class="qzh-body">门铃寄存器 0 专用于主机控制器。对于该寄存器，DB Target 字段只有一个有效取值，即 0（Host Controller Command）。其余取值（1-255）为保留值。</div><div class="qsrc">—— evidence/spec-47.txt L11-L13（p142）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L14-L20">Doorbell Registers 1-255 are referred to as the Device Context Doorbell 
+registers. There is a 1:1 mapping of Device Context Doorbell registers to 
+Device Slots. System software rings a Device Context Doorbell after it has 
+inserted work on a Transfer Ring (endpoint/Stream) associated with the 
+respective Device Slot. The DB Target and DB Stream ID fields of a Device 
+Context Doorbell register is used to identify which Transfer Ring of a device has 
+been modified. Refer to Table 5-43 for the encoding of the DB Target field. </blockquote><div class="qzh"><div class="qzh-body">门铃寄存器 1-255 被称为设备上下文门铃寄存器（Device Context Doorbell Register）。设备上下文门铃寄存器与设备槽位之间存在 1:1 映射。在向与相应设备槽位关联的某个传输环（端点/流）插入工作之后，系统软件才振铃设备上下文门铃。设备上下文门铃寄存器的 DB Target 与 DB Stream ID 字段用于标识设备的哪个传输环被修改。DB Target 字段的编码参见表 5-43。</div><div class="qsrc">—— evidence/spec-47.txt L14-L20（p142）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L27-L33">The xHC internally records all Doorbell Register write references and uses the 
+information to determine if the Command Ring or a Transfer Ring has newly 
+posted work items (TDs). There is no need to “clear” a Doorbell Register. To 
+inform the xHC that work has been posted to two separate Transfer Rings of a 
+device, system software shall post two writes to the associated Doorbell 
+Registers, where the value of the DB Target field identifies the respective 
+Transfer Ring. </blockquote><div class="qzh"><div class="qzh-body">xHC 会在内部记录所有门铃寄存器写入引用，并利用该信息来判定命令环或某个传输环是否新投递了工作项（TD）。无需“清除”门铃寄存器。为通知 xHC 已向一个设备的两个独立传输环投递了工作，系统软件必须向相应的门铃寄存器发出两次写入，其中 DB Target 字段的值标识各自的传输环。</div><div class="qsrc">—— evidence/spec-47.txt L27-L33（p143）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L35-L47">Software shall not write to a Doorbell register: 
+• 
+If the associated Device Slot is in the Disabled state. 
+• 
+If the associated Device Slot is not in the Disabled state and the DB Target 
+field is set to an endpoint that is in the Disabled state. 
+If a doorbell register is written by software with the DB Target value that 
+references an endpoint that is in the Disabled state, the xHC should generate a 
+Transfer Event TRB with the TRB Pointer, TRB Transfer Length, Event Data 
+(ED) fields set to ‘0’, a Completion Code of Endpoint Not Enabled Error, and the 
+Slot ID and Endpoint ID fields contain the IDs of device slot/endpoint that the 
+doorbell that was rung for. This transfer Event TRB shall be posted to the 
+Primary Event Ring. </blockquote><div class="qzh"><div class="qzh-body">软件不得在以下情况下向门铃寄存器写入：
+
+- 关联的设备槽位处于 Disabled 状态。
+- 关联的设备槽位不处于 Disabled 状态，而 DB Target 字段被置为处于 Disabled 状态的某个端点。
+
+若软件向门铃寄存器写入的 DB Target 取值引用了处于 Disabled 状态的端点，则建议 xHC 生成一个传输事件 TRB（Transfer Event TRB），其 TRB Pointer、TRB Transfer Length、Event Data（ED）字段被置为 ‘0’，Completion Code 为 Endpoint Not Enabled Error，且 Slot ID 与 Endpoint ID 字段包含被振铃门铃所对应的设备槽位/端点的 ID。该传输事件 TRB 必须被投递到主事件环（Primary Event Ring）。</div><div class="qsrc">—— evidence/spec-47.txt L35-L47（p143）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L48-L54">An Endpoint Not Enabled Error should be generated for doorbell register writes 
+to Device Slots that are in the Disabled state regardless of the DB Target value 
+provided. 
+The xHC may ignore doorbell references to Device Slots in the Disabled state or 
+endpoints in the Disabled state. 
+The xHC shall ignore doorbell references to endpoints in the Halted or Error 
+state. </blockquote><div class="qzh"><div class="qzh-body">对于向处于 Disabled 状态的设备槽位发出的门铃寄存器写入，无论提供的 DB Target 取值如何，都建议生成 Endpoint Not Enabled Error。
+
+xHC 可以忽略指向处于 Disabled 状态的设备槽位或处于 Disabled 状态的端点的门铃引用。
+
+xHC 必须忽略指向处于 Halted 或 Error 状态端点的门铃引用。</div><div class="qsrc">—— evidence/spec-47.txt L48-L54（p143）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:585-607 · xhci_ring_doorbell_for_active_rings · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:585:607"><div class="cl" data-line="585"><span class="ln">585</span><span class="cd">void xhci_ring_doorbell_for_active_rings(struct xhci_hcd *xhci, unsigned int slot_id,</span></div>
+<div class="cl" data-line="586"><span class="ln">586</span><span class="cd">					 unsigned int ep_index)</span></div>
+<div class="cl" data-line="587"><span class="ln">587</span><span class="cd">{</span></div>
+<div class="cl" data-line="588"><span class="ln">588</span><span class="cd">	unsigned int stream_id;</span></div>
+<div class="cl" data-line="589"><span class="ln">589</span><span class="cd">	struct xhci_virt_ep *ep;</span></div>
+<div class="cl" data-line="590"><span class="ln">590</span><span class="cd"></span></div>
+<div class="cl" data-line="591"><span class="ln">591</span><span class="cd">	ep = &amp;xhci-&gt;devs[slot_id]-&gt;eps[ep_index];</span></div>
+<div class="cl" data-line="592"><span class="ln">592</span><span class="cd"></span></div>
+<div class="cl" data-line="593"><span class="ln">593</span><span class="cd">	/* A ring has pending URBs if its TD list is not empty */</span></div>
+<div class="cl" data-line="594"><span class="ln">594</span><span class="cd">	if (!(ep-&gt;ep_state &amp; EP_HAS_STREAMS)) {</span></div>
+<div class="cl" data-line="595"><span class="ln">595</span><span class="cd">		if (ep-&gt;ring &amp;&amp; !(list_empty(&amp;ep-&gt;ring-&gt;td_list)))</span></div>
+<div class="cl" data-line="596"><span class="ln">596</span><span class="cd">			xhci_ring_ep_doorbell(xhci, slot_id, ep_index, 0);</span></div>
+<div class="cl" data-line="597"><span class="ln">597</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="598"><span class="ln">598</span><span class="cd">	}</span></div>
+<div class="cl" data-line="599"><span class="ln">599</span><span class="cd"></span></div>
+<div class="cl" data-line="600"><span class="ln">600</span><span class="cd">	for (stream_id = 1; stream_id &lt; ep-&gt;stream_info-&gt;num_streams;</span></div>
+<div class="cl" data-line="601"><span class="ln">601</span><span class="cd">			stream_id++) {</span></div>
+<div class="cl" data-line="602"><span class="ln">602</span><span class="cd">		struct xhci_stream_info *stream_info = ep-&gt;stream_info;</span></div>
+<div class="cl" data-line="603"><span class="ln">603</span><span class="cd">		if (!list_empty(&amp;stream_info-&gt;stream_rings[stream_id]-&gt;td_list))</span></div>
+<div class="cl" data-line="604"><span class="ln">604</span><span class="cd">			xhci_ring_ep_doorbell(xhci, slot_id, ep_index,</span></div>
+<div class="cl" data-line="605"><span class="ln">605</span><span class="cd">						stream_id);</span></div>
+<div class="cl" data-line="606"><span class="ln">606</span><span class="cd">	}</span></div>
+<div class="cl" data-line="607"><span class="ln">607</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0700-doorbells.mp4"></video>
+        <a class="btn" href="player/index.html?scene=25">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m1">模块一 · 三环操作台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 门铃 DB 写 / 事件环消费 / 命令环推进手动演练——对应本节「软件写 Doorbell 寄存器 → xHC 取新工作」节拍</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="s48">
+    <h2><span class="no">§4.8</span>Endpoint 端点 <span class="cmt">R12 批 A · 三小节三卡（寻址/上下文初始化/状态机）</span></h2>
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>大区导语 · 3 卡</div>
+      <p class="pbody">4.8 定义端点：寻址（Endpoint Number+Direction → 16 对 Endpoint Context，DCI 公式）、上下文初始化（Input Endpoint Context 全零起步+四端点型例外清单）、上下文状态（五态状态机：Disabled/Running/Halted/Stopped/Error 与命令驱动的转移）。本节无规范表（Figure 4-5 为状态图非表）；补丁检索已实证获候选（dceea67058fe：EP 状态域掩码 0xf→0x7 勘正，引 spec 6.2.3 三位状态域），<b>补丁片排批 A-1 补挂</b>（R12-SPEC §6 逐节全配）。</p>
+      <div class="ch46grid"><a class="ch46g" href="#s48-01"><span class="s46no">4.8.1</span>Endpoint Addressing 端点寻址<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s48-02"><span class="s46no">4.8.2</span>Endpoint Context Initialization 端点上下文初始化<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s48-03"><span class="s46no">4.8.3</span>Endpoint Context State 端点上下文状态<span class="s46tag mech">机制</span></a></div>
+    </div>
+    <div class="card s46card" id="s48-01">
+      <div class="s46head"><span class="s46no">4.8.1</span><span class="s46ttl">Endpoint Addressing 端点寻址</span><span class="s46tag mech">机制</span><span class="s46pg">p143-p144</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L3-L5">A USB device supports up to 31 endpoints (EPs): for example,15 IN, 15 OUT, 
+and 1 Control. The Default Control EP (0) is a bidirectional EP defined for all 
+USB devices. </blockquote><div class="qzh"><div class="qzh-body">一个 USB 设备最多支持 31 个端点（EP）：例如 15 个 IN、15 个 OUT 和 1 个 Control。默认控制 EP（0）是为所有 USB 设备定义的双向 EP。</div><div class="qsrc">—— evidence/spec-48.txt L3-L5（p143）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L41-L46">An Endpoint Address defined by a USB Endpoint Descriptor allows up to 31 
+possible values, where a 4-bit Endpoint Number is combined with a Direction 
+bit (refer to section 9.6.6 in the USB2 spec). The xHCI parallels this 
+organization by using the Endpoint Number to select one of 16 Endpoint 
+Context data structure pairs, and the Direction bit to select the IN or OUT 
+Endpoint Context of a pair. Refer to Figure 4-4 to the right. </blockquote><div class="qzh"><div class="qzh-body">由 USB 端点描述符（Endpoint Descriptor）定义的端点地址（Endpoint Address）最多允许 31 个可能的取值，其中 4 位的端点号（Endpoint Number）与一个方向位（Direction bit）组合而成（参见 USB2 规范第 9.6.6 节）。xHCI 仿照这一组织方式：用端点号从 16 对端点上下文（Endpoint Context）数据结构对中选出一对，再用方向位选出该对中的 IN 或 OUT 端点上下文。参见图 4-4（位于右侧）。</div><div class="qsrc">—— evidence/spec-48.txt L41-L46（p144）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L47-L53">A Control endpoint (for example, EP Number 0 in Figure 4-4) is a bidirectional 
+endpoint and, per the USB specification, the Direction bit is “ignored” when 
+calculating its Endpoint Address, that is, only the Endpoint Number is used to 
+calculate the location of a Control Endpoint Context data structure. To 
+accommodate the addressing anomaly of USB bidirectional endpoint addressing 
+the xHC shall use the IN (odd) Endpoint Context of the pair to manage 
+bidirectional endpoints. </blockquote><div class="qzh"><div class="qzh-body">控制端点（例如图 4-4 中的 EP 号 0）是双向端点；按照 USB 规范，在计算其端点地址时方向位被“忽略”，也就是说，只用端点号来计算控制端点上下文（Control Endpoint Context）数据结构的位置。为兼容 USB 双向端点寻址的这一反常之处，xHC 必须使用该对中的 IN（奇数）端点上下文来管理双向端点。</div><div class="qsrc">—— evidence/spec-48.txt L47-L53（p144）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L54-L57">The USB specification allows a device to define additional Control (bidirectional) 
+endpoints, beyond the Default Control Endpoint (EP 0) required by the USB 
+Framework. Using the rules defined above, the xHCI is capable of supporting 
+additional Control endpoints. </blockquote><div class="qzh"><div class="qzh-body">USB 规范允许设备在 USB 框架所要求的默认控制端点（EP 0）之外，定义额外的控制（双向）端点。按照上述规则，xHCI 能够支持这些额外的控制端点。</div><div class="qsrc">—— evidence/spec-48.txt L54-L57（p144）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L58-L61">For all Endpoint Numbers greater than 0, the xHC shall ignore the OUT (even) 
+Endpoint Context of the pair of any endpoint that declares itself as a 
+bidirectional. Software shall use the IN (odd) Endpoint Context of a pair for 
+managing a Control Endpoint. </blockquote><div class="qzh"><div class="qzh-body">对于所有大于 0 的端点号，若某端点声明自身为双向，则 xHC 必须忽略其对中 OUT（偶数）端点上下文。软件必须使用一对中的 IN（奇数）端点上下文来管理控制端点。</div><div class="qsrc">—— evidence/spec-48.txt L58-L61（p144）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:1467-1495 · 端点索引辅助组（DCI 反查/Context Entries 计算） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:1467:1495"><div class="cl" data-line="1467"><span class="ln">1467</span><span class="cd">/* The reverse operation to xhci_get_endpoint_index. Calculate the USB endpoint</span></div>
+<div class="cl" data-line="1468"><span class="ln">1468</span><span class="cd"> * address from the XHCI endpoint index.</span></div>
+<div class="cl" data-line="1469"><span class="ln">1469</span><span class="cd"> */</span></div>
+<div class="cl" data-line="1470"><span class="ln">1470</span><span class="cd">static unsigned int xhci_get_endpoint_address(unsigned int ep_index)</span></div>
+<div class="cl" data-line="1471"><span class="ln">1471</span><span class="cd">{</span></div>
+<div class="cl" data-line="1472"><span class="ln">1472</span><span class="cd">	unsigned int number = DIV_ROUND_UP(ep_index, 2);</span></div>
+<div class="cl" data-line="1473"><span class="ln">1473</span><span class="cd">	unsigned int direction = ep_index % 2 ? USB_DIR_OUT : USB_DIR_IN;</span></div>
+<div class="cl" data-line="1474"><span class="ln">1474</span><span class="cd">	return direction | number;</span></div>
+<div class="cl" data-line="1475"><span class="ln">1475</span><span class="cd">}</span></div>
+<div class="cl" data-line="1476"><span class="ln">1476</span><span class="cd"></span></div>
+<div class="cl" data-line="1477"><span class="ln">1477</span><span class="cd">/* Find the flag for this endpoint (for use in the control context).  Use the</span></div>
+<div class="cl" data-line="1478"><span class="ln">1478</span><span class="cd"> * endpoint index to create a bitmask.  The slot context is bit 0, endpoint 0 is</span></div>
+<div class="cl" data-line="1479"><span class="ln">1479</span><span class="cd"> * bit 1, etc.</span></div>
+<div class="cl" data-line="1480"><span class="ln">1480</span><span class="cd"> */</span></div>
+<div class="cl" data-line="1481"><span class="ln">1481</span><span class="cd">static unsigned int xhci_get_endpoint_flag(struct usb_endpoint_descriptor *desc)</span></div>
+<div class="cl" data-line="1482"><span class="ln">1482</span><span class="cd">{</span></div>
+<div class="cl" data-line="1483"><span class="ln">1483</span><span class="cd">	return 1 &lt;&lt; (xhci_get_endpoint_index(desc) + 1);</span></div>
+<div class="cl" data-line="1484"><span class="ln">1484</span><span class="cd">}</span></div>
+<div class="cl" data-line="1485"><span class="ln">1485</span><span class="cd"></span></div>
+<div class="cl" data-line="1486"><span class="ln">1486</span><span class="cd">/* Compute the last valid endpoint context index.  Basically, this is the</span></div>
+<div class="cl" data-line="1487"><span class="ln">1487</span><span class="cd"> * endpoint index plus one.  For slot contexts with more than valid endpoint,</span></div>
+<div class="cl" data-line="1488"><span class="ln">1488</span><span class="cd"> * we find the most significant bit set in the added contexts flags.</span></div>
+<div class="cl" data-line="1489"><span class="ln">1489</span><span class="cd"> * e.g. ep 1 IN (with epnum 0x81) =&gt; added_ctxs = 0b1000</span></div>
+<div class="cl" data-line="1490"><span class="ln">1490</span><span class="cd"> * fls(0b1000) = 4, but the endpoint context index is 3, so subtract one.</span></div>
+<div class="cl" data-line="1491"><span class="ln">1491</span><span class="cd"> */</span></div>
+<div class="cl" data-line="1492"><span class="ln">1492</span><span class="cd">unsigned int xhci_last_valid_endpoint(u32 added_ctxs)</span></div>
+<div class="cl" data-line="1493"><span class="ln">1493</span><span class="cd">{</span></div>
+<div class="cl" data-line="1494"><span class="ln">1494</span><span class="cd">	return fls(added_ctxs) - 1;</span></div>
+<div class="cl" data-line="1495"><span class="ln">1495</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0801-endpoint-addressing.mp4"></video>
+        <a class="btn" href="player/index.html?scene=26">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · Zone B DCI 计算器：EP Number×2+Direction → DCI（Control 取 IN 奇上下文）——对应本节寻址规则</span>
+      </div>
+    </div>
+
+    <div class="card s46card" id="s48-02">
+      <div class="s46head"><span class="s46no">4.8.2</span><span class="s46ttl">Endpoint Context Initialization 端点上下文初始化</span><span class="s46tag mech">机制</span><span class="s46pg">p144-p146</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L64-L65">All fields of an Input Endpoint Context data structure (including the Reserved 
+fields) shall be initialized to ‘0’ with the following exceptions: </blockquote><div class="qzh"><div class="qzh-body">输入端点上下文（Input Endpoint Context）数据结构的所有字段（包括 Reserved 字段）都必须初始化为 ‘0’，但下列情况除外：</div><div class="qsrc">—— evidence/spec-48.txt L64-L65（p144）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-mem.c:1409-1515 · xhci_endpoint_init · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:1409:1515"><div class="cl" data-line="1409"><span class="ln">1409</span><span class="cd">int xhci_endpoint_init(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="1410"><span class="ln">1410</span><span class="cd">		struct xhci_virt_device *virt_dev,</span></div>
+<div class="cl" data-line="1411"><span class="ln">1411</span><span class="cd">		struct usb_device *udev,</span></div>
+<div class="cl" data-line="1412"><span class="ln">1412</span><span class="cd">		struct usb_host_endpoint *ep,</span></div>
+<div class="cl" data-line="1413"><span class="ln">1413</span><span class="cd">		gfp_t mem_flags)</span></div>
+<div class="cl" data-line="1414"><span class="ln">1414</span><span class="cd">{</span></div>
+<div class="cl" data-line="1415"><span class="ln">1415</span><span class="cd">	unsigned int ep_index;</span></div>
+<div class="cl" data-line="1416"><span class="ln">1416</span><span class="cd">	struct xhci_ep_ctx *ep_ctx;</span></div>
+<div class="cl" data-line="1417"><span class="ln">1417</span><span class="cd">	struct xhci_ring *ep_ring;</span></div>
+<div class="cl" data-line="1418"><span class="ln">1418</span><span class="cd">	unsigned int max_packet;</span></div>
+<div class="cl" data-line="1419"><span class="ln">1419</span><span class="cd">	enum xhci_ring_type ring_type;</span></div>
+<div class="cl" data-line="1420"><span class="ln">1420</span><span class="cd">	u32 max_esit_payload;</span></div>
+<div class="cl" data-line="1421"><span class="ln">1421</span><span class="cd">	u32 endpoint_type;</span></div>
+<div class="cl" data-line="1422"><span class="ln">1422</span><span class="cd">	unsigned int max_burst;</span></div>
+<div class="cl" data-line="1423"><span class="ln">1423</span><span class="cd">	unsigned int interval;</span></div>
+<div class="cl" data-line="1424"><span class="ln">1424</span><span class="cd">	unsigned int mult;</span></div>
+<div class="cl" data-line="1425"><span class="ln">1425</span><span class="cd">	unsigned int avg_trb_len;</span></div>
+<div class="cl" data-line="1426"><span class="ln">1426</span><span class="cd">	unsigned int err_count = 0;</span></div>
+<div class="cl" data-line="1427"><span class="ln">1427</span><span class="cd"></span></div>
+<div class="cl" data-line="1428"><span class="ln">1428</span><span class="cd">	ep_index = xhci_get_endpoint_index(&amp;ep-&gt;desc);</span></div>
+<div class="cl" data-line="1429"><span class="ln">1429</span><span class="cd">	ep_ctx = xhci_get_ep_ctx(xhci, virt_dev-&gt;in_ctx, ep_index);</span></div>
+<div class="cl" data-line="1430"><span class="ln">1430</span><span class="cd"></span></div>
+<div class="cl" data-line="1431"><span class="ln">1431</span><span class="cd">	endpoint_type = xhci_get_endpoint_type(ep);</span></div>
+<div class="cl" data-line="1432"><span class="ln">1432</span><span class="cd">	if (!endpoint_type)</span></div>
+<div class="cl" data-line="1433"><span class="ln">1433</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="1434"><span class="ln">1434</span><span class="cd"></span></div>
+<div class="cl" data-line="1435"><span class="ln">1435</span><span class="cd">	ring_type = usb_endpoint_type(&amp;ep-&gt;desc);</span></div>
+<div class="cl" data-line="1436"><span class="ln">1436</span><span class="cd"></span></div>
+<div class="cl" data-line="1437"><span class="ln">1437</span><span class="cd">	/* Ensure host supports double isoc bandwidth for eUSB2 devices */</span></div>
+<div class="cl" data-line="1438"><span class="ln">1438</span><span class="cd">	if (usb_endpoint_is_hs_isoc_double(udev, ep) &amp;&amp; !(xhci-&gt;hcc_params2 &amp; HCC2_EUSB2_DIC))	{</span></div>
+<div class="cl" data-line="1439"><span class="ln">1439</span><span class="cd">		dev_dbg(&amp;udev-&gt;dev, "Double Isoc Bandwidth not supported by xhci\n");</span></div>
+<div class="cl" data-line="1440"><span class="ln">1440</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="1441"><span class="ln">1441</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1442"><span class="ln">1442</span><span class="cd"></span></div>
+<div class="cl" data-line="1443"><span class="ln">1443</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="1444"><span class="ln">1444</span><span class="cd">	 * Get values to fill the endpoint context, mostly from ep descriptor.</span></div>
+<div class="cl" data-line="1445"><span class="ln">1445</span><span class="cd">	 * The average TRB buffer lengt for bulk endpoints is unclear as we</span></div>
+<div class="cl" data-line="1446"><span class="ln">1446</span><span class="cd">	 * have no clue on scatter gather list entry size. For Isoc and Int,</span></div>
+<div class="cl" data-line="1447"><span class="ln">1447</span><span class="cd">	 * set it to max available. See xHCI 1.1 spec 4.14.1.1 for details.</span></div>
+<div class="cl" data-line="1448"><span class="ln">1448</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="1449"><span class="ln">1449</span><span class="cd">	max_esit_payload = usb_endpoint_max_periodic_payload(udev, ep);</span></div>
+<div class="cl" data-line="1450"><span class="ln">1450</span><span class="cd">	interval = xhci_get_endpoint_interval(udev, ep);</span></div>
+<div class="cl" data-line="1451"><span class="ln">1451</span><span class="cd"></span></div>
+<div class="cl" data-line="1452"><span class="ln">1452</span><span class="cd">	/* Periodic endpoint bInterval limit quirk */</span></div>
+<div class="cl" data-line="1453"><span class="ln">1453</span><span class="cd">	if (usb_endpoint_xfer_int(&amp;ep-&gt;desc) ||</span></div>
+<div class="cl" data-line="1454"><span class="ln">1454</span><span class="cd">	    usb_endpoint_xfer_isoc(&amp;ep-&gt;desc)) {</span></div>
+<div class="cl" data-line="1455"><span class="ln">1455</span><span class="cd">		if ((xhci-&gt;quirks &amp; XHCI_LIMIT_ENDPOINT_INTERVAL_9) &amp;&amp;</span></div>
+<div class="cl" data-line="1456"><span class="ln">1456</span><span class="cd">		    interval &gt;= 9) {</span></div>
+<div class="cl" data-line="1457"><span class="ln">1457</span><span class="cd">			interval = 8;</span></div>
+<div class="cl" data-line="1458"><span class="ln">1458</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1459"><span class="ln">1459</span><span class="cd">		if ((xhci-&gt;quirks &amp; XHCI_LIMIT_ENDPOINT_INTERVAL_7) &amp;&amp;</span></div>
+<div class="cl" data-line="1460"><span class="ln">1460</span><span class="cd">		    udev-&gt;speed &gt;= USB_SPEED_HIGH &amp;&amp;</span></div>
+<div class="cl" data-line="1461"><span class="ln">1461</span><span class="cd">		    interval &gt;= 7) {</span></div>
+<div class="cl" data-line="1462"><span class="ln">1462</span><span class="cd">			interval = 6;</span></div>
+<div class="cl" data-line="1463"><span class="ln">1463</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1464"><span class="ln">1464</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1465"><span class="ln">1465</span><span class="cd"></span></div>
+<div class="cl" data-line="1466"><span class="ln">1466</span><span class="cd">	mult = xhci_get_endpoint_mult(xhci, udev, ep);</span></div>
+<div class="cl" data-line="1467"><span class="ln">1467</span><span class="cd">	max_packet = xhci_usb_endpoint_maxp(udev, ep);</span></div>
+<div class="cl" data-line="1468"><span class="ln">1468</span><span class="cd">	max_burst = xhci_get_endpoint_max_burst(udev, ep);</span></div>
+<div class="cl" data-line="1469"><span class="ln">1469</span><span class="cd">	avg_trb_len = max_esit_payload;</span></div>
+<div class="cl" data-line="1470"><span class="ln">1470</span><span class="cd"></span></div>
+<div class="cl" data-line="1471"><span class="ln">1471</span><span class="cd">	/* FIXME dig Mult and streams info out of ep companion desc */</span></div>
+<div class="cl" data-line="1472"><span class="ln">1472</span><span class="cd"></span></div>
+<div class="cl" data-line="1473"><span class="ln">1473</span><span class="cd">	/* Allow 3 retries for everything but isoc, set CErr = 3 */</span></div>
+<div class="cl" data-line="1474"><span class="ln">1474</span><span class="cd">	if (!usb_endpoint_xfer_isoc(&amp;ep-&gt;desc))</span></div>
+<div class="cl" data-line="1475"><span class="ln">1475</span><span class="cd">		err_count = 3;</span></div>
+<div class="cl" data-line="1476"><span class="ln">1476</span><span class="cd">	/* HS bulk max packet should be 512, FS bulk supports 8, 16, 32 or 64 */</span></div>
+<div class="cl" data-line="1477"><span class="ln">1477</span><span class="cd">	if (usb_endpoint_xfer_bulk(&amp;ep-&gt;desc)) {</span></div>
+<div class="cl" data-line="1478"><span class="ln">1478</span><span class="cd">		if (udev-&gt;speed == USB_SPEED_HIGH)</span></div>
+<div class="cl" data-line="1479"><span class="ln">1479</span><span class="cd">			max_packet = 512;</span></div>
+<div class="cl" data-line="1480"><span class="ln">1480</span><span class="cd">		if (udev-&gt;speed == USB_SPEED_FULL) {</span></div>
+<div class="cl" data-line="1481"><span class="ln">1481</span><span class="cd">			max_packet = rounddown_pow_of_two(max_packet);</span></div>
+<div class="cl" data-line="1482"><span class="ln">1482</span><span class="cd">			max_packet = clamp_val(max_packet, 8, 64);</span></div>
+<div class="cl" data-line="1483"><span class="ln">1483</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1484"><span class="ln">1484</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1485"><span class="ln">1485</span><span class="cd">	/* xHCI 1.0 and 1.1 indicates that ctrl ep avg TRB Length should be 8 */</span></div>
+<div class="cl" data-line="1486"><span class="ln">1486</span><span class="cd">	if (usb_endpoint_xfer_control(&amp;ep-&gt;desc) &amp;&amp; xhci-&gt;hci_version &gt;= 0x100)</span></div>
+<div class="cl" data-line="1487"><span class="ln">1487</span><span class="cd">		avg_trb_len = 8;</span></div>
+<div class="cl" data-line="1488"><span class="ln">1488</span><span class="cd"></span></div>
+<div class="cl" data-line="1489"><span class="ln">1489</span><span class="cd">	/* Set up the endpoint ring */</span></div>
+<div class="cl" data-line="1490"><span class="ln">1490</span><span class="cd">	virt_dev-&gt;eps[ep_index].new_ring =</span></div>
+<div class="cl" data-line="1491"><span class="ln">1491</span><span class="cd">		xhci_ring_alloc(xhci, 2, ring_type, max_packet, mem_flags);</span></div>
+<div class="cl" data-line="1492"><span class="ln">1492</span><span class="cd">	if (!virt_dev-&gt;eps[ep_index].new_ring)</span></div>
+<div class="cl" data-line="1493"><span class="ln">1493</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="1494"><span class="ln">1494</span><span class="cd"></span></div>
+<div class="cl" data-line="1495"><span class="ln">1495</span><span class="cd">	virt_dev-&gt;eps[ep_index].skip = false;</span></div>
+<div class="cl" data-line="1496"><span class="ln">1496</span><span class="cd">	virt_dev-&gt;eps[ep_index].next_uframe = -1;</span></div>
+<div class="cl" data-line="1497"><span class="ln">1497</span><span class="cd">	ep_ring = virt_dev-&gt;eps[ep_index].new_ring;</span></div>
+<div class="cl" data-line="1498"><span class="ln">1498</span><span class="cd">	xhci_ring_init(xhci, ep_ring);</span></div>
+<div class="cl" data-line="1499"><span class="ln">1499</span><span class="cd"></span></div>
+<div class="cl" data-line="1500"><span class="ln">1500</span><span class="cd">	/* Fill the endpoint context */</span></div>
+<div class="cl" data-line="1501"><span class="ln">1501</span><span class="cd">	ep_ctx-&gt;ep_info = cpu_to_le32(EP_MAX_ESIT_PAYLOAD_HI(max_esit_payload) |</span></div>
+<div class="cl" data-line="1502"><span class="ln">1502</span><span class="cd">				      EP_INTERVAL(interval) |</span></div>
+<div class="cl" data-line="1503"><span class="ln">1503</span><span class="cd">				      EP_MULT(mult));</span></div>
+<div class="cl" data-line="1504"><span class="ln">1504</span><span class="cd">	ep_ctx-&gt;ep_info2 = cpu_to_le32(EP_TYPE(endpoint_type) |</span></div>
+<div class="cl" data-line="1505"><span class="ln">1505</span><span class="cd">				       MAX_PACKET(max_packet) |</span></div>
+<div class="cl" data-line="1506"><span class="ln">1506</span><span class="cd">				       MAX_BURST(max_burst) |</span></div>
+<div class="cl" data-line="1507"><span class="ln">1507</span><span class="cd">				       ERROR_COUNT(err_count));</span></div>
+<div class="cl" data-line="1508"><span class="ln">1508</span><span class="cd">	ep_ctx-&gt;deq = cpu_to_le64(ep_ring-&gt;first_seg-&gt;dma |</span></div>
+<div class="cl" data-line="1509"><span class="ln">1509</span><span class="cd">				  ep_ring-&gt;cycle_state);</span></div>
+<div class="cl" data-line="1510"><span class="ln">1510</span><span class="cd"></span></div>
+<div class="cl" data-line="1511"><span class="ln">1511</span><span class="cd">	ep_ctx-&gt;tx_info = cpu_to_le32(EP_MAX_ESIT_PAYLOAD_LO(max_esit_payload) |</span></div>
+<div class="cl" data-line="1512"><span class="ln">1512</span><span class="cd">				      EP_AVG_TRB_LENGTH(avg_trb_len));</span></div>
+<div class="cl" data-line="1513"><span class="ln">1513</span><span class="cd"></span></div>
+<div class="cl" data-line="1514"><span class="ln">1514</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="1515"><span class="ln">1515</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0802-endpoint-context-init.mp4"></video>
+        <a class="btn" href="player/index.html?scene=27">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · Zone A/B 建槽剧本里 Input EP0 Context 的装配步骤（EP Type/Max Packet Size/CErr/TR Deq+DCS）——对应本节初始化清单</span>
+      </div>
+      <p class="ph">规范算法全文收纳（算法流程图 + 折叠原文逐字备查；短片降密度：片内只讲机制主线）</p>
+      <div class="fcf"><div class="fct">流程图 · 4.8.2 端点上下文初始化（Input Endpoint Context） · 依据 spec-48.txt L62-L158</div><div class="fcn">Input Endpoint Context 全字段（含 Reserved）初始化为 ‘0’——以下按端点类型只设例外字段</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">端点类型？（§4.8.2.1-4.8.2.4）</div><div class="fcbs fcbs4"><div class="fcb"><div class="fcbl">Default Control EP0</div><div class="fcn">EP Type=Control；Max Packet Size=Device Descriptor:bMaxPacketSize0（可先设默认值，Addressed 态后用 Evaluate Context 修改）；CErr=3（3 次重试）；TR Dequeue Pointer=先前分配 Transfer Ring 首段起始；DCS=‘1’</div></div><div class="fcb"><div class="fcbl">其余 Control 端点</div><div class="fcn">与 Default Control EP 相同，唯 Max Packet Size=Endpoint Descriptor:wMaxPacketSize</div></div><div class="fcb"><div class="fcbl">Bulk</div><div class="fcn">EP Type=Bulk IN/OUT；Max Packet Size=wMaxPacketSize；Max Burst=SS Companion:bMaxBurst（USB2=‘0’）；CErr=3</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Streams 使能？（bmAttributes MaxStreams&gt;‘0’）</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">分配并清零 Primary Stream Array；MaxPStreams=数组尺寸；TR Dequeue Pointer=Primary Stream Array 起始；HID/LSA 按需初始化</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">MaxPStreams=‘0’；TR Dequeue Pointer=Transfer Ring 首段起始；DCS=‘1’</div></div></div></div></div><div class="fcb"><div class="fcbl">Isoch / Interrupt</div><div class="fcn">EP Type=Isoch/Interrupt IN/OUT；Max Packet Size=wMaxPacketSize &amp; 07FFh；Max Burst=SS Companion:bMaxBurst 或 (wMaxPacketSize &amp; 1800h)&gt;&gt;11；Mult=SS Companion:Mult（Interrupt 恒 ‘0’）；CErr=3（Interrupt）/‘0’（Isoch 不重试）；TR Dequeue Pointer=首段起始；DCS=‘1’；Max ESIT Payload=§4.14.2</div></div></div></div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L74-L87">•  
+EP Type = Control. Refer to Table 6-9 for the encoding. 
+•  
+Max Packet Size = For USB2 devices: Device Descriptor:bMaxPacketSize0 or for USB3 devices” Device 
+Descriptor:2bMaxPacketSize0. May be set to Default Endpoint Max Packet Size until USB Device Descriptor 
+is retrieved. An Evaluate Endpoint Command shall be used to modify the value of Max Packet Size 
+when the device slot is in the Addressed state. 
+•  
+CErr = 3. Enables 3 retries. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR Dequeue 
+Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs written by software. </blockquote><div class="qzh"><div class="qzh-body">- EP Type = Control。编码参见表 6-9。
+- Max Packet Size = 对于 USB2 设备：Device Descriptor:bMaxPacketSize0；对于 USB3 设备：Device Descriptor:2bMaxPacketSize0。在取回 USB 设备描述符之前，可以先将其设为默认端点 Max Packet Size。当设备槽位处于 Addressed 状态时，必须使用 Evaluate Endpoint 命令（评估端点命令）来修改 Max Packet Size 的值。
+- CErr = 3。启用 3 次重试。
+- TR Dequeue Pointer = 此前分配的传输环第一个段（segment）的起始地址。
+- Dequeue Cycle State（DCS）= 1。假设 TR Dequeue Pointer 所引用段中的所有 TRB 均已被初始化为 ‘0’，则该字段反映软件写入的有效 TRB 的 Cycle bit 状态。</div><div class="qsrc">—— evidence/spec-48.txt L74-L87（p145）</div></div></div>
+      </details>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L90-L91">Identical to the Default Control Endpoint except that the Max Packet Size shall 
+be set to the value of the associated Endpoint Descriptor:wMaxPacketSize. </blockquote><div class="qzh"><div class="qzh-body">与默认控制端点相同，唯一区别是 Max Packet Size 必须被置为关联的 Endpoint Descriptor:wMaxPacketSize 的值。</div><div class="qsrc">—— evidence/spec-48.txt L90-L91（p145）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L94-L129">•  
+EP Type = Bulk IN or Bulk OUT. Refer to Table 6-9 for the encoding. 
+•  
+Max Packet Size = Endpoint Descriptor:wMaxPacketSize. 
+•  
+Max Burst Size = For USB3 devices: SuperSpeed Endpoint Companion Descriptor:bMaxBurst, for 
+USB2 devices: ‘0’. 
+•  
+CErr = 3. Enables 3 retries. 
+•  
+If Streams are enabled (that is, SuperSpeed Endpoint Companion Descriptor:bmAttributes 
+MaxStreams field &gt; 0): 
+•  
+Allocate and clear Primary Stream Array. 
+•  
+MaxPStreams = Size of Primary Stream Array. 
+•  
+TR Dequeue Pointer = Start address of Primary Stream Array. 
+•  
+HID = Initialize as required to enable or disable Host Initiated Move Data operations. 
+•  
+LSA = Initialize as required to enable or disable Linear Stream Array operations. 
+•  
+else 
+•  
+MaxPStreams = ‘0’. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer 
+Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR 
+Dequeue Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs 
+written by software. 
+ 
+The Endpoint Context Dequeue Cycle State (DCS) field is not applicable if the Streams are 
+enabled. </blockquote><div class="qzh"><div class="qzh-body">- EP Type = Bulk IN 或 Bulk OUT。编码参见表 6-9。
+- Max Packet Size = Endpoint Descriptor:wMaxPacketSize。
+- Max Burst Size = 对于 USB3 设备：SuperSpeed Endpoint Companion Descriptor:bMaxBurst；对于 USB2 设备：‘0’。
+- CErr = 3。启用 3 次重试。
+- 若启用了流（Stream）（即 SuperSpeed Endpoint Companion Descriptor:bmAttributes 的 MaxStreams 字段 &gt; 0）：• 分配并清零主流数组（Primary Stream Array）。• MaxPStreams = 主流数组的大小。• TR Dequeue Pointer = 主流数组的起始地址。• HID = 按需初始化，以启用或禁用 Host Initiated Move Data 操作。• LSA = 按需初始化，以启用或禁用线性流数组（Linear Stream Array）操作。
+- 否则（else）• MaxPStreams = ‘0’。• TR Dequeue Pointer = 此前分配的传输环第一个段的起始地址。• Dequeue Cycle State（DCS）= 1。假设 TR Dequeue Pointer 所引用段中的所有 TRB 均已被初始化为 ‘0’，则该字段反映软件写入的有效 TRB 的 Cycle bit 状态。
+
+若启用了流，则端点上下文的 Dequeue Cycle State（DCS）字段不适用。</div><div class="qsrc">—— evidence/spec-48.txt L94-L129（p145）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L140-L158">•  
+Max Packet Size = Endpoint Descriptor:wMaxPacketSize &amp; 07FFh. 
+•  
+Max Burst Size = SuperSpeed Endpoint Companion Descriptor:bMaxBurst or (Endpoint Descriptor: 
+wMaxPacketSize &amp; 1800h) &gt;&gt; 11. 
+•  
+Mult = SuperSpeed Endpoint Companion Descriptor:bmAttributes:Mult field. Always ‘0’ for Interrupt 
+endpoints. 
+•  
+CErr = 3 for Interrupt endpoints. Enables 3 retries. 
+CErr = 0 for Isoch endpoints. Retries are not performed for Isoch endpoints. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR 
+Dequeue Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs written 
+by software. 
+•  
+Max ESIT Payload = Refer to section 4.14.2 for value. </blockquote><div class="qzh"><div class="qzh-body">- Max Packet Size = Endpoint Descriptor:wMaxPacketSize &amp; 07FFh。
+- Max Burst Size = SuperSpeed Endpoint Companion Descriptor:bMaxBurst 或 (Endpoint Descriptor: wMaxPacketSize &amp; 1800h) &gt;&gt; 11。
+- Mult = SuperSpeed Endpoint Companion Descriptor:bmAttributes:Mult 字段。对中断端点恒为 ‘0’。
+- CErr = 3（对中断端点）。启用 3 次重试。CErr = 0（对等时端点）。等时端点不执行重试。
+- TR Dequeue Pointer = 此前分配的传输环第一个段的起始地址。
+- Dequeue Cycle State（DCS）= 1。假设 TR Dequeue Pointer 所引用段中的所有 TRB 均已被初始化为 ‘0’，则该字段反映软件写入的有效 TRB 的 Cycle bit 状态。
+- Max ESIT Payload = 取值参见第 4.14.2 节。</div><div class="qsrc">—— evidence/spec-48.txt L140-L158（p146）</div></div></div>
+    </div>
+
+    <div class="card s46card" id="s48-03">
+      <div class="s46head"><span class="s46no">4.8.3</span><span class="s46ttl">Endpoint Context State 端点上下文状态</span><span class="s46tag mech">机制</span><span class="s46pg">p146-p149</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L161-L162">The current state of an Endpoint Context is identified by its respective Endpoint 
+State (EP State) field. Figure 4-5 defines the Endpoint States. </blockquote><div class="qzh"><div class="qzh-body">端点上下文（Endpoint Context）的当前状态由其相应的端点状态（Endpoint State，EP State）字段标识。图 4-5 定义了各端点状态。</div><div class="qsrc">—— evidence/spec-48.txt L161-L162（p146）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L170-L178">1. The Address Device Command transitions the Default Control Endpoint from the 
+Disabled to the Running state. 
+2. The Configure Endpoint Command (Add (A)= ‘1’and Drop (D) = ‘0’) shall transition 
+an endpoint, except the Default Control Endpoint, from the Disabled to the Running 
+state. 
+3. The Configure Endpoint Command (Add (A)= ‘0’ and Drop (D) = ‘1’) or Reset Device 
+Command shall transition an endpoint, from any state to the Disabled state, except 
+the Default Control Endpoint which may transition from the Stopped to the Running 
+state or remain in the Stopped state. </blockquote><div class="qzh"><div class="qzh-body">1. Address Device 命令（寻址设备命令）使默认控制端点从 Disabled 状态迁移到 Running 状态。
+
+2. Configure Endpoint 命令（Add (A) = ‘1’ 且 Drop (D) = ‘0’）必须使除默认控制端点之外的端点从 Disabled 状态迁移到 Running 状态。
+
+3. Configure Endpoint 命令（Add (A) = ‘0’ 且 Drop (D) = ‘1’）或 Reset Device 命令必须使一个端点从任何状态迁移到 Disabled 状态；但默认控制端点例外——它可以从 Stopped 状态迁移到 Running 状态，或保持停留在 Stopped 状态。</div><div class="qsrc">—— evidence/spec-48.txt L170-L178（p146）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L185-L195">4. The Disable Slot Command shall transition all endpoints of a Device Slot, including 
+the Default Control Endpoint, from any state to the Disabled state. 
+5. In the Running state, a Set TR Dequeue Pointer Command should only be issued to 
+the non-active Transfer Rings of a Stream endpoint. Refer to section 4.12 for active 
+vs. non-active Stream Context information. 
+6. The Configure Endpoint Command (Add (A) = ‘1’ and Drop (D) = ‘1’) shall transition 
+an endpoint, except the Default Control Endpoint, from the Stopped to the Running 
+state. 
+7. In the Stopped state, a Set TR Dequeue Pointer Command may be used to modify 
+the starting TRB of an endpoint or non-active Stream prior to ringing the Doorbell. 
+Refer to section 4.12 for active vs. non-active Stream Context information. </blockquote><div class="qzh"><div class="qzh-body">4. Disable Slot 命令必须使一个设备槽位的所有端点（包括默认控制端点）从任何状态迁移到 Disabled 状态。
+
+5. 在 Running 状态下，Set TR Dequeue Pointer 命令建议只发给流端点（Stream endpoint）的非活动传输环。活动与非活动流上下文（Stream Context）信息参见第 4.12 节。
+
+6. Configure Endpoint 命令（Add (A) = ‘1’ 且 Drop (D) = ‘1’）必须使除默认控制端点之外的端点从 Stopped 状态迁移到 Running 状态。
+
+7. 在 Stopped 状态下，可以在振铃门铃之前使用 Set TR Dequeue Pointer 命令来修改端点或非活动流（Stream）的起始 TRB。活动与非活动流上下文信息参见第 4.12 节。</div><div class="qsrc">—— evidence/spec-48.txt L185-L195（p147）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L196-L209">Figure 4-5 illustrates the state transitions presented by an endpoint. The 
+Disabled to Running transition for the Default Control Endpoint shall occur due 
+to an Address Device Command, and for all other endpoints the transition shall 
+be invoked by a Configure Endpoint Command. Refer to Appendix E for state 
+machine notation. 
+A Halt condition, for example, a Stall Error, Invalid Stream Type Error, Invalid 
+Stream ID Error, Babble Detected Error, Event Lost Error, USB Transaction 
+Error, or a Split Transaction Error detected on a USB pipe shall cause a 
+Running Endpoint to transition to the Halted state. A Reset Endpoint Command 
+shall be used to clear the Halt condition on the endpoint and transition the 
+endpoint to the Stopped state. A Stop Endpoint Command received while an 
+endpoint is in the Halted state shall have no effect and shall generate a 
+Command Completion Event with the Completion Code set to Context State 
+Error. </blockquote><div class="qzh"><div class="qzh-body">图 4-5 图示了端点所呈现的状态迁移。默认控制端点从 Disabled 到 Running 的迁移必须由 Address Device 命令引发；对所有其他端点，该迁移必须由 Configure Endpoint 命令触发。状态机记法参见附录 E。
+
+在 USB 管道上检测到的 halt（停机）条件——例如 Stall Error、Invalid Stream Type Error、Invalid Stream ID Error、Babble Detected Error、Event Lost Error、USB Transaction Error 或 Split Transaction Error——必须使处于 Running 的端点迁移到 Halted 状态。必须使用 Reset Endpoint 命令来清除端点上的 halt 条件，并把端点迁移到 Stopped 状态。端点处于 Halted 状态期间收到的 Stop Endpoint 命令不得产生任何效果，且必须生成一个 Completion Code 被置为 Context State Error 的命令完成事件（Command Completion Event）。</div><div class="qsrc">—— evidence/spec-48.txt L196-L209（p147）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L210-L224">Note: A STALL detected on any stage (Setup, Data, or Status) of a Default Control 
+Endpoint request shall transition the Endpoint Context to the Halted state. A 
+Default Control Endpoint STALL condition is cleared by a Reset Endpoint 
+Command which transitions the endpoint from the Halted to the Stopped 
+state. The Default Control Endpoint shall return to the Running state when the 
+Doorbell is rung for the next Setup Stage TD sent to the endpoint. 
+ 
+Section 8.5.3.4 of the USB2 spec and section 8.12.2.3 of the USB3 spec state 
+of Control pipes, “Unlike the case of a functional stall, protocol stall does not 
+indicate an error with the device.” The xHC treats a functional stall and 
+protocol stall identically, by Halting the endpoint and requiring software to 
+clear the condition by issuing a Reset Endpoint Command. 
+Note: If the STALL condition is detected on the Setup or Data Stage TD of a 
+request, software shall be responsible for removing the Data Stage or Status 
+Stage TDs, respectively, associated with the request from the Transfer Ring. </blockquote><div class="qzh"><div class="qzh-body">注：在默认控制端点请求的任何阶段（Setup、Data 或 Status）检测到 STALL（停滞）时，都必须把端点上下文迁移到 Halted 状态。默认控制端点的 STALL 条件由 Reset Endpoint 命令清除，该命令把端点从 Halted 状态迁移到 Stopped 状态。当为发送给该端点的下一个 Setup Stage TD 振铃门铃时，默认控制端点必须返回 Running 状态。USB2 规范第 8.5.3.4 节与 USB3 规范第 8.12.2.3 节在讲述控制管道的状态时指出：“与功能停滞（functional stall）的情形不同，协议停滞（protocol stall）并不表示设备出错。”xHC 对功能停滞与协议停滞同等对待：halt 该端点，并要求软件通过发出 Reset Endpoint 命令来清除该条件。
+
+注：若在某个请求的 Setup 或 Data Stage TD 上检测到 STALL 条件，则软件必须负责把与该请求关联的 Data Stage 或 Status Stage TD 分别从传输环上移除。</div><div class="qsrc">—— evidence/spec-48.txt L210-L224（p147）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L225-L230">A TRB Error condition should cause a Running Endpoint to transition to the 
+Error state. A Set TR Dequeue Pointer Command shall be used to transition the 
+endpoint to the Stopped state. A Stop Endpoint Command received while an 
+endpoint is in the Error state shall have no effect and shall generate a 
+Command Completion Event with the Completion Code set to Context State 
+Error. </blockquote><div class="qzh"><div class="qzh-body">TRB Error 条件建议使处于 Running 的端点迁移到 Error 状态。必须使用 Set TR Dequeue Pointer 命令把端点迁移到 Stopped 状态。端点处于 Error 状态期间收到的 Stop Endpoint 命令不得产生任何效果，且必须生成一个 Completion Code 被置为 Context State Error 的命令完成事件。</div><div class="qsrc">—— evidence/spec-48.txt L225-L230（p147）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L237-L243">Note: An endpoint in the Running state may be Busy (actively processing TRBs on 
+its Transfer Ring) or Idle (the endpoint is not processing TRBs and waiting for 
+a doorbell ring) sub-state, that is, an endpoint does not exit the Running state 
+if it exhausts its Transfer Ring. 
+Note: Some xHC implementations may not handle a TRB Error gracefully, resulting 
+in undefined behavior and possibly the assertion of HCE. It is the 
+responsibility of software to always present correctly formed TRBs to the xHC. </blockquote><div class="qzh"><div class="qzh-body">注：处于 Running 状态的端点可以处于 Busy（正在其传输环上活跃地处理 TRB）或 Idle（端点未在处理 TRB，正在等待门铃振铃）子状态；也就是说，端点耗尽其传输环时并不会退出 Running 状态。
+
+注：某些 xHC 实现可能无法妥善处理 TRB Error，从而导致未定义行为，并可能置起（assert）HCE。始终向 xHC 呈现格式正确的 TRB 是软件的责任。</div><div class="qsrc">—— evidence/spec-48.txt L237-L243（p148）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L244-L260">A Stop Endpoint Command shall also transition the endpoint to the Stopped 
+state. While in the Stopped state, the ownership of the Transfer Ring is 
+relinquished up by the xHC, allowing software to add, delete, or modify any TD 
+on the ring. 
+If an endpoint is in the Stopped state when the doorbell is rung, it will 
+transition to the Running state. A Configure Endpoint Command shall also 
+transition a Stopped endpoint to the Running state. Note that a Configure 
+Endpoint Command does not affect the Default Control Endpoint, therefore 
+shall not transition the Default Control Endpoint from the Stopped to the 
+Running state. 
+A Configure Endpoint “deconfigure” (DC = ‘1’) or Reset Device Command shall 
+transition all endpoints, except for the Default Control Endpoint, from the 
+Running, Halted, Error, or Stopped states to the Disabled state. 
+A Disable Slot Command shall transition all endpoints, including the Default 
+Control Endpoint, from the Running, Halted, Error, or Stopped states to the 
+Disabled state, as noted by the large bubble. System software is responsible 
+for issuing a Disable Slot Command when a device detach event is detected. </blockquote><div class="qzh"><div class="qzh-body">Stop Endpoint 命令也必须使端点迁移到 Stopped 状态。处于 Stopped 状态期间，传输环的所有权由 xHC 交出，从而允许软件在环上添加、删除或修改任何 TD。
+
+若端点在门铃振铃时处于 Stopped 状态，它将迁移到 Running 状态。Configure Endpoint 命令也必须使处于 Stopped 的端点迁移到 Running 状态。注意，Configure Endpoint 命令不影响默认控制端点，因此不得使默认控制端点从 Stopped 状态迁移到 Running 状态。
+
+Configure Endpoint 的“去配置”（deconfigure）（DC = ‘1’）或 Reset Device 命令必须使除默认控制端点之外的所有端点从 Running、Halted、Error 或 Stopped 状态迁移到 Disabled 状态。
+
+Disable Slot 命令必须使所有端点（包括默认控制端点）从 Running、Halted、Error 或 Stopped 状态迁移到 Disabled 状态，如图中大圆圈（bubble）所标注。当检测到设备 detach 事件时，由系统软件负责发出 Disable Slot 命令。</div><div class="qsrc">—— evidence/spec-48.txt L244-L260（p148）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L261-L267">A Set TR Dequeue Pointer Command may be issued to a non-active Stream 
+Context of an endpoint to set its Dequeue Pointer while the endpoint is in the 
+Running state. Refer to sections 4.6.10 and 4.12. 
+An endpoint in the Stopped state shall not generate Transfer Events. 
+When an endpoint transitions from the Stopped to the Running state due to a 
+doorbell ring, the EP State field of the Output Endpoint Context shall be 
+updated by the xHC to running before any Transfer Events are generated. </blockquote><div class="qzh"><div class="qzh-body">可以向端点的非活动流上下文（Stream Context）发出 Set TR Dequeue Pointer 命令，以便在端点处于 Running 状态时设置其出队指针（Dequeue Pointer）。参见第 4.6.10 节与第 4.12 节。
+
+处于 Stopped 状态的端点不得生成传输事件（Transfer Event）。
+
+当端点因门铃振铃而从 Stopped 状态迁移到 Running 状态时，xHC 必须在任何传输事件生成之前，把输出端点上下文（Output Endpoint Context）的 EP State 字段更新为 Running。</div><div class="qsrc">—— evidence/spec-48.txt L261-L267（p148）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L268-L272">Note: If the xHC is reset while an endpoint is not in the Disabled state, the value of 
+the Endpoint State (EP State) field shall be invalid. 
+Note: An Endpoint is considered “enabled” if it is not in the Disabled state. 
+Note: Software shall not write to the Doorbell register with the DB Target field value 
+set to an endpoint that is in the Disabled state. </blockquote><div class="qzh"><div class="qzh-body">注：若在端点不处于 Disabled 状态时 xHC 被复位，则端点状态（EP State）字段的值将为无效。
+
+注：端点只要不处于 Disabled 状态，即被视为“已启用”（enabled）。
+
+注：软件不得在 DB Target 字段值被置为处于 Disabled 状态端点的情况下写门铃寄存器。</div><div class="qsrc">—— evidence/spec-48.txt L268-L272（p148）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L288-L302">Note: There are several cases where the EP State field in the Output Endpoint 
+Context may not reflect the current state of an endpoint. The xHC should 
+attempt to keep EP State as current as possible, however it may defer these 
+updates to perform higher priority references to memory, for example, Isoch 
+data transfers, etc. Software should maintain an internal variable that tracks 
+the state of an endpoint and not depend on EP State to represent the 
+instantaneous state of an endpoint. 
+ 
+For example, when a Command that affects EP State is issued, the value of 
+EP State may be updated anytime between when software rings the 
+Command Ring doorbell for a command and when the associated Command 
+Completion Event is placed on the Event Ring by the xHC. The update of EP 
+State may also be delayed relative to a Doorbell ring or error condition (for 
+example, TRB Error, STALL, or USB Transaction Error) that causes an EP 
+State change not generated by a command. </blockquote><div class="qzh"><div class="qzh-body">注：有多种情形下，输出端点上下文中的 EP State 字段可能不反映端点的当前状态。建议 xHC 尽量让 EP State 保持最新，但它可能把这些更新推迟，以执行对内存的更高优先级引用，例如等时数据传输等。建议软件维护一个跟踪端点状态的内部变量，而不要依赖 EP State 来表示端点的瞬时状态。例如，当发出一条影响 EP State 的命令时，EP State 的值可能在软件为该命令振铃命令环门铃之后、到 xHC 把相关命令完成事件放到事件环上之前的任何时刻被更新。相对于门铃振铃，或相对于引发 EP State 变化（非由命令产生）的错误条件（例如 TRB Error、STALL 或 USB Transaction Error），EP State 的更新也可能被延迟。</div><div class="qsrc">—— evidence/spec-48.txt L288-L302（p149）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L304-L320">Software should maintain an accurate value for EP State, by tracking it with 
+an internal variable that is driven by Events and Doorbell accesses associated 
+with an endpoint using the following method: 
+• 
+When a command is issued to an endpoint that affects its state, software 
+should use the Command Completion Event to update its image of EP State 
+to the appropriate state. 
+• 
+When a Transfer Event reports a TRB Error, software should update its 
+image of EP State to Error. 
+• 
+When a Transfer Event reports a Stall Error or USB Transaction Error, 
+software should update its image of EP State to Halted. 
+• 
+When software rings the Doorbell of an endpoint to transition it from the 
+Stopped to Running state, it should update its image of EP State to 
+Running. </blockquote><div class="qzh"><div class="qzh-body">相对于门铃振铃，或相对于引发 EP State 变化（非由命令产生）的错误条件（例如 TRB Error、STALL 或 USB Transaction Error），EP State 的更新也可能被延迟。建议软件用以下方法来维护 EP State 的准确值：用一个由与该端点相关联的事件和门铃访问所驱动的内部变量来跟踪它：
+
+- 当向一个端点发出影响其状态的命令时，建议软件用命令完成事件把其 EP State 映像（image）更新为适当的状态。
+- 当传输事件报告 TRB Error 时，建议软件把其 EP State 映像更新为 Error。
+- 当传输事件报告 Stall Error 或 USB Transaction Error 时，建议软件把其 EP State 映像更新为 Halted。
+- 当软件振铃端点的门铃使其从 Stopped 状态迁移到 Running 状态时，建议软件把其 EP State 映像更新为 Running。</div><div class="qsrc">—— evidence/spec-48.txt L304-L320（p149）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:3270-3330 · prepare_ring · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:3270:3330"><div class="cl" data-line="3270"><span class="ln">3270</span><span class="cd">static int prepare_ring(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,</span></div>
+<div class="cl" data-line="3271"><span class="ln">3271</span><span class="cd">		u32 ep_state, unsigned int num_trbs, gfp_t mem_flags)</span></div>
+<div class="cl" data-line="3272"><span class="ln">3272</span><span class="cd">{</span></div>
+<div class="cl" data-line="3273"><span class="ln">3273</span><span class="cd">	unsigned int new_segs = 0;</span></div>
+<div class="cl" data-line="3274"><span class="ln">3274</span><span class="cd"></span></div>
+<div class="cl" data-line="3275"><span class="ln">3275</span><span class="cd">	/* Make sure the endpoint has been added to xHC schedule */</span></div>
+<div class="cl" data-line="3276"><span class="ln">3276</span><span class="cd">	switch (ep_state) {</span></div>
+<div class="cl" data-line="3277"><span class="ln">3277</span><span class="cd">	case EP_STATE_DISABLED:</span></div>
+<div class="cl" data-line="3278"><span class="ln">3278</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="3279"><span class="ln">3279</span><span class="cd">		 * USB core changed config/interfaces without notifying us,</span></div>
+<div class="cl" data-line="3280"><span class="ln">3280</span><span class="cd">		 * or hardware is reporting the wrong state.</span></div>
+<div class="cl" data-line="3281"><span class="ln">3281</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3282"><span class="ln">3282</span><span class="cd">		xhci_warn(xhci, "WARN urb submitted to disabled ep\n");</span></div>
+<div class="cl" data-line="3283"><span class="ln">3283</span><span class="cd">		return -ENOENT;</span></div>
+<div class="cl" data-line="3284"><span class="ln">3284</span><span class="cd">	case EP_STATE_ERROR:</span></div>
+<div class="cl" data-line="3285"><span class="ln">3285</span><span class="cd">		xhci_warn(xhci, "WARN waiting for error on ep to be cleared\n");</span></div>
+<div class="cl" data-line="3286"><span class="ln">3286</span><span class="cd">		/* FIXME event handling code for error needs to clear it */</span></div>
+<div class="cl" data-line="3287"><span class="ln">3287</span><span class="cd">		/* XXX not sure if this should be -ENOENT or not */</span></div>
+<div class="cl" data-line="3288"><span class="ln">3288</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3289"><span class="ln">3289</span><span class="cd">	case EP_STATE_HALTED:</span></div>
+<div class="cl" data-line="3290"><span class="ln">3290</span><span class="cd">		xhci_dbg(xhci, "WARN halted endpoint, queueing URB anyway.\n");</span></div>
+<div class="cl" data-line="3291"><span class="ln">3291</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3292"><span class="ln">3292</span><span class="cd">	case EP_STATE_STOPPED:</span></div>
+<div class="cl" data-line="3293"><span class="ln">3293</span><span class="cd">	case EP_STATE_RUNNING:</span></div>
+<div class="cl" data-line="3294"><span class="ln">3294</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3295"><span class="ln">3295</span><span class="cd">	default:</span></div>
+<div class="cl" data-line="3296"><span class="ln">3296</span><span class="cd">		xhci_err(xhci, "ERROR unknown endpoint state for ep\n");</span></div>
+<div class="cl" data-line="3297"><span class="ln">3297</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="3298"><span class="ln">3298</span><span class="cd">		 * FIXME issue Configure Endpoint command to try to get the HC</span></div>
+<div class="cl" data-line="3299"><span class="ln">3299</span><span class="cd">		 * back into a known state.</span></div>
+<div class="cl" data-line="3300"><span class="ln">3300</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3301"><span class="ln">3301</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3302"><span class="ln">3302</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3303"><span class="ln">3303</span><span class="cd"></span></div>
+<div class="cl" data-line="3304"><span class="ln">3304</span><span class="cd">	if (ep_ring != xhci-&gt;cmd_ring) {</span></div>
+<div class="cl" data-line="3305"><span class="ln">3305</span><span class="cd">		new_segs = xhci_ring_expansion_needed(xhci, ep_ring, num_trbs);</span></div>
+<div class="cl" data-line="3306"><span class="ln">3306</span><span class="cd">	} else if (xhci_num_trbs_free(ep_ring) &lt;= num_trbs) {</span></div>
+<div class="cl" data-line="3307"><span class="ln">3307</span><span class="cd">		xhci_err(xhci, "Do not support expand command ring\n");</span></div>
+<div class="cl" data-line="3308"><span class="ln">3308</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="3309"><span class="ln">3309</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3310"><span class="ln">3310</span><span class="cd"></span></div>
+<div class="cl" data-line="3311"><span class="ln">3311</span><span class="cd">	if (new_segs) {</span></div>
+<div class="cl" data-line="3312"><span class="ln">3312</span><span class="cd">		xhci_dbg_trace(xhci, trace_xhci_dbg_ring_expansion,</span></div>
+<div class="cl" data-line="3313"><span class="ln">3313</span><span class="cd">				"ERROR no room on ep ring, try ring expansion");</span></div>
+<div class="cl" data-line="3314"><span class="ln">3314</span><span class="cd">		if (xhci_ring_expansion(xhci, ep_ring, new_segs, mem_flags)) {</span></div>
+<div class="cl" data-line="3315"><span class="ln">3315</span><span class="cd">			xhci_err(xhci, "Ring expansion failed\n");</span></div>
+<div class="cl" data-line="3316"><span class="ln">3316</span><span class="cd">			return -ENOMEM;</span></div>
+<div class="cl" data-line="3317"><span class="ln">3317</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3318"><span class="ln">3318</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3319"><span class="ln">3319</span><span class="cd"></span></div>
+<div class="cl" data-line="3320"><span class="ln">3320</span><span class="cd">	/* Ensure that new TRBs won't overwrite a link */</span></div>
+<div class="cl" data-line="3321"><span class="ln">3321</span><span class="cd">	if (trb_is_link(ep_ring-&gt;enqueue))</span></div>
+<div class="cl" data-line="3322"><span class="ln">3322</span><span class="cd">		inc_enq_past_link(xhci, ep_ring, 0);</span></div>
+<div class="cl" data-line="3323"><span class="ln">3323</span><span class="cd"></span></div>
+<div class="cl" data-line="3324"><span class="ln">3324</span><span class="cd">	if (last_trb_on_seg(ep_ring-&gt;enq_seg, ep_ring-&gt;enqueue)) {</span></div>
+<div class="cl" data-line="3325"><span class="ln">3325</span><span class="cd">		xhci_warn(xhci, "Missing link TRB at end of ring segment\n");</span></div>
+<div class="cl" data-line="3326"><span class="ln">3326</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3327"><span class="ln">3327</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3328"><span class="ln">3328</span><span class="cd"></span></div>
+<div class="cl" data-line="3329"><span class="ln">3329</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="3330"><span class="ln">3330</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0803-endpoint-context-state.mp4"></video>
+        <a class="btn" href="player/index.html?scene=28">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · Zone C 槽状态机驱动端点态：Address Device→EP0 Running、Configure Endpoint→其余端点、Disable Slot→全 Disabled——对应本节状态转移</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="s49">
+    <h2><span class="no">§4.9</span>TRB Ring TRB 环 <span class="cmt">R12 批 A · 巨节四卡（环基础+TD/传输环管理/命令环管理轻片/事件环管理）</span></h2>
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>大区导语 · 4 卡</div>
+      <p class="pbody">4.9 定义 TRB 环机制：三环类型（Transfer/Event/Command）共用的循环队列模型、生产者/消费者指针与 Cycle bit、TD 结构，以及三类环各自的管理规则（4.9.2/4.9.3/4.9.4）。重叠面处置（R12-SPEC §0）：4.9.3 命令环管理为轻片互链 <a href="#s46-01">4.6.1 卡</a>；Table 4-4（事件环状态机定义，p165-166 跨页）按 R11 批 A 配方重建为规范样式表。补丁检索已实证获候选（b234c70fefa7：环满被误判空环致扩容漏检——deq 越过 enq 特例，与 4.9.2 卡贴码教学点直接咬合），<b>补丁片排批 A-1 补挂</b>（R12-SPEC §6 逐节全配）。</p>
+      <div class="ch46grid"><a class="ch46g" href="#s49-01"><span class="s46no">4.9.1</span>TRB 环基础与传输描述符<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s49-02"><span class="s46no">4.9.2</span>Transfer Ring Management 传输环管理<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s49-03"><span class="s46no">4.9.3</span>Command Ring Management 命令环管理（轻片）<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s49-04"><span class="s46no">4.9.4</span>Event Ring Management 事件环管理<span class="s46tag mech">机制</span></a></div>
+    </div>
+    <div class="card s46card" id="s49-01">
+      <div class="s46head"><span class="s46no">4.9.1</span><span class="s46ttl">TRB 环基础与传输描述符</span><span class="s46tag mech">机制</span><span class="s46pg">p149-p152</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L22-L29">There are 3 basic types or TRB Rings; Transfer, Event, and Command. Each 
+type of ring defines an exclusive set of TRB data structures; however they all 
+employ the underlying TRB Ring mechanism to organize their work items and 
+the basic TRB template. 
+Transfer Rings provide data transport to and from USB devices. There is a 
+1:1 mapping between Transfer Rings and USB Pipes. They are defined by an 
+Endpoint Context data structure contained in a Device Context, or the Stream 
+Context Array pointed to by the Endpoint Context. </blockquote><div class="qzh"><div class="qzh-body">TRB 环有 3 种基本类型：传输（Transfer）、事件（Event）与命令（Command）。每种类型的环都定义一组专属的 TRB 数据结构；但它们都采用底层的 TRB 环机制来组织各自的工作项，并采用基本的 TRB 模板。
+
+传输环（Transfer Ring）提供与 USB 设备之间往来的数据传送。传输环与 USB 管道（Pipe）之间存在 1:1 映射。传输环由设备上下文（Device Context）中包含的端点上下文数据结构、或由端点上下文所指向的流上下文数组（Stream Context Array）定义。</div><div class="qsrc">—— evidence/spec-49.txt L22-L29（p149）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L30-L38">The Event Ring provides the xHC with a means of reporting to system 
+software: data transfer and command completion status, Root Hub port status 
+changes, and other xHC related events. An Event Ring is defined by the Event 
+Ring Segment Table Base Address, Segment Table Size, and Dequeue Pointer 
+registers which reside in the Runtime Registers. 
+The Command Ring provides system software the ability to issue commands 
+to enumerate USB Devices, configure the xHC to support those devices, and to 
+coordinate virtualization features. The Command Ring is managed by the 
+Command Ring Control Register that resides in the Operational Registers. </blockquote><div class="qzh"><div class="qzh-body">事件环（Event Ring）为 xHC 提供了向系统软件报告以下事项的手段：数据传输与命令完成状态、根集线器（Root Hub）端口状态变化，以及其他与 xHC 相关的事件。事件环由驻留在运行时寄存器（Runtime Registers）中的事件环段表基地址（Event Ring Segment Table Base Address）、段表大小（Segment Table Size）与出队指针（Dequeue Pointer）寄存器定义。
+
+命令环（Command Ring）为系统软件提供了发出命令的能力，用于枚举 USB 设备、配置 xHC 以支持这些设备，以及协调虚拟化特性。命令环由驻留在操作寄存器（Operational Registers）中的命令环控制寄存器（Command Ring Control Register）管理。</div><div class="qsrc">—— evidence/spec-49.txt L30-L38（p149）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L39-L49">The Enqueue Pointer and Dequeue Pointer are terms used to refer to the 
+logical beginning and end of the valid entries in a TRB Ring. The size of a TRB 
+ring is determined by the number and size of the segments that comprise the 
+ring. 
+Note: The Dequeue and Enqueue Pointers for Transfer and Command Rings are NOT 
+defined as physical xHC registers. However a facsimile of these pointers are 
+maintained internally by the xHC and system software to manage a respective 
+ring. 
+Note: Only the Dequeue Pointer for an Event Ring is defined as a physical xHC 
+register. A facsimile of the Enqueue Pointer is maintained internally by the 
+xHC and system software to manage an Event Ring. </blockquote><div class="qzh"><div class="qzh-body">入队指针（Enqueue Pointer）与出队指针（Dequeue Pointer）这两个术语用于指称 TRB 环中有效条目的逻辑开头与逻辑结尾。TRB 环的大小由构成该环的段（segment）的数量与大小决定。
+
+注：传输环与命令环的出队与入队指针并未被定义为物理的 xHC 寄存器。不过，xHC 与系统软件会在内部维护这些指针的副本（facsimile），以管理相应的环。
+
+注：只有事件环的出队指针被定义为物理的 xHC 寄存器。xHC 与系统软件会在内部维护入队指针的副本，以管理事件环。</div><div class="qsrc">—— evidence/spec-49.txt L39-L49（p149）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L53-L58">The Enqueue Pointer is the address of the next TRB in a ring available to the 
+producer. The producer constructs new Work Items starting with the TRB at 
+this location, and advances the Enqueue Pointer when the construction is 
+complete. 
+The Dequeue Pointer is the address of the next TRB to be serviced by the 
+consumer. </blockquote><div class="qzh"><div class="qzh-body">入队指针是环中下一个可供生产者使用的 TRB 的地址。生产者从该位置处的 TRB 开始构造新的工作项，并在构造完成时推进入队指针。
+
+出队指针是消费者将要服务的下一个 TRB 的地址。</div><div class="qsrc">—— evidence/spec-49.txt L53-L58（p149）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L65-L80">If the Dequeue Pointer equals the Enqueue Pointer, then the TRB Ring is 
+empty. If the “Enqueue Pointer + 1” = Dequeue Pointer, then the ring is full. 
+Note that the calculation of the “Enqueue Pointer + 1” value requires 
+comprehending Link TRBs. Refer to section 4.11.5.1 for more information on 
+Link TRBs. 
+TRBs between the Enqueue Pointer -1 and Dequeue Pointer are owned by the 
+consumer of the Work Items. All other TRBs in a ring are owned by the 
+producer of the Work Items. TRB ownership is passed to the consumer when 
+the Enqueue Pointer is advanced by the producer. TRB ownership is passed to 
+producer when the Dequeue Pointer is advanced by the consumer. 
+A consumer or producer may modify any TRB that it owns, at any time, and in 
+any order. The producer shall never modify a TRB that is owed by the 
+consumer. And the consumer shall never modify a TRB that is owed by the 
+producer. 
+TRBs shall be executed by the consumer in order, starting at the TRB 
+referenced by the Dequeue Pointer. </blockquote><div class="qzh"><div class="qzh-body">若出队指针等于入队指针，则 TRB 环为空。若“入队指针 + 1” = 出队指针，则环为满。注意，“入队指针 + 1”值的计算需要理解 Link TRB。Link TRB 的更多信息参见第 4.11.5.1 节。
+
+位于入队指针 -1 与出队指针之间的 TRB 由工作项的消费者拥有。环中所有其他 TRB 由工作项的生产者拥有。当生产者推进入队指针时，TRB 所有权传递给消费者。当消费者推进出队指针时，TRB 所有权传递给生产者。
+
+消费者或生产者可以在任何时刻、以任何顺序修改其拥有的任何 TRB。生产者绝不能修改消费者拥有的 TRB；消费者也绝不能修改生产者拥有的 TRB。
+
+TRB 必须由消费者按序执行，从出队指针所引用的 TRB 开始。</div><div class="qsrc">—— evidence/spec-49.txt L65-L80（p151）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L81-L87">All TRB data structures shall be 16 bytes in size. 
+TRB Rings may be larger than a Page, however they shall not cross a 64K byte 
+boundary. Refer to section 4.11.5.1 for more information on TRB Rings and 
+page boundaries. 
+Initially when the TRB Ring is created in memory, or if it is ever re-initialized, 
+all TRBs in the ring shall be cleared to ‘0’. This state represents an empty 
+queue. </blockquote><div class="qzh"><div class="qzh-body">所有 TRB 数据结构的大小都必须是 16 字节。
+
+TRB 环可以大于一个页（Page），但不得跨越 64KB 边界。TRB 环与页边界的更多信息参见第 4.11.5.1 节。
+
+最初在内存中创建 TRB 环时，或每当其被重新初始化时，环中所有 TRB 都必须被清零为 ‘0’。该状态表示空队列。</div><div class="qsrc">—— evidence/spec-49.txt L81-L87（p151）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L98-L106">Transfer Rings support Transfer Descriptors (TDs) that consists of 1 or more 
+TRBs. The TRB Chain (C) bit is set in all but the last TRB of a TD. 
+The xHC shall schedule Max Packet Size USB transactions for all packets 
+associated with a TD, except possibly for the last packet if the TD does not 
+define an integer multiple of Max Packet Size data bytes. 
+To generate a “zero-length” USB transaction, software shall explicitly define a 
+TD with a single Transfer TRB, and its TRB Transfer Length field shall equal ‘0’. 
+Note that this TD may include non-Transfer TRBs, for example, an Event Data 
+or Link TRB. </blockquote><div class="qzh"><div class="qzh-body">传输环支持由 1 个或多个 TRB 组成的传输描述符（Transfer Descriptor，TD）。TD 中除最后一个 TRB 之外，所有 TRB 的 chain bit（C，件界标记）都会被置位。
+
+xHC 必须为与一个 TD 关联的所有包调度 Max Packet Size（最大包大小）的 USB 事务，除非该 TD 定义的数据字节数不是 Max Packet Size 的整数倍——此时仅最后一个包可能例外。
+
+要生成“零长度”（zero-length）USB 事务，软件必须显式定义一个带单个传输 TRB 的 TD，且其 TRB Transfer Length 字段必须等于 ‘0’。注意，该 TD 可以包含非传输类 TRB，例如事件数据（Event Data）TRB 或 Link TRB。</div><div class="qsrc">—— evidence/spec-49.txt L98-L106（p151）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L115-L127">There are many conditions described in this specification where the xHC shall 
+“advance to the next TD”. However, if the xHC is processing a partially formed 
+TD when one of these conditions occurs, then advancing to the next TD is not 
+possible and the xHC shall stop advancing when it reaches the Enqueue Pointer 
+(that is, the Cycle bit transition). In this case, the xHC sees the Transfer Ring 
+as empty (that is, the Dequeue Pointer is equal to the Enqueue Pointer), and 
+the next time the doorbell is rung for the endpoint, the xHC shall attempt to 
+advance to the next TD boundary. Note that the xHC shall always interpret the 
+New TR Dequeue Pointer field of a Set TR Dequeue Pointer Command as a 
+pointer to the “next TD”, terminate any effort to “advance to the next TD”. 
+A “partially completed TD” is identified by the case where the Chain bit (CH) 
+set to ‘1’ in the TRB referenced by the Dequeue Pointer and advancing the 
+Dequeue Pointer sets it equal to the Enqueue Pointer. </blockquote><div class="qzh"><div class="qzh-body">本规范描述了多种条件，在这些条件下 xHC 必须“前进到下一个 TD”。然而，若这些条件之一发生时 xHC 正在处理一个部分成形的 TD，则无法前进到下一个 TD，且 xHC 必须在到达入队指针时（即 Cycle bit 翻转处）停止前进。此时，xHC 会把传输环视为空（即出队指针等于入队指针），下次为该端点振铃门铃时，xHC 必须尝试前进到下一个 TD 边界。注意，xHC 必须始终把 Set TR Dequeue Pointer 命令的 New TR Dequeue Pointer 字段解释为指向“下一个 TD”的指针，并终止任何“前进到下一个 TD”的尝试。
+
+“部分完成的 TD”（partially completed TD）由下述情形识别：出队指针所引用 TRB 的 Chain bit（CH）被置为 ‘1’，且推进出队指针会使其等于入队指针。</div><div class="qsrc">—— evidence/spec-49.txt L115-L127（p152）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-mem.c:372-399 · xhci_ring_alloc · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:372:399"><div class="cl" data-line="372"><span class="ln">372</span><span class="cd">struct xhci_ring *xhci_ring_alloc(struct xhci_hcd *xhci, unsigned int num_segs,</span></div>
+<div class="cl" data-line="373"><span class="ln">373</span><span class="cd">				  enum xhci_ring_type type, unsigned int max_packet, gfp_t flags)</span></div>
+<div class="cl" data-line="374"><span class="ln">374</span><span class="cd">{</span></div>
+<div class="cl" data-line="375"><span class="ln">375</span><span class="cd">	struct xhci_ring	*ring;</span></div>
+<div class="cl" data-line="376"><span class="ln">376</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="377"><span class="ln">377</span><span class="cd">	struct device *dev = xhci_to_hcd(xhci)-&gt;self.sysdev;</span></div>
+<div class="cl" data-line="378"><span class="ln">378</span><span class="cd"></span></div>
+<div class="cl" data-line="379"><span class="ln">379</span><span class="cd">	ring = kzalloc_node(sizeof(*ring), flags, dev_to_node(dev));</span></div>
+<div class="cl" data-line="380"><span class="ln">380</span><span class="cd">	if (!ring)</span></div>
+<div class="cl" data-line="381"><span class="ln">381</span><span class="cd">		return NULL;</span></div>
+<div class="cl" data-line="382"><span class="ln">382</span><span class="cd"></span></div>
+<div class="cl" data-line="383"><span class="ln">383</span><span class="cd">	ring-&gt;num_segs = num_segs;</span></div>
+<div class="cl" data-line="384"><span class="ln">384</span><span class="cd">	ring-&gt;bounce_buf_len = max_packet;</span></div>
+<div class="cl" data-line="385"><span class="ln">385</span><span class="cd">	INIT_LIST_HEAD(&amp;ring-&gt;td_list);</span></div>
+<div class="cl" data-line="386"><span class="ln">386</span><span class="cd">	ring-&gt;type = type;</span></div>
+<div class="cl" data-line="387"><span class="ln">387</span><span class="cd">	if (num_segs == 0)</span></div>
+<div class="cl" data-line="388"><span class="ln">388</span><span class="cd">		return ring;</span></div>
+<div class="cl" data-line="389"><span class="ln">389</span><span class="cd"></span></div>
+<div class="cl" data-line="390"><span class="ln">390</span><span class="cd">	ret = xhci_alloc_segments_for_ring(xhci, ring, flags);</span></div>
+<div class="cl" data-line="391"><span class="ln">391</span><span class="cd">	if (ret)</span></div>
+<div class="cl" data-line="392"><span class="ln">392</span><span class="cd">		goto fail;</span></div>
+<div class="cl" data-line="393"><span class="ln">393</span><span class="cd"></span></div>
+<div class="cl" data-line="394"><span class="ln">394</span><span class="cd">	return ring;</span></div>
+<div class="cl" data-line="395"><span class="ln">395</span><span class="cd"></span></div>
+<div class="cl" data-line="396"><span class="ln">396</span><span class="cd">fail:</span></div>
+<div class="cl" data-line="397"><span class="ln">397</span><span class="cd">	kfree(ring);</span></div>
+<div class="cl" data-line="398"><span class="ln">398</span><span class="cd">	return NULL;</span></div>
+<div class="cl" data-line="399"><span class="ln">399</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0901-transfer-descriptors.mp4"></video>
+        <a class="btn" href="player/index.html?scene=29">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m1">模块一 · 三环操作台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 传输/事件/命令三环 enq·deq 推进、Cycle bit 翻转、TD 与多 TRB 工作项——对应本节环基础与 TD 规则</span>
+      </div>
+    </div>
+
+    <div class="card s46card" id="s49-02">
+      <div class="s46head"><span class="s46no">4.9.2</span><span class="s46ttl">Transfer Ring Management 传输环管理</span><span class="s46tag mech">机制</span><span class="s46pg">p152-p160</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L150-L156">This section describes the operation of Enqueue and Dequeue Pointers in 
+Transfer Rings. The operation of Enqueue and Dequeue Pointers in Command 
+Rings is described in section 4.9.3 and Event Rings in section 4.9.4. 
+Figure 4-6 shows a graphical representation of a Transfer Ring. The producer 
+(host) places items in a Transfer Ring at the Enqueue Pointer, and the 
+consumer (xHC) removes items from the Transfer Ring at the Dequeue 
+Pointer. </blockquote><div class="qzh"><div class="qzh-body">本节描述传输环（Transfer Ring）中入队指针（Enqueue Pointer）与出队指针（Dequeue Pointer）的操作。命令环（Command Ring）中入队指针与出队指针的操作在 4.9.3 节描述，事件环（Event Ring）的则在 4.9.4 节描述。
+
+图 4-6 给出了一个传输环的图形化表示。生产者（主机）在入队指针处将条目放入传输环，消费者（xHC）在出队指针处从传输环取出条目。</div><div class="qsrc">—— evidence/spec-49.txt L150-L156（p152）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L163-L176">The Cycle bit field in a TRB identifies the location of the Enqueue Pointer in a 
+Transfer Ring, eliminating the need to define a physical Enqueue Pointer 
+register.  
+Software uses and maintains private copies of the Enqueue and Dequeue 
+Pointers for each Transfer Ring. The Enqueue and Dequeue Pointers are set to 
+the address of the first TRB location in the Transfer Ring and written to the 
+Endpoint/Stream Context TR Dequeue Pointer field, when a Transfer Ring is 
+initially set up. Software uses the Enqueue Pointer to determine where to place 
+the next Work Item on a Transfer Ring. Software advances its copy of the 
+Enqueue Pointer, by either incrementing it by the TRB size, or reloading it with 
+the value of the Ring Segment Pointer field when it encounters a Link TRB, 
+every time it writes a TRB to the Transfer Ring. The position of the Enqueue 
+pointer is also marked in the Transfer Ring itself, by a transition of the Cycle 
+bit. </blockquote><div class="qzh"><div class="qzh-body">TRB 中的 Cycle bit（轮次）字段标识了入队指针在传输环中的位置，从而无需再定义一个物理的入队指针寄存器。
+
+软件为每个传输环使用并维护各自的入队指针与出队指针私有副本。传输环初次建立时，入队指针与出队指针被设置为传输环中第一个 TRB 位置的地址，并写入 Endpoint/Stream Context 的 TR Dequeue Pointer 字段。软件使用入队指针来确定下一个工作项（Work Item）在传输环上的放置位置。软件每次向传输环写入一个 TRB 时，都会推进其入队指针副本——或将其按 TRB 大小递增，或在遇到 Link TRB 时用其 Ring Segment Pointer 字段的值重新加载。入队指针的位置同时也通过 Cycle bit 的跳变在传输环自身中被标记出来。</div><div class="qsrc">—— evidence/spec-49.txt L163-L176（p153）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L177-L190">The xHC also maintains private copies of the Enqueue and Dequeue Pointers 
+for each Transfer Ring. When a Transfer Ring is enabled or reset, the xHC 
+initializes its copies of the Enqueue and Dequeue Pointers with the value of the 
+Endpoint/Stream Context TR Dequeue Pointer field. 
+The xHC uses the Dequeue Pointer to determine where to fetch the next Work 
+Item from a Transfer Ring. The xHC advances its copy of the Dequeue Pointer, 
+by either incrementing it by the TRB size, or reloading it with the value of the 
+Ring Segment Pointer field when it encounters a Link TRB, every time it fetches 
+a TRB from the Transfer Ring.  
+The xHC employs the Event Ring to report the current value of the Dequeue 
+Pointer to system software. Each Transfer Event placed on the Event Ring 
+points to the Transfer TRB that generated it. Software may interpret the 
+pointer value from the latest Transfer Event as the “current value” of the xHC 
+Dequeue Pointer.  </blockquote><div class="qzh"><div class="qzh-body">xHC 同样为每个传输环维护各自的入队指针与出队指针私有副本。当传输环被启用（enable）或复位时，xHC 会用 Endpoint/Stream Context 的 TR Dequeue Pointer 字段的值来初始化其入队指针与出队指针副本。
+
+xHC 使用出队指针来确定从传输环的何处取用下一个工作项。xHC 每次从传输环取出一个 TRB 时，都会推进其出队指针副本——或将其按 TRB 大小递增，或在遇到 Link TRB 时用其 Ring Segment Pointer 字段的值重新加载。
+
+xHC 利用事件环向系统软件报告出队指针的当前值。放置到事件环上的每个传输事件（Transfer Event）都指向产生它的 Transfer TRB。软件可以把最新传输事件中的指针值解释为 xHC 出队指针的“当前值”。</div><div class="qsrc">—— evidence/spec-49.txt L177-L190（p153）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L191-L207">The xHC uses the Enqueue Pointer to determine when a Transfer Ring is 
+empty. As it fetches TRBs from a Transfer Ring it checks for a Cycle bit 
+transition. If a transition detected, the ring is empty. 
+Software uses the Dequeue Pointer to determine when a Transfer Ring is full. 
+As it processes Transfer Events, it updates its copy of the Dequeue Pointer with 
+the value of the Transfer Event TRB Pointer field. If advancing the Enqueue 
+Pointer would make it equal to the Dequeue Pointer then the Transfer Ring is 
+full and software shall wait for Transfer Events that will advance the Dequeue 
+Pointer. 
+The Enqueue Pointer is managed by the producer and the Dequeue Pointer is 
+managed by the consumer. The producer maintains a Producer Cycle State 
+(PCS) flag which identifies the value that it shall write to the TRB Cycle bit. The 
+consumer maintains a Consumer Cycle State (CCS) flag, which it compares 
+to the Cycle bit in TRBs that it fetches. If the CCS flag is equal to the value of 
+the TRB Cycle bit, then the consumer owns the TRB pointed to by the Dequeue 
+Pointer and may process it. If they are not equal, then the consumer shall stop 
+processing TRBs and wait for a notification of more work. </blockquote><div class="qzh"><div class="qzh-body">xHC 使用入队指针来判断传输环何时为空。在从传输环取 TRB 时，它会检查 Cycle bit 是否发生跳变；若检测到跳变，则环为空。
+
+软件使用出队指针来判断传输环何时已满。在处理传输事件时，软件会用 Transfer Event 的 TRB Pointer 字段的值更新其出队指针副本。如果推进入队指针将使其等于出队指针，则传输环已满，软件必须等待将会推进出队指针的传输事件。
+
+入队指针由生产者管理，出队指针由消费者管理。生产者维护一个生产者轮次状态（Producer Cycle State，PCS）标志，该标志标识它写入 TRB Cycle bit 时应采用的值。消费者维护一个消费者轮次状态（Consumer Cycle State，CCS）标志，并将其与它所取 TRB 中的 Cycle bit 进行比较。若 CCS 标志等于该 TRB Cycle bit 的值，则消费者拥有出队指针所指向的 TRB，并可以处理它；若二者不相等，则消费者必须停止处理 TRB，并等待有更多工作的通知。</div><div class="qsrc">—— evidence/spec-49.txt L191-L207（p153）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L260-L280">In Figure 4-6, TRBs are written by the producer setting the Cycle bit to the 
+value of PCS. Note that in Figure 4-6, “~PCS” is the inverted version of PCS. 
+To form a ring (or circular queue) a Link TRB may be inserted at the end of a 
+ring to point to the first TRB in the ring. A ring may contain multiple Link TRBs 
+which are used to chain together Transfer Ring Segments. 
+In the example of Figure 4-6 the Toggle Cycle flag is set in the Link TRB. If the 
+Producer encounters a Toggle Cycle flag set in a Link TRB it shall toggle the 
+state of its PCS flag. If the Consumer encounters a Toggle Cycle flag set in a 
+Link TRB it shall toggle the state of its CCS flag. The producer sets the TRB 
+Cycle bit to the value of the PCS flag when it writes a TRB to set the position of 
+the Enqueue Pointer. In Figure 4-6, the next TRB written by the producer after 
+encountering the Link TRB will be TRB 0. The assertion of the Toggle Cycle bit 
+in the Link TRB will cause the Producer to toggle the state of the PCS flag. The 
+Cycle bit in TRB0 will be set to the value of PCS. 
+Link TRBs allow Transfer Rings to span Page boundaries and to be dynamically 
+sized. 
+Note: All TRBs between the Dequeue Pointer and the Enqueue Pointer-1 are owned 
+by the Consumer and may not be modified by the Producer. If the Ring is 
+empty (Dequeue Pointer = Enqueue Pointer) then no TRBs are owned by the 
+Consumer. Any TRBs in a ring not owned by the Consumer are owned by the 
+Producer. </blockquote><div class="qzh"><div class="qzh-body">在图 4-6 中，生产者写入 TRB 时将 Cycle bit 置为 PCS 的值。注意，图 4-6 中的“~PCS”是 PCS 的反相版本。
+
+为了构成一个环（即循环队列），可以在环的末尾插入一个 Link TRB，使其指向环中的第一个 TRB。一个环可以包含多个 Link TRB，用于把多个传输环段（Ring Segment）链接在一起。
+
+在图 4-6 的示例中，Link TRB 里设置了 Toggle Cycle（翻转轮次）标志。如果生产者遇到某个 Link TRB 中设置了 Toggle Cycle 标志，它必须翻转其 PCS 标志的状态；如果消费者遇到某个 Link TRB 中设置了 Toggle Cycle 标志，它必须翻转其 CCS 标志的状态。生产者写入 TRB 以设定入队指针位置时，将 TRB 的 Cycle bit 置为 PCS 标志的值。在图 4-6 中，生产者在遇到该 Link TRB 之后写入的下一个 TRB 将是 TRB 0。Link TRB 中 Toggle Cycle 位的置位将使生产者翻转 PCS 标志的状态。TRB0 中的 Cycle bit 将被置为 PCS 的值。
+
+Link TRB 使传输环能够跨越页边界，并支持动态调整大小。
+
+注意：出队指针与入队指针-1 之间的所有 TRB 都由消费者拥有，生产者不得修改。如果环为空（出队指针 = 入队指针），则没有任何 TRB 由消费者拥有。环中任何不由消费者拥有的 TRB 都由生产者拥有。</div><div class="qsrc">—— evidence/spec-49.txt L260-L280（p154）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L281-L284">Note: If Streams are not enabled for an endpoint, the Transfer Ring CCS flag shall 
+be set to the value of the Endpoint Context DCS flag by a Configure Endpoint 
+Command if the associated Add Context flag is ‘1’, or by a Set TR Dequeue 
+Pointer Command. </blockquote><div class="qzh"><div class="qzh-body">注意：如果端点未启用 Streams（流），则当关联的 Add Context 标志为 ‘1’ 时，传输环的 CCS 标志应由 Configure Endpoint Command（配置端点命令）设置为 Endpoint Context 的 DCS（Dequeue Cycle State，出队轮次状态）标志的值，或者由 Set TR Dequeue Pointer Command（设置 TR 出队指针命令）设置。</div><div class="qsrc">—— evidence/spec-49.txt L281-L284（p154）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L292-L295">If Streams are enabled for an endpoint, then when a Stream is selected, the 
+CCS flag shall be set to the value of the DCS flag in the associated Stream 
+Context, and when the Stream state is saved, the DCS flag in the associated 
+Stream Context shall be set to the value of the CCS flag. </blockquote><div class="qzh"><div class="qzh-body">如果端点启用了 Streams，则在选定某个 Stream 时，CCS 标志应被置为关联 Stream Context 中 DCS 标志的值；当该 Stream 的状态被保存时，关联 Stream Context 中的 DCS 标志应被置为 CCS 标志的值。</div><div class="qsrc">—— evidence/spec-49.txt L292-L295（p155）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L298-L308">The Link TRB provides support for non-contiguous TRB Rings. For instance, if 
+contiguous Pages of memory cannot be allocated by system software to form a 
+large TRB Ring, then Link TRBs can be used to tie together multiple memory 
+Pages to form a single large Transfer Ring. 
+A non-contiguous TRB Ring is composed of Ring Segments. A Ring Segment is 
+a contiguous block of physical memory. The Link TRB provides a 64-bit pointer 
+which points to the next segment of a ring. If the ring is comprised of only a 
+single segment, then the only Link TRB points to the beginning of the ring, as 
+illustrated in Figure 4-6 above. A multi-segment ring will use a Link TRB to 
+delimit the end of one Segment and the start of the next. The last TRB in a 
+Ring Segment is always a Link TRB. </blockquote><div class="qzh"><div class="qzh-body">Link TRB 为非连续的 TRB 环提供了支持。例如，如果系统软件无法分配连续的内存页来构成一个较大的 TRB 环，则可以使用 Link TRB 把多个内存页串接起来，构成一个大的传输环。
+
+非连续 TRB 环由环段组成。环段是一块物理上连续的内存。Link TRB 提供一个 64 位指针，指向环的下一段。如果环仅由单个段组成，则唯一的 Link TRB 指向环的开头，如上面的图 4-6 所示。多段环会使用 Link TRB 来界定一段的结束与下一段的开始。环段中的最后一个 TRB 总是 Link TRB。</div><div class="qsrc">—— evidence/spec-49.txt L298-L308（p155）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L348-L354">Figure 4-7 illustrates a Segmented Ring that contains two segments. In this 
+example both segments are allocated as 4KB contiguous blocks of memory. 
+Segment 0 defines 256 TRBs, where the last TRB is a Link TRB that points to 
+the beginning of the next segment. Segment 1, which defines 244 TRBs, does 
+not fully utilize the 4K buffer that was allocated for it. The two segments 
+together define ring size of 500 total TRBs, where 498 of them are available for 
+TDs. Note that the Toggle Cycle flag is set only in Segment 1’s Link TRB. </blockquote><div class="qzh"><div class="qzh-body">图 4-7 展示了一个包含两个段的分段环。此例中两个段都分配为 4KB 的连续内存块。段 0 定义了 256 个 TRB，其中最后一个 TRB 是指向下一段开头的 Link TRB。段 1 定义了 244 个 TRB，未完全用满为其分配的 4K 缓冲。两个段合计定义了总大小为 500 个 TRB 的环，其中 498 个可用于 TD。注意，只有段 1 的 Link TRB 中设置了 Toggle Cycle 标志。</div><div class="qsrc">—— evidence/spec-49.txt L348-L354（p155）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L455-L460">To increase the size of a Transfer Ring, software shall allocate and initialize a 
+new segment. 
+Software then identifies a segment boundary (Link TRB) where it will add the 
+new segment. 
+Note: Only Link TRBs that are owned by the producer may be modified to point to 
+the new segment. </blockquote><div class="qzh"><div class="qzh-body">要增大传输环的大小，软件必须分配并初始化一个新段。
+
+然后，软件确定将在其处加入新段的段边界（Link TRB）。
+
+注意：只有生产者拥有的 Link TRB 才可以被修改为指向新段。</div><div class="qsrc">—— evidence/spec-49.txt L455-L460（p158）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L506-L517">Figure 4-9 illustrates a two segment Transfer Ring (A and B) where TRBs 5 to n 
+of Segment B and TRBs 0 to 3 of Segment A are owned by the consumer 
+(xHC), and the remaining TRBs are available to the producer (software) for 
+creating new TDs. Note that the Toggle Cycle (TC) bit is set in the Link TRB of 
+segment B and not set in the Link TRB of segment A, hence the state of the 
+Cycle bit is toggled once each pass through the Transfer Ring. 
+Now, consider the case where software needs to grow the ring size of Figure 
+4-9. Software may pause its insertion of TDs on the Transfer Ring, which 
+temporarily stops the Enqueue Pointer from advancing, to insert a new 
+segment. Software may only modify Link TRBs that it owns, so the new 
+segment C may only be inserted between existing segments A and B as 
+illustrated in Figure 4-10. </blockquote><div class="qzh"><div class="qzh-body">图 4-9 展示了一个两段的传输环（A 与 B），其中段 B 的 TRB 5 到 n 与段 A 的 TRB 0 到 3 由消费者（xHC）拥有，其余 TRB 可供生产者（软件）用于创建新的 TD。注意，Toggle Cycle（TC）位在段 B 的 Link TRB 中被设置，而在段 A 的 Link TRB 中未设置，因此每绕传输环一圈，Cycle bit 的状态翻转一次。
+
+现在考虑软件需要扩大图 4-9 所示环的大小的情形。软件可以暂停其在传输环上插入 TD，从而暂时阻止入队指针推进，以便插入一个新段。软件只能修改其拥有的 Link TRB，因此新段 C 只能插入到现有段 A 与段 B 之间，如图 4-10 所示。</div><div class="qsrc">—— evidence/spec-49.txt L506-L517（p159）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L595-L620">In this example software initializes the new segment with the following 
+operations: 
+• 
+All TRBs in the new segment C to ‘0’, including the Cycle bit. 
+• 
+The TRB Type of the last TRB (n) in segment C shall be set to Link TRB. 
+• 
+And the Ring Segment Pointer field of the segment C Link TRB (n) shall be 
+initialized to point to the first TRB (0) of segment B. 
+• 
+The Toggle Cycle (TC) flag of the segment C Link TRB (n) shall be set, to 
+indicate the Cycle bit transition between the last TRB in segment C and 
+first TRB in segment B. 
+Software then modifies segment A’s Link pointer to point to link the new 
+Segment C into the ring. 
+• 
+The Ring Segment Pointer field of the segment A Link TRB (n) shall be 
+initialized to point to the first TRB (0) of segment C. 
+• 
+The Toggle Cycle (TC) flag of the segment A Link TRB (n) shall be set to 
+‘1’, to indicate the Cycle bit transition between the consumer owned TRBs 
+in segments A and C. 
+Software is required to ensure that the state of the Cycle bits in the new 
+segment(s) and the Toggle Cycle flags in the Link TRBs that are used to 
+connect the new segment to existing segments, do not cause an inconsistency 
+in the definition of the Enqueue Pointer position. </blockquote><div class="qzh"><div class="qzh-body">在此示例中，软件通过以下操作初始化新段：
+
+- 新段 C 中的所有 TRB 置为 ‘0’，包括 Cycle bit。
+- 段 C 中最后一个 TRB（n）的 TRB Type 必须被设置为 Link TRB。
+- 并且段 C 的 Link TRB（n）的 Ring Segment Pointer 字段必须被初始化为指向段 B 的第一个 TRB（0）。
+- 段 C 的 Link TRB（n）的 Toggle Cycle（TC）标志必须被设置，以指示段 C 最后一个 TRB 与段 B 第一个 TRB 之间的 Cycle bit 跳变。
+
+随后，软件修改段 A 的 Link 指针，把新段 C 链接入环。
+
+- 段 A 的 Link TRB（n）的 Ring Segment Pointer 字段必须被初始化为指向段 C 的第一个 TRB（0）。
+- 段 A 的 Link TRB（n）的 Toggle Cycle（TC）标志必须被置为 ‘1’，以指示段 A 与段 C 中消费者所拥有的 TRB 之间的 Cycle bit 跳变。
+
+软件必须确保：新段（们）中 Cycle bit 的状态，以及用于把新段连接到现有段的那些 Link TRB 中的 Toggle Cycle 标志，不会造成入队指针位置定义上的不一致。</div><div class="qsrc">—— evidence/spec-49.txt L595-L620（p159）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L617-L624">Software is required to ensure that the state of the Cycle bits in the new 
+segment(s) and the Toggle Cycle flags in the Link TRBs that are used to 
+connect the new segment to existing segments, do not cause an inconsistency 
+in the definition of the Enqueue Pointer position. 
+Given the initial conditions illustrated in Figure 4-9, to ensure Cycle bit 
+consistency when inserting segments software may either: 1) clear all the 
+Cycle bits in all TRBs in the new segment(s) to ‘0’ and modify the Link TRB 
+</blockquote><div class="qzh"><div class="qzh-body">软件必须确保：新段（们）中 Cycle bit 的状态，以及用于把新段连接到现有段的那些 Link TRB 中的 Toggle Cycle 标志，不会造成入队指针位置定义上的不一致。
+
+给定图 4-9 所示的初始条件，为了在插入段时保证 Cycle bit 的一致性，软件可以：1) 把新段（们）中所有 TRB 的所有 Cycle bit 清为 ‘0’，并修改指向新段的那个段以及新段中的 Link TRB Toggle Cycle 标志；或 2) 把新段中所有 TRB 的所有 Cycle bit 置为 ‘1’。</div><div class="qsrc">—— evidence/spec-49.txt L617-L624（p159）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L630-L632">Toggle Cycle flags in the segment that points to the new segment and the new 
+segment, or 2) set all the Cycle bits in all TRBs in the new segment to ‘1’. 
+Figure 4-10 illustrates the case 1. </blockquote><div class="qzh"><div class="qzh-body">给定图 4-9 所示的初始条件，为了在插入段时保证 Cycle bit 的一致性，软件可以：1) 把新段（们）中所有 TRB 的所有 Cycle bit 清为 ‘0’，并修改指向新段的那个段以及新段中的 Link TRB Toggle Cycle 标志；或 2) 把新段中所有 TRB 的所有 Cycle bit 置为 ‘1’。图 4-10 展示的是情形 1。</div><div class="qsrc">—— evidence/spec-49.txt L630-L632（p160）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L635-L643">To decrease the size of a Transfer Ring, software shall identify a segment 
+boundary (Link TRB) where it will perform the shrink operation. 
+Note: The producer shall not modify Link TRBs that it does not currently own. 
+Software may modify the Link TRB Ring Segment Pointer to map out one or 
+more intermediate segments and/or set the Link TRB Ring Segment Pointer to 
+a TRB location in the segment terminated by the Link TRB. 
+Software shall ensure that the state of the Cycle bits in all remaining segments 
+do not cause an inconsistency in the definition of the Enqueue Pointer position 
+by managing the Link TRB Toggle Cycle bits. </blockquote><div class="qzh"><div class="qzh-body">要减小传输环的大小，软件必须确定执行收缩操作的段边界（Link TRB）。
+
+注意：生产者不得修改其当前不拥有的 Link TRB。
+
+软件可以修改 Link TRB 的 Ring Segment Pointer 以把一个或多个中间段移出映射（map out），和/或把 Link TRB Ring Segment Pointer 设置为该 Link TRB 所终止段内的某个 TRB 位置。
+
+软件必须通过管理 Link TRB 的 Toggle Cycle 位，确保所有剩余段中 Cycle bit 的状态不会造成入队指针位置定义上的不一致。</div><div class="qsrc">—— evidence/spec-49.txt L635-L643（p160）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-mem.c:413-449 · xhci_ring_expansion · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:413:449"><div class="cl" data-line="413"><span class="ln">413</span><span class="cd">int xhci_ring_expansion(struct xhci_hcd *xhci, struct xhci_ring *ring,</span></div>
+<div class="cl" data-line="414"><span class="ln">414</span><span class="cd">				unsigned int num_new_segs, gfp_t flags)</span></div>
+<div class="cl" data-line="415"><span class="ln">415</span><span class="cd">{</span></div>
+<div class="cl" data-line="416"><span class="ln">416</span><span class="cd">	struct xhci_ring new_ring;</span></div>
+<div class="cl" data-line="417"><span class="ln">417</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="418"><span class="ln">418</span><span class="cd"></span></div>
+<div class="cl" data-line="419"><span class="ln">419</span><span class="cd">	if (num_new_segs == 0)</span></div>
+<div class="cl" data-line="420"><span class="ln">420</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="421"><span class="ln">421</span><span class="cd"></span></div>
+<div class="cl" data-line="422"><span class="ln">422</span><span class="cd">	new_ring.num_segs = num_new_segs;</span></div>
+<div class="cl" data-line="423"><span class="ln">423</span><span class="cd">	new_ring.bounce_buf_len = ring-&gt;bounce_buf_len;</span></div>
+<div class="cl" data-line="424"><span class="ln">424</span><span class="cd">	new_ring.type = ring-&gt;type;</span></div>
+<div class="cl" data-line="425"><span class="ln">425</span><span class="cd">	ret = xhci_alloc_segments_for_ring(xhci, &amp;new_ring, flags);</span></div>
+<div class="cl" data-line="426"><span class="ln">426</span><span class="cd">	if (ret)</span></div>
+<div class="cl" data-line="427"><span class="ln">427</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="428"><span class="ln">428</span><span class="cd"></span></div>
+<div class="cl" data-line="429"><span class="ln">429</span><span class="cd">	xhci_initialize_ring_segments(xhci, &amp;new_ring);</span></div>
+<div class="cl" data-line="430"><span class="ln">430</span><span class="cd"></span></div>
+<div class="cl" data-line="431"><span class="ln">431</span><span class="cd">	if (ring-&gt;type == TYPE_STREAM) {</span></div>
+<div class="cl" data-line="432"><span class="ln">432</span><span class="cd">		ret = xhci_update_stream_segment_mapping(ring-&gt;trb_address_map, ring,</span></div>
+<div class="cl" data-line="433"><span class="ln">433</span><span class="cd">							 new_ring.first_seg, flags);</span></div>
+<div class="cl" data-line="434"><span class="ln">434</span><span class="cd">		if (ret)</span></div>
+<div class="cl" data-line="435"><span class="ln">435</span><span class="cd">			goto free_segments;</span></div>
+<div class="cl" data-line="436"><span class="ln">436</span><span class="cd">	}</span></div>
+<div class="cl" data-line="437"><span class="ln">437</span><span class="cd"></span></div>
+<div class="cl" data-line="438"><span class="ln">438</span><span class="cd">	xhci_link_rings(xhci, &amp;new_ring, ring);</span></div>
+<div class="cl" data-line="439"><span class="ln">439</span><span class="cd">	trace_xhci_ring_expansion(ring);</span></div>
+<div class="cl" data-line="440"><span class="ln">440</span><span class="cd">	xhci_dbg_trace(xhci, trace_xhci_dbg_ring_expansion,</span></div>
+<div class="cl" data-line="441"><span class="ln">441</span><span class="cd">			"ring expansion succeed, now has %d segments",</span></div>
+<div class="cl" data-line="442"><span class="ln">442</span><span class="cd">			ring-&gt;num_segs);</span></div>
+<div class="cl" data-line="443"><span class="ln">443</span><span class="cd"></span></div>
+<div class="cl" data-line="444"><span class="ln">444</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="445"><span class="ln">445</span><span class="cd"></span></div>
+<div class="cl" data-line="446"><span class="ln">446</span><span class="cd">free_segments:</span></div>
+<div class="cl" data-line="447"><span class="ln">447</span><span class="cd">	xhci_ring_segments_free(xhci, &amp;new_ring);</span></div>
+<div class="cl" data-line="448"><span class="ln">448</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="449"><span class="ln">449</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0902-transfer-ring-mgmt.mp4"></video>
+        <a class="btn" href="player/index.html?scene=30">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m1">模块一 · 三环操作台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 传输环 PCS/CCS 旗标、Cycle bit 过渡定位 Enqueue Pointer、Link TRB 段间跳转——对应本节指针推进规则</span>
+      </div>
+      <p class="ph">规范算法全文收纳（算法流程图 + 折叠原文逐字备查；短片降密度：片内只讲机制主线）</p>
+      <div class="fcf"><div class="fct">流程图 · 4.9.2.2 入队指针推进与判满（Figure 4-8 语义重建） · 依据 spec-49.txt L363-L383 + L413-L448（图 L390-L407）</div><div class="fcn">初始化环：所有段全部 TRB 的 Cycle bit 清 ‘0’；PCS 与 CCS 置 ‘1’；软件私有的 Enqueue/Dequeue Pointer=环首 TRB 地址（Dequeue 写入 Endpoint/Stream Context 的 TR Dequeue Pointer 字段）</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Enqueue Pointer 指向 Link TRB？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">Link TRB 的 Ring Segment Pointer == Dequeue Pointer？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">环满——软件等待 Transfer Event 推进 Dequeue Pointer，不得写入</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">写 TRB：Cycle bit=PCS；Enqueue Pointer=Link TRB Ring Segment Pointer（下一段首）；Toggle Cycle=‘1’ 时 PCS=~PCS</div></div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcc"><div class="fcn fcd">Enqueue Pointer+16 == Dequeue Pointer？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">环满——软件等待 Transfer Event 推进 Dequeue Pointer，不得写入</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">写 TRB：Cycle bit=PCS；Enqueue Pointer += 16</div></div></div></div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">消费侧（xHC）：Dequeue Pointer 所指 TRB 的 Cycle bit==CCS 才可执行；遇 Link TRB 出队指针跳 Ring Segment Pointer、Toggle Cycle=‘1’ 时翻转 CCS</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L363-L383">When a Dequeue Pointer is “advanced”, its value is adjusted to point to the 
+next transfer related (Isoch, Setup Stage, Normal, etc.) TRB to be executed. 
+The xHC increments the pointer value by 16 bytes to point to the next TRB, 
+however if the next TRB is a Link TRB and its Cycle bit indicates that it is a 
+valid TRB, then the xHC will automatically set the Dequeue Pointer to the 
+address provided by the Link TRB. This operation will point the Dequeue 
+Pointer to the first TRB of the next segment. 
+Software is responsible for advancing the Enqueue pointer. It does this by 
+toggling the Cycle bit each pass through the ring as it writes TRBs. 
+Once started (by a doorbell), the xHC processes TRBs until the ring is empty. A 
+ring is defined as “empty” if the Dequeue Pointer is equal to the Enqueue 
+pointer. The value of the Enqueue Pointer is defined by the Cycle bit transition. 
+To prevent overruns, software shall determine when the Ring is full. The ring is 
+defined as “full” if advancing the Enqueue Pointer will make it equal to the 
+Dequeue Pointer. Software shall take Link TRBs into account when evaluating 
+the full condition. If the Enqueue Pointer is not pointing at a Link TRB, software 
+can determine if the Ring is full by adding the size of a TRB (16) to the 
+Enqueue Pointer and checking if the result is equal to the value of the Dequeue 
+Pointer. If the Enqueue Pointer is pointing at a Link TRB, then software shall 
+compare the Ring Segment Pointer value in the Link TRB with the Dequeue 
+Pointer. </blockquote><div class="qzh"><div class="qzh-body">当出队指针被“推进”时，其值被调整为指向下一个待执行的、与传输相关的（等时（Isoch）、Setup Stage、Normal 等）TRB。xHC 将指针值增加 16 字节以指向下一个 TRB；但如果下一个 TRB 是 Link TRB 且其 Cycle bit 表明它是有效 TRB，则 xHC 会自动把出队指针设置为该 Link TRB 所提供的地址。这一操作会把出队指针指向下一段的第一个 TRB。
+
+推进入队指针是软件的职责。软件通过在每次绕环写入 TRB 时翻转 Cycle bit 来做到这一点。
+
+一旦被启动（通过门铃（doorbell）），xHC 就会持续处理 TRB 直至环为空。若出队指针等于入队指针，则定义环为“空”。入队指针的值由 Cycle bit 的跳变来定义。
+
+为防止溢出（overrun），软件必须自行判定环何时已满。如果推进入队指针将使其等于出队指针，则定义环为“满”。软件在评估“满”条件时必须将 Link TRB 考虑在内。如果入队指针未指向 Link TRB，软件可以通过把一个 TRB 的大小（16）加到入队指针上、并检查结果是否等于出队指针的值来判定环是否已满。如果入队指针正指向一个 Link TRB，则软件应将 Link TRB 中的 Ring Segment Pointer 值与出队指针进行比较。</div><div class="qsrc">—— evidence/spec-49.txt L363-L383（p156）</div></div></div>
+      </details>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L413-L434">The Pointer Advancement rules: 
+• 
+The Cycle bit shall be initialized by software to ‘0’ in all TRBs of all 
+segments when initializing a ring. 
+• 
+The Producer Cycle State (PCS) and the Consumer Cycle State (CCS) bits 
+shall be set to ‘1’ when a ring is initialized. 
+Note: The initial state of a Transfer Ring’s CCS flag is determined by the Endpoint 
+Context DCS flag. The initial state of the Command Ring’s CCS flag is 
+determined by the Command Ring Control Register Ring Cycle State (RCS) 
+flag. The initial state of the Event Ring’s CCS flag is always ‘1’. The previous 
+two bullets assume that the DCS and RCS flags are initialized to ‘1’ by 
+software. If software chooses to initialize a CCS flag (DCS or RCS) to ‘0’, the 
+Cycle bits in the respective ring shall be set to ‘1’. 
+• 
+The Cycle bit shall be written by the producer with the current value of the 
+PCS bit. 
+• 
+The Cycle bit shall be treated as Read-Only by the consumer. 
+• 
+The Consumer may execute a TRB referenced by the Dequeue Pointer 
+whose Cycle bit equals CCS. </blockquote><div class="qzh"><div class="qzh-body">指针推进（Pointer Advancement）规则：
+
+- 初始化环时，软件必须把所有段中所有 TRB 的 Cycle bit 初始化为 ‘0’。
+- 环被初始化时，生产者轮次状态（PCS）与消费者轮次状态（CCS）位必须被置为 ‘1’。
+
+注意：传输环 CCS 标志的初始状态由 Endpoint Context 的 DCS 标志决定。命令环 CCS 标志的初始状态由 Command Ring Control 寄存器的 Ring Cycle State（RCS）标志决定。事件环 CCS 标志的初始状态始终为 ‘1’。前两条列表项假设 DCS 与 RCS 标志已由软件初始化为 ‘1’。如果软件选择把某个 CCS 标志（DCS 或 RCS）初始化为 ‘0’，则相应环中的 Cycle bit 应被置为 ‘1’。
+
+- 生产者写入 Cycle bit 时必须采用 PCS 位的当前值。
+- 消费者必须把 Cycle bit 视为只读（Read-Only）。
+- 消费者可以执行出队指针所引用、且其 Cycle bit 等于 CCS 的 TRB。</div><div class="qsrc">—— evidence/spec-49.txt L413-L434（p157）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L441-L452">• 
+If the Enqueue Pointer references a Link TRB, then the Enqueue Pointer 
+shall be set to Link TRB Ring Segment Pointer and if the Toggle Cycle bit is 
+set to ‘1’ in the Link TRB, the PCS bit shall be toggled by the Producer. 
+• 
+If the Dequeue Pointer references a Link TRB then the Dequeue Pointer 
+shall be set to Link TRB Ring Segment Pointer and if the Toggle Cycle bit is 
+set to ‘1’ in the Link TRB, the CCS bit shall be toggled by the Consumer. 
+Note: A Cycle bit transition takes place between a Link TRB and the first TRB of the 
+segment that the Link TRB Ring Segment Pointer references. 
+Note: The TR Dequeue Pointer and Link TRB are not required to point to the 
+beginning of a memory page. </blockquote><div class="qzh"><div class="qzh-body">- 如果入队指针引用的是 Link TRB，则入队指针必须被设置为该 Link TRB 的 Ring Segment Pointer；且如果该 Link TRB 中的 Toggle Cycle 位被置为 ‘1’，生产者必须翻转 PCS 位。
+- 如果出队指针引用的是 Link TRB，则出队指针必须被设置为该 Link TRB 的 Ring Segment Pointer；且如果该 Link TRB 中的 Toggle Cycle 位被置为 ‘1’，消费者必须翻转 CCS 位。
+
+注意：Cycle bit 的跳变发生在 Link TRB 与该 Link TRB 的 Ring Segment Pointer 所引用段的第一个 TRB 之间。
+
+注意：TR Dequeue Pointer 与 Link TRB 不要求指向内存页的起始处。</div><div class="qsrc">—— evidence/spec-49.txt L441-L452（p158）</div></div></div>
+    </div>
+
+    <div class="card s46card" id="s49-03">
+      <div class="s46head"><span class="s46no">4.9.3</span><span class="s46ttl">Command Ring Management 命令环管理（轻片）</span><span class="s46tag mech">机制</span><span class="s46pg">p160-p161</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L648-L665">The operation of a Command Ring is identical to Transfer Rings with the 
+following exceptions: 
+• 
+If the Command Ring Control Register (CRCR) is written while the 
+Command Ring is stopped (CRR = ‘0’) the xHC shall initialize the Command 
+Ring Dequeue Pointer with the value of the Command Ring Pointer field 
+(refer to section 5.4.5). 
+• 
+When the Host Controller Doorbell Register (0) is written by system 
+software, the xHC will evaluate the Command TRB pointed to by the 
+Command Ring Dequeue Pointer. Once started (by a doorbell write), the 
+xHC processes Command TRBs and advances the Command Ring Dequeue 
+Pointer until the ring is empty. 
+• 
+The location of the Command Ring Dequeue Pointer is reported on the 
+Event Ring in Command Completion Events. 
+• 
+No multi-TRB TDs are allowed on the Command Ring. </blockquote><div class="qzh"><div class="qzh-body">命令环的操作与传输环完全相同，但有以下例外：
+
+- 如果在命令环处于停止状态（CRR = ‘0’）时写入命令环控制寄存器（Command Ring Control Register，CRCR），xHC 必须用 Command Ring Pointer 字段的值来初始化命令环出队指针（参见 5.4.5 节）。
+- 当系统软件写入主机控制器门铃寄存器（Host Controller Doorbell Register，编号 0）时，xHC 会评估命令环出队指针所指向的 Command TRB。一旦被启动（通过写门铃），xHC 便处理命令 TRB 并推进命令环出队指针，直至环为空。
+- 命令环出队指针的位置通过命令完成事件（Command Completion Event）在事件环上报告。
+- 命令环上不允许出现多 TRB TD。</div><div class="qsrc">—— evidence/spec-49.txt L648-L665（p160）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L666-L675">All other aspects of Command Ring management are identical to those 
+described for the Transfer Rings. that is: 
+• 
+Software is responsible for advancing the Enqueue pointer. It does this by 
+toggling the Cycle bit each pass through the Command Ring as it writes 
+Command TRBs. 
+• 
+A Command Ring is defined as “empty” if the Dequeue Pointer is equal to 
+the Enqueue pointer. The Enqueue Pointer is defined by a Cycle bit 
+transition. </blockquote><div class="qzh"><div class="qzh-body">命令环管理所有其他方面都与针对传输环所描述的完全相同，即：
+
+- 推进入队指针是软件的职责。软件通过在每次绕命令环写入命令 TRB 时翻转 Cycle bit 来做到这一点。
+- 如果出队指针等于入队指针，则定义命令环为“空”。入队指针由 Cycle bit 的跳变来定义。</div><div class="qsrc">—— evidence/spec-49.txt L666-L675（p160）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L684-L687">Note: While the Command Ring is in the Running state (CRR = ‘1’), it may be Busy 
+(actively processing Command TRBs) or Idle (not processing Command TRBs 
+and waiting for a doorbell ring), that is, CRR is not negated when the 
+Command Ring has completed all queued commands. </blockquote><div class="qzh"><div class="qzh-body">注意：当命令环处于 Running 状态（CRR = ‘1’）时，它可能处于 Busy（正在处理命令 TRB）或 Idle（未在处理命令 TRB、等待门铃被敲响）；也就是说，当命令环已完成所有排队的命令时，CRR 并不会被清除（negated）。</div><div class="qsrc">—— evidence/spec-49.txt L684-L687（p161）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:460-494 · xhci_handle_stopped_cmd_ring · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:460:494"><div class="cl" data-line="460"><span class="ln">460</span><span class="cd">static void xhci_handle_stopped_cmd_ring(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="461"><span class="ln">461</span><span class="cd">					 struct xhci_command *cur_cmd)</span></div>
+<div class="cl" data-line="462"><span class="ln">462</span><span class="cd">{</span></div>
+<div class="cl" data-line="463"><span class="ln">463</span><span class="cd">	struct xhci_command *i_cmd;</span></div>
+<div class="cl" data-line="464"><span class="ln">464</span><span class="cd"></span></div>
+<div class="cl" data-line="465"><span class="ln">465</span><span class="cd">	/* Turn all aborted commands in list to no-ops, then restart */</span></div>
+<div class="cl" data-line="466"><span class="ln">466</span><span class="cd">	list_for_each_entry(i_cmd, &amp;xhci-&gt;cmd_list, cmd_list) {</span></div>
+<div class="cl" data-line="467"><span class="ln">467</span><span class="cd"></span></div>
+<div class="cl" data-line="468"><span class="ln">468</span><span class="cd">		if (i_cmd-&gt;status != COMP_COMMAND_ABORTED)</span></div>
+<div class="cl" data-line="469"><span class="ln">469</span><span class="cd">			continue;</span></div>
+<div class="cl" data-line="470"><span class="ln">470</span><span class="cd"></span></div>
+<div class="cl" data-line="471"><span class="ln">471</span><span class="cd">		i_cmd-&gt;status = COMP_COMMAND_RING_STOPPED;</span></div>
+<div class="cl" data-line="472"><span class="ln">472</span><span class="cd"></span></div>
+<div class="cl" data-line="473"><span class="ln">473</span><span class="cd">		xhci_dbg(xhci, "Turn aborted command %p to no-op\n",</span></div>
+<div class="cl" data-line="474"><span class="ln">474</span><span class="cd">			 i_cmd-&gt;command_trb);</span></div>
+<div class="cl" data-line="475"><span class="ln">475</span><span class="cd"></span></div>
+<div class="cl" data-line="476"><span class="ln">476</span><span class="cd">		trb_to_noop(i_cmd-&gt;command_trb, TRB_CMD_NOOP, false);</span></div>
+<div class="cl" data-line="477"><span class="ln">477</span><span class="cd"></span></div>
+<div class="cl" data-line="478"><span class="ln">478</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="479"><span class="ln">479</span><span class="cd">		 * caller waiting for completion is called when command</span></div>
+<div class="cl" data-line="480"><span class="ln">480</span><span class="cd">		 *  completion event is received for these no-op commands</span></div>
+<div class="cl" data-line="481"><span class="ln">481</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="482"><span class="ln">482</span><span class="cd">	}</span></div>
+<div class="cl" data-line="483"><span class="ln">483</span><span class="cd"></span></div>
+<div class="cl" data-line="484"><span class="ln">484</span><span class="cd">	xhci-&gt;cmd_ring_state = CMD_RING_STATE_RUNNING;</span></div>
+<div class="cl" data-line="485"><span class="ln">485</span><span class="cd"></span></div>
+<div class="cl" data-line="486"><span class="ln">486</span><span class="cd">	/* ring command ring doorbell to restart the command ring */</span></div>
+<div class="cl" data-line="487"><span class="ln">487</span><span class="cd">	if ((xhci-&gt;cmd_ring-&gt;dequeue != xhci-&gt;cmd_ring-&gt;enqueue) &amp;&amp;</span></div>
+<div class="cl" data-line="488"><span class="ln">488</span><span class="cd">	    !(xhci-&gt;xhc_state &amp; XHCI_STATE_DYING)) {</span></div>
+<div class="cl" data-line="489"><span class="ln">489</span><span class="cd">		xhci-&gt;current_cmd = cur_cmd;</span></div>
+<div class="cl" data-line="490"><span class="ln">490</span><span class="cd">		if (cur_cmd)</span></div>
+<div class="cl" data-line="491"><span class="ln">491</span><span class="cd">			xhci_mod_cmd_timer(xhci);</span></div>
+<div class="cl" data-line="492"><span class="ln">492</span><span class="cd">		xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="493"><span class="ln">493</span><span class="cd">	}</span></div>
+<div class="cl" data-line="494"><span class="ln">494</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0903-command-ring-mgmt.mp4"></video>
+        <a class="btn" href="player/index.html?scene=31">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m6">模块六 · 命令受理台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 命令入环→写命令门铃→完成事件回执的受理链（命令环管理规则增量：CRCR 停走/出队指针经完成事件上报）</span>
+      </div>
+      <p class="int-note">本节与 4.6.1 Command Ring Operation 重叠（R12-SPEC §0 重叠面处置）：职责门与命令受理语义已在 <a href="#s46-01">4.6.1 卡</a> 讲透，本卡只做管理规则增量，不重讲。</p>
+    </div>
+
+    <div class="card s46card" id="s49-04">
+      <div class="s46head"><span class="s46no">4.9.4</span><span class="s46ttl">Event Ring Management 事件环管理</span><span class="s46tag mech">机制</span><span class="s46pg">p161-p170</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L695-L713">A fundamental difference between an Event Ring and a Transfer or Command 
+Ring is that the xHC is the producer and system software is the consumer of 
+Event TRBs. The xHC writes Event TRBs to the Event Ring and updates the 
+Cycle bit in the TRBs to indicate to software the current position of the Enqueue 
+Pointer. 
+The xHC maintains an Event Ring Producer Cycle State (PCS) bit, initializing it 
+to ‘1’ and toggling it every time the Event Ring Enqueue Pointer wraps back to 
+the beginning of the Event Ring. The value of the PCS bit is written to the Cycle 
+bit when the xHC generates an Event TRB on the Event Ring. 
+Software maintains an Event Ring Consumer Cycle State (CCS) bit, initializing 
+it to ‘1’ and toggling it every time the Event Ring Dequeue Pointer wraps back 
+to the beginning of the Event Ring. If the Cycle bit of the Event TRB pointed to 
+by the Event Ring Dequeue Pointer equals CCS, then the Event TRB is a valid 
+event, software processes it and advances the Event Ring Dequeue Pointer. If 
+the Event TRB Cycle bit is not equal to CCS, then software stops processing 
+Event TRBs and waits for an interrupt from the xHC for the Event Ring. When 
+the interrupt occurs, software picks up where it left off, checking the Cycle bit 
+of the Event TRB pointed to by the Event Ring Dequeue Pointer against its CCS 
+bit. </blockquote><div class="qzh"><div class="qzh-body">事件环与传输环或命令环的一个根本区别在于：Event TRB 的生产者是 xHC，消费者是系统软件。xHC 把 Event TRB 写入事件环，并更新 TRB 中的 Cycle bit，以此向软件指示入队指针的当前位置。
+
+xHC 维护一个事件环生产者轮次状态（Event Ring Producer Cycle State，PCS）位，将其初始化为 ‘1’，并在事件环入队指针每次回绕到事件环开头时翻转它。当 xHC 在事件环上生成一个 Event TRB 时，PCS 位的值被写入 Cycle bit。
+
+软件维护一个事件环消费者轮次状态（Event Ring Consumer Cycle State，CCS）位，将其初始化为 ‘1’，并在事件环出队指针每次回绕到事件环开头时翻转它。如果事件环出队指针所指向的 Event TRB 的 Cycle bit 等于 CCS，则该 Event TRB 是一个有效事件，软件处理它并推进事件环出队指针。如果该 Event TRB 的 Cycle bit 不等于 CCS，则软件停止处理 Event TRB，等待 xHC 针对该事件环发出的中断。中断发生时，软件从上次停下的地方继续，把事件环出队指针所指向 Event TRB 的 Cycle bit 与其 CCS 位进行比较。</div><div class="qsrc">—— evidence/spec-49.txt L695-L713（p161）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L714-L720">System software shall write the Event Ring Dequeue Pointer (ERDP) register to 
+inform the xHC that it has completed the processing of Event TRBs up to and 
+including the Event TRB referenced by the ERDP. 
+Note: The detection of a Cycle bit mismatch in an Event TRB processed by software 
+indicates the location of the xHC Event Ring Enqueue Pointer and that the 
+Event Ring is empty. Software shall write the ERDP with the address of this 
+TRB to indicate that it has processed all Events in the ring. </blockquote><div class="qzh"><div class="qzh-body">系统软件必须写 Event Ring Dequeue Pointer（ERDP）寄存器，以告知 xHC：它已完成对直至并包含 ERDP 所引用 Event TRB 在内的所有 Event TRB 的处理。
+
+注意：软件在处理某个 Event TRB 时检测到 Cycle bit 不匹配，即指示了 xHC 事件环入队指针的位置，且事件环为空。软件应把 ERDP 写为该 TRB 的地址，以表明它已处理完环中的所有事件。</div><div class="qsrc">—— evidence/spec-49.txt L714-L720（p161）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L721">Event Ring segments are defined by an Event Ring Segment Table (ERST). </blockquote><div class="qzh"><div class="qzh-body">事件环段由事件环段表（Event Ring Segment Table，ERST）定义。</div><div class="qsrc">—— evidence/spec-49.txt L721-L721（p161）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L741-L751">Note: The xHC may prefetch the next ERST entry before completely consuming the 
+current ERST entry to avoid temporarily running out of Event Ring entries to 
+write.  As a result, if the xHC is currently writing to ERST(ERSTSZ - 1) and 
+software increases the size of the Event Ring by writing a larger value to 
+ERSTSZ (see Section 4.9.4.1) the xHC may have already prefetched 
+ERST(0).  In this case the effect of increasing the size of the Event Ring will 
+take effect after the xHC consumes ERST(0).  Similarly, if the xHC is currently 
+writing to ERST(n) and software removes ERST(n+1) by shrinking the size of 
+the Event Ring (see Section 4.9.4.2) the xHC may have already prefetched 
+ERST(n+1).  In this case the effect of decreasing the size of the Event Ring 
+will take effect after the xHC consumes ERST(n+1).  </blockquote><div class="qzh"><div class="qzh-body">注意：xHC 可以在完全耗尽当前 ERST 项之前预取下一个 ERST 项，以避免出现暂时没有事件环条目可写的情况。因此，如果 xHC 当前正在写 ERST(ERSTSZ - 1)，而软件通过向 ERSTSZ 写入更大的值来增大事件环的大小（见 4.9.4.1 节），xHC 可能已经预取了 ERST(0)。在这种情况下，增大事件环大小的效果将在 xHC 耗尽 ERST(0) 之后生效。类似地，如果 xHC 当前正在写 ERST(n)，而软件通过缩小事件环的大小移除了 ERST(n+1)（见 4.9.4.2 节），xHC 可能已经预取了 ERST(n+1)。在这种情况下，缩小事件环大小的效果将在 xHC 耗尽 ERST(n+1) 之后生效。</div><div class="qsrc">—— evidence/spec-49.txt L741-L751（p162）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L799-L800">Figure 4-11 illustrates a segmented Event Ring that consists of 3 segments. 
+Rules for operation of an Event Ring: </blockquote><div class="qzh"><div class="qzh-body">图 4-11 展示了一个由 3 个段组成的分段事件环。
+
+事件环的操作规则：</div><div class="qsrc">—— evidence/spec-49.txt L799-L800（p162）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L802-L813">Prior to writing the ERST Base Address (ERSTBA) register system software 
+shall: 
+Initialize the Event Ring Segments that will be referenced by the Event 
+Ring Segment Table (ERST) to ‘0’. 
+Initialize the ERST by initializing the ERST.BaseAddress and ERST.Size 
+fields of each element in the table. The ERST.BaseAddress field shall point 
+to the associated Event Ring Segment, and the ERST.Size field shall 
+indicate the number of TRBs supported by the segment. 
+• 
+Write the ERST Size (ERSTSZ) Register with the number of valid entries in 
+the ERST and Event Ring Dequeue Pointer (ERDP) Register with the value 
+of ERST(0).BaseAddress. </blockquote><div class="qzh"><div class="qzh-body">- 在写 ERST Base Address（ERSTBA）寄存器之前，系统软件必须：把将被事件环段表（ERST）引用的事件环段初始化为 ‘0’；通过初始化表中每个元素的 ERST.BaseAddress 与 ERST.Size 字段来初始化 ERST。ERST.BaseAddress 字段必须指向关联的事件环段，ERST.Size 字段必须指明该段支持的 TRB 数量。
+- 向 ERST Size（ERSTSZ）寄存器写入 ERST 中有效条目的数量，并向 Event Ring Dequeue Pointer（ERDP）寄存器写入 ERST(0).BaseAddress 的值。</div><div class="qsrc">—— evidence/spec-49.txt L802-L813（p162）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L821-L835">Write the ERST Base Address (ERSTBA) register with the value of 
+ERST(0).BaseAddress. When the ERSTBA register is written, the Event Ring 
+State Machine (Figure 4-12) is set to the Start state. 
+• 
+System software shall advance the Event Ring Dequeue Pointer by writing 
+the address of the last processed Event TRB to the Event Ring Dequeue 
+Pointer (ERDP) register. Note, the “last processed Event TRB” includes the 
+case where software detects a Cycle bit mismatch when evaluating an 
+Event TRB and the ring is empty. 
+• 
+System software is responsible for ensuring valid values for ERST entries in 
+paged environments. 
+• 
+System software is responsible for ensuring the Size of every ERST entry 
+(Event Ring segment) is at least 16. </blockquote><div class="qzh"><div class="qzh-body">- 向 ERST Base Address（ERSTBA）寄存器写入 ERST(0).BaseAddress 的值。ERSTBA 寄存器被写入时，事件环状态机（Event Ring State Machine，图 4-12）被置为 Start（启动）状态。
+- 系统软件必须通过把最后一个已处理的 Event TRB 的地址写入 Event Ring Dequeue Pointer（ERDP）寄存器来推进事件环出队指针。注意，“最后一个已处理的 Event TRB”也包括软件在评估某个 Event TRB 时检测到 Cycle bit 不匹配、且环为空的情形。
+- 在分页环境中，系统软件负责确保 ERST 各项的值有效。
+- 系统软件负责确保每个 ERST 项（事件环段）的 Size 至少为 16。</div><div class="qsrc">—— evidence/spec-49.txt L821-L835（p163）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L924-L933">Figure 4-12 describes the algorithm the xHC employs for advancing its internal 
+Event Ring Enqueue Pointer (EREP). The left side of the figure describes the 
+EREP Advancement algorithm. The right side of the figure describes the 
+algorithm for checking if the Event Ring is full. 
+Note: The Producer Cycle State (PCS) flag for the Event Ring is toggled only when 
+the Event Ring wraps back to the beginning. 
+Note: The Event Ring State machine is Stopped if the USBCMD Run/Stop (R/S) flag 
+is ‘0’. 
+Note: A blocked Event Ring may impact forward progress on endpoints whose TDs 
+target other Event Rings. </blockquote><div class="qzh"><div class="qzh-body">EREP 推进（EREP Advancement）／事件环满检查（Event Ring Full Check）　图 4-12 描述了 xHC 用于推进其内部事件环入队指针（Event Ring Enqueue Pointer，EREP）的算法。图的左侧描述 EREP 推进算法；右侧描述检查事件环是否已满的算法。
+
+注意：事件环的生产者轮次状态（PCS）标志只在事件环回绕到开头时才翻转。
+
+注意：若 USBCMD 的 Run/Stop（R/S）标志为 ‘0’，事件环状态机处于 Stopped（停止）状态。
+
+注意：被阻塞的事件环可能影响那些 TD 以其他事件环为目标的端点的前向进展（forward progress）。</div><div class="qsrc">—— evidence/spec-49.txt L924-L933（p164）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L940-L951">Note: It is recommended that software process as many Events as possible before 
+writing the ERDP. This approach not only minimizes the number of MMIO 
+writes, but is particularly important if the Event Ring is full. If an Event Ring 
+Full condition exists, writing the ERDP after processing individual Events may 
+cause no work to progress because the Event Ring becomes filled with Event 
+Ring Full Events. 
+ 
+Ideally, software writes the ERDP after processing all Events on an Event 
+Ring. 
+Practically, software should maximize the number of Events processed before 
+writing the ERDP, for example, processing a minimum of 4 Events before each 
+ERDP write. </blockquote><div class="qzh"><div class="qzh-body">注意：建议软件在写 ERDP 之前尽可能多地处理事件。这种做法不仅可以最小化 MMIO 写入次数，而且在事件环已满时尤为重要。如果存在事件环满（Event Ring Full）状态，在逐个处理事件后就写 ERDP，可能因为事件环被 Event Ring Full 事件填满而导致没有任何工作取得进展。理想情况下，软件在处理完事件环上的所有事件之后再写 ERDP。实际上，软件应在写 ERDP 之前最大化已处理事件的数量，例如，每次写 ERDP 之前至少处理 4 个事件。</div><div class="qsrc">—— evidence/spec-49.txt L940-L951（p165）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L961-L963">Note: Software writes to the ERDP register shall always advance the Event Ring 
+Dequeue Pointer value, that is, software shall not write the same value to the 
+ERDP register on two consecutive write operations. </blockquote><div class="qzh"><div class="qzh-body">注意：对 ERDP 寄存器的软件写入必须总是推进事件环出队指针的值，也就是说，软件不得在连续两次写操作中向 ERDP 寄存器写入相同的值。</div><div class="qsrc">—— evidence/spec-49.txt L961-L963（p165）</div></div></div>
+      <div class="tabwrap"><table class="spectab"><caption>Table 4-4: Event Ring State Machine Definitions</caption><thead><tr><th>Name</th><th>Label</th><th>Description</th></tr></thead><tbody><tr><td>Event Ring Segment Table</td><td>ERST</td><td>Resides in host memory. Contains the addresses and lengths of the Event Ring segments. Refer to section 6.5.</td></tr><tr><td>Event Ring Dequeue Pointer</td><td>ERDP</td><td>Resides in Runtime register space. Advanced by software. Refer to section 5.5.2.3.3.</td></tr><tr><td>Event Ring Enqueue Pointer</td><td>EREP</td><td>Internal xHC variable. Advanced by Figure 4-12 algorithm</td></tr><tr><td>Event Ring Segment Table Count</td><td>ERST Count</td><td>Internal xHC variable. Identifies the offset into the ERST of the segment that is currently being filled with Event TRBs by the xHC.</td></tr><tr><td>Event Ring Segment Table Entry</td><td>ERSTE</td><td>Internal xHC variable. A pointer to an ERST entry.</td></tr><tr><td>Event Ring Segment Table Base Address</td><td>ERSTE.BaseAddr</td><td>Ring Segment Base Address field of current ERST entry.</td></tr><tr><td>Event Ring Segment Size</td><td>ERSTE.Size</td><td>Segment Size field of current ERST entry.</td></tr><tr><td>Event Ring Segment Table Size</td><td>ERSTSZ</td><td>Number of entries in the in the ERST.</td></tr><tr><td>Next Segment Pointer</td><td>NSP</td><td>Base address for next Segment of ERST, based on the current EREP.</td></tr><tr><td>TRB Count</td><td>TRB Count</td><td>Internal xHC variable. Identifies the number of remaining TRBs in the current segment.</td></tr></tbody></table></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L1143-L1150">To increase the size of an Event Ring, software shall allocate and initialize a 
+new segment. 
+Software then initializes ERST entries, starting at the offset defined by ERSTSZ, 
+with the Address and Size of the new Event Ring segment(s) and writes new 
+size of the ERST to the ERSTSZ Register. 
+Software may determine when the xHC has started using the new segment by 
+evaluating the Completion Code of the first TRB in the new segment for a non-
+zero (valid) condition.  </blockquote><div class="qzh"><div class="qzh-body">要增大事件环的大小，软件必须分配并初始化一个新段。
+
+然后，软件从 ERSTSZ 定义的偏移开始，用新事件环段（们）的地址与大小初始化 ERST 条目，并把 ERST 的新大小写入 ERSTSZ 寄存器。
+
+软件可以通过评估新段中第一个 TRB 的完成码（Completion Code）是否为非零（有效），来判定 xHC 何时开始使用新段。</div><div class="qsrc">—— evidence/spec-49.txt L1143-L1150（p168）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L1197-L1201">To decrease the size of an Event Ring, software shall decrement value of the 
+ERSTSZ Register. 
+Software may determine when the xHC has stopped using the segment that is 
+to be removed by evaluating the state of the Cycle bit of the first TRB in the 
+deleted segment(s). </blockquote><div class="qzh"><div class="qzh-body">要减小事件环的大小，软件必须减小（decrement）ERSTSZ 寄存器的值。
+
+软件可以通过评估被删除段（们）中第一个 TRB 的 Cycle bit 状态，来判定 xHC 何时已停止使用将被移除的段。</div><div class="qsrc">—— evidence/spec-49.txt L1197-L1201（p169）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L1230-L1238">The number of Interrupters available to software is defined by the MaxIntrs 
+field in the HCSPARAMS1 register. If more than one Interrupter is available 
+then the 0th Interrupter is referred to as the Primary Interrupter and all 
+other Interrupters are referred to as the Secondary Interrupters. Each 
+Interrupter defines an associated Event Ring. The Event Ring associated with 
+the 0th Interrupter is referred to as the Primary Event Ring. The Event Rings 
+associated with the other Interrupters are referred to as the Secondary Event 
+Rings. The only Event TRB types that may be found on a Secondary Event 
+Ring are: </blockquote><div class="qzh"><div class="qzh-body">软件可用的中断器数量由 HCSPARAMS1 寄存器中的 MaxIntrs 字段定义。如果可用的中断器多于一个，则 0 号中断器被称为主中断器（Primary Interrupter），其余所有中断器被称为次级中断器（Secondary Interrupter）。每个中断器都定义了一个关联的事件环。与 0 号中断器关联的事件环被称为主事件环（Primary Event Ring），与其他中断器关联的事件环被称为次级事件环（Secondary Event Ring）。次级事件环上可能出现的 Event TRB 类型仅有：</div><div class="qsrc">—— evidence/spec-49.txt L1230-L1238（p170）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L1249-L1255">Transfer Events generated by a Device Slot may be directed to a Secondary 
+Event Ring by a non-’0’ value in the Transfer TRB Interrupter Target field. All 
+Transfer Events with the TRB Interrupter Target field cleared to ‘0’, shall be 
+directed to the Primary Event Ring by the xHC. 
+Bandwidth Request and Device Notification Events are targeted at a Device 
+Slot. The xHC shall use the Device Slot’s Slot Context Interrupter Target field 
+to determine the Event Ring that shall receive the event. </blockquote><div class="qzh"><div class="qzh-body">设备槽位（Device Slot）产生的 Transfer Event 可以通过 Transfer TRB 的 Interrupter Target 字段中的非 ‘0’ 值被定向到某个次级事件环。所有 Interrupter Target 字段被清为 ‘0’ 的 Transfer Event，都必须由 xHC 定向到主事件环。
+
+Bandwidth Request Event 与 Device Notification Event 以设备槽位为目标。xHC 必须使用该设备槽位的 Slot Context 中的 Interrupter Target 字段来确定应当接收该事件的事件环。</div><div class="qsrc">—— evidence/spec-49.txt L1249-L1255（p170）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-mem.c:1795-1823 · xhci_alloc_erst · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:1795:1823"><div class="cl" data-line="1795"><span class="ln">1795</span><span class="cd">static int xhci_alloc_erst(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="1796"><span class="ln">1796</span><span class="cd">		    struct xhci_ring *evt_ring,</span></div>
+<div class="cl" data-line="1797"><span class="ln">1797</span><span class="cd">		    struct xhci_erst *erst,</span></div>
+<div class="cl" data-line="1798"><span class="ln">1798</span><span class="cd">		    gfp_t flags)</span></div>
+<div class="cl" data-line="1799"><span class="ln">1799</span><span class="cd">{</span></div>
+<div class="cl" data-line="1800"><span class="ln">1800</span><span class="cd">	size_t size;</span></div>
+<div class="cl" data-line="1801"><span class="ln">1801</span><span class="cd">	unsigned int val;</span></div>
+<div class="cl" data-line="1802"><span class="ln">1802</span><span class="cd">	struct xhci_segment *seg;</span></div>
+<div class="cl" data-line="1803"><span class="ln">1803</span><span class="cd">	struct xhci_erst_entry *entry;</span></div>
+<div class="cl" data-line="1804"><span class="ln">1804</span><span class="cd"></span></div>
+<div class="cl" data-line="1805"><span class="ln">1805</span><span class="cd">	size = array_size(sizeof(struct xhci_erst_entry), evt_ring-&gt;num_segs);</span></div>
+<div class="cl" data-line="1806"><span class="ln">1806</span><span class="cd">	erst-&gt;entries = dma_alloc_coherent(xhci_to_hcd(xhci)-&gt;self.sysdev,</span></div>
+<div class="cl" data-line="1807"><span class="ln">1807</span><span class="cd">					   size, &amp;erst-&gt;erst_dma_addr, flags);</span></div>
+<div class="cl" data-line="1808"><span class="ln">1808</span><span class="cd">	if (!erst-&gt;entries)</span></div>
+<div class="cl" data-line="1809"><span class="ln">1809</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="1810"><span class="ln">1810</span><span class="cd"></span></div>
+<div class="cl" data-line="1811"><span class="ln">1811</span><span class="cd">	erst-&gt;num_entries = evt_ring-&gt;num_segs;</span></div>
+<div class="cl" data-line="1812"><span class="ln">1812</span><span class="cd"></span></div>
+<div class="cl" data-line="1813"><span class="ln">1813</span><span class="cd">	seg = evt_ring-&gt;first_seg;</span></div>
+<div class="cl" data-line="1814"><span class="ln">1814</span><span class="cd">	for (val = 0; val &lt; evt_ring-&gt;num_segs; val++) {</span></div>
+<div class="cl" data-line="1815"><span class="ln">1815</span><span class="cd">		entry = &amp;erst-&gt;entries[val];</span></div>
+<div class="cl" data-line="1816"><span class="ln">1816</span><span class="cd">		entry-&gt;seg_addr = cpu_to_le64(seg-&gt;dma);</span></div>
+<div class="cl" data-line="1817"><span class="ln">1817</span><span class="cd">		entry-&gt;seg_size = cpu_to_le32(TRBS_PER_SEGMENT);</span></div>
+<div class="cl" data-line="1818"><span class="ln">1818</span><span class="cd">		entry-&gt;rsvd = 0;</span></div>
+<div class="cl" data-line="1819"><span class="ln">1819</span><span class="cd">		seg = seg-&gt;next;</span></div>
+<div class="cl" data-line="1820"><span class="ln">1820</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1821"><span class="ln">1821</span><span class="cd"></span></div>
+<div class="cl" data-line="1822"><span class="ln">1822</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="1823"><span class="ln">1823</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0904-event-ring-mgmt.mp4"></video>
+        <a class="btn" href="player/index.html?scene=32">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m1">模块一 · 三环操作台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 事件环消费侧：Cycle bit==CCS 判有效、ERDP 写回执、环满——对应本节事件环管理规则</span>
+      </div>
+      <p class="ph">规范算法全文收纳（算法流程图 + 折叠原文逐字备查；短片降密度：片内只讲机制主线）</p>
+      <div class="fcf"><div class="fct">流程图 · 4.9.4 EREP 推进算法（Figure 4-12 左侧语义重建） · 依据 spec-49.txt L1018-L1056</div><div class="fcn">写 ERSTBA → 状态机进 Start：PCS=‘1’；ERST Count=‘0’；ERSTE=ERST[ERST Count]；EREP=ERSTE.BaseAddr；TRB Count=ERSTE.Size</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">USBCMD Run/Stop (R/S)=‘1’？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn fcnone">—</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">等待 R/S 回 ‘1’（CRS Restore 会重载内部变量 ERSTE/ERST Count/EREP/TRB Count）</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">有事件投递到本事件环？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn fcnone">—</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">返回继续检查 R/S 与新事件</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">事件环满？（右侧满检查算法）</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">写 Event Ring Full Error Event（满判定留一个空位余量，给错误事件腾位）</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">写 Event TRB @ EREP：Cycle bit=PCS；EREP += 16；TRB Count--</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">TRB Count=‘0’？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">ERST Count++；若 ERST Count==ERSTSZ：置 ‘0’ 并翻转 PCS（回绕到 ERST(0)）</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">ERSTE=ERST[ERST Count]；EREP=ERSTE.BaseAddr；TRB Count=ERSTE.Size（推进到下一段）</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">TRB Count 非零——返回等待新事件</div></div></div></div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L1018-L1056">The following steps describe the xHC Event Ring Enqueue Pointer (EREP) 
+Advancement algorithm (left side of Figure 4-12): 
+4. 
+When the ERST Base Address (ERSTBA) register is initially written the 
+Event Ring State Machine enters the Start state. 
+5. 
+The xHC initializes its internal PCS flag to ‘1’. 
+6. 
+The xHC sets its internal ERST Count to ‘0’. 
+7. 
+The xHC then fetches the entry in the Event Ring Segment Table 
+referenced by the ERST Count (ERSTE = ERST[ERST Count]) and initializes its 
+Enqueue Pointer (EREP) with the value of the Ring Segment Base Address field 
+(ERSTE.BaseAddr), and the TRB Count with the value of the Segment Size field 
+(ERSTE.Size). 
+8. 
+If the USBCMD Run/Stop (R/S) flag = ‘0’ the Event Ring State Machine 
+shall wait for Run/Stop   (R/S) to return to ‘1’27. When Run/Stop (R/S) flag = 
+‘1’ the xHC shall proceeds to check if an event is posted (step 6., otherwise it 
+proceeds immediately to step 6. 
+9. 
+When an event is posted for the ring, the xHC shall first check if the ring 
+is full. If not, the xHC writes the Event TRB to the location identified by the 
+EREP, increments the EREP by 16, and decrements the TRB Count. The Cycle 
+bit of the Event TRB is set to the value of the PCS flag. If no event is posted, 
+the xHC will return to step 5. 
+10. 
+As long as the TRB Count is non-zero, the xHC shall return to step 5, 
+continuing to check Run/Stop (R/S) or for new events. 
+11. 
+When the TRB Count reaches ‘0’, the xHC shall increment the ERST Count 
+and evaluate it, otherwise it returns to step 5. 
+d. If the ERST Count is not equal to the value of the ERSTSZ register, 
+then the xHC returns to step 4 to process events starting in the next 
+segment of the ERST. 
+e. If the ERST Count equals the value of the ERSTSZ register, then the 
+xHC sets the ERST Count to ‘0’, toggles the Producer Cycle State 
+(PCS) flag, and return to step 3 to process events starting in the first 
+segment of the ERST. </blockquote><div class="qzh"><div class="qzh-body">以下步骤描述 xHC 的事件环入队指针（EREP）推进算法（图 4-12 左侧）：
+
+4. ERST Base Address（ERSTBA）寄存器被初次写入时，事件环状态机进入 Start 状态。
+
+5. xHC 把其内部 PCS 标志初始化为 ‘1’。
+
+6. xHC 把其内部 ERST Count 置为 ‘0’。
+
+7. 然后，xHC 取出事件环段表中被 ERST Count 引用的条目（ERSTE = ERST[ERST Count]），用 Ring Segment Base Address 字段（ERSTE.BaseAddr）的值初始化其入队指针（EREP），并用 Segment Size 字段（ERSTE.Size）的值初始化 TRB Count。
+
+8. 若 USBCMD 的 Run/Stop（R/S）标志 = ‘0’，事件环状态机必须等待 Run/Stop（R/S）恢复为 ‘1’27。当 Run/Stop（R/S）标志 = ‘1’ 时，xHC 将继续检查是否有事件被投递（步骤 6.），否则立即进入步骤 6.。
+
+9. 当有事件被投递给该环时，xHC 必须首先检查环是否已满。若未满，xHC 把 Event TRB 写入 EREP 所标识的位置，将 EREP 加 16，并将 TRB Count 减 1。Event TRB 的 Cycle bit 被置为 PCS 标志的值。若没有事件被投递，xHC 将返回步骤 5。
+
+10. 只要 TRB Count 非零，xHC 就必须返回步骤 5，继续检查 Run/Stop（R/S）或新事件。
+
+11. 当 TRB Count 达到 ‘0’ 时，xHC 必须把 ERST Count 加 1 并对其进行评估；否则返回步骤 5。
+
+d. 如果 ERST Count 不等于 ERSTSZ 寄存器的值，则 xHC 返回步骤 4，从 ERST 的下一段开始处理事件。
+
+e. 如果 ERST Count 等于 ERSTSZ 寄存器的值，则 xHC 把 ERST Count 置为 ‘0’，翻转生产者轮次状态（PCS）标志，并返回步骤 3，从 ERST 的第一段开始处理事件。</div><div class="qsrc">—— evidence/spec-49.txt L1018-L1056（p166）</div></div></div>
+      </details>
+      <div class="fcf"><div class="fct">流程图 · 4.9.4 事件环满检查算法（Figure 4-12 右侧语义重建） · 依据 spec-49.txt L1071-L1113</div><div class="fcc"><div class="fcn fcd">TRB Count&gt;‘1’？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">EREP+16 与 ERDP 比较：相等=满</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn fcnone">—</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">TRB Count==‘1’？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">NSP=ERST((ERST Count+1) MOD ERSTSZ).BaseAddr（下一段首地址）</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">NSP==ERDP？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">事件环满——停止处理 Transfer/Command Ring；写 Event Ring Full Error Event @ EREP；EREP+=16；TRB Count--</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">事件环有空间——满检查退出</div></div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn fcnone">—</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">TRB Count≠‘0’？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">当前段仍有空间——返回等待 ERDP 推进</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">ERST Count++ 推进 EREP 到下一段（==ERSTSZ 时置 ‘0’ 翻转 PCS）；ERSTE=ERST[ERST Count]；EREP=ERSTE.BaseAddr；TRB Count=ERSTE.Size</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">事件环保持满直到软件下次写 ERDP——届时回到满检查起点判定是否腾出空间</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-49.txt:L1071-L1113">The following steps describe the xHC algorithm for checking if the Event Ring is 
+full (right side of Figure 4-12): 
+12. 
+If the TRB Count is greater than ‘1’, then the xHC can simply add 16 to 
+the EREP and compare it to the ERDP to determine whether the Event Ring is 
+full. 
+13. 
+If the TRB Count is equal to ‘1’, then the xHC shall check if the ERDP 
+points to the first entry in the next segment. To obtain the base address for the 
+next segment the xHC retrieves the ERST.BaseAddress entry for the ERST 
+Count + 1 modulus the ERSTSZ. Then calculates the address of the next Event 
+Ring segment (NSP). 
+a. If the NSP does not equal the ERDP, then the Event Ring has room 
+and the Event Ring Full Check exits. 
+b. If the NSP equals the ERDP, then the Event Ring is full. The xHC 
+stops processing the Transfer and Command Rings, writes an Event 
+Ring Full Error Event to the EREP, advances the EREP and decrements 
+the TRB Count. Refer to Step 2b note below. 
+14. 
+If the TRB Count is not equal ‘0’, then there is room in the current 
+segment for more events so go to step 6 and wait for the ERDP to advance. 
+15. 
+If the TRB Count is equal ‘0’, then increment the ERST Count to advance 
+the EREP to the next segment. 
+a. If the ERST Count is not equal to the value of the ERSTSZ register, 
+then the xHC goes to step 5 to initialize the state machine 
+parameters for the next segment of the ERST. 
+b. If the ERST Count equals the value of the ERSTSZ register, then 
+advance the EREP to the first segment of the ERST by setting the 
+ERST Count to ‘0’ and toggling the Producer Cycle State (PCS) flag, 
+then go to step 5 to initialize the state machine parameters for the 
+first segment of the ERST. 
+16. 
+To initialize the state machine parameters, the xHC fetches the entry in 
+the Event Ring Segment Table referenced by the ERST Count (ERSTE = 
+ERST[ERST Count]) and initializes its Enqueue Pointer (EREP) with the value of 
+the Ring Segment Base Address field (ERSTE.BaseAddr) and the TRB Count 
+with the value of the Segment Size field (ERSTE.Size). Once the EREP has been 
+advanced to the next segment go to step 6 and wait for the ERDP to advance. 
+17. 
+The Event Ring will remain full until the next time that software writes the 
+ERDP. When the ERDP is written, the xHC will determine if the new ERDP value 
+has freed space on the Event Ring by returning to step 1). </blockquote><div class="qzh"><div class="qzh-body">以下步骤描述 xHC 检查事件环是否已满的算法（图 4-12 右侧）：
+
+12. 如果 TRB Count 大于 ‘1’，则 xHC 只需把 EREP 加 16 并与 ERDP 比较，即可判定事件环是否已满。
+
+13. 如果 TRB Count 等于 ‘1’，则 xHC 必须检查 ERDP 是否指向下一段的第一个条目。为获得下一段的基地址，xHC 取出 ERST Count + 1 对 ERSTSZ 取模（modulus）所对应的 ERST.BaseAddress 条目，然后计算下一个事件环段的地址（NSP）。
+
+a. 如果 NSP 不等于 ERDP，则事件环尚有空间，事件环满检查（Event Ring Full Check）退出。
+
+b. 如果 NSP 等于 ERDP，则事件环已满。xHC 停止处理传输环与命令环，向 EREP 写入一个 Event Ring Full Error 事件，推进 EREP 并把 TRB Count 减 1。参见下文步骤 2b 的注。
+
+14. 如果 TRB Count 不等于 ‘0’，则当前段中还有空间容纳更多事件，因此转到步骤 6 并等待 ERDP 推进。
+
+15. 如果 TRB Count 等于 ‘0’，则把 ERST Count 加 1，以把 EREP 推进到下一段。
+
+a. 如果 ERST Count 不等于 ERSTSZ 寄存器的值，则 xHC 转到步骤 5，为 ERST 的下一段初始化状态机参数。
+
+b. 如果 ERST Count 等于 ERSTSZ 寄存器的值，则通过把 ERST Count 置为 ‘0’ 并翻转生产者轮次状态（PCS）标志，把 EREP 推进到 ERST 的第一段，然后转到步骤 5，为 ERST 的第一段初始化状态机参数。
+
+16. 为初始化状态机参数，xHC 取出事件环段表中被 ERST Count 引用的条目（ERSTE = ERST[ERST Count]），用 Ring Segment Base Address 字段（ERSTE.BaseAddr）的值初始化其入队指针（EREP），并用 Segment Size 字段（ERSTE.Size）的值初始化 TRB Count。EREP 被推进到下一段之后，转到步骤 6 并等待 ERDP 推进。
+
+17. 事件环将保持已满状态，直到软件下一次写 ERDP。ERDP 被写入时，xHC 会通过回到步骤 1) 来判定新的 ERDP 值是否已在事件环上腾出空间。</div><div class="qsrc">—— evidence/spec-49.txt L1071-L1113（p167）</div></div></div>
+      </details>
+    </div>
+  </section>
+
   <footer>
     构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
-    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。评审反馈请按 §4.1 / §4.2 / §4.3 / §4.4 / §4.5 五节四版块 + §4.6 大区（18 小节卡）分项。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。评审反馈请按 §4.1 / §4.2 / §4.3 / §4.4 / §4.5 五节四版块 + §4.6 大区（18 小节卡）+ §4.7-4.9 三大区（8 卡）分项。
   </footer>
 </div>
 <div id="tipdocs" hidden>

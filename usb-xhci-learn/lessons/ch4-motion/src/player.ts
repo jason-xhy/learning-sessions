@@ -37,11 +37,13 @@ const sceneLoaders = import.meta.glob('./scenes/*.tsx', {
   import: 'default',
 }) as Record<string, () => Promise<any>>;
 
-// 主线在前、补丁（chNNp）在后，组内字典序 → 0=ch41..4=ch45 5=ch4601..8=ch4604 9=ch41p..13=ch45p
+// 主线在前（ch*/wf* 字典序 + R12 起 xh* 新前缀=4.7+ 节场景，恒排 wf* 之后）、补丁（chNNp/xhSSNN[字母]p）在后，组内字典序
+// → 批 A 后=主线 0-32（ch41..ch4618=0..22、wfdevcfg/wfhaltrst=23/24、xh0700..xh0904=25..32）+补丁 33-40（ch41p..ch45p=33..37、ch4606p=38、ch4609p/ch4610p=39/40）
 function orderedSceneKeys(): string[] {
   const isPatch = (key: string) => {
     const base = key.split('/').pop() ?? '';
-    return /^ch\d+p\.tsx$/.test(base) ? 1 : 0;
+    // xh 新前缀=4.7+ 节场景（R12 §2）：xhSSNN[字母].tsx 归主线组，xhSSNN[字母]p.tsx 归补丁组
+    return /^(ch\d+p|xh\d{4}[a-z]?p)\.tsx$/.test(base) ? 1 : 0;
   };
   return Object.keys(sceneLoaders).sort((a, b) => {
     const pa = isPatch(a);

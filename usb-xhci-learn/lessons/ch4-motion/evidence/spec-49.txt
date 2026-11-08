@@ -1,0 +1,1255 @@
+4.9 
+TRB Ring 
+A TRB (Transfer Request Block) Ring defines a queue, which is used to transfer 
+Work Items between producer and consumer entities26. 
+A TRB Ring is defined as a circular queue of TRB data structures. TRB rings are 
+used to pass Work Items from the producer to the consumer. Two pointers 
+(Enqueue and Dequeue) associated with each ring identify where the producer 
+ 
+26 Note: The xHCI Producer/Consumer model is not related to the PCI Producer/Consumer model. 
+ 
+
+===== [PAGE 150] =====
+ 
+150 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+will Enqueue the next Work Item on the ring and where the consumer will 
+Dequeue the next Work Item from the ring. 
+A Work Item is comprised of one or more TRB data structures. A Work Item 
+may define an operation to perform, or the result of an operation that has been 
+performed. 
+There are 3 basic types or TRB Rings; Transfer, Event, and Command. Each 
+type of ring defines an exclusive set of TRB data structures; however they all 
+employ the underlying TRB Ring mechanism to organize their work items and 
+the basic TRB template. 
+Transfer Rings provide data transport to and from USB devices. There is a 
+1:1 mapping between Transfer Rings and USB Pipes. They are defined by an 
+Endpoint Context data structure contained in a Device Context, or the Stream 
+Context Array pointed to by the Endpoint Context. 
+The Event Ring provides the xHC with a means of reporting to system 
+software: data transfer and command completion status, Root Hub port status 
+changes, and other xHC related events. An Event Ring is defined by the Event 
+Ring Segment Table Base Address, Segment Table Size, and Dequeue Pointer 
+registers which reside in the Runtime Registers. 
+The Command Ring provides system software the ability to issue commands 
+to enumerate USB Devices, configure the xHC to support those devices, and to 
+coordinate virtualization features. The Command Ring is managed by the 
+Command Ring Control Register that resides in the Operational Registers. 
+The Enqueue Pointer and Dequeue Pointer are terms used to refer to the 
+logical beginning and end of the valid entries in a TRB Ring. The size of a TRB 
+ring is determined by the number and size of the segments that comprise the 
+ring. 
+Note: The Dequeue and Enqueue Pointers for Transfer and Command Rings are NOT 
+defined as physical xHC registers. However a facsimile of these pointers are 
+maintained internally by the xHC and system software to manage a respective 
+ring. 
+Note: Only the Dequeue Pointer for an Event Ring is defined as a physical xHC 
+register. A facsimile of the Enqueue Pointer is maintained internally by the 
+xHC and system software to manage an Event Ring. 
+This section describes how these “facsimiles” are maintained. The Enqueue and 
+Dequeue Pointers are always advanced starting from the TRB entry pointed to 
+by their initial values. 
+The Enqueue Pointer is the address of the next TRB in a ring available to the 
+producer. The producer constructs new Work Items starting with the TRB at 
+this location, and advances the Enqueue Pointer when the construction is 
+complete. 
+The Dequeue Pointer is the address of the next TRB to be serviced by the 
+consumer. 
+
+===== [PAGE 151] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+151 
+If the Dequeue Pointer equals the Enqueue Pointer, then the TRB Ring is 
+empty. If the “Enqueue Pointer + 1” = Dequeue Pointer, then the ring is full. 
+Note that the calculation of the “Enqueue Pointer + 1” value requires 
+comprehending Link TRBs. Refer to section 4.11.5.1 for more information on 
+Link TRBs. 
+TRBs between the Enqueue Pointer -1 and Dequeue Pointer are owned by the 
+consumer of the Work Items. All other TRBs in a ring are owned by the 
+producer of the Work Items. TRB ownership is passed to the consumer when 
+the Enqueue Pointer is advanced by the producer. TRB ownership is passed to 
+producer when the Dequeue Pointer is advanced by the consumer. 
+A consumer or producer may modify any TRB that it owns, at any time, and in 
+any order. The producer shall never modify a TRB that is owed by the 
+consumer. And the consumer shall never modify a TRB that is owed by the 
+producer. 
+TRBs shall be executed by the consumer in order, starting at the TRB 
+referenced by the Dequeue Pointer. 
+All TRB data structures shall be 16 bytes in size. 
+TRB Rings may be larger than a Page, however they shall not cross a 64K byte 
+boundary. Refer to section 4.11.5.1 for more information on TRB Rings and 
+page boundaries. 
+Initially when the TRB Ring is created in memory, or if it is ever re-initialized, 
+all TRBs in the ring shall be cleared to ‘0’. This state represents an empty 
+queue. 
+Note: Refer to Table 6-91 for a definition of the valid TRB types allowed on a 
+specific TRB ring type. Table 6-92 defines the allowable Transfer Ring TRB 
+Types as function of endpoint type. 
+Note: Ownership of TRBs on a Transfer Ring is strictly determined by the location of 
+its Enqueue and Dequeue pointers. A Short Packet, error, or other condition 
+reported for a TRB that is not the last TRB of a TD shall not be interpreted by 
+the producer (software) as indicating that the ownership of the remaining 
+TRBs in the TD have also transitioned to the producer. 
+4.9.1 
+Transfer Descriptors 
+Transfer Rings support Transfer Descriptors (TDs) that consists of 1 or more 
+TRBs. The TRB Chain (C) bit is set in all but the last TRB of a TD. 
+The xHC shall schedule Max Packet Size USB transactions for all packets 
+associated with a TD, except possibly for the last packet if the TD does not 
+define an integer multiple of Max Packet Size data bytes. 
+To generate a “zero-length” USB transaction, software shall explicitly define a 
+TD with a single Transfer TRB, and its TRB Transfer Length field shall equal ‘0’. 
+Note that this TD may include non-Transfer TRBs, for example, an Event Data 
+or Link TRB. 
+
+===== [PAGE 152] =====
+ 
+152 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Refer to section 4.14.1 for an Implementation Note that discusses TRBs and 
+system bandwidth management. 
+There are many conditions described in this specification where the xHC shall 
+“advance to the next TD”. However, if the xHC is processing a partially formed 
+TD when one of these conditions occurs, then advancing to the next TD is not 
+possible and the xHC shall stop advancing when it reaches the Enqueue Pointer 
+(that is, the Cycle bit transition). In this case, the xHC sees the Transfer Ring 
+as empty (that is, the Dequeue Pointer is equal to the Enqueue Pointer), and 
+the next time the doorbell is rung for the endpoint, the xHC shall attempt to 
+advance to the next TD boundary. Note that the xHC shall always interpret the 
+New TR Dequeue Pointer field of a Set TR Dequeue Pointer Command as a 
+pointer to the “next TD”, terminate any effort to “advance to the next TD”. 
+A “partially completed TD” is identified by the case where the Chain bit (CH) 
+set to ‘1’ in the TRB referenced by the Dequeue Pointer and advancing the 
+Dequeue Pointer sets it equal to the Enqueue Pointer. 
+Note: Command and Event TRBs do not support a Chain bit (CH), so all Command 
+Descriptors (CDs) and Event Descriptors (EDs) only consist of a single TRB. 
+Note: If the xHC receives a Short Packet from a device, then it shall retire the 
+current TD. If another TD is defined on the Transfer Ring, the xHC shall 
+advance to it and begin IN transactions. If the EOB flag was set in a short DP 
+received on a SS IN pipe, then the host shall retire the current TD, and wait 
+for an ERDY from the device before beginning IN transactions for the next TD 
+(if one exists). Refer to section 4.10.1.1 for detailed information on Short 
+Packet handling. 
+Note: If an error is detected while processing a multi-TRB TD, the xHC shall 
+generate a Transfer Event for the TRB that the error was detected on with the 
+appropriate error Condition Code, then may advance to the next TD. If in the 
+process of advancing to the next TD, a Transfer TRB is encountered with its 
+IOC flag set, then the Condition Code of the Transfer Event generated for that 
+Transfer TRB should be Success, because there was no error actually 
+associated with the TRB that generated the Event. However, an xHC 
+implementation may redundantly assert the original error Condition Code. As 
+a general rule, the Completion Code of a Transfer Event represents the status 
+of the buffer referenced by the Transfer TRB that generated it, however there 
+may be exceptions. 
+4.9.2 
+Transfer Ring Management 
+This section describes the operation of Enqueue and Dequeue Pointers in 
+Transfer Rings. The operation of Enqueue and Dequeue Pointers in Command 
+Rings is described in section 4.9.3 and Event Rings in section 4.9.4. 
+Figure 4-6 shows a graphical representation of a Transfer Ring. The producer 
+(host) places items in a Transfer Ring at the Enqueue Pointer, and the 
+consumer (xHC) removes items from the Transfer Ring at the Dequeue 
+Pointer. 
+
+===== [PAGE 153] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+153 
+The Cycle bit field in a TRB identifies the location of the Enqueue Pointer in a 
+Transfer Ring, eliminating the need to define a physical Enqueue Pointer 
+register.  
+Software uses and maintains private copies of the Enqueue and Dequeue 
+Pointers for each Transfer Ring. The Enqueue and Dequeue Pointers are set to 
+the address of the first TRB location in the Transfer Ring and written to the 
+Endpoint/Stream Context TR Dequeue Pointer field, when a Transfer Ring is 
+initially set up. Software uses the Enqueue Pointer to determine where to place 
+the next Work Item on a Transfer Ring. Software advances its copy of the 
+Enqueue Pointer, by either incrementing it by the TRB size, or reloading it with 
+the value of the Ring Segment Pointer field when it encounters a Link TRB, 
+every time it writes a TRB to the Transfer Ring. The position of the Enqueue 
+pointer is also marked in the Transfer Ring itself, by a transition of the Cycle 
+bit. 
+The xHC also maintains private copies of the Enqueue and Dequeue Pointers 
+for each Transfer Ring. When a Transfer Ring is enabled or reset, the xHC 
+initializes its copies of the Enqueue and Dequeue Pointers with the value of the 
+Endpoint/Stream Context TR Dequeue Pointer field. 
+The xHC uses the Dequeue Pointer to determine where to fetch the next Work 
+Item from a Transfer Ring. The xHC advances its copy of the Dequeue Pointer, 
+by either incrementing it by the TRB size, or reloading it with the value of the 
+Ring Segment Pointer field when it encounters a Link TRB, every time it fetches 
+a TRB from the Transfer Ring.  
+The xHC employs the Event Ring to report the current value of the Dequeue 
+Pointer to system software. Each Transfer Event placed on the Event Ring 
+points to the Transfer TRB that generated it. Software may interpret the 
+pointer value from the latest Transfer Event as the “current value” of the xHC 
+Dequeue Pointer.  
+The xHC uses the Enqueue Pointer to determine when a Transfer Ring is 
+empty. As it fetches TRBs from a Transfer Ring it checks for a Cycle bit 
+transition. If a transition detected, the ring is empty. 
+Software uses the Dequeue Pointer to determine when a Transfer Ring is full. 
+As it processes Transfer Events, it updates its copy of the Dequeue Pointer with 
+the value of the Transfer Event TRB Pointer field. If advancing the Enqueue 
+Pointer would make it equal to the Dequeue Pointer then the Transfer Ring is 
+full and software shall wait for Transfer Events that will advance the Dequeue 
+Pointer. 
+The Enqueue Pointer is managed by the producer and the Dequeue Pointer is 
+managed by the consumer. The producer maintains a Producer Cycle State 
+(PCS) flag which identifies the value that it shall write to the TRB Cycle bit. The 
+consumer maintains a Consumer Cycle State (CCS) flag, which it compares 
+to the Cycle bit in TRBs that it fetches. If the CCS flag is equal to the value of 
+the TRB Cycle bit, then the consumer owns the TRB pointed to by the Dequeue 
+Pointer and may process it. If they are not equal, then the consumer shall stop 
+processing TRBs and wait for a notification of more work. 
+
+===== [PAGE 154] =====
+ 
+154 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Figure 4-6: Index Management 
+TRB 0
+PCS
+TRB 1
+TRB 2
+TRB 3
+TRB 4
+PCS
+PCS
+PCS
+PCS
+TRB 5
+...
+TRB n-1
+Transfer 
+Ring
+Ring Base 
+Pointer
+Consumer Cycle State (CCS)
+Dequeue Pointer
+Consumer (xHC)
+~PCS
+...
+~PCS
+Producer (Software)
+Producer Cycle State (PCS)
+Enqueue Pointer
+Execution
+Cycle bit
+Cycle bit
+Transition
+Where TRB n is the 
+last TRB in the ring.
+Producer 
+Owned 
+TRBs
+Consumer 
+Owned 
+TRBs
+Link TRB
+Toggle Cycle = 1
+Points to the beginning 
+of the Transfer Ring
+TRB n
+~PCS
+ 
+In Figure 4-6, TRBs are written by the producer setting the Cycle bit to the 
+value of PCS. Note that in Figure 4-6, “~PCS” is the inverted version of PCS. 
+To form a ring (or circular queue) a Link TRB may be inserted at the end of a 
+ring to point to the first TRB in the ring. A ring may contain multiple Link TRBs 
+which are used to chain together Transfer Ring Segments. 
+In the example of Figure 4-6 the Toggle Cycle flag is set in the Link TRB. If the 
+Producer encounters a Toggle Cycle flag set in a Link TRB it shall toggle the 
+state of its PCS flag. If the Consumer encounters a Toggle Cycle flag set in a 
+Link TRB it shall toggle the state of its CCS flag. The producer sets the TRB 
+Cycle bit to the value of the PCS flag when it writes a TRB to set the position of 
+the Enqueue Pointer. In Figure 4-6, the next TRB written by the producer after 
+encountering the Link TRB will be TRB 0. The assertion of the Toggle Cycle bit 
+in the Link TRB will cause the Producer to toggle the state of the PCS flag. The 
+Cycle bit in TRB0 will be set to the value of PCS. 
+Link TRBs allow Transfer Rings to span Page boundaries and to be dynamically 
+sized. 
+Note: All TRBs between the Dequeue Pointer and the Enqueue Pointer-1 are owned 
+by the Consumer and may not be modified by the Producer. If the Ring is 
+empty (Dequeue Pointer = Enqueue Pointer) then no TRBs are owned by the 
+Consumer. Any TRBs in a ring not owned by the Consumer are owned by the 
+Producer. 
+Note: If Streams are not enabled for an endpoint, the Transfer Ring CCS flag shall 
+be set to the value of the Endpoint Context DCS flag by a Configure Endpoint 
+Command if the associated Add Context flag is ‘1’, or by a Set TR Dequeue 
+Pointer Command. 
+ 
+
+===== [PAGE 155] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+155 
+If Streams are enabled for an endpoint, then when a Stream is selected, the 
+CCS flag shall be set to the value of the DCS flag in the associated Stream 
+Context, and when the Stream state is saved, the DCS flag in the associated 
+Stream Context shall be set to the value of the CCS flag. 
+4.9.2.1 
+Segmented Rings 
+The Link TRB provides support for non-contiguous TRB Rings. For instance, if 
+contiguous Pages of memory cannot be allocated by system software to form a 
+large TRB Ring, then Link TRBs can be used to tie together multiple memory 
+Pages to form a single large Transfer Ring. 
+A non-contiguous TRB Ring is composed of Ring Segments. A Ring Segment is 
+a contiguous block of physical memory. The Link TRB provides a 64-bit pointer 
+which points to the next segment of a ring. If the ring is comprised of only a 
+single segment, then the only Link TRB points to the beginning of the ring, as 
+illustrated in Figure 4-6 above. A multi-segment ring will use a Link TRB to 
+delimit the end of one Segment and the start of the next. The last TRB in a 
+Ring Segment is always a Link TRB. 
+Figure 4-7: Segmented Ring Example 
+TRB
+TRB
+Transfer Ring
+Segment 0
+Transfer Ring
+Segment 1
+Dequeue Pointer
+Enqueue Pointer
+Execution
+256 
+TRBs
+244 
+TRBs
+Empty TRB
+Pending TRB
+Endpoint Context
+Ring Base Address
+TD
+Link TRB
+EP State
+TRB
+TRB
+TRB
+...
+TRB
+TRB
+TRB
+TRB
+...
+TRB
+TRB
+Link TRB
+Link TRB
+Unused
+Ring Size = 500
+Legend
+0
+ 
+Figure 4-7 illustrates a Segmented Ring that contains two segments. In this 
+example both segments are allocated as 4KB contiguous blocks of memory. 
+Segment 0 defines 256 TRBs, where the last TRB is a Link TRB that points to 
+the beginning of the next segment. Segment 1, which defines 244 TRBs, does 
+not fully utilize the 4K buffer that was allocated for it. The two segments 
+together define ring size of 500 total TRBs, where 498 of them are available for 
+TDs. Note that the Toggle Cycle flag is set only in Segment 1’s Link TRB. 
+
+===== [PAGE 156] =====
+ 
+156 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.9.2.2 
+Pointer Advancement 
+When a Dequeue Pointer is “advanced”, its value is adjusted to point to the 
+next transfer related (Isoch, Setup Stage, Normal, etc.) TRB to be executed. 
+The xHC increments the pointer value by 16 bytes to point to the next TRB, 
+however if the next TRB is a Link TRB and its Cycle bit indicates that it is a 
+valid TRB, then the xHC will automatically set the Dequeue Pointer to the 
+address provided by the Link TRB. This operation will point the Dequeue 
+Pointer to the first TRB of the next segment. 
+Software is responsible for advancing the Enqueue pointer. It does this by 
+toggling the Cycle bit each pass through the ring as it writes TRBs. 
+Once started (by a doorbell), the xHC processes TRBs until the ring is empty. A 
+ring is defined as “empty” if the Dequeue Pointer is equal to the Enqueue 
+pointer. The value of the Enqueue Pointer is defined by the Cycle bit transition. 
+To prevent overruns, software shall determine when the Ring is full. The ring is 
+defined as “full” if advancing the Enqueue Pointer will make it equal to the 
+Dequeue Pointer. Software shall take Link TRBs into account when evaluating 
+the full condition. If the Enqueue Pointer is not pointing at a Link TRB, software 
+can determine if the Ring is full by adding the size of a TRB (16) to the 
+Enqueue Pointer and checking if the result is equal to the value of the Dequeue 
+Pointer. If the Enqueue Pointer is pointing at a Link TRB, then software shall 
+compare the Ring Segment Pointer value in the Link TRB with the Dequeue 
+Pointer. 
+
+===== [PAGE 157] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+157 
+Figure 4-8: Enqueue Pointer Advancement 
+Link TRB?
+No
+Yes
+Initialize Ring
+Producer Cycle State (PCS) = 1
+Write TRB?
+No
+Yes
+TRB Cycle bit = PCS
+Enqueue Pointer += 16
+Enqueue Pointer = Link TRB 
+(Ring Segment Pointer)
+Toggle Cycle
+= 1?
+No
+Yes
+PCS = -PCS
+ 
+Note: The Producer Cycle State (PCS) and the Consumer Cycle State (CCS) 
+flags are maintained internally by the xHC and software to aid in identifying 
+the value of the Enqueue pointer. These flags are NOT defined in xHC 
+registers or data structures. 
+The Pointer Advancement rules: 
+• 
+The Cycle bit shall be initialized by software to ‘0’ in all TRBs of all 
+segments when initializing a ring. 
+• 
+The Producer Cycle State (PCS) and the Consumer Cycle State (CCS) bits 
+shall be set to ‘1’ when a ring is initialized. 
+Note: The initial state of a Transfer Ring’s CCS flag is determined by the Endpoint 
+Context DCS flag. The initial state of the Command Ring’s CCS flag is 
+determined by the Command Ring Control Register Ring Cycle State (RCS) 
+flag. The initial state of the Event Ring’s CCS flag is always ‘1’. The previous 
+two bullets assume that the DCS and RCS flags are initialized to ‘1’ by 
+software. If software chooses to initialize a CCS flag (DCS or RCS) to ‘0’, the 
+Cycle bits in the respective ring shall be set to ‘1’. 
+• 
+The Cycle bit shall be written by the producer with the current value of the 
+PCS bit. 
+• 
+The Cycle bit shall be treated as Read-Only by the consumer. 
+• 
+The Consumer may execute a TRB referenced by the Dequeue Pointer 
+whose Cycle bit equals CCS. 
+
+===== [PAGE 158] =====
+ 
+158 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+If the Enqueue Pointer references a Link TRB, then the Enqueue Pointer 
+shall be set to Link TRB Ring Segment Pointer and if the Toggle Cycle bit is 
+set to ‘1’ in the Link TRB, the PCS bit shall be toggled by the Producer. 
+• 
+If the Dequeue Pointer references a Link TRB then the Dequeue Pointer 
+shall be set to Link TRB Ring Segment Pointer and if the Toggle Cycle bit is 
+set to ‘1’ in the Link TRB, the CCS bit shall be toggled by the Consumer. 
+Note: A Cycle bit transition takes place between a Link TRB and the first TRB of the 
+segment that the Link TRB Ring Segment Pointer references. 
+Note: The TR Dequeue Pointer and Link TRB are not required to point to the 
+beginning of a memory page. 
+4.9.2.3 
+Enlarging a Transfer Ring 
+To increase the size of a Transfer Ring, software shall allocate and initialize a 
+new segment. 
+Software then identifies a segment boundary (Link TRB) where it will add the 
+new segment. 
+Note: Only Link TRBs that are owned by the producer may be modified to point to 
+the new segment. 
+Figure 4-9: Initial State of Transfer Ring 
+TRB 0
+0
+TRB 1
+TRB 2
+TRB 3
+TRB 4
+0
+0
+0
+1
+TRB 5
+...
+TRB n-1
+1
+...
+1
+TRB n
+1
+Dequeue Pointer
+Enqueue Pointer
+TRB 0
+1
+TRB 1
+TRB 2
+TRB 3
+TRB 4
+1
+1
+1
+1
+TRB 5
+...
+TRB n-1
+1
+...
+1
+TRB n (TC)
+1
+CCS = 1
+PCS = 0
+Segment A
+Segment B
+ 
+ 
+Figure 4-9 illustrates a two segment Transfer Ring (A and B) where TRBs 5 to n 
+of Segment B and TRBs 0 to 3 of Segment A are owned by the consumer 
+(xHC), and the remaining TRBs are available to the producer (software) for 
+creating new TDs. Note that the Toggle Cycle (TC) bit is set in the Link TRB of 
+segment B and not set in the Link TRB of segment A, hence the state of the 
+Cycle bit is toggled once each pass through the Transfer Ring. 
+Now, consider the case where software needs to grow the ring size of Figure 
+4-9. Software may pause its insertion of TDs on the Transfer Ring, which 
+temporarily stops the Enqueue Pointer from advancing, to insert a new 
+segment. Software may only modify Link TRBs that it owns, so the new 
+segment C may only be inserted between existing segments A and B as 
+illustrated in Figure 4-10. 
+
+===== [PAGE 159] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+159 
+Note: If a Link TRB is not owned by software and not an “intermediate” TRB of the 
+TD currently being executed by the xHCI, software may stop the Transfer 
+Ring to modify the Link TRB, then restart it. If the Link TRB is an 
+“intermediate” TRB of the TD currently being executed by the xHCI, then 
+software shall use a Set TR Dequeue Pointer Command after stopping the 
+Transfer Ring to ensure that the xHCI flushes any cached TRBs before 
+restarting it. Refer to section 4.6.9 for more information on the requirements 
+of stopping a Transfer Ring. 
+Figure 4-10: Final State of Transfer Ring 
+.
+.
+.
+.
+TRB 0
+0
+TRB 1
+TRB 2
+TRB 3
+TRB 4
+0
+0
+0
+1
+TRB 5
+...
+TRB n-1
+1
+...
+1
+TRB n (TC)
+1
+TRB 0
+0
+TRB 1
+TRB 2
+TRB 3
+TRB 4
+0
+0
+0
+0
+Segment A
+(New) Segment C
+TRB 0
+1
+TRB 1
+TRB 2
+TRB 3
+TRB 4
+1
+1
+1
+1
+TRB 5
+...
+TRB n-1
+1
+...
+1
+TRB n (TC)
+1
+Segment B
+TRB 5
+...
+0
+0
+TRB n-1
+0
+TRB n (TC)
+0
+ 
+In this example software initializes the new segment with the following 
+operations: 
+• 
+All TRBs in the new segment C to ‘0’, including the Cycle bit. 
+• 
+The TRB Type of the last TRB (n) in segment C shall be set to Link TRB. 
+• 
+And the Ring Segment Pointer field of the segment C Link TRB (n) shall be 
+initialized to point to the first TRB (0) of segment B. 
+• 
+The Toggle Cycle (TC) flag of the segment C Link TRB (n) shall be set, to 
+indicate the Cycle bit transition between the last TRB in segment C and 
+first TRB in segment B. 
+Software then modifies segment A’s Link pointer to point to link the new 
+Segment C into the ring. 
+• 
+The Ring Segment Pointer field of the segment A Link TRB (n) shall be 
+initialized to point to the first TRB (0) of segment C. 
+• 
+The Toggle Cycle (TC) flag of the segment A Link TRB (n) shall be set to 
+‘1’, to indicate the Cycle bit transition between the consumer owned TRBs 
+in segments A and C. 
+Software is required to ensure that the state of the Cycle bits in the new 
+segment(s) and the Toggle Cycle flags in the Link TRBs that are used to 
+connect the new segment to existing segments, do not cause an inconsistency 
+in the definition of the Enqueue Pointer position. 
+Given the initial conditions illustrated in Figure 4-9, to ensure Cycle bit 
+consistency when inserting segments software may either: 1) clear all the 
+Cycle bits in all TRBs in the new segment(s) to ‘0’ and modify the Link TRB 
+
+===== [PAGE 160] =====
+ 
+160 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Toggle Cycle flags in the segment that points to the new segment and the new 
+segment, or 2) set all the Cycle bits in all TRBs in the new segment to ‘1’. 
+Figure 4-10 illustrates the case 1. 
+4.9.2.4 
+Shrinking a Transfer Ring 
+To decrease the size of a Transfer Ring, software shall identify a segment 
+boundary (Link TRB) where it will perform the shrink operation. 
+Note: The producer shall not modify Link TRBs that it does not currently own. 
+Software may modify the Link TRB Ring Segment Pointer to map out one or 
+more intermediate segments and/or set the Link TRB Ring Segment Pointer to 
+a TRB location in the segment terminated by the Link TRB. 
+Software shall ensure that the state of the Cycle bits in all remaining segments 
+do not cause an inconsistency in the definition of the Enqueue Pointer position 
+by managing the Link TRB Toggle Cycle bits. 
+4.9.3 
+Command Ring Management 
+This section describes the operation of Enqueue and Dequeue Pointers in the 
+Command Ring. 
+The operation of a Command Ring is identical to Transfer Rings with the 
+following exceptions: 
+• 
+If the Command Ring Control Register (CRCR) is written while the 
+Command Ring is stopped (CRR = ‘0’) the xHC shall initialize the Command 
+Ring Dequeue Pointer with the value of the Command Ring Pointer field 
+(refer to section 5.4.5). 
+• 
+When the Host Controller Doorbell Register (0) is written by system 
+software, the xHC will evaluate the Command TRB pointed to by the 
+Command Ring Dequeue Pointer. Once started (by a doorbell write), the 
+xHC processes Command TRBs and advances the Command Ring Dequeue 
+Pointer until the ring is empty. 
+• 
+The location of the Command Ring Dequeue Pointer is reported on the 
+Event Ring in Command Completion Events. 
+• 
+No multi-TRB TDs are allowed on the Command Ring. 
+All other aspects of Command Ring management are identical to those 
+described for the Transfer Rings. that is: 
+• 
+Software is responsible for advancing the Enqueue pointer. It does this by 
+toggling the Cycle bit each pass through the Command Ring as it writes 
+Command TRBs. 
+• 
+A Command Ring is defined as “empty” if the Dequeue Pointer is equal to 
+the Enqueue pointer. The Enqueue Pointer is defined by a Cycle bit 
+transition. 
+
+===== [PAGE 161] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+161 
+Note: Refer to the description of the CRCR RCS bit in Table 5-24 for information on 
+Command Ring CCS flag initialization. 
+Note: While the Command Ring is in the Running state (CRR = ‘1’), it may be Busy 
+(actively processing Command TRBs) or Idle (not processing Command TRBs 
+and waiting for a doorbell ring), that is, CRR is not negated when the 
+Command Ring has completed all queued commands. 
+4.9.4 
+Event Ring Management 
+This section describes the operation of Enqueue and Dequeue Pointers in the 
+Event Ring. The operation of Enqueue and Dequeue Pointers in Transfer Rings 
+is described in section 4.9.2 and Command Rings in section 4.9.3. Note an xHC 
+may implement multiple Interrupters, each with its own Event Ring. This 
+section describes the operation of a single Event Ring. 
+A fundamental difference between an Event Ring and a Transfer or Command 
+Ring is that the xHC is the producer and system software is the consumer of 
+Event TRBs. The xHC writes Event TRBs to the Event Ring and updates the 
+Cycle bit in the TRBs to indicate to software the current position of the Enqueue 
+Pointer. 
+The xHC maintains an Event Ring Producer Cycle State (PCS) bit, initializing it 
+to ‘1’ and toggling it every time the Event Ring Enqueue Pointer wraps back to 
+the beginning of the Event Ring. The value of the PCS bit is written to the Cycle 
+bit when the xHC generates an Event TRB on the Event Ring. 
+Software maintains an Event Ring Consumer Cycle State (CCS) bit, initializing 
+it to ‘1’ and toggling it every time the Event Ring Dequeue Pointer wraps back 
+to the beginning of the Event Ring. If the Cycle bit of the Event TRB pointed to 
+by the Event Ring Dequeue Pointer equals CCS, then the Event TRB is a valid 
+event, software processes it and advances the Event Ring Dequeue Pointer. If 
+the Event TRB Cycle bit is not equal to CCS, then software stops processing 
+Event TRBs and waits for an interrupt from the xHC for the Event Ring. When 
+the interrupt occurs, software picks up where it left off, checking the Cycle bit 
+of the Event TRB pointed to by the Event Ring Dequeue Pointer against its CCS 
+bit. 
+System software shall write the Event Ring Dequeue Pointer (ERDP) register to 
+inform the xHC that it has completed the processing of Event TRBs up to and 
+including the Event TRB referenced by the ERDP. 
+Note: The detection of a Cycle bit mismatch in an Event TRB processed by software 
+indicates the location of the xHC Event Ring Enqueue Pointer and that the 
+Event Ring is empty. Software shall write the ERDP with the address of this 
+TRB to indicate that it has processed all Events in the ring. 
+Event Ring segments are defined by an Event Ring Segment Table (ERST). 
+The ERST consists of an array of Base Address/Size pairs (ERST.BaseAddress 
+and ERST.Size), each defining a single Event Ring segment. The first element 
+in the ERST (0) is pointed to by the ERST Base Address Register (ERSTBA 
+section 5.5.2.3.2). The number of elements in the ERST is defined by the ERST 
+Size Register (ERSTSZ section 5.5.2.3.1). When the xHC is initialized, it 
+
+===== [PAGE 162] =====
+ 
+162 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+begins writing Event TRBs starting at the address referenced by the 0th ERST 
+entry. The xHC maintains a count of the Event TRBs that it has written to a 
+segment. When the count exceeds the value of the associated ERST.Size entry, 
+the xHC has consumed an Event Ring Segment and shall write the next Event 
+TRB to a new Event Ring Segment, either the next ERST sequential entry or 
+ERST(0). The ERST entries are treated as a circular queue, wrapping back to 
+the ERST(0) after the ERST(ERSTSZ – 1) is fetched. Refer to section 6.5 for the 
+definition of an ERST entry. 
+Note: The xHC may prefetch the next ERST entry before completely consuming the 
+current ERST entry to avoid temporarily running out of Event Ring entries to 
+write.  As a result, if the xHC is currently writing to ERST(ERSTSZ - 1) and 
+software increases the size of the Event Ring by writing a larger value to 
+ERSTSZ (see Section 4.9.4.1) the xHC may have already prefetched 
+ERST(0).  In this case the effect of increasing the size of the Event Ring will 
+take effect after the xHC consumes ERST(0).  Similarly, if the xHC is currently 
+writing to ERST(n) and software removes ERST(n+1) by shrinking the size of 
+the Event Ring (see Section 4.9.4.2) the xHC may have already prefetched 
+ERST(n+1).  In this case the effect of decreasing the size of the Event Ring 
+will take effect after the xHC consumes ERST(n+1).  
+Figure 4-11: Segmented Event Ring Example 
+ERST Base Addr
+ERST Size = 3
+TRB
+TRB
+TRB
+TRB
+Event Ring
+Segment 0
+Event Ring
+Segment 1
+Event Ring Dequeue Pointer
+Enqueue Pointer
+Execution
+Empty TRB
+Pending TRB
+Event Ring Registers
+TRB
+...
+TRB
+Legend
+TRB
+TRB
+TRB
+...
+TRB
+TRB
+TRB
+TRB
+...
+TRB
+Event Ring
+Segment 2
+Ring Segment Base Address
+Size
+Ring Segment Base Address
+Size
+Ring Segment Base Address
+Size
+Event Ring
+Segment Table
+ERST(0)
+ERST(1)
+ERST(2)
+Internal xHC Event Ring 
+Register
+ 
+Figure 4-11 illustrates a segmented Event Ring that consists of 3 segments. 
+Rules for operation of an Event Ring: 
+• 
+Prior to writing the ERST Base Address (ERSTBA) register system software 
+shall: 
+Initialize the Event Ring Segments that will be referenced by the Event 
+Ring Segment Table (ERST) to ‘0’. 
+Initialize the ERST by initializing the ERST.BaseAddress and ERST.Size 
+fields of each element in the table. The ERST.BaseAddress field shall point 
+to the associated Event Ring Segment, and the ERST.Size field shall 
+indicate the number of TRBs supported by the segment. 
+• 
+Write the ERST Size (ERSTSZ) Register with the number of valid entries in 
+the ERST and Event Ring Dequeue Pointer (ERDP) Register with the value 
+of ERST(0).BaseAddress. 
+
+===== [PAGE 163] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+163 
+• 
+Write the ERST Base Address (ERSTBA) register with the value of 
+ERST(0).BaseAddress. When the ERSTBA register is written, the Event Ring 
+State Machine (Figure 4-12) is set to the Start state. 
+• 
+System software shall advance the Event Ring Dequeue Pointer by writing 
+the address of the last processed Event TRB to the Event Ring Dequeue 
+Pointer (ERDP) register. Note, the “last processed Event TRB” includes the 
+case where software detects a Cycle bit mismatch when evaluating an 
+Event TRB and the ring is empty. 
+• 
+System software is responsible for ensuring valid values for ERST entries in 
+paged environments. 
+• 
+System software is responsible for ensuring the Size of every ERST entry 
+(Event Ring segment) is at least 16. 
+
+===== [PAGE 164] =====
+ 
+164 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Figure 4-12: Event Ring State Machine 
+Start
+TRB Count = 0?
+No
+Yes
+Write Event TRB @ EREP
+EREP += 16
+TRB Count--
+ERST Count++
+ERSTE= ERST[ERST Count]
+EREP = ERSTE.BaseAddr
+TRB Count = ERSTE.Size
+New Event 
+posted?
+No
+Yes
+ERST Count = 0
+ERST Count = 
+ERSTSZ?
+No
+Yes
+Check For ER Full
+PCS = ~PCS
+NSP = ERST(((ERST Count+1) MOD ERSTSZ)).BaseAddr
+TRB Count = 1?
+Yes
+No
+Start
+Check for
+ER Full
+EREP+16 = 
+ERDP?
+Yes
+No
+Stop processing Transfer and Command Rings
+Write Event Ring Full Error Event @ EREP
+EREP += 16
+TRB Count--
+Done
+Check for
+ER Full
+ERDP = NSP?
+Yes
+No
+Check current 
+segment
+Check next 
+segment
+EREP Advancement
+Event Ring Full Check
+Event Ring full
+Event Ring 
+has room
+ERSTBA write
+Run/Stop = 0?
+Yes
+No
+PCS = 1
+TRB Count = 0?
+No
+Yes
+ERST Count++
+ERST Count = 
+ERSTSZ?
+No
+Yes
+PCS = ~PCS
+ERST Count = 0
+ERSTE= ERST[ERST Count]
+EREP = ERSTE.BaseAddr
+TRB Count = ERSTE.Size
+Advance to 
+next segment
+ERDP Write?
+Yes
+No
+Wait for more room 
+in Event Ring
+Run/Stop = 1?
+Yes
+No
+ 
+Figure 4-12 describes the algorithm the xHC employs for advancing its internal 
+Event Ring Enqueue Pointer (EREP). The left side of the figure describes the 
+EREP Advancement algorithm. The right side of the figure describes the 
+algorithm for checking if the Event Ring is full. 
+Note: The Producer Cycle State (PCS) flag for the Event Ring is toggled only when 
+the Event Ring wraps back to the beginning. 
+Note: The Event Ring State machine is Stopped if the USBCMD Run/Stop (R/S) flag 
+is ‘0’. 
+Note: A blocked Event Ring may impact forward progress on endpoints whose TDs 
+target other Event Rings. 
+
+===== [PAGE 165] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+165 
+Note: It is recommended that software process as many Events as possible before 
+writing the ERDP. This approach not only minimizes the number of MMIO 
+writes, but is particularly important if the Event Ring is full. If an Event Ring 
+Full condition exists, writing the ERDP after processing individual Events may 
+cause no work to progress because the Event Ring becomes filled with Event 
+Ring Full Events. 
+ 
+Ideally, software writes the ERDP after processing all Events on an Event 
+Ring. 
+Practically, software should maximize the number of Events processed before 
+writing the ERDP, for example, processing a minimum of 4 Events before each 
+ERDP write. 
+Note: Section 4.23.2 describes the xHC Restore process. Step 2 in the restore 
+process requires software to load all registers (including the ERSTBA) with 
+previously saved values. Writing the ERSTBA initializes the Event Ring State 
+Machine internal variables and advances it to wait for Run/Stop (R/S) to be 
+asserted or an event to be posted. A Restore operation, which always follows 
+the register load by software, shall overwrite the Event Ring State Machine 
+internal variables (ERSTE, ERST Count, EREP, and TRB Count) with previously 
+saved values, allowing the Event Ring State Machine to “pick up where it left 
+off” after a power event. 
+Note: Software writes to the ERDP register shall always advance the Event Ring 
+Dequeue Pointer value, that is, software shall not write the same value to the 
+ERDP register on two consecutive write operations. 
+Table 4-4: Event Ring State Machine Definitions 
+Name 
+Label 
+Description 
+Event Ring Segment 
+Table 
+ERST 
+Resides in host memory. Contains the addresses and lengths of the Event 
+Ring segments. Refer to section 6.5. 
+Event Ring Dequeue 
+Pointer 
+ERDP 
+Resides in Runtime register space. Advanced by software. Refer to section 
+5.5.2.3.3. 
+Event Ring Enqueue 
+Pointer 
+EREP 
+Internal xHC variable. Advanced by Figure 4-12 algorithm 
+Event Ring Segment 
+Table Count 
+ERST Count 
+Internal xHC variable. Identifies the offset into the ERST of the segment that 
+is currently being filled with Event TRBs by the xHC. 
+Event Ring Segment 
+Table Entry 
+ERSTE 
+Internal xHC variable. A pointer to an ERST entry. 
+Event Ring Segment 
+Table Base Address 
+ERSTE.BaseAddr 
+Ring Segment Base Address field of current ERST entry. 
+Event Ring Segment Size 
+ERSTE.Size 
+Segment Size field of current ERST entry. 
+Event Ring Segment 
+Table Size 
+ERSTSZ 
+Number of entries in the in the ERST. 
+
+===== [PAGE 166] =====
+ 
+166 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Name 
+Label 
+Description 
+Next Segment Pointer 
+NSP 
+Base address for next Segment of ERST, based on the current EREP. 
+TRB Count 
+TRB Count 
+Internal xHC variable. Identifies the number of remaining TRBs in the 
+current segment. 
+The following steps describe the xHC Event Ring Enqueue Pointer (EREP) 
+Advancement algorithm (left side of Figure 4-12): 
+4. 
+When the ERST Base Address (ERSTBA) register is initially written the 
+Event Ring State Machine enters the Start state. 
+5. 
+The xHC initializes its internal PCS flag to ‘1’. 
+6. 
+The xHC sets its internal ERST Count to ‘0’. 
+7. 
+The xHC then fetches the entry in the Event Ring Segment Table 
+referenced by the ERST Count (ERSTE = ERST[ERST Count]) and initializes its 
+Enqueue Pointer (EREP) with the value of the Ring Segment Base Address field 
+(ERSTE.BaseAddr), and the TRB Count with the value of the Segment Size field 
+(ERSTE.Size). 
+8. 
+If the USBCMD Run/Stop (R/S) flag = ‘0’ the Event Ring State Machine 
+shall wait for Run/Stop   (R/S) to return to ‘1’27. When Run/Stop (R/S) flag = 
+‘1’ the xHC shall proceeds to check if an event is posted (step 6., otherwise it 
+proceeds immediately to step 6. 
+9. 
+When an event is posted for the ring, the xHC shall first check if the ring 
+is full. If not, the xHC writes the Event TRB to the location identified by the 
+EREP, increments the EREP by 16, and decrements the TRB Count. The Cycle 
+bit of the Event TRB is set to the value of the PCS flag. If no event is posted, 
+the xHC will return to step 5. 
+10. 
+As long as the TRB Count is non-zero, the xHC shall return to step 5, 
+continuing to check Run/Stop (R/S) or for new events. 
+11. 
+When the TRB Count reaches ‘0’, the xHC shall increment the ERST Count 
+and evaluate it, otherwise it returns to step 5. 
+d. If the ERST Count is not equal to the value of the ERSTSZ register, 
+then the xHC returns to step 4 to process events starting in the next 
+segment of the ERST. 
+e. If the ERST Count equals the value of the ERSTSZ register, then the 
+xHC sets the ERST Count to ‘0’, toggles the Producer Cycle State 
+(PCS) flag, and return to step 3 to process events starting in the first 
+segment of the ERST. 
+If the Event Ring is full, the xHC shall flag the condition by reporting an Event 
+Ring Full Error, which requires placing an Event on the Event Ring. To ensure 
+ 
+27A Controller Restore State (CRS) operation overwrites the Event Ring State Machine internal variables. This may occur while waiting for 
+Run/Stop (RS) to be set to ‘1’ when restoring state from a power event. Refer to section 4.23.2. 
+ 
+
+===== [PAGE 167] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+167 
+that there is space on the Event Ring for this error, the xHC shall consider the 
+Event Ring full when there is still room for one more entry. 
+The following steps describe the xHC algorithm for checking if the Event Ring is 
+full (right side of Figure 4-12): 
+12. 
+If the TRB Count is greater than ‘1’, then the xHC can simply add 16 to 
+the EREP and compare it to the ERDP to determine whether the Event Ring is 
+full. 
+13. 
+If the TRB Count is equal to ‘1’, then the xHC shall check if the ERDP 
+points to the first entry in the next segment. To obtain the base address for the 
+next segment the xHC retrieves the ERST.BaseAddress entry for the ERST 
+Count + 1 modulus the ERSTSZ. Then calculates the address of the next Event 
+Ring segment (NSP). 
+a. If the NSP does not equal the ERDP, then the Event Ring has room 
+and the Event Ring Full Check exits. 
+b. If the NSP equals the ERDP, then the Event Ring is full. The xHC 
+stops processing the Transfer and Command Rings, writes an Event 
+Ring Full Error Event to the EREP, advances the EREP and decrements 
+the TRB Count. Refer to Step 2b note below. 
+14. 
+If the TRB Count is not equal ‘0’, then there is room in the current 
+segment for more events so go to step 6 and wait for the ERDP to advance. 
+15. 
+If the TRB Count is equal ‘0’, then increment the ERST Count to advance 
+the EREP to the next segment. 
+a. If the ERST Count is not equal to the value of the ERSTSZ register, 
+then the xHC goes to step 5 to initialize the state machine 
+parameters for the next segment of the ERST. 
+b. If the ERST Count equals the value of the ERSTSZ register, then 
+advance the EREP to the first segment of the ERST by setting the 
+ERST Count to ‘0’ and toggling the Producer Cycle State (PCS) flag, 
+then go to step 5 to initialize the state machine parameters for the 
+first segment of the ERST. 
+16. 
+To initialize the state machine parameters, the xHC fetches the entry in 
+the Event Ring Segment Table referenced by the ERST Count (ERSTE = 
+ERST[ERST Count]) and initializes its Enqueue Pointer (EREP) with the value of 
+the Ring Segment Base Address field (ERSTE.BaseAddr) and the TRB Count 
+with the value of the Segment Size field (ERSTE.Size). Once the EREP has been 
+advanced to the next segment go to step 6 and wait for the ERDP to advance. 
+17. 
+The Event Ring will remain full until the next time that software writes the 
+ERDP. When the ERDP is written, the xHC will determine if the new ERDP value 
+has freed space on the Event Ring by returning to step 1). 
+Note: The expectation is that the xHC shall gracefully stop execution on the 
+Command and Transfer Rings when the Event Ring is full. An “Event Ring 
+Stop” will propagate all the way to the USB when all the buffered operations 
+in the xHC are exhausted. The xHC is expected to not lose Control, Interrupt, 
+or Bulk data under these conditions, however if the condition persists, the 
+xHC will begin to miss periodic endpoint Service Opportunities (SOs), 
+resulting in the loss of Isoch data and the possible loss of Interrupt data. The 
+Missed Service Error may be used to report this condition in an Isoch Transfer 
+
+===== [PAGE 168] =====
+ 
+168 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Event once the Event Ring Stop condition is cleared. The Event Ring Full Error 
+shall be reported whether data is lost or not, to inform system software that 
+the Event Ring is under provisioned. 
+Note: Step 22.b above states that “the xHC stops processing the Transfer and 
+Command Rings” if an Event Ring is full. This action is further qualified with 
+the type of Event Ring that has gone full. If the Primary Event Ring is full, 
+then all command and transfer rings shall stop processing TRBs. If a 
+Secondary Event Ring becomes full, then the xHC may stop all command and 
+transfer ring processing, or only stop processing on those transfer rings that 
+target the full Event Ring. If virtualization is enabled, an xHC implementation 
+shall ensure that a full condition on a Secondary Event Ring does not stop the 
+processing of TRBs on the Command Ring, the Primary Event Ring, or other 
+Secondary Event Rings. 
+4.9.4.1 
+Changing the size of an Event Ring 
+To increase the size of an Event Ring, software shall allocate and initialize a 
+new segment. 
+Software then initializes ERST entries, starting at the offset defined by ERSTSZ, 
+with the Address and Size of the new Event Ring segment(s) and writes new 
+size of the ERST to the ERSTSZ Register. 
+Software may determine when the xHC has started using the new segment by 
+evaluating the Completion Code of the first TRB in the new segment for a non-
+zero (valid) condition.  
+Consider the case were there the 2 segments ‘0’ and ‘1’ (ERSTSZ = 2, ERST(0) 
+and ERST(1)) are active, and a new segment ‘2’ is being added. Software 
+initializes all TRBs in the new segment to ‘0’. Then sets the ERST(2).BaseAddr 
+equal to the base address of the new segment, the ERST(2).Size equal to the 
+number of Event TRBs supported by the new segment, and the ERSTSZ to 3. 
+If the EREP just passed the end of segment 1 when the ERSTSZ was written, 
+the xHC will not start using the new segment until the next pass through the 
+Event Ring. If the EREP is positioned at the last TRB of segment ‘1’ when the 
+ERSTSZ was written, the xHC will start using the new segment.  
+Note that the xHC will write the Cycle bit in the segment 2 TRBs with the same 
+value as it had been using for segment 1. Software may determine when the 
+xHC started using the new segment as it is evaluating Event TRBs pointed to 
+by the Dequeue Pointer. When software evaluates the Event TRB after the last 
+TRB of segment 1, it shall check for a Valid (non-zero) Completion Code in the 
+first TRB of segment 2 as an indicator that the xHC has started using the new 
+segment. If the Completion Code is Valid, then software shall advance the 
+Dequeue Pointer to the first TRB of segment 2. If the Completion Code is 
+Invalid (‘0’) value, software shall check the state of the Cycle bit in the first 
+TRB of segment 0 to see whether it matches the expected state for the next 
+pass through the Event Ring. If it does not match, it means that the EREP is 
+pointing at the last TRB of segment 1 and the Event Ring is empty. If it does 
+match, then software shall advance the Dequeue Pointer to the first TRB of 
+
+===== [PAGE 169] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+169 
+segment ‘0’. If the Event Ring is empty, software shall reevaluate direction of 
+the EREP at the segment 1 to segment 2 boundary the next time it receives an 
+interrupt. 
+The Valid (non-zero) to Invalid (‘0’) transition of the Event TRB Completion 
+Code field shall be used by software to determine the position of the Enqueue 
+Pointer during the first pass of the Dequeue Pointer through the new 
+segment(s). The TRB Cycle bit field shall be treated as invalid during the first 
+pass through the new segment(s) and shall not be used by software to 
+determine the position of the Enqueue Pointer. 
+After the first pass of the Enqueue Pointer through the new segment(s), the 
+xHC has initialized the Cycle bit in all newly added Event TRBs.  
+After the first pass of the Dequeue Pointer through the new segment(s), 
+software shall evaluate the Cycle bit state in segment 2 to determine the 
+Enqueue Pointer position. 
+Note: ERST entries (Segment Base Address and Size fields) between 0 and ERSTSZ-
+1 are not allowed to be modified by software when HCHalted (HCH) = ‘0’. 
+4.9.4.2 
+Shrinking an Event Ring 
+To decrease the size of an Event Ring, software shall decrement value of the 
+ERSTSZ Register. 
+Software may determine when the xHC has stopped using the segment that is 
+to be removed by evaluating the state of the Cycle bit of the first TRB in the 
+deleted segment(s). 
+Consider the case where there are 3 segments 0, 1, and 2 (ERST Count = 3) 
+and segment 2 is being deleted. Software writes the ERSTSZ register, setting it 
+to 2. If the EREP is pointing into segment 2 when the ERSTSZ was written, the 
+xHC will not stop using the “deleted” segment until the next pass through the 
+Event Ring. If the EREP is positioned at the last TRB of segment 1 when the 
+ERSTSZ was written, the xHC will stop using the new segment immediately. 
+Software may determine when the xHC stopped using the “deleted” segment 
+as it is evaluating Event TRBs pointed to by the Dequeue Pointer. When 
+software evaluates the Event TRB after the last TRB of segment 1, it may check 
+the Cycle bit of the first TRB in segment 2. If the Cycle bit state matches the 
+expected state then it shall continue processing the Event TRBs in the deleted 
+segment. If the Cycle bit state of the first TRB in segment 2 does not match 
+the expected state, then software shall check the state of the first TRB in 
+segment 0. If the Cycle bit in the first TRB in segment 0 matches the state of 
+the last TRB in segment 1, then the EREP is pointing at the last TRB of segment 
+‘1’ and the Event Ring is empty. If it does not match, then the EREP has 
+advanced to segment 0 and the next Event TRB to process is the first TRB of 
+segment 0, and the xHC has stopped using the deleted segment. If the Event 
+Ring is empty, software shall reevaluate direction of the EREP at the segment 
+‘1’ to segment ‘2’ boundary the next time it receives an interrupt. 
+
+===== [PAGE 170] =====
+ 
+170 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.9.4.3 
+Primary and Secondary Event Rings 
+The number of Interrupters available to software is defined by the MaxIntrs 
+field in the HCSPARAMS1 register. If more than one Interrupter is available 
+then the 0th Interrupter is referred to as the Primary Interrupter and all 
+other Interrupters are referred to as the Secondary Interrupters. Each 
+Interrupter defines an associated Event Ring. The Event Ring associated with 
+the 0th Interrupter is referred to as the Primary Event Ring. The Event Rings 
+associated with the other Interrupters are referred to as the Secondary Event 
+Rings. The only Event TRB types that may be found on a Secondary Event 
+Ring are: 
+• 
+Transfer Event 
+• 
+Bandwidth Request Event 
+• 
+Device Notification Event 
+• 
+Host Controller Event 
+• 
+Vendor defined event (optional) 
+Transfer Events generated by a Device Slot may be directed to a Secondary 
+Event Ring by a non-’0’ value in the Transfer TRB Interrupter Target field. All 
+Transfer Events with the TRB Interrupter Target field cleared to ‘0’, shall be 
+directed to the Primary Event Ring by the xHC. 
+Bandwidth Request and Device Notification Events are targeted at a Device 
+Slot. The xHC shall use the Device Slot’s Slot Context Interrupter Target field 
+to determine the Event Ring that shall receive the event. 

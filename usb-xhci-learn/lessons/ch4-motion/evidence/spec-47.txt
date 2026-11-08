@@ -1,0 +1,54 @@
+4.7 
+Doorbells 
+The xHCI presents an array of up to 256 32-bit Doorbell Registers (refer to 
+section 5.6), which reside in MMIO space and are indexed by Device Slot ID. 
+The base of the Doorbell Register Array is pointed to by the Doorbell Offset 
+(DBOFF) register in the xHCI Capability Registers (refer to section 5.3.7). 
+Each Doorbell Register contains a DB Target field, which is used to indicate the 
+reason for a software reference to the register. System software “rings” a 
+doorbell by writing a Doorbell Register with the appropriate value in the DB 
+Target field. 
+Doorbell Register 0 is dedicated to the Host Controller. For this register, there 
+is only one valid value for the DB Target field, 0 (Host Controller Command). 
+The remaining values (1-255) are reserved. 
+Doorbell Registers 1-255 are referred to as the Device Context Doorbell 
+registers. There is a 1:1 mapping of Device Context Doorbell registers to 
+Device Slots. System software rings a Device Context Doorbell after it has 
+inserted work on a Transfer Ring (endpoint/Stream) associated with the 
+respective Device Slot. The DB Target and DB Stream ID fields of a Device 
+Context Doorbell register is used to identify which Transfer Ring of a device has 
+been modified. Refer to Table 5-43 for the encoding of the DB Target field. 
+
+===== [PAGE 143] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+143 
+The xHC internally records all Doorbell Register write references and uses the 
+information to determine if the Command Ring or a Transfer Ring has newly 
+posted work items (TDs). There is no need to “clear” a Doorbell Register. To 
+inform the xHC that work has been posted to two separate Transfer Rings of a 
+device, system software shall post two writes to the associated Doorbell 
+Registers, where the value of the DB Target field identifies the respective 
+Transfer Ring. 
+Doorbell registers return no information when read. 
+Software shall not write to a Doorbell register: 
+• 
+If the associated Device Slot is in the Disabled state. 
+• 
+If the associated Device Slot is not in the Disabled state and the DB Target 
+field is set to an endpoint that is in the Disabled state. 
+If a doorbell register is written by software with the DB Target value that 
+references an endpoint that is in the Disabled state, the xHC should generate a 
+Transfer Event TRB with the TRB Pointer, TRB Transfer Length, Event Data 
+(ED) fields set to ‘0’, a Completion Code of Endpoint Not Enabled Error, and the 
+Slot ID and Endpoint ID fields contain the IDs of device slot/endpoint that the 
+doorbell that was rung for. This transfer Event TRB shall be posted to the 
+Primary Event Ring. 
+An Endpoint Not Enabled Error should be generated for doorbell register writes 
+to Device Slots that are in the Disabled state regardless of the DB Target value 
+provided. 
+The xHC may ignore doorbell references to Device Slots in the Disabled state or 
+endpoints in the Disabled state. 
+The xHC shall ignore doorbell references to endpoints in the Halted or Error 
+state. 
