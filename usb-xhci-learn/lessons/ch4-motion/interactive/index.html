@@ -444,7 +444,7 @@
   <button class="tab active" data-tab="m1">模块一 · 三环操作台（§4.1 命令操作）</button>
   <button class="tab" data-tab="m2">模块二 · 控制器初始化台（§4.2）</button>
   <button class="tab" data-tab="m3">模块三 · URB→TRB→TD 组装（§4.3 设备初始化）</button>
-  <button class="tab" data-tab="m4">模块四 · 代码解读（4.1/4.2/4.3）</button>
+  <button class="tab" data-tab="m4">模块四 · 代码解读（4.1-4.6）</button>
   <button class="tab" data-tab="m5">模块五 · 拔除与槽位管理台</button>
   <button class="tab" data-tab="m6">模块六 · 命令受理台（§4.6）</button>
 </nav>
@@ -635,6 +635,9 @@
         <button class="btn qsec active" data-qsec="cmd">4.1 命令操作</button>
         <button class="btn qsec" data-qsec="init">4.2 控制器初始化</button>
         <button class="btn qsec" data-qsec="dev">4.3 设备初始化</button>
+        <button class="btn qsec" data-qsec="det">4.4 拔除收口</button>
+        <button class="btn qsec" data-qsec="slot">4.5 槽位管理</button>
+        <button class="btn qsec" data-qsec="cmd46">4.6 命令受理</button>
         <span class="note" id="m4-progress" style="margin:0"></span>
       </div>
       <div class="note" id="m4-loadnote">正在加载 drafts/code-excerpts.json + code-quiz.json…</div>
@@ -675,6 +678,11 @@
   <div class="panel">
     <h2 id="m5a-title">剧本：拔线 → Port Status Change Event → Disable Slot（§4.4）</h2>
     <p class="quote" id="m5a-quote">拔除的端口侧判据——「When the device is detached from a Root Hub port, the PORTSC Current Connection Status (CCS) bit shall be cleared to ‘0’ and the Connect Status Change (CSC) bit shall be set to ‘1’. If a ‘0’ to ‘1’ transition of PSCEG (4.19.2), the xHC shall report the change through a Port Status Change Event.」<em>（§4.4 · evidence/spec-44.txt L2-5）</em>拔除之后软件要收回槽位——「After the detection of a detach, system software shall disable the Device Slot associated with the port by issuing a Disable Slot Command for the affected slot.」<em>（§4.4 · spec-44.txt L5-7）</em></p>
+    <div class="ctl-row" style="margin-top:6px">
+      <a class="btn ghost" href="#m4&grp=det">代码解读 →（det 组 · §4.4 拔除收口热行）</a>
+      <a class="btn ghost" href="#m4&grp=slot">代码解读 →（slot 组 · §4.5 槽位管理热行）</a>
+      <span class="note">模块四新增 det/slot 题组 · R11 批 D</span>
+    </div>
     <ol class="steps" id="m5a-steps"></ol>
     <div id="m5a-done" class="script-done hidden">✓ 拔除剧本完成：拔线（CCS 1→0 · CSC 0→1）→ Port Status Change Event → Disable Slot TRB 上命令环 → 门铃 DB Target=0 → Command Completion Event → <b>DCBAA[1] 清空 · 槽位徽标转 Disabled · Slot ID=1 可回收再分配</b>。「Refer to section 4.6.4 for a description of the Disable Slot command.」（§4.4 · spec-44.txt L7-8）</div>
     <p class="pulse-note">闪烁描边的控件 = 剧本当前步该点的地方（与模块一同款规则）；违规操作会被拦下并给规范原文。</p>
@@ -814,6 +822,10 @@
   <div class="panel">
     <h2>受理剧本：拼命令 TRB → 入命令环 → 敲门铃 → xHC 解析 → 完成事件回执（§4.6）</h2>
     <p class="quote" id="m6a-quote"></p>
+    <div class="ctl-row" style="margin-top:6px">
+      <a class="btn ghost" href="#m4&grp=cmd46">代码解读 →（cmd46 组 · §4.6 命令受理热行）</a>
+      <span class="note">模块四新增 cmd46 题组（完成码/中止/状态前提）· R11 批 D</span>
+    </div>
     <div class="ctl-row">
       <label>命令 <select id="m6a-cmd">
         <option value="enableSlot">Enable Slot（§4.6.3）</option>
@@ -913,16 +925,36 @@
 const $  = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-/* Tab 切换 + hash 路由（落地页分节锚定：#m1/#m2/#m3/#m4 直达对应模块） */
+/* Tab 切换 + hash 路由（落地页分节锚定：#m1-#m6 直达对应模块；R11 批 D 起支持
+   参数化深链 #m4&grp=<题组> / #m6&cmd=<命令名>——第一段=模块 id，其余 &kv=参数，
+   参数值经 decodeURIComponent 还原）。R4 坑：路由须 load+hashchange 双监听——
+   首帧只切面板（模块常量尚未全量初始化），load 后再全量执行参数深链。 */
 const TAB_IDS = ['m1','m2','m3','m4','m5','m6'];
 function activateTab(id){
   if (!TAB_IDS.includes(id)) return;
   $$('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === id));
   TAB_IDS.forEach(t => $('#'+t).classList.toggle('hidden', t !== id));
 }
+function parseHash(){
+  const parts = ((location.hash || '').slice(1)).split('&');
+  const params = {};
+  parts.slice(1).forEach(kv => {
+    const i = kv.indexOf('=');
+    if (i > 0) params[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
+  });
+  const mid = parts[0] || 'm1';
+  return { mid: TAB_IDS.includes(mid) ? mid : 'm1', params };
+}
+function routeHash(){
+  const r = parseHash();
+  activateTab(r.mid);
+  if (r.mid === 'm4' && r.params.grp) m4GotoGroup(r.params.grp);
+  if (r.mid === 'm6' && r.params.cmd) m6GotoCmd(r.params.cmd);
+}
 $$('.tab').forEach(b => b.addEventListener('click', () => activateTab(b.dataset.tab)));
-activateTab((location.hash || '').slice(1) || 'm1');
-window.addEventListener('hashchange', () => activateTab((location.hash || '').slice(1) || 'm1'));
+activateTab(parseHash().mid);
+window.addEventListener('load', routeHash);
+window.addEventListener('hashchange', routeHash);
 
 /* ================= 模块一：三环操作台 ================= */
 const LINK = 8;                       // 第 9 格 = Link TRB（尾格虚线）
@@ -1974,7 +2006,7 @@ window.addEventListener('keydown', e => { if (e.key === 'Escape') closeQPop(); }
 /* ================= 模块四：代码解读 ================= */
 const M4_URLS = ['../drafts/code-quiz.json', '../../drafts/code-quiz.json', 'drafts/code-quiz.json'];
 const M4_EXC_URLS = ['../drafts/code-excerpts.json', '../../drafts/code-excerpts.json', 'drafts/code-excerpts.json'];
-const m4 = { ready:false, err:null, quiz:null, exc:null, sec:'cmd', qIdx:0, results:{} };
+const m4 = { ready:false, err:null, quiz:null, exc:null, sec:'cmd', qIdx:0, results:{}, pendingGrp:null };
 
 async function m4Fetch(urls){
   for (const u of urls){
@@ -1983,11 +2015,57 @@ async function m4Fetch(urls){
   throw new Error('全部候选路径失败: ' + urls.join(' , '));
 }
 
+/* ---- R11 批 D：det/slot/cmd46 三新题组（运行时派生，drafts 冻结零改动）。
+   题源=code-excerpts.json 对应组条目（file/line/func/code/note），零新事实——
+   每题=热行上下文（左贴码）+ 该行行注作正确项，干扰项=同组其它行的行注
+   （确定性轮转：i+1/i+2/i+3），锚点卡=行注锚点（note 内已带规范页码引注）。 */
+const M4_DERIVED = [
+  { key: 'det',   num: '4.4', title: '拔除 · Disable Slot 与软件收口' },
+  { key: 'slot',  num: '4.5', title: '槽位管理 · Enable Slot / DCI / DCBAA' },
+  { key: 'cmd46', num: '4.6', title: '命令受理 · 完成码 / 中止 / 状态前提' },
+];
+
+function m4BuildDerived(){
+  for (const d of M4_DERIVED){
+    const grp = m4.exc[d.key];
+    if (!grp || !grp.length) continue;
+    const n = grp.length;
+    const items = grp.map((ex, i) => {
+      const dis = [(i + 1) % n, (i + 2) % n, (i + 3) % n].map(j => grp[j].note);
+      const ansPos = i % 4;
+      const options = [];
+      let di = 0;
+      for (let p = 0; p < 4; p++) options.push(p === ansPos ? ex.note : dis[di++]);
+      const who = ex.func || ex.file.split('/').pop();
+      return {
+        idx: i, line: ex.line, file: ex.file, func: ex.func || '', type: 'choice',
+        prompt: '「' + who + '」L' + ex.line + ' 这行——它对应的行注（机制定位）是？',
+        explain: ex.note,
+        spec: {
+          note_anchor: true,
+          file: '行注 · drafts/code-excerpts.json ' + d.key + ' 组 · ' + ex.file + ' L' + ex.line,
+          quote: ex.note, page: '',
+        },
+        options, answer: ansPos,
+      };
+    });
+    m4.quiz.sections.push({ key: d.key, num: d.num, title: d.title, excerpt_ref: d.key, items, derived: true });
+  }
+}
+
+/* R11 批 D：#m4&grp=<题组> 深跳——数据未就绪时先记 pendingGrp，initM4 完成后选中 */
+function m4GotoGroup(g){
+  if (!M4_DERIVED.some(d => d.key === g) && !['cmd','init','dev'].includes(g)) return;
+  if (!m4.ready){ m4.pendingGrp = g; return; }
+  m4Select(g);
+}
+
 async function initM4(){
   const note = $('#m4-loadnote');
   try {
     const [quiz, exc] = await Promise.all([m4Fetch(M4_URLS), m4Fetch(M4_EXC_URLS)]);
     m4.quiz = quiz; m4.exc = exc;
+    m4BuildDerived();
     for (const s of quiz.sections){
       s.items.forEach((it, pos) => { it._pos = pos; });
       s._posByIdx = {};
@@ -1995,7 +2073,8 @@ async function initM4(){
     }
     m4.ready = true;
     note.classList.add('hidden');
-    m4Select('cmd');
+    m4Select(m4.pendingGrp || 'cmd');
+    m4.pendingGrp = null;
   } catch (e) {
     m4.err = String((e && e.message) || e);
     note.textContent = '模块四数据加载失败（' + m4.err + '）——本模块需经 http 服务打开'
@@ -2043,7 +2122,7 @@ function m4RenderCode(){
     ln.className = 'ln'; ln.textContent = 'L' + ex.line;
     d.appendChild(ln);
     d.appendChild(document.createTextNode(ex.code));
-    d.title = ex.file + ':' + ex.line + ' · ' + ex.func;
+    d.title = ex.file + ':' + ex.line + (ex.func ? ' · ' + ex.func : '');
     d.addEventListener('click', () => m4PickLine(i));
     box.appendChild(d);
   });
@@ -2068,7 +2147,7 @@ function m4MarkLines(){
 function m4PickLine(i){
   const s = m4CurSec();
   const ex = m4.exc[s.excerpt_ref][i];
-  $('#m4-codenote').textContent = 'L' + ex.line + ' · ' + ex.func + ' —— ' + ex.note;
+  $('#m4-codenote').textContent = 'L' + ex.line + (ex.func ? ' · ' + ex.func : '') + ' —— ' + ex.note;
   const pos = s._posByIdx[i];
   if (pos !== undefined && pos !== m4.qIdx){ m4.qIdx = pos; m4RenderQ(); }
 }
@@ -2078,7 +2157,8 @@ function m4RenderQ(){
   if (!it) return;
   m4SyncLines();
   $('#m4-qhead').textContent = '第 ' + (m4.qIdx + 1) + '/' + s.items.length + ' 题 · '
-    + (it.type === 'choice' ? '选择' : '填空') + ' · ' + it.file.split('/').pop() + ' L' + it.line + ' ' + it.func;
+    + (it.type === 'choice' ? '选择' : '填空') + ' · ' + it.file.split('/').pop() + ' L' + it.line
+    + (it.func ? ' ' + it.func : '');
   const pr = $('#m4-prompt');
   pr.innerHTML = '';
   const p1 = document.createElement('div');
@@ -2135,7 +2215,9 @@ function m4RenderVerdict(){
   const anc = $('#m4-anchor');
   anc.classList.toggle('hidden', !showAnchor);
   if (showAnchor){
-    $('#m4-anchor-head').textContent = '规范锚点 · evidence/' + it.spec.file + ' · p' + it.spec.page;
+    $('#m4-anchor-head').textContent = it.spec.note_anchor
+      ? '行注锚点 · ' + it.spec.file
+      : '规范锚点 · evidence/' + it.spec.file + ' · p' + it.spec.page;
     $('#m4-anchor-quote').textContent = it.spec.quote;
   }
 }
@@ -3328,6 +3410,47 @@ $('#m6b-cmd').addEventListener('change', () => { m6b.cmd = $('#m6b-cmd').value; 
 $('[data-m6act="m6-accept"]').addEventListener('click', showM6B);
 buildM6A();
 buildM6B();
+
+/* ---- R11 批 D：#m6&cmd=<命令名> 深链——进台即预选。
+   Zone A 剧本命令（Enable Slot/Address Device/Configure Endpoint/Reset Endpoint/No Op）
+   → 选中该剧本；自由拼 12 命令 → 预填 TRB Type 选择器；两者皆非 → 落回 Zone A
+   默认剧本（Enable Slot）并提示「无剧本，走自由拼」。
+   R7 坑：程序化改选择器值的每一处都重算派生面板——剧本命令走 buildM6A()（与
+   change 事件同一动作），自由拼预填走 onM6Field()（与用户点击同一全链路：
+   answers+判定+步骤①+renderM6A）。命令名匹配=去括号注记后不区分大小写
+   （如「Set Latency Tolerance Value」↔ 选项「Set Latency Tolerance Value (LTV)」）。 */
+function m6CmdNameEq(option, name){
+  const norm = s => String(s).replace(/\s*[（(][^）)]*[）)]\s*$/, '').trim().toLowerCase();
+  return norm(option) === norm(name);
+}
+function m6GotoCmd(raw){
+  const name = String(raw || '').trim();
+  if (!name) return;
+  const hit = Object.keys(M6A_CMDS).find(k => k !== 'free' && m6CmdNameEq(M6A_CMDS[k].name, name));
+  if (hit){
+    m6a.cmd = hit;
+    $('#m6a-cmd').value = hit;
+    buildM6A();
+    m6aHint('已按深链预选受理剧本「' + M6A_CMDS[hit].name + '」（' + M6A_CMDS[hit].sec + '）——第①步从拼 TRB 关键字段开始。');
+    return;
+  }
+  const freeOpt = M6A_CMDS.free.fields[0].opts.find(o => m6CmdNameEq(o, name));
+  if (freeOpt){
+    m6a.cmd = 'free';
+    $('#m6a-cmd').value = 'free';
+    buildM6A();
+    const f = M6A_CMDS.free.fields[0];
+    const sel = $('[data-m6field="' + f.id + '"]');
+    sel.value = freeOpt;
+    onM6Field(f, freeOpt);   /* R7：预填走与用户点击同一链路（含派生面板重算） */
+    m6aHint('命令「' + name + '」走自由拼：TRB Type 已预填「' + freeOpt + '」（§4.6.1 公共完成事件，完成码判定见对应小节）。');
+    return;
+  }
+  m6a.cmd = 'enableSlot';
+  $('#m6a-cmd').value = 'enableSlot';
+  buildM6A();
+  m6aHint('命令「' + name + '」无剧本，走自由拼——已落回默认剧本（Enable Slot）；可在「命令」下拉选「自由拼 TRB」任选拼装。', true);
+}
 
 window.__ts = {
   m1, RINGS, m2init, m2InitDefs: INIT_DEFS, m3, m3Defs: M3DEFS, m4,
