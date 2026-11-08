@@ -3279,8 +3279,8 @@ required to support an endpoint type.
 - 如果为某个端点设置了 Drop Context 标志，而其 Output Endpoint Context 处于 Disabled 状态，则该 Drop Context 标志必须被忽略，且不得对该端点执行任何资源或带宽求值。
 - 在所有 Drop Context 与 Add Context 标志都求值完毕后，xHC 判定该命令是否成功：
 - 将 Resources Required 变量与 Resources Available 变量相比较，如果结果表明该命令对资源构成超额申请（oversubscription）（即 Resources Available - Resources Required 小于 0），则该命令必须不成功，且命令完成事件中必须返回 Resource Error 完成码。关于 xHC 资源的更多信息，参见第 4.14.1.1 节。</div><div class="qsrc">—— evidence/spec-46.txt L750-L763（p103）</div></div></div>
-      <div class="fcf"><div class="fct">流程图 · 4.6.6 Configure Endpoint 发行算法（system software） · 依据 spec-46.txt L1043-L1061（引文窗 L1043-L1058，门铃步语义取 L1059-L1061）</div><div class="fcn">分配并初始化命令的 Input Context（Add/Drop Context flags 按目标配置设置）</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">插入 Configure Endpoint Command：TRB Type=Configure Endpoint（Table 6-91）；Slot ID=目标槽；Input Context Pointer=Input Context 基址；其余字段清 ‘0’；Cycle bit=命令环 PCS</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">写 Host Controller Doorbell：DB Target=Host Controller Command</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
-      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L1043-L1058">To issue a Configure Endpoint Command system software shall perform the 
+      <div class="fcf"><div class="fct">流程图 · 4.6.6 Configure Endpoint 发行算法（system software） · 依据 spec-46.txt L1043-L1061</div><div class="fcn">分配并初始化命令的 Input Context（Add/Drop Context flags 按目标配置设置）</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">插入 Configure Endpoint Command：TRB Type=Configure Endpoint（Table 6-91）；Slot ID=目标槽；Input Context Pointer=Input Context 基址；其余字段清 ‘0’；Cycle bit=命令环 PCS</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">写 Host Controller Doorbell：DB Target=Host Controller Command</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L1043-L1061">To issue a Configure Endpoint Command system software shall perform the 
 following operations: 
 • 
 Allocate and initialize an Input Context data structure for the command. 
@@ -3295,7 +3295,10 @@ o
 Input Context Pointer = The base address of the Input Context data 
 structure.Clear all other fields of the command TRB to ‘0’. 
 o 
-Cycle bit = Command Ring’s PCS flag. </blockquote><div class="qzh"><div class="qzh-body">为发出 Configure Endpoint 命令，系统软件必须执行以下操作：
+Cycle bit = Command Ring’s PCS flag. 
+• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote><div class="qzh"><div class="qzh-body">为发出 Configure Endpoint 命令，系统软件必须执行以下操作：
 
 - 为该命令分配并初始化一个输入上下文数据结构。
 - 在命令环上插入一个 Configure Endpoint 命令，并初始化以下字段：
@@ -3303,7 +3306,7 @@ Cycle bit = Command Ring’s PCS flag. </blockquote><div class="qzh"><div class=
   - Slot ID = 目标设备槽位的 ID。
   - Input Context Pointer = 该输入上下文数据结构的基地址。将该命令 TRB 的所有其他字段清为 '0'。
   - Cycle bit = 命令环的 PCS 标志。
-- 写主机控制器门铃，DB Target = Host Controller Command。</div><div class="qsrc">—— evidence/spec-46.txt L1043-L1058（p108）</div></div></div>
+- 写主机控制器门铃，DB Target = Host Controller Command。</div><div class="qsrc">—— evidence/spec-46.txt L1043-L1061（p108）</div></div></div>
       </details>
       <div class="fcf"><div class="fct">流程图 · 4.6.6 Configure Endpoint 执行算法（xHC） · 依据 spec-46.txt L1081-L1146 + L1152-L1219 + L1225-L1251</div><div class="fcn">插入 Command Completion Event：TRB Type=Command Completion Event；Command TRB Pointer=命令 TRB 地址；Slot ID=命令 Slot ID</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">初始化临时变量：Bandwidth Required=0；Resource Required=0</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">槽已被 Enable Slot 使能？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">取选中槽的 Output Device Context</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Output Slot State=Configured？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">Deconfigure（DC）=‘1’？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcn">对每个非 Disabled 端点：Resource/Bandwidth Required 减去其占用；Output EP State=Disabled；Slot State=Addressed；CC=Success（可能被后续覆盖）</div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcn">对每个 Drop Context flag=‘1’ 的端点：Resource/Bandwidth Required 减去其占用；CC=Success（可能被后续覆盖）</div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn fcnone">—</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Output Slot State=Addressed 或 Configured，且 DC=‘0’？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">所有 Add Context flag=‘1’ 的 Input Endpoint Context 有效？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcn">对每个 Add Context flag=‘1’ 的端点：累计 Resource Required；（周期端点）评估并累计 Bandwidth Required</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Resource Required ≤ Resource Available？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">Bandwidth Required ≤ Bandwidth Available？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcn">Bandwidth Available -= Bandwidth Required</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">对每个 Drop=‘1’ 端点：EP State=Disabled；对每个 Add=‘1’ 端点：Input Endpoint Context 拷到 Output、EP State=Running、装载 Enqueue/Dequeue Pointer</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">全部端点均 Disabled？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcn">Slot State=Addressed；Context Entries=‘1’</div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcn">Slot State=Configured；Context Entries=Output Device Context 中最后有效端点索引</div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">CC=Success（Table 6-90）</div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcc"><div class="fcn fcd">带宽错误发生在主带宽域（Primary Bandwidth Domain）？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcn">CC=Bandwidth Error</div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Secondary Bandwidth Error（§4.16.2）</div></div></div></div></div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Resource Error</div></div></div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Parameter Error</div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Context State Error</div></div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Slot Not Enabled Error</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">其余字段清 ‘0’；Cycle bit=事件环 PCS</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
       <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L1081-L1146">When a Configure Endpoint Command is executed by the xHC it shall perform 
@@ -4982,6 +4985,9 @@ Cycle bit = Command Ring’s PCS flag. </blockquote><div class="qzh"><div class=
   - 将命令 TRB 的所有其他字段清零为 ‘0’。
   - Cycle bit = 命令环的 PCS 标志。</div><div class="qsrc">—— evidence/spec-46.txt L2220-L2243（p126）</div></div></div>
       </details>
+      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L2250-L2252">• 
+Write the Host Controller Doorbell with DB Target = Host Controller 
+Command. </blockquote><div class="qzh"><div class="qzh-body">- 写主机控制器门铃寄存器，DB Target = Host Controller Command。</div><div class="qsrc">—— evidence/spec-46.txt L2250-L2252（p127）</div></div></div>
       <div class="fcf"><div class="fct">流程图 · 4.6.10 Set TR Dequeue Pointer 执行算法（xHC） · 依据 spec-46.txt L2253-L2319 + L2326-L2329</div><div class="fcn">插入 Command Completion Event：TRB Type=Command Completion Event；Command TRB Pointer=命令 TRB 地址；Slot ID=命令 Slot ID</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">槽已被 Enable Slot 使能？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">取选中槽的 Device Context</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Slot State=Default、Configured 或 Addressed？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">EP State=Stopped 或 Error？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">Stream ID≠0（引用 Stream Context，做 §4.12.2.1 边界检查）？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">Stream ID 有效？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcn">New TR Dequeue Pointer 与 DCS 拷到目标 Stream Context；CC=Success</div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=TRB Error</div></div></div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcc"><div class="fcn fcd">MaxPStreams=‘0’？</div><div class="fcbv"><div class="fcbl">是</div><div class="fcn">New TR Dequeue Pointer 与 DCS 拷到目标 Endpoint Context；CC=Success</div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=TRB Error</div></div></div></div></div></div><div class="fcbv"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Context State Error</div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Context State Error</div></div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Slot Not Enabled Error</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">其余字段清 ‘0’；Cycle bit=事件环 PCS</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
       <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L2253-L2319">When a Set TR Dequeue Pointer Command is executed by the xHC it shall 
 perform the following operations: 
@@ -5438,8 +5444,8 @@ Endpoint Context field value settings. </blockquote><div class="qzh"><div class=
         <span class="note">与视频 1:1 同源 · 教学拍步进</span>
       </div>
       <p class="ph">规范算法全文收纳（算法流程图 + 折叠原文逐字备查；短片降密度：片内只讲机制主线）</p>
-      <div class="fcf"><div class="fct">流程图 · 4.6.11 Reset Device 发行+执行算法 · 依据 spec-46.txt L2385-L2437</div><div class="fcn">插入 Reset Device Command：TRB Type=Reset Device（Table 6-91）；Slot ID=待复位 Device Slot；其余字段清 ‘0’；Cycle bit=命令环 PCS</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">写 Host Controller Doorbell：DB Target=Host Controller Command</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Device Slot 处于 Addressed 或 Configured 态？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">中止到该设备的 USB 事务；Slot State=Default；Context Entries=‘1’；USB Device Address=‘0’；除 Default Control Endpoint 外每个 Endpoint Context 的 EP State=Disabled</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn fcnone">—</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">在 Interrupter 0 的事件环插入 Command Completion Event：TRB Type=Command Completion Event；Command TRB Pointer=命令 TRB 地址</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">命令执行时 Device Slot 处于 Addressed 或 Configured 态？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">CC=Success（Table 6-90）</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Context State Error</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">其余字段清 ‘0’；Cycle bit=事件环 PCS</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
-      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L2385-L2437">To issue a Reset Device Command system software shall perform the following 
+      <div class="fcf"><div class="fct">流程图 · 4.6.11 Reset Device 发行算法（system software） · 依据 spec-46.txt L2385-L2400</div><div class="fcn">插入 Reset Device Command：TRB Type=Reset Device（Table 6-91）；Slot ID=待复位 Device Slot；其余字段清 ‘0’；Cycle bit=命令环 PCS</div><div class="fca" aria-hidden="true">↓</div><div class="fcn">写 Host Controller Doorbell：DB Target=Host Controller Command</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L2385-L2400">To issue a Reset Device Command system software shall perform the following 
 operations: 
 • 
 Insert an Reset Device Command on the Command Ring and initialize the 
@@ -5454,8 +5460,17 @@ o
 Cycle bit = Command Ring’s PCS flag. 
 • 
 Write the Host Controller Doorbell with DB Target = Host Controller 
-Command. 
-When a Reset Device Command is executed by the xHC it shall perform the 
+Command. </blockquote><div class="qzh"><div class="qzh-body">要发出 Reset Device 命令，系统软件必须执行以下操作：
+
+- 在命令环（Command Ring）上插入一个 Reset Device 命令，并初始化以下字段：
+  - TRB Type = Reset Device Command（参见表 6-91）。
+  - Slot ID = 要复位的设备槽位的 ID。
+  - 将命令 TRB 的所有其他字段清零为 ‘0’。
+  - Cycle bit = 命令环的 PCS 标志。
+- 写主机控制器门铃寄存器，DB Target = Host Controller Command。</div><div class="qsrc">—— evidence/spec-46.txt L2385-L2400（p129）</div></div></div>
+      </details>
+      <div class="fcf"><div class="fct">流程图 · 4.6.11 Reset Device 执行算法（xHC） · 依据 spec-46.txt L2401-L2437</div><div class="fcc"><div class="fcn fcd">Device Slot 处于 Addressed 或 Configured 态？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">中止到该设备的 USB 事务；Slot State=Default；Context Entries=‘1’；USB Device Address=‘0’；除 Default Control Endpoint 外每个 Endpoint Context 的 EP State=Disabled</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn fcnone">—</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">在 Interrupter 0 的事件环插入 Command Completion Event：TRB Type=Command Completion Event；Command TRB Pointer=命令 TRB 地址</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">命令执行时 Device Slot 处于 Addressed 或 Configured 态？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">CC=Success（Table 6-90）</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Context State Error</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">其余字段清 ‘0’；Cycle bit=事件环 PCS</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L2401-L2437">When a Reset Device Command is executed by the xHC it shall perform the 
 following operations: 
 • 
 If the Device Slot is in the Addressed or Configured state: 
@@ -5491,16 +5506,7 @@ Completion Code = Context State Error.
 o 
 Clear all other fields of the event TRB to ‘0’. 
 o 
-Cycle bit = Event Ring’s PCS flag. </blockquote><div class="qzh"><div class="qzh-body">要发出 Reset Device 命令，系统软件必须执行以下操作：
-
-- 在命令环（Command Ring）上插入一个 Reset Device 命令，并初始化以下字段：
-  - TRB Type = Reset Device Command（参见表 6-91）。
-  - Slot ID = 要复位的设备槽位的 ID。
-  - 将命令 TRB 的所有其他字段清零为 ‘0’。
-  - Cycle bit = 命令环的 PCS 标志。
-- 写主机控制器门铃寄存器，DB Target = Host Controller Command。
-
-当 xHC 执行 Reset Device 命令时，它必须执行以下操作：
+Cycle bit = Event Ring’s PCS flag. </blockquote><div class="qzh"><div class="qzh-body">当 xHC 执行 Reset Device 命令时，它必须执行以下操作：
 
 - 若设备槽位处于 Addressed 或 Configured 状态：
   - 中止发往该设备的任何 USB 事务。
@@ -5517,7 +5523,7 @@ Cycle bit = Event Ring’s PCS flag. </blockquote><div class="qzh"><div class="q
   - else // 设备槽位此前不处于 Addressed 或 Configured 状态
 - Completion Code = Context State Error。
   - 将事件 TRB 的所有其他字段清零为 ‘0’。
-  - Cycle bit = 事件环的 PCS 标志。</div><div class="qsrc">—— evidence/spec-46.txt L2385-L2437（p129）</div></div></div>
+  - Cycle bit = 事件环的 PCS 标志。</div><div class="qsrc">—— evidence/spec-46.txt L2401-L2437（p129）</div></div></div>
       </details>
           </div>
 
@@ -6121,13 +6127,14 @@ Clear all other fields of the command TRB to ‘0’. </blockquote><div class="q
   - Header Info = 要发送给目标设备的报头类型特定数据。编码信息参见 USB3 规范第 8 节。
   - 将命令 TRB 的所有其他字段清零为 ‘0’。</div><div class="qsrc">—— evidence/spec-46.txt L2949-L2966（p138）</div></div></div>
       </details>
-      <div class="fcf"><div class="fct">流程图 · 4.6.16 Force Header 执行算法（xHC） · 依据 spec-46.txt L2978-L3006</div><div class="fcn">在事件环插入 Command Completion Event：TRB Type=Command Completion Event；Command TRB Pointer=命令 TRB 地址；Slot ID=0</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Root Hub Port Number 在范围内？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">Force Header 包发送成功？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">CC=Success（Table 6-90）</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Undefined Error</div></div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=TRB Error</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">其余字段清 ‘0’；Cycle bit=事件环 PCS</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
-      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L2973-L3006">o 
+      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L2973-L2977">o 
 Cycle bit = Command Ring’s PCS flag. 
 • 
 Write the Host Controller Doorbell with DB Target = Host Controller 
-Command. 
-When a Force Header Command is executed by the xHC it shall perform the 
+Command. </blockquote><div class="qzh"><div class="qzh-body">- Cycle bit = 命令环的 PCS 标志。
+- 写主机控制器门铃寄存器，DB Target = Host Controller Command。</div><div class="qsrc">—— evidence/spec-46.txt L2973-L2977（p139）</div></div></div>
+      <div class="fcf"><div class="fct">流程图 · 4.6.16 Force Header 执行算法（xHC） · 依据 spec-46.txt L2978-L3006</div><div class="fcn">在事件环插入 Command Completion Event：TRB Type=Command Completion Event；Command TRB Pointer=命令 TRB 地址；Slot ID=0</div><div class="fca" aria-hidden="true">↓</div><div class="fcc"><div class="fcn fcd">Root Hub Port Number 在范围内？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcc"><div class="fcn fcd">Force Header 包发送成功？</div><div class="fcbs"><div class="fcb"><div class="fcbl">是</div><div class="fcn">CC=Success（Table 6-90）</div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=Undefined Error</div></div></div></div></div><div class="fcb"><div class="fcbl fcbl-no">否</div><div class="fcn">CC=TRB Error</div></div></div></div><div class="fca" aria-hidden="true">↓</div><div class="fcn">其余字段清 ‘0’；Cycle bit=事件环 PCS</div></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-46.txt:L2978-L3006">When a Force Header Command is executed by the xHC it shall perform the 
 following operations: 
 • 
 Insert a Command Completion Event on the Event Ring. 
@@ -6155,10 +6162,7 @@ Completion Code = TRB Error.
 o 
 Clear all other fields of the event TRB to ‘0’. 
 o 
-Cycle bit = Event Ring’s PCS flag. </blockquote><div class="qzh"><div class="qzh-body">- Cycle bit = 命令环的 PCS 标志。
-- 写主机控制器门铃寄存器，DB Target = Host Controller Command。
-
-当 xHC 执行 Force Header 命令时，它必须执行以下操作：
+Cycle bit = Event Ring’s PCS flag. </blockquote><div class="qzh"><div class="qzh-body">当 xHC 执行 Force Header 命令时，它必须执行以下操作：
 
 - 在事件环（Event Ring）上插入一个命令完成事件。
   - TRB Type = Command Completion Event（参见表 6-91）。
@@ -6172,7 +6176,7 @@ Cycle bit = Event Ring’s PCS flag. </blockquote><div class="qzh"><div class="q
   - else // Root Hub Port Number 字段值不在有效范围内
 - Completion Code = TRB Error。
   - 将事件 TRB 的所有其他字段清零为 ‘0’。
-  - Cycle bit = 事件环的 PCS 标志。</div><div class="qsrc">—— evidence/spec-46.txt L2973-L3006（p139）</div></div></div>
+  - Cycle bit = 事件环的 PCS 标志。</div><div class="qsrc">—— evidence/spec-46.txt L2978-L3006（p139）</div></div></div>
       </details>
     </div>
 
