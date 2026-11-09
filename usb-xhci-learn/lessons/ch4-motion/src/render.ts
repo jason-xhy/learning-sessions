@@ -44,6 +44,10 @@ import ch4618 from './scenes/ch4618?scene';
 // ^ch\d+p\.tsx$ 不匹配 wf*；字典序 wfdevcfg<wfhaltrst 排主线尾=23/24）
 import wfdevcfg from './scenes/wfdevcfg?scene';
 import wfhaltrst from './scenes/wfhaltrst?scene';
+// R12 批 B：wf-传输全链（门铃→fetch→TRB 执行→Transfer Event→IOC 回执五站，§4.7+
+// §4.9.2+§4.10 跨节）尾插 wfhaltrst 后=25——wf 前缀归主线组，字典序 wfhaltrst<
+// wftransport<xh*
+import wftransport from './scenes/wftransport?scene';
 // R12 批 A：4.7-4.9 环节拍八支（xh 前缀归主线组，尾插 wfhaltrst 后——orderedSceneKeys
 // 比较器扩容 /^(ch\d+p|xh\d{4}[a-z]?p)\.tsx$/ 后字典序自证 wfhaltrst<xh0700<…<xh0904）
 import xh0700 from './scenes/xh0700?scene';
@@ -54,6 +58,12 @@ import xh0901 from './scenes/xh0901?scene';
 import xh0902 from './scenes/xh0902?scene';
 import xh0903 from './scenes/xh0903?scene';
 import xh0904 from './scenes/xh0904?scene';
+// R12 批 B：4.10 四支（TRB 执行/错误族/事件族/IOC）尾插 xh0904 后=34..37——主线
+// 剩余全体顺移，补丁组 38-43→43-48（renumber 倒序迁移），xh1002p 尾插=49
+import xh1001 from './scenes/xh1001?scene';
+import xh1002 from './scenes/xh1002?scene';
+import xh1003 from './scenes/xh1003?scene';
+import xh1004 from './scenes/xh1004?scene';
 // R3 P4：补丁分帧场景接入探针链（TrackA；纯追加，供 render.html 与 P6 全门 probe）
 // R11 批 C：清单扩为卅三场景——主线在前（ch41..ch45=0..4、ch4601..ch4604=5..8、
 // ch4605/ch4606=9..10、ch4607..ch4610=11..14、ch4611=15、ch4612..ch4618=16..22、
@@ -62,6 +72,8 @@ import xh0904 from './scenes/xh0904?scene';
 // R12 批 A 索引段：八支尾插主线=25..32（xh0700..xh0904），补丁组整体顺移 33..40
 // （ch41p..ch45p=33..37、ch4606p=38、ch4609p/ch4610p=39/40），帧表经 renumber_frames.py
 // 倒序迁移+scan 另产。
+// R12 批 A-3 索引段：三支 xh 补丁片尾插补丁组 41..43（xh0700p/xh0803p/xh0902p——
+// 字典序 ch4610p<xh0700p<xh0803p<xh0902p，纯尾插零迁移，帧表 41-43 由 scan 新产）。
 import ch41p from './scenes/ch41p?scene';
 import ch42p from './scenes/ch42p?scene';
 import ch43p from './scenes/ch43p?scene';
@@ -70,6 +82,12 @@ import ch45p from './scenes/ch45p?scene';
 import ch4606p from './scenes/ch4606p?scene';
 import ch4609p from './scenes/ch4609p?scene';
 import ch4610p from './scenes/ch4610p?scene';
+import xh0700p from './scenes/xh0700p?scene';
+import xh0803p from './scenes/xh0803p?scene';
+import xh0902p from './scenes/xh0902p?scene';
+// R12 批 B：§4.10 补丁片（MSE bogus 指针，3d9eeb336131）尾插=49——补丁组字典序
+// xh0902p<xh1002p（player 正则 ^xh\d{4}[a-z]?p$ 已兼容，勿改）
+import xh1002p from './scenes/xh1002p?scene';
 
 /* ---------- 全帧重叠探针 ---------- */
 function worldPos(n: any): {x: number; y: number} {
@@ -234,7 +252,7 @@ function probeFrame(root: any, frame: number): any[] {
   });
 }
 
-const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch4605, ch4606, ch4607, ch4608, ch4609, ch4610, ch4611, ch4612, ch4613, ch4614, ch4615, ch4616, ch4617, ch4618, wfdevcfg, wfhaltrst, xh0700, xh0801, xh0802, xh0803, xh0901, xh0902, xh0903, xh0904, ch41p, ch42p, ch43p, ch44p, ch45p, ch4606p, ch4609p, ch4610p];
+const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch4605, ch4606, ch4607, ch4608, ch4609, ch4610, ch4611, ch4612, ch4613, ch4614, ch4615, ch4616, ch4617, ch4618, wfdevcfg, wfhaltrst, wftransport, xh0700, xh0801, xh0802, xh0803, xh0901, xh0902, xh0903, xh0904, xh1001, xh1002, xh1003, xh1004, ch41p, ch42p, ch43p, ch44p, ch45p, ch4606p, ch4609p, ch4610p, xh0700p, xh0803p, xh0902p, xh1002p];
 
 const q = new URLSearchParams(location.search);
 const sceneIdx = Math.max(0, Math.min(scenes.length - 1, Number(q.get('scene') ?? 0)));

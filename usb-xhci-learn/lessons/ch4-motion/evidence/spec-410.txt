@@ -1,0 +1,927 @@
+4.10 Host Controller TRB Handling 
+4.10.1 
+Transfer TRBs 
+A fully configured host controller can support 255 USB Devices, where each 
+device can declare up to 31 endpoints. 30 of the endpoints may declare up to 
+64K Streams each. This means that approximately 500M Transfer Rings may 
+exist for a single xHC. Of course, this is a worst case value; however the xHC 
+architecture shall cope efficiently with reporting the completion status of 
+hundreds, or possibly thousands, of Transfer Rings. Transfer Ring completions 
+are queued on Event Rings as Transfer Event TRBs for the host. Refer to 
+section 4.11.3.1 for more information on Transfer Event TRBs. 
+When the data transfer associated with a Transfer TRB is completed, the xHC 
+will evaluate the completion status of the transfer and the Transfer TRB flags to 
+determine whether to generate a Transfer Event TRB for the Transfer TRB. 
+If upon transfer completion of a TRB the Interrupt On Completion (IOC) flag is 
+set, the xHC shall generate a Transfer Event TRB. Note the generation of an 
+Event TRB always generates an interrupt to the host. The Completion Code and 
+Length fields of the Transfer Event TRB will reflect the completion status of the 
+Transfer TRB that generated the event. 
+
+===== [PAGE 171] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+171 
+The detection of a USB Short Packet (that is, the actual number of bytes 
+received was less than the expected number of bytes defined by the Transfer 
+TRB) during a transfer does not necessarily generate an Event. A Short Packet 
+will trigger the generation of a Transfer Event TRB on the Event Ring if the 
+Interrupt-on-Short (ISP) or Interrupt On Completion (IOC) flags are set in the 
+TRB that the Short Packet was detected on. The Completion Code field of the 
+Transfer Event shall be set to Short Packet. The Length field of the Transfer 
+Event shall be set to the residual number of bytes not written to the Transfer 
+TRBs’ data buffer. A Short Packet may occur on an intermediate TRB of a TD. 
+In this case the xHC shall advance to the first TRB of the next TD after 
+completing the transfer. 
+Note: The xHC shall execute the first Event Data TRB encountered while advancing 
+to the end of the Short Packet TD. 
+The detection of an error during a transfer shall always generate a Transfer 
+Event, irrespective of whether the Interrupt-on-Short or Interrupt On 
+Completion (IOC) flags are set in the Transfer TRB. The Completion Code of the 
+Transfer Event shall identify the detected error condition. If a Missed Service 
+Error occurs on an intermediate TRB of a TD of an Isoch endpoint the xHC shall 
+advance to the first TRB of the next TD or the Enqueue Pointer (that is, Cycle 
+bit transition), whichever is encountered first, when continuing execution on 
+the Transfer Ring. When an error condition is encountered which requires an 
+endpoint to halt; the xHC shall stop on the TRB in error, the endpoint shall be 
+halted, and software shall use a Set TR Dequeue Pointer Command to advance 
+the Transfer Ring to the next TD. 
+Note: If the xHC encounters a Cycle bit transition and is unable to advance to a TD 
+boundary when it encounters an error, it shall advance to the next TD 
+boundary the next time the doorbell is rung. The only exception is if a Set TR 
+Dequeue Pointer Command is issued before the doorbell is rung, modifying 
+the Dequeue Pointer. In this case the xHC shall assume that the modified 
+Dequeue Pointer references the first TRB of a TD. 
+A Transfer Event TRB identifies the location of the TRB that “generated the 
+event” (the Device ID, Endpoint ID, and address of the source TRB). The 
+Completion Code field of the Transfer Event TRB shall contain the originating 
+TRBs’ completion status. The location information in the Transfer Event TRB 
+allows system software to identify the device, endpoint, and TRB that 
+generated the event. The location information also allows the host to update its 
+copy of the Dequeue Pointer for the Transfer Ring that generated the event. 
+If interrupts to the host are enabled, Interrupt Moderation (refer to section 
+4.17) is used to gracefully manage bursts of Transfer Events. 
+A host controller implementation may delay the generation of Events 
+associated with Transfer TRBs. The following conditions should force Transfer 
+Event generation to take place immediately: 
+• 
+The completion of a TRB that has its IOC flag set. 
+• 
+The completion of a Short Packet on a TRB that has its ISP flag set. 
+• 
+An error occurs on any Transfer TRB. 
+
+===== [PAGE 172] =====
+ 
+172 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+An xHC implementation dependent threshold, designed to prevent the TRB 
+Ring state from getting too far behind, is reached. 
+Note: The TRB Pointer field in a Transfer Event TRBs not only references the TRB 
+that generated the event, but it also provides system software with the latest 
+value of the xHC Dequeue Pointer for the Transfer Ring. Software may choose 
+to use Event Data TRBs exclusively to report TD completions (for example, 
+never setting an IOC flag in the Transfer TRBs of TDs). However, to keep the 
+software copy of the Transfer Ring Dequeue Pointer current, software will 
+occasionally have to set the IOC flag in a Transfer TRB, except if an Event 
+Data TRB is declared. The frequency with which the IOC flag is set in Transfer 
+TRBs will depend on many system and software factors, that are outside the 
+scope of this specification. 
+Note: System software should not generate unnecessary Events. Typically, there is 
+no need to set the IOC flag in more than one Transfer TRB per TD. The only 
+exceptions would be for 1) very large TDs (for example, > 16MB transfers) 
+where Intermediate Event Data TRBs are declared, or 2) if the IOC flag is set 
+to refresh the software Dequeue Pointer value. 
+Note: An Event Lost Error shall be generated for the endpoint if the xHC is unable to 
+generate all the Events defined by a TD. An Event Lost Error shall halt the 
+endpoint. By following the recommendations in the notes above, this 
+condition may be avoided. The conditions that generate this error are xHC 
+implementation specific. 
+4.10.1.1 
+Short Transfers 
+The TD Transfer Size is defined by the sum of the Length fields in all TRBs 
+that comprise the TD. On an IN endpoint the xHC shall schedule ((TD Transfer 
+Size - 1) / Max Packet Size) + 1 USB packets for each TD. 
+If the TD Transfer Size is larger than Max Packet Size, all USB packets shall be 
+Max Packet Size except for the last packet, which shall be sized to contain the 
+remaining TD data. 
+A Short Packet condition shall occur if the number of bytes received for a USB 
+packet associated with a TD is less than the number of bytes expected. 
+4.10.1.1.1 Short Transfers when using Event Data TRBs 
+When a Short Packet condition occurs and Event Data TRBs are being used, the 
+xHC shall perform the following operations: 
+• 
+If the Interrupt-on Short Packet (ISP) or if the Interrupt On Completion 
+(IOC) flag is set to ‘1’ in the TRB that the Short Packet condition occurred 
+on, a Transfer Event shall be generated for that TRB with the Completion 
+Code set to Short Packet. 
+• 
+Automatically advance the Dequeue Pointer for the Transfer Ring to the 
+beginning of the next TD. 
+When an Event Data TRB is encountered in the process of advancing the 
+Dequeue Pointer from the Short Packet TRB to the beginning of the next 
+
+===== [PAGE 173] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+173 
+TD, the xHC shall parse the Event Data TRB, that is, if the IOC flag is set in 
+the Event Data TRB, an Event Data Transfer Event shall be generated with 
+the Completion Code set to Short Packet and the Length field set to the 
+actual number of bytes received by the TD. 
+⎯ If subsequent Event Data TRBs are encountered in the process of 
+advancing the Dequeue Pointer from the first Event Data TRB 
+encountered to the beginning of the next TD, the xHC shall parse them 
+if the Parse All Event Data (PAE) flag is set (‘1’), and shall not parse 
+them if the PAE flag is cleared (‘0’). Refer to section 5.3.6 for more 
+information on PAE. 
+If a Link TRB is encountered, the xHC shall parse the Link TRB and if its 
+IOC flag is set (‘1’), then a Transfer Event shall be generated with its 
+Completion Code set to Success. All Link TRBs encountered in TD shall be 
+parsed. 
+If a Short Packet condition does not occur while receiving the data for a TD, the 
+xHC shall parse all TRBs of the TD. that is, any TRB with its IOC flag shall 
+generate a Transfer Event. 
+Note: A USB packet may be comprised of the data from many TRBs, or many USB 
+packets may be required to transfer a single TRB. 
+Note: No relationship is assumed between USB packet boundaries and TRB data 
+buffer boundaries. 
+When a Short Packet condition occurs and Event Data TRBs are being used, the 
+xHC shall perform the following operations: 
+Software shall perform the following operations when using Event Data TRBs to 
+flag the completion of a TD that may receive a Short Packet, then: 
+• 
+The ISP and IOC flags shall be cleared (‘0’) in all Transfer TRBs. 
+• 
+The IOC shall be set (‘1’) in all Event Data TRB(s). 
+Event Data Transfer TRBs encountered prior to the occurrence of a Short 
+Packet shall generate an Event Data Transfer Event with its Completion Code = 
+Success (assuming no errors) and TRB Transfer Length field equal to the 
+number of bytes transferred since the beginning of the TD or the previous 
+Event Data Transfer TRB of the TD. 
+If a Short Packet occurs and the PAE flag is set (‘1’), then all subsequent Event 
+Data Transfer TRBs encountered while advancing to the end of the TD shall 
+generate an Event Data Transfer Event with its Completion Code = Short 
+Packet and should set the TRB Transfer Length field equal to the number of 
+bytes transferred since the beginning of the TD or the previous Event Data 
+Transfer TRB of the TD. If a Short Packet occurs and the PAE flag is cleared 
+(‘0’), then subsequent Event Data Transfer TRBs encountered while advancing 
+to the end of the TD shall not generate Event Data Transfer Events. 
+If a Short Packet does not occur, then the last Event Data Transfer TRB shall 
+generate an Event Data Transfer Event with its Completion Code = Success 
+(assuming no errors) and TRB Transfer Length field equal to the number of 
+bytes transferred since the beginning of the TD (that is, EDTLA) or the previous 
+
+===== [PAGE 174] =====
+ 
+174 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Event Data Transfer TRB of the TD. Refer to section 4.11.5.2 for more 
+information on Event Data TRB usage. 
+• 
+If a TD on an IN endpoint is terminated with an Event Data TRB, there is 
+no need to set the ISP flag in every TRB of the TD because the length of 
+the transfer (including the terminating Short Packet) shall be reported by 
+the TRB Transfer Length field of the Event Data TRB. 
+• 
+Software shall not interpret a Short Packet Event Data Transfer Event as 
+indicating that the TD that it is associated with is “complete”, unless the 
+Event Data Transfer Event is the last TRB of the TD. 
+4.10.1.1.2 Short Transfers when not using Event Data TRBs 
+If software is not using Event Data TRBs, but it wants to flag the completion of 
+a TD that may receive a Short Packet, then: 
+• 
+The ISP flag shall be set (‘1’) in all Transfer TRBs of the TD except the last 
+Transfer TRB and may be set in the last Transfer TRB, and 
+• 
+The IOC flag shall be set (‘1’) in the last Transfer TRB of the TD. 
+If a Short Packet occurs, then a Transfer Event shall be generated with the 
+Completion Code = Short Packet, its TRB Pointer field pointing to the Transfer 
+TRB that the Short Packet occurred on, and its TRB Transfer Length field shall 
+indicate the residue bytes in the buffer. 
+If a Short Packet does not occur, then the last TRB of the TD shall generate a 
+Transfer Event with its Completion Code = Success (assuming there was no 
+error), its TRB Pointer field pointing to the last Transfer TRB, and the TRB 
+Transfer Length field shall equal 0. 
+If the Short Packet occurred while processing a Transfer TRB with only an ISP 
+flag set, then two events shall be generated for the transfer; one for the 
+Transfer TRB that the Short Packet occurred on, and a second for the last TRB 
+with the IOC flag set. Table 6-38 defines the Completion Code and TRB 
+Transfer Length for the first event. In the second event, the Completion Code 
+shall be set to Short Packet, and the TRB Transfer Length should be set to the 
+same value that was reported by the initial Short Packet Event. 
+Software shall not interpret a Short Packet Event as indicating that the TD that 
+it is associated with is “complete”, unless the TRB Pointer field of the Transfer 
+Event references the last TRB of the TD. 
+If Event Data TRBs are not used, then the total number of received bytes for a 
+Short Packet TD is the sum of the TRB Transfer Length fields in all Transfer 
+TRBs up to and including the one that generated the Short Packet Event, minus 
+the residue value of the TRB Transfer Length field in the Short Packet Event. 
+Note: Typically, an IOC flag is only set in the last TRB of a TD, and the event that is 
+generated by the TRB is referred to as the "TD Completion Event", that is, the 
+Event that completes the TD. Also note that due to errors or Short Packet 
+conditions, the TD Completion Event may not occur on the last TRB of a TD. 
+And for Transfer Ring management or other reasons, software may set the 
+IOC flag in any TRB of a TD, including a TD that is configured to handle Short 
+
+===== [PAGE 175] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+175 
+Packets (that is, with the ISP flag set in one or more TRBs). Because of this 
+the xHC must handle the generation of multiple Events for a single TD, and 
+those events may occur before and after the "TD Completion Event". 
+ 
+TD Completion Events are generated by few basic conditions: 
+• 
+If the IOC flag = ‘1’ and the TD completes successfully, then a Transfer 
+Event shall be generated with its Completion Code = Success and TRB 
+Transfer Length identifying the number bytes transferred. 
+• 
+If a Short Packet occurs and the ISP or IOC flags are set, then a Transfer 
+Event shall be generated with set its Completion Code = Short Packet and 
+TRB Transfer Length identifying the number bytes transferred. 
+• 
+If an error condition is detected while processing any TRB within a TD, an 
+Event shall be forced for that TRB (irrespective of whether the IOC or ISP 
+flags are set on the TRB) with the Condition Code indicating the error that 
+occurred and the TRB Transfer Length indicating the number of bytes that 
+were successfully transferred. 
+Events generated for a TD by TRBs encountered before the TD Completion 
+Event shall set their Completion Code to Success. Where Data Transfer Events 
+(ED = '0') shall set their TRB Transfer Length to 0 (since the TRB Transfer 
+Length field represents the "residue" of a transfer and all the bytes the buffer 
+referenced by the TRB were successfully moved), and Event Data Transfer 
+Events (ED = '1') shall set their TRB Transfer Length to the current value of the 
+EDTLA and then reset the EDTLA to zero. 
+After the TD Completion Event, if any subsequent Transfer TRBs are 
+encountered with their IOC flag set while advancing to the end of the TD then 
+those TRBs shall also generate an Event, where the Completion Code field shall 
+return the same value as TD Completion Event and TRB Transfer Length field 
+should return the same value as TD Completion Event. There are a couple of 
+exceptions to this rule: 
+• 
+If the IOC flag is set in an Event Data TRB then an Event Data Transfer 
+Event shall be generated only if PAE = '1'. 
+• 
+If the IOC flag is set in a Link TRB then the Transfer Event shall be 
+generated with Completion Code = Success, and the TRB Transfer 
+Count = 0. 
+Note: Setting the IOC flag in a TRB always forces an Event for that TRB (whether a 
+Short Packet condition occurs or not), therefore also setting the ISP flag in 
+the same TRB is redundant (but allowed). 
+4.10.2 
+Errors 
+The detection of an error during a USB transfer shall always generate a 
+Transfer Event, irrespective of whether the Interrupt-on-Short Packet (ISP) or 
+Interrupt On Completion (IOC) flags are set in the Transfer TRB. The 
+Completion Code of the Transfer Event shall identify the detected error 
+condition. An error may occur on any TRB of a TD. 
+
+===== [PAGE 176] =====
+ 
+176 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+All Transfer Ring error conditions force the state of the associated endpoint to 
+Halted and require system software intervention to recover. 
+Refer to section 4.11.2.2 for more information on Control Endpoint error 
+handling. 
+An isoch endpoint never halts because there is no handshake to report a halt 
+condition. Errors are reported as a Completion Code associated with a TRB for 
+an isochronous transfer, but an isoch pipe is not halted in an error case. If an 
+error is detected, the xHC shall continue to process the data associated with 
+the next ESIT of the transfer. Only limited error detection is possible because 
+the protocol for isochronous transactions do not provide per-transaction 
+handshakes. Refer to section 5.6.5 of the USB2 spec. There is no equivalent 
+text in the USB3 spec, however Enhanced SuperSpeed isoch endpoints are 
+treated the same way. 
+4.10.2.1 
+Stall Error 
+A STALL PID (USB2) or STALL LMP (USB3) may be returned by a USB function 
+in response to an IN token or after the data phase of an OUT or in response to 
+a PING transaction. The STALL PID indicates that a function is unable to 
+transmit or receive data, or that a control pipe request is not supported. The 
+state of a USB device after returning a STALL for any endpoint (except the 
+Default Control Endpoint) is undefined. The host controller shall not return a 
+STALL under any condition. 
+When a STALL PID is received from a USB device by the xHC, it shall stop 
+further activity on the associated Transfer Ring by removing it from its Pipe 
+Schedule, set the associated Endpoint State (EP State) field to Halted, and 
+generate a Transfer Event TRB with a Stall Error. 
+Note: If a device responds to a SETUP packet with a STALL28 the endpoint shall 
+generate a Stall Error for the Setup TRB and shall be halted. 
+A two-step process is required to recover a halted endpoint: 
+18. 
+System software shall use a Reset Endpoint Command (section 4.11.4.7) 
+to remove the Halted condition in the xHC. After the successful completion of 
+the Reset Endpoint Command, the Endpoint Context is transitioned from the 
+Halted to the Stopped state and the Transfer Ring of the endpoint is reenabled. 
+The next write to the Doorbell of the Endpoint will transition the Endpoint 
+Context from the Stopped to the Running state. 
+ 
+28Typically control endpoints only return STALL TPs due to a Protocol Stall condition (as described in the USB3 spec section 8.12.2.3), 
+however section 8.1 of the USB3 spec states “For non-isochronous transfers, an endpoint may respond to valid transactions by:... 
+Returning a STALL Transaction Packet if there is an internal endpoint error”. This condition describes a “Functional Stall” case, which 
+applies to a SuperSpeed Control Endpoint if an internal endpoint error is detected by the device, hence any TP or DP issued to a 
+Control Endpoint may return a STALL TP, including a Setup DP. 
+ 
+
+===== [PAGE 177] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+177 
+Note: The Reset Endpoint Command for the endpoint shall complete successfully 
+and the halt condition on the USB device shall be successfully cleared before 
+attempting to restart the Transfer Ring by ringing its doorbell. 
+19. 
+Software intervention is required to recover the pipe within the USB 
+device. 
+4.10.2.1.1 Non-Control Endpoints 
+Removal of the halt condition on an interrupt or bulk pipe in a USB device is 
+achieved via software intervention through a separate control pipe. 
+Note: The software intervention required to remove the halt condition on the USB 
+device shall be invoked after the pipe has been transitioned to the Stopped 
+state by a successful Reset Endpoint Command, but before writing to the 
+Doorbell register of the Endpoint to restart activity on the pipe. 
+Note: Since an Isoch endpoint does not generate a transaction handshake, they 
+cannot generate a Stall Error. 
+4.10.2.1.2 Control Endpoints 
+Removal of the halt condition on the Control endpoint of a USB device is 
+achieved by the device accepting the next SETUP PID. 
+For Control endpoints, a reset of the USB device shall be required to clear the 
+halt or error condition if the device does not accept the next Setup PID. 
+Refer to section 4.11.2.2 for additional Control Endpoint error handling. 
+4.10.2.2 
+TRB Error 
+A TRB Error indicates the TRB field values are out of range or that the xHC has 
+determined that a TRB is incorrectly formed. 
+This error condition may be reported in a Transfer Event or a Command 
+Completion Event due to an error detected on a Transfer or Command TRB, 
+respectively. This error will not be reported in any other Event TRB types. 
+Note: A Transfer Ring TRB Error should transition an endpoint to the Error state 
+(refer to section 4.8.3), however an xHC implementation may assert HCE29 
+due to the detection of TRB Error related error conditions. It is the 
+responsibility of software to always present correctly formed TRBs to the xHC. 
+ 
+29A TRB Error is generated due to a malformed TRB or a SET_ADDRESS Setup Stage TRB, hence their generation is solely due to a xHCI 
+driver error. So as not to burden xHCI implementations with complex error handing logic that only applies to the driver debug 
+process, an xHC is allowed to assert HCE when TRB Error conditions are detected. 
+ 
+
+===== [PAGE 178] =====
+ 
+178 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.10.2.3 
+USB Transaction Error 
+A transaction error is any error that causes the host controller to not complete 
+a transfer successfully. Table 4-5 lists the events/responses that the xHC can 
+observe as a result of a transaction. The effects of the Bus Error Counter and 
+interrupt status are summarized in the following paragraphs. Most of these 
+errors set the USB Transaction Error Completion Code in the appropriate 
+Transfer Event TRB. 
+There is a small set of protocol errors that relate only when executing a Setup 
+Stage TRB and fit under the umbrella of a Bad PID error that are significant to 
+explicitly identify. When these errors occur, the Bus Error Counter (4.10.2.7) is 
+decremented. When the USB PID Code30 indicates a SETUP, the following 
+responses are protocol errors and shall result in a USB Transaction Error if not 
+resolved after CErr retries. 
+• 
+A high-speed device and returns a NAK handshake to a SETUP. 
+• 
+A high-speed device and returns a NYET handshake to a SETUP. 
+• 
+A low- or full-speed device complete-split receives a NAK handshake. 
+• 
+An Enhanced SuperSpeed device responds to a SETUP DP with an NRDY TP. 
+Table 4-5: Summary of USB Transaction Errors  
+Event / Result 
+Error Tries 
+TRB Error Status 
+USB2 CRC or USB3 DPP Error31 
+CErr 
+USB Transaction32 
+Timeout 
+CErr (USB2), 
+N/A (USB3)33 
+USB Transaction32 
+USB2 Bad PID34 
+CErr 
+USB Transaction32 
+Babble 
+N/A 
+Babble Detected Error 
+Buffer Error 
+N/A 
+Data Buffer Error 
+This error condition shall only be reported in a Transfer Event due to an error 
+detected on a Transfer TRB. This error shall not be reported in any other Event 
+TRB types. 
+ 
+30Refer to Table 8-1 in the USB2 spec for a list of the PID Codes (Types). 
+31Refer to Section 1.6 for the definition of a DPP Error. Note that the xHCI definition is slightly different than the definition of DPP Error in 
+the USB3 spec because it includes the case where an ACK TP is received for a DPP with the Retry Data Packet (rty) bit set, 
+32If error occurs on a USB transaction, then a USB Transaction Error (XactErr) is asserted immediately on an Isoch pipe or after CErr 
+unsuccessful attempts on all other pipe types. In addition, non-Isoch Transfer Ring shall be halted, refer to section 4.10.2.1. 
+33Section 8.13 of the USB3 spec states that if a tHostTransactionTimeout occurs, for control, bulk, and Interrupt transactions the host shall 
+assume that the transaction has failed and halt the endpoint. For Isoch transactions the host shall not perform any more transactions 
+to the endpoint in the current Service Interval. And the host shall not halt the endpoint and shall restart transactions to the endpoint in 
+the next Service Interval. No retries are performed for any transaction type if a tHostTransactionTimeout occurs. 
+34The xHC received a response from the device, but it could not recognize the PID as a valid PID. Not applicable to USB3. 
+
+===== [PAGE 179] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+179 
+Note: No retries shall be performed if the xHC does not see a response to a Data 
+Transaction (either IN or OUT) within tHostTransactionTimeout on a 
+SuperSpeed or SuperSpeedPlus pipe. The endpoint shall transition to Halted 
+state when this condition is detected. 
+Note: The USB3 spec defines a range of possible tHostTransactionTimeout values. 
+The specific value applied by an xHC implementation may be hardcoded by an 
+xHC vendor or programmable through a vendor defined mechanism, for 
+example, a Vendor Defined xHCI Extended Capability. 
+4.10.2.4 
+Babble Detected Error 
+When a device transmits more data on the USB than the host controller is 
+expecting for a transaction, it is defined to be babbling. In general, this is 
+called a Babble Error35. When a device sends more data than the TD Transfer 
+Size bytes (TD Babble), unexpected activity that persists beyond a specified 
+point in a (micro)frame (Frame Babble), or a packet greater than Max Packet 
+Size (Packet Babble), the host controller shall set the Babble Detected Error 
+in the Completion Code field of the TRB, generate an Error Event, and halt the 
+endpoint (refer to Section 4.10.2.1). The Bus Error Counter is not decremented 
+for a Babble Error condition. 
+This error condition shall only be reported in a Transfer Event due to an error 
+detected on a Transfer TRB. This error shall not be reported in any other Event 
+TRB types. 
+Note: When Babble Detected Error is generated, software shall assume that any 
+excess received data has been lost and not attempt a Soft Retry. 
+Note: If a Babble Error is detected and the received data passes all integrity checks, 
+the host controller may write the received data (up to the expected data 
+length) to the data buffer, and the value of the TRB Transfer Length field in 
+the Babble Detected Error Transfer Event shall be consistent with the number 
+of data bytes written to the buffer. 
+4.10.2.4.1 USB2 Protocol 
+A babble condition also exists if IN transaction is in progress at High-speed 
+EOF2 point. This is called a Frame Babble. If a Frame Babble condition is 
+detected while a TRB is being processed the xHC shall set the Babble Detected 
+Error in the Completion Code field of the TRB, generate an Error Event, and 
+halt the endpoint. In addition, the xHC shall disable the Root Hub port to which 
+the Frame Babble is detected. The xHC shall never start an OUT transaction 
+that will babble across a microframe EOF. 
+ 
+35The USB3 spec describes a (Packet) babble condition as receiving “sDataSymbolsBabble symbols without receiving a valid DPPEND 
+ordered set or DPPABORT”. The USB2 spec describes a (Frame) babble condition as “unexpected bus activity that persists beyond a 
+specified point in a (micro)frame. Refer to section 8.7.4 in the USB2 spec for more details. The EHCI spec describes two (TD and 
+Packet) babble conditions as “the device sends more than Transaction X Length or Maximum Packet Size bytes (whichever is less)”. 
+Where Transaction X Length is equivalent to TD Transfer Size, that is, a TD Babble condition. The EHCI spec also states that a babble 
+error “is considered a fatal error for the transfer”. 
+
+===== [PAGE 180] =====
+ 
+180 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Note:  
+Frame Babble is also a Port_Error condition which shall transition a 
+port in the Enabled state to the Disabled state, assert the PEC flag (‘1’), and 
+generate a Port Status Change Event. Refer to section 4.19.1.1.6. 
+ IMPLEMENTATION NOTE 
+PID Mismatch and Babble Checking 
+When a host controller detects a data PID mismatch, it shall either: disable the Packet 
+Babble checking for the duration of the bus transaction, or do Packet Babble checking based 
+solely on Maximum Packet Size. The USB core specification defines the requirements on a 
+data receiver when it receives a data PID mismatch (for example, expects a DATA0 and gets 
+a DATA1 or visa-versa). In summary, the xHC shall ignore the received data and respond 
+with an ACK handshake, in order to advance the transmitter's data sequence. 
+The xHCI allows System software to provide buffers for a Control, Bulk or Interrupt IN 
+endpoint that are not an even multiple of the maximum packet size specified by the device. 
+Whenever a device misses an ACK for an IN endpoint, the host and device are out of 
+synchronization with respect to the progress of the data transfer. The xHC may have advanced 
+the transfer to a buffer that is less than maximum packet size. The device will re-send its 
+maximum packet size data packet, with the original data PID, in response to the next IN 
+token. In order to properly manage the bus protocol, the host controller shall disable the 
+Packet Babble check when it observes the data PID mismatch. 
+4.10.2.4.2 USB3 Protocol 
+A babble condition also exists if on an IN transaction the DPP exceeds the Max 
+Packet Size. If a babble condition is detected the xHC shall set the Babble 
+Detected Error in the Completion Code field of the TRB, generate an Error 
+Event, and halt the endpoint. 
+4.10.2.5 
+Data Buffer Error 
+This event indicates that an overrun of incoming data or an underrun of 
+outgoing data has occurred for this Transfer TRB. This would generally be 
+caused by the host controller not being able to access required data buffers in 
+memory within necessary latency requirements. These conditions are not 
+considered transaction errors, and do not affect the Bus Error Count. When 
+these errors do occur, a Transfer Event TRB will be generated (pointing to the 
+TRB that the error was detected on) with the Completion Status set to Data 
+Buffer Error. 
+If the Data Buffer Error occurs on a non-isochronous IN, the host controller 
+shall not issue a handshake to the endpoint. This will force the endpoint to 
+resend the same data (and data toggle) in response to the next IN to the 
+endpoint. 
+If the Data Buffer Error occurs on an OUT, the host controller shall corrupt the 
+end of the packet so that it cannot be interpreted by the device as a good data 
+packet. Simply truncating the packet is not considered acceptable. An 
+acceptable implementation option is to 1's complement the CRC bytes and send 
+
+===== [PAGE 181] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+181 
+them. There are other options suggested in the Transaction Translator section 
+of the USB2 spec. 
+This error condition shall only be reported in a Transfer Event due to an error 
+detected on a Transfer TRB. This error will not be reported in any other Event 
+TRB types. 
+Note: A Data Buffer Error may be generated for a USB2 or USB3 transfer. 
+4.10.2.6 
+Host System Errors 
+Interrupts are used by xHCI to report Events generated by the controller. The 
+reporting requires that the xHC hardware that manages the Event Ring, and 
+the host system hardware that the xHCI is communicating over, is operating 
+properly. 
+If a catastrophic system error occurs, it may prevent the xHC from properly 
+completing a TRB in the Event Ring. This means that software could receive an 
+interrupt with an inconsistent Event Ring. If in the process of normal Event TRB 
+processing software suspects a problem, it may examine the Host System Error 
+(HSE) bit in the USBSTS register to determine whether the problem was due to 
+a host controller related catastrophic fault condition. 
+If a catastrophic error occurs during a host system access involving the Host 
+Controller module the Host System Error (HSE) bit in the USBSTS register shall 
+be set to ‘1’. (In a PCI system, conditions that set this bit to ‘1’ include PCI 
+Parity error, PCI Master Abort, and PCI Target Abort.) When this error occurs, 
+the Host Controller shall clear the Run/Stop (R/S) bit in the USBCMD register to 
+prevent further execution of the scheduled TDs. 
+The following conditions shall indicate an Event TRB problem: 
+• 
+System software receives an xHC interrupt and a Valid Transfer Event TRB 
+does not point to a Valid source TRB. 
+• 
+System software receives an xHC interrupt and a Valid Transfer Event TRB 
+does not identify an enabled Device Slot. 
+• 
+System software receives an xHC interrupt and a Valid Transfer Event TRB 
+does not identify to an enabled endpoint. 
+• 
+Out of range, incomplete, or inconsistent Event TRB field values. 
+It is recommended that system software check for these conditions. 
+Note: A Host System Error (HSE = ‘1’) may be generated due to transfer integrity 
+errors on the system bus. Some modern system bus interrupt mechanisms 
+(for example, MSI, MSI-X) utilize specialized writes to the host address space 
+to generate interrupts. These writes require that the address and data paths 
+of the system bus to be functioning properly. A catastrophic error condition 
+may prevent these writes from completing successfully. It is recommended 
+that an xHC implementation uses and “Out-of-Band” mechanism for reporting 
+Host System Errors. This may be a hardwired interrupt, bus or system error 
+signal provided by the system bus. 
+
+===== [PAGE 182] =====
+ 
+182 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Host System Error (HSE) may optionally be used to report other internal xHC 
+errors that might jeopardize system level operation or data integrity. It should 
+be assumed, however, that the assertion of HSE should generate a critical 
+system interrupt (for example, NMI or Machine Check) and is, therefore, fatal. 
+Consequently, care should be taken in using HSE to report non-parity or 
+system errors. Both the xHC and software shall assume that system integrity 
+has been compromised when HSE is asserted. 
+Note: Host Controller Error (HCE) should be used to report internal xHC error 
+conditions which may be recovered from by software resetting and 
+reinitialization of the xHC. Refer to section 4.24.1. 
+ IMPLEMENTATION NOTE 
+Out-of-Band Error Reporting 
+The PCI PERR# (Parity ERRor) and SERR# (System ERRor) error reporting pins are required 
+for all PCI implementations. xHC implementations shall assert the PERR# pin if a parity 
+error is detected during a PCI transaction (other than Special Cycle). The xHC shall assert 
+the SERR# pin if an address parity error, data parity error on the Special Cycle command, 
+the Host System Error (HSE) bit in the USBSTS register is set to ‘1’, or any other system 
+error is detected by the xHC where the result will be fatal. Assertion of the PERR# or SERR# 
+pins shall set the HSE bit in the USBSTS register to ‘1’. 
+If an MSI or MSI-X write transaction is terminated with a Master-Abort or a Target-Abort, 
+the xHC shall report the error by asserting SERR# (if bit 8 in the PCI Configuration Space 
+Command register is set) and to set the appropriate bits in the PCI Configuration Space 
+Status register (refer to Section 3.7.4.2 of the PCI specification). An MSI or MSI-X memory 
+write transaction is ignored by the target if it is terminated with a Master-Abort or Target-
+Abort. Refer to section 5.2.1 for more information on the PCI Configuration Space registers. 
+If SERR# is not enabled, software should implement an algorithm for checking the HSE flag 
+if the xHC is not responding. 
+Non-PCI xHC implementations shall provide an equivalent out-of-band notification mechanism 
+for xHC notification of catastrophic errors. 
+4.10.2.7 
+Bus Error Counter 
+The Bus Error Counter is an internal 2-bit down counter that the xHC 
+maintains. This counter determines the number of consecutive Errors allowed 
+while executing a USB Transaction. 
+Section 4.10.2.3 describes how when CErr bus errors are encountered on any 
+packet of a TD, the TD is aborted, the endpoint is Halted and an Error Event 
+will be generated. The xHC is expected to maintain an internal Bus Error 
+Counter for each endpoint, which allows retries and differentiating “soft-errors” 
+from “hard-errors”. 
+The xHC initializes this internal Bus Error Counter to the value defined by the 
+Endpoint Context Error Count (CErr) field on the first transmission of a packet 
+and decrements it when an error is detected, if the Bus Error Counter reaches 
+0, then a hard-error is generated. If a packet transmission successfully 
+
+===== [PAGE 183] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+183 
+completes prior to the Bus Error Counter reaching 0, it is considered successful 
+and no error will be generated. 
+Table 4-6: CErr Management  
+Error 
+Decrement 
+Counter 
+Comment 
+Transaction Error 
+Yes 
+Refer to section 4.10.2.3. 
+Stalled 
+No 
+Detection of Babble or Stall automatically halts the ring. Thus, count is not 
+decremented. 
+No Error 
+No 
+If a bus transaction completes and the host controller does not detect a 
+transaction error, then the host controller should reset the Bus Error 
+Counter to extend the total number of errors for this TD. For example, Bus 
+Error Counter should be reset with value of CErr on each successful 
+completion of a USB transaction. The xHC shall not reset the Bus Error 
+Counter if the value at the start of the transaction is 00b. 
+Data Buffer Error 
+No 
+Data buffer errors are host problems. They don't count against the device's 
+retries. 
+Babble Detected 
+No 
+Detection of Babble or Stall automatically halts the ring. Thus, count is not 
+decremented. 
+ 
+Note: Software shall not program CErr to a value of ‘0’ when the Slot Context Speed 
+field indicates a Full- or Low-speed device. This combination could result in 
+undefined behavior. 
+4.10.2.8 
+Isoch Endpoint Error Handling 
+CErr does not apply to Isoch Data Transactions because retries are not 
+performed on Isoch endpoints. Also an Isoch endpoint shall not halt due to a 
+Data Transaction error, but instead shall advance to the next Isoch TD and 
+attempt to execute it during the next ESIT. An Isoch Data Transaction error 
+shall force the generation of a Transfer Event, irrespective of whether the 
+Interrupt-on-Short Packet (ISP) or Interrupt On Completion (IOC) flags are set 
+in the Transfer TRB, where the Transfer Event’s: 
+• 
+TRB Pointer field shall point to the Transfer TRB that the error was 
+detected on, and 
+• 
+TRB Transfer Length field shall indicate the residue of the number of bytes 
+not successfully transferred. 
+If a Timeout, USB2 CRC Error, USB3 DPP Error, or a USB2 Bad PID was 
+detected on an Isoch IN Data Transaction, the Completion Code of the Transfer 
+Event shall be set to USB Transaction Error. 
+If a Babble condition was detected on an Isoch IN Data Transaction, the 
+Completion Code of the Transfer Event shall be set to Babble Error. 
+While advancing to the next Isoch TD: 
+
+===== [PAGE 184] =====
+ 
+184 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+If an Event Data TRB is encountered, the xHC shall parse it, that is, if the 
+its IOC flag is set, an Event Data Transfer Event shall be generated with its 
+Completion Code set to the same error value reported by the Transfer 
+Event and TRB Transfer Length field set to the number of bytes 
+successfully transferred. The first Event Data TRB encountered shall be 
+parsed. 
+If subsequent Event Data TRBs are encountered in the process of 
+advancing to the next Isoch TD, the xHC shall parse them if the Parse All 
+Event Data (PAE) flag is set ('1') and shall not parse them if the PAE flag is 
+cleared ('0'). Refer to section 5.3.6 for more information on PAE. 
+• 
+If a Link Data TRB is encountered, the xHC shall parse the Link TRB, that 
+is, if its IOC flag is set, a Transfer Event shall be generated with its 
+Completion Code set to Success. All Link TRBs encountered shall be 
+parsed. 
+Note: Isoch TD shall follow the TD Fragment rules which define when an IOC flag 
+may be set within a TD. 
+Note: If a tHostTransactionTimeout occurs a SuperSpeed or SuperSpeed Plus Isoch 
+IN endpoint shall not perform any more transactions to the endpoint in the 
+current Service Interval. And the host shall not halt the endpoint and shall 
+restart transactions to the endpoint in the next Service Interval (refer to 
+Table 8-33 in the USB3 spec). Note that the tHostTransactionTimeout is an 
+xHC implementation specific delay.  
+4.10.3 
+Events 
+Refer to section 4.17.4 for information on Event to Interrupter mapping. 
+4.10.3.1 
+Ring Overrun and Underrun 
+If an Isoch endpoint is Running, the xHC periodically schedules the endpoint as 
+a function of the ESIT. Each ESIT the xHC shall execute one Isoch TD on the 
+endpoint's Transfer Ring. If the Isoch ring is empty when the xHC is ready to 
+perform the transfer, it shall generate a Transfer Event on the Event Ring 
+indicated by the Slot Context Interrupter Target field. An IN Isoch endpoint 
+shall set the Completion Code to Ring Overrun and an OUT Isoch endpoint shall 
+set the Completion Code to Ring Underrun. 
+When a Ring Overrun or Ring Underrun condition occurs, the TRB referenced by 
+the Dequeue Pointer is not valid. Ring Underrun and Ring Overrun Transfer 
+Events shall clear the TRB Transfer Length field to ‘0’ and set the TRB Pointer 
+field to the address of the invalid TRB (that is, the value of the Dequeue Pointer 
+where the Overrun or Ring Underrun condition was detected). Refer to section 
+4.11.3.1 for a detailed description of the Transfer Event TRB. The functionality 
+described in this paragraph shall be mandatory for all xHCI 1.1 and xHCI 1.2 
+compliant xHCs. 
+Note: Pre-1.1 xHC implementations clear the TRB Pointer field of a Ring Underrun or 
+Ring Overrun Transfer Event TRB to ‘0’. 
+
+===== [PAGE 185] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+185 
+After a Ring Overrun or Ring Underrun condition is reported the endpoint shall 
+remain in the Running state and be removed from the Pipe Schedule. The 
+endpoint shall be placed back on the Pipe Schedule the next time system 
+software rings the doorbell for the endpoint. 
+A Ring Overrun or Ring Underrun condition may occur unintentionally if 
+software posts Isoch TDs late, that is, software does not meet the Isochronous 
+Scheduling Threshold (IST) requirement. In this case the xHC detects an empty 
+Transfer Ring for the ESIT, generates a Ring Overrun or Ring Underrun Event, 
+and removes the endpoint from the Pipe Schedule. However, software, not 
+knowing that it is late, rings the endpoint’s doorbell, posting an Isoch TD for 
+the ESIT that just incurred the Over/Underrun condition. The doorbell ring 
+causes the xHC to put the endpoint back on the Pipe Schedule, and in 
+preparation for the next ESIT, the xHC may fetch a TD that software had 
+intended for a previous ESIT. If the SIA flag is set, then the TD (and all 
+subsequent TDs) will be transferred one ESIT late. If the SIA flag is cleared, 
+then the xHC will inspect the TD’s Frame ID, recognize that the TD is not within 
+the current Valid Frame Window36, and generate a Missed Service Error, 
+because the xHC is unable to service the TD within the specified ESIT. After the 
+Missed Service Error the xHC will attempt to “resynchronize” the Isoch pipe. If 
+resynchronization is successful, then subsequent Isoch TDs will be transferred 
+in their correct ESITs. Refer to section 4.10.3.2 for more information on Missed 
+Service Error handling. Refer to section 4.11.2.5.2 for more information on 
+Resynchronization. 
+Software typically posts multiple Isoch TDs with each doorbell ring. If software 
+is very late (for example, multiple ESITs) when it rings the doorbell after an 
+Overrun/Underrun condition, then multiple Isoch TDs may not be within the 
+current Valid Frame Window. In this case, a Missed Service Error shall be 
+generated for each TD skipped in the process of resynchronizing. Refer to 
+section 4.11.2.5 for the definition of Valid Frame Window. 
+Note: For Isoch TDs with SIA = '0' that are not scheduled in advance of the 
+Isochronous Scheduling Threshold (IST): 
+• 
+If an Isoch endpoint is Running and Busy, then TDs that are not scheduled 
+in advance of the IST shall result in an Ring Overrun or Ring Underrun 
+condition, because the Transfer Ring appears empty when the xHC goes to 
+fetch the next TD (refer to section 4.14.2.1.4 for more information on IST). 
+• 
+If an Isoch endpoint is Running and Idle, then TDs that are not scheduled 
+in advance of the IST shall result in a Missed Service Error, because the 
+doorbell is rung too late for the xHC to schedule the TD for the ESIT 
+targeted by the Frame ID (refer to section 4.10.3.2 for more information). 
+Refer to section 4.11.2.5.1 for scheduling ESITs less than 1 ms, that is, 
+Microframe Alignment. 
+ 
+36If the ESIT is less 1 ms., then subsequent TDs within the same frame report the same Frame ID value and pass the "current Valid Frame 
+Window" test, but they may still be late. Refer to section 4.11.2.5.1 for how software may ensure that an Isoch TD is transferred 
+within the correct ESIT of a Frame. 
+ 
+
+===== [PAGE 186] =====
+ 
+186 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Note: A late doorbell ring may result in the generation of two Events; a Ring 
+Overrun or Ring Underrun condition, being followed immediately by a Missed 
+Service Error. The xHC generates a Ring Overrun or Ring Underrun condition 
+because an Isoch Transfer Ring is empty when it tries to move the data for a 
+scheduled Interval. The Ring Overrun or Ring Underrun condition also causes 
+the endpoint to transition to the Running Idle state, that is, requiring a 
+doorbell ring to restart it. When the (late) doorbell ring does occur, assuming 
+it posted data buffers for the Interval that generated the Ring Overrun or Ring 
+Underrun condition, the xHC will fetch buffer targeted at an Interval that has 
+already passed and generate a Missed Service Error because it cannot deliver 
+the data associated with an Isoch TD. 
+4.10.3.2 
+Missed Service Error 
+This error only applies to Isochronous endpoints. A Missed Service Error 
+Completion Code indicates that the xHC was unable to complete the data 
+transfer associated with an Isoch TRB within the ESIT. The cause of the error 
+may be due to an Event Ring full condition, excessive DMA latency when 
+accessing periodic data causing an internal xHC buffer overrun or underrun, 
+etc. The data associated with the TD in error shall be lost, however for the next 
+ESIT the xHC shall advance to the next Isoch TD and attempt to execute it. 
+A Missed Service Error shall utilize the Transfer Event TRB format. The TRB 
+Pointer field of Missed Service Error Transfer Event shall reference the TRB that 
+was missed and its TRB Transfer Length the residue data bytes in the buffer. 
+Since a Missed Service Error forces a Transfer Event, the Event’s TRB Pointer 
+field may not reference a TRB that has its IOC flag set (‘1’) within the skipped 
+Isoch TD. 
+If the conditions that cause a Missed Service Error persist, multiple consecutive 
+Isoch transfers may not be completed. In this case, a Missed Service Error 
+Transfer Event shall be generated for every ESIT missed. The only exception to 
+this rule is if an Event Ring full condition prevents the posting of Missed Service 
+Error Transfer Events. When the Event Ring full condition clears, the xHC shall 
+post a Missed Service Error Transfer Event for the last Isoch TD (of each 
+Transfer Ring) not completed. 
+Note: xHC implementations that do not support the Contiguous Frame ID Capability 
+(CFC) may not generate a Missed Service Error Transfer Event for every ESIT 
+missed. 
+A Missed Service Error shall not be reported if an Isoch transfer was not 
+completed due to another error condition, for example, USB Transaction Error, 
+and so forth. 
+Refer to section 4.10.3.1 for more information on the relationship of Missed 
+Service Errors to Ring Overrun and Ring Underrun conditions. 
+4.10.3.3 
+Split Transaction Error 
+This error only applies to USB2 protocol endpoints for reporting an error on a 
+split transaction, for example, that the xHC was unable to schedule a required 
+
+===== [PAGE 187] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+187 
+complete-split transaction of a HS Split Interrupt IN transaction. If a Split 
+Transaction Error is detected, there is the possibility of data loss, and the 
+endpoint shall be halted. 
+Note: Software shall not attempt a Soft Retry to recover from a Split Transaction 
+Error. 
+4.10.3.4 
+Short Packet 
+A Short Packet Completion Code shall be reported if number of bytes received 
+was less than the TD Transfer Size and the Interrupt-on Short Packet (ISP) or 
+Interrupt on Completion (IOC) flag was set to ‘1’ in the associated Transfer 
+TRB. Refer to section 6.4.5 Table 6-90 for the definition of the Short Packet 
+Completion Code. Refer to section 4.10.1.1 for more information in Short 
+Packet handling. 
+Note: If a Short Packet ends between two TRBs, either of them may report a Short 
+Packet Completion Code. 
+4.10.4 
+IOC Flag 
+The general rule for how the xHC should handle the IOC flag is simple: if the 
+IOC flag is set, then generate an event. There are some exceptions to this rule 
+described in the spec, for example, if the Event Ring is full, but normally this 
+rule should always be applied. 
+If software wants to know when the xHC has completed processing all the TRBs 
+associated with a TD, it must set the IOC flag in the last TRB of TD. The event 
+that the IOC in the last TRB generates informs software that last TRB of the TD 
+is complete, which means that the TD is complete, and that the space on the 
+Transfer Ring that the TD consumed may be reclaimed. 
+The ISP flag generates an event only if less data was received, than was 
+specified by a TRB. The TRB Transfer Length field of the Transfer Event that a 
+Short Packet condition generates informs software of the exact number of 
+bytes transferred when the condition was detected. Software may also set the 
+BEI flag if it is not interested in generating an interrupt due to a Short Packet 
+Event. 
+And if the ISP flag is set and IOC flag is not set in the last TRB of TD that 
+received a Short Packet, an event shall not be generated if a Short Packet 
+condition does not occur on that TRB, that is, if the buffer defined by the TRB is 
+completely filled. 
+In some cases, the xHC response to an error condition may look very similar to 
+a Short Packet condition, because after the xHC generates an event for either 
+condition, the xHC may automatically advance to the next TD. An example of 
+this behavior is when a USB Transaction Error is detected during an Isoch IN 
+transfer, where the Isoch pipe does not stall, but advances to the next Isoch 
+TD in preparation for the next Interval. The error will generate an event, 
+however if the event does not point to last TRB of the Isoch TD and the IOC 
+flag is not set in last TRB of the TD with the error, software will have to wait 
+until the next IOC flag is encountered by the endpoint before it can reclaim the 
+
+===== [PAGE 188] =====
+ 
+188 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Isoch TD that had the error. This may take many milliseconds depending on 
+the size of the Interval and where software set the IOC flags. 
+In summary, software can not only use the IOC flag to report specific TD 
+completions, but it can also be used to provide timely updates of the Dequeue 
+Pointer position so that TRBs can be reclaimed, to reduce error recovery times, 
+or to allow Transfer Rings to grow or shrink as function of system loading or 
+resource changes. 
+Note: An exception is if the PAE flag is cleared (‘0’). In this case when a Short 
+Packet occurs, the IOC flag in the first Event Data TRB encountered generates 
+an Event Data Transfer Event and the IOC flag is ignored in subsequent Event 
+Data TRBs that are encountered in the process of advancing the Dequeue 
+Pointer to the beginning of the next TD. Refer to section 5.3.6 for more 
+information on PAE. 
