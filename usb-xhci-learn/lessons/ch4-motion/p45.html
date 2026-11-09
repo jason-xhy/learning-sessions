@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xHCI 第 4 章视频课件 · 4.5 设备槽管理</title>
+<!-- data-ck 锚点块书写约定（机检 scripts/check_landing_code.py 依赖）：
+     1) data-ck 必须是开标签的最后一个属性；
+     2) 闭合标签紧贴内容末字符，中间不留任何空白；
+     3) 多行块（blockquote/pre）的第 2 行起内容顶格（零缩进）。
+     锚点 schema：
+     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止；
+                                  同一锚点值允许多次出现，按 EXPECTED_SPEC 多重集对账）
+     patch:<hash>               → git show <hash> 完整 stdout（不加路径过滤；diff 部分
+                                  逐行 d-meta/d-hunk/d-add/d-del/d-ctx 着色 span）
+     贴码段走 data-src 通道（pre.codeseg，data-src="短文件名:起始行:结束行"），
+     机检按段校验（行内容 == git show d9008e061539:<路径> 切片）+ 摘录覆盖 35/35；
+     摘录行 class="cl hot" + data-hot="组:下标"，tooltip 引文在页尾 #tipdocs。-->
+<style>
+  :root {
+    --bg: #0b0f15;
+    --panel: #111823;
+    --line: #1d2735;
+    --text: #e8edf5;
+    --muted: #8fa0b8;
+    --blue: #7c9ff0;
+    --amber: #d9a860;
+    --green: #86bd7a;
+    --teal: #7fd0b2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 64px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  h1 .tag { color: var(--amber); font-size: 15px; font-weight: 600; margin-left: 10px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meta b { color: var(--green); font-weight: 600; }
+  .lead { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+  .toc { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 4px; }
+  .toc a {
+    display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--text); text-decoration: none; font-size: 13.5px; background: var(--panel);
+  }
+  .toc a:hover { border-color: var(--blue); color: var(--blue); }
+  h2 { font-size: 19px; margin: 40px 0 14px; }
+  h2 .no { color: var(--amber); margin-right: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .card.b1 { border-left: 3px solid var(--blue); }
+  .card.b2 { border-left: 3px solid var(--teal); }
+  .card.b3 { border-left: 3px solid var(--green); }
+  .card.b4 { border-left: 3px solid var(--amber); }
+  .bhead { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .badge {
+    display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
+    border-radius: 6px; background: #18212f; color: var(--amber); font-size: 13px; font-weight: 700; flex: none;
+  }
+  h3 { font-size: 14px; margin: 16px 0 8px; color: var(--blue); }
+  h3 .cmt { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .qtitle { margin: 14px 0 0; font-size: 13.5px; font-weight: 600; }
+  blockquote {
+    margin: 8px 0 4px; padding: 10px 14px; border-left: 3px solid var(--blue); background: #0d1420;
+    border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap;
+  }
+  .qsrc { margin: 0 0 6px 17px; color: var(--muted); font-size: 12px; }
+  pre.diffblock {
+    margin: 0 0 4px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.55; color: #c7d3e6;
+  }
+  .exnote { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .foot-note { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .vhead .name { font-size: 16px; font-weight: 600; font-family: ui-monospace, Menlo, monospace; }
+  .vhead .spec { color: var(--muted); font-size: 12.5px; }
+  .card video { width: 100%; border-radius: 6px; background: #000; display: block; }
+  .btn {
+    display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 13.5px;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; border: 1px solid var(--teal); color: var(--teal); }
+  .act { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .act .note { color: var(--muted); font-size: 12.5px; }
+  .int-note { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
+  .int-note b { color: var(--teal); font-weight: 600; }
+  .phead {
+    font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px;
+    background: #0d1420; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px;
+    margin-bottom: 10px; overflow-wrap: anywhere;
+  }
+  .ph { font-size: 13.5px; color: var(--amber); margin: 14px 0 4px; font-weight: 600; }
+  .pbody { margin: 0 0 6px; font-size: 13.5px; color: var(--text); }
+  .d-meta { color: #67788f; }
+  .d-hunk { color: var(--blue); }
+  .d-add { color: var(--green); background: rgba(134, 189, 122, 0.12); }
+  .d-del { color: #e08c8c; background: rgba(224, 140, 140, 0.12); }
+  .d-ctx { color: #a8b6ca; }
+  .exhead2 { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin: 14px 0 4px; }
+  pre.codeseg {
+    margin: 0 0 10px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 0; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.5; color: #c7d3e6; white-space: normal;
+  }
+  .codeseg .cl { display: flex; padding: 0 12px; }
+  .codeseg .cl:hover { background: rgba(124, 159, 240, 0.06); }
+  .codeseg .ln { flex: none; width: 4.2em; text-align: right; padding-right: 14px; color: #51617a; user-select: none; }
+  .codeseg .cd { white-space: pre; flex: 1 1 auto; }
+  .codeseg .cl.hot { background: rgba(217, 168, 96, 0.09); box-shadow: inset 3px 0 0 var(--amber); cursor: pointer; }
+  .codeseg .cl.hot .ln { color: var(--amber); font-weight: 600; }
+  #tipdocs { display: none; }
+  #codetip {
+    position: absolute; z-index: 60; left: 0; top: 0; max-width: 660px; min-width: 300px;
+    background: var(--panel); border: 1px solid var(--blue); border-radius: 10px;
+    padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-height: 70vh; overflow: auto;
+  }
+  #codetip[hidden] { display: none; }
+  .tipdoc .tipnote { margin: 0 0 6px; font-size: 13px; color: var(--text); }
+  .tipdoc blockquote { margin: 6px 0 4px; font-size: 12.5px; }
+  code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
+
+  /* R13-A 分页：目录页卡片 + 页内粘性卡导航（共享 head，s46 内嵌样式已上提并入） */
+  .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
+  .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
+  a.ch46g:hover { border-color: var(--blue); }
+  .ch46g .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .s46tag { flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .s46tag.mech { color: #7c9ff0; border-color: #7c9ff0; }
+  .s46tag.core { color: var(--amber); border-color: var(--amber); }
+  .qsrc { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .s46head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .s46ttl { font-weight: 600; }
+  .s46pg { color: var(--muted); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .s46todo { opacity: .74; }
+  /* R11 批 A D2：规范样式表格（重建自规范 PDF 版面；样式单处） */
+  .tabwrap { overflow-x: auto; margin: 2px 0 12px; }
+  .spectab { border-collapse: collapse; width: 100%; font-size: 12.5px; background: var(--panel); }
+  .spectab caption { caption-side: top; text-align: left; font-weight: 600; font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px; padding: 0 0 6px; }
+  .spectab th, .spectab td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .spectab thead th { background: rgba(124, 159, 240, 0.14); }
+  .spectab tbody tr:nth-child(even) { background: rgba(124, 159, 240, 0.055); }
+  .spectab .tabnote { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+  .tabfoot { margin: -6px 0 12px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  /* R12 批 A-2（意见②）：流程图产线换血 drawio——SVG 内联（.fcn HTML 家族退役；
+     数据层 flowcharts.json，产物 build_flowcharts.py） */
+  .fcf { margin: 2px 0 12px; }
+  .fct { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin-bottom: 6px; }
+  .fcf svg.fcsvg { display: block; width: 100%; height: auto; max-width: 1080px; margin: 0 auto; }
+  @media (max-width: 760px) { .fcf svg.fcsvg { max-width: 100%; } }
+  /* R12 批 A-2（意见③）：规范引用跳转三类——已建锚/出界注记/待建注记 */
+  .sr-ln { color: var(--teal); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .sr-ln:hover { color: #8fd8cc; text-decoration-style: solid; }
+  .sr-out { color: var(--muted); border-bottom: 1px dashed #43536e; cursor: help; }
+  .sr-todo { color: var(--muted); border-bottom: 1px dotted #43536e; cursor: help; }
+  details.fcdoc { margin: 0 0 4px; }
+  details.fcdoc summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details.fcdoc[open] summary { margin-bottom: 6px; }
+  /* R11 批 A-2 D5：规范引文双语 side-by-side（左 EN 右 ZH；qsrc 并入 ZH 栏尾；
+     ZH 在 .qzh——data-ck 元素内部只含 EN 原文，逐字通道不受影响） */
+  .qpair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; align-items: start; }
+  .qpair blockquote { margin: 8px 0 2px; }
+  .qzh { margin: 8px 0 2px; padding: 10px 14px; border-left: 3px solid var(--teal); background: #0d1420; border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap; line-height: 1.55; }
+  .qzh .qsrc { margin: 8px 0 0 17px; }
+  .tipdoc .qzh { font-size: 12.5px; }
+  @media (max-width: 860px) { .qpair { grid-template-columns: 1fr; } }
+  .pgnav { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding: 9px 2px; margin: 0 0 22px; background: rgba(10, 16, 26, 0.94); border-bottom: 1px solid var(--line); }
+  .pgnav .pgback { flex: none; font-size: 13px; color: var(--teal); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 2px 10px; }
+  .pgnav .pgback:hover { border-color: var(--teal); }
+  .pgnav .pgsec { flex: none; font-weight: 600; font-size: 13.5px; }
+  .pgnav .pgsec .no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; margin-right: 7px; }
+  .pgnav a.pgchip { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+  .pgnav a.pgchip:hover { color: var(--blue); border-color: var(--blue); }
+  .pgcrumb { margin: 26px 0 10px; font-size: 13px; color: var(--muted); }
+  .pgcrumb a { color: var(--teal); text-decoration: none; }
+  .pgcrumb a:hover { text-decoration: underline; }
+  .tocgroup { margin: 24px 0 4px; font-size: 13px; color: var(--muted); }
+  .tocgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 10px 0 6px; }
+  a.toccard { display: block; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 15px; text-decoration: none; color: var(--text); }
+  a.toccard:hover { border-color: var(--blue); }
+  .toccard .tcno { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .toccard .tcttl { font-weight: 600; margin-left: 8px; }
+  .toccard .tcmeta { display: block; margin-top: 4px; font-size: 12px; color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .toccard .tcblurb { display: block; margin-top: 7px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .toccard .tcgo { display: block; margin-top: 9px; font-size: 12px; color: var(--teal); }
+</style>
+<body>
+<div class="wrap">
+  <p class="pgcrumb"><a href="index.html">xHCI 第 4 章视频课件 · 目录</a></p>
+  <nav class="pgnav">
+    <a class="pgback" href="index.html">← 目录</a>
+    <span class="pgsec"><span class="no">4.5</span>设备槽管理</span>
+  </nav>
+  <section id="s45">
+    <h2><span class="no"><a class="sr-ln" href="#s45">§4.5</a></span>设备槽管理</h2>
+
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:1455-1465 · xhci_get_endpoint_index · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:1455:1465"><div class="cl" data-line="1455"><span class="ln">1455</span><span class="cd">unsigned int xhci_get_endpoint_index(struct usb_endpoint_descriptor *desc)</span></div>
+<div class="cl" data-line="1456"><span class="ln">1456</span><span class="cd">{</span></div>
+<div class="cl" data-line="1457"><span class="ln">1457</span><span class="cd">	unsigned int index;</span></div>
+<div class="cl" data-line="1458"><span class="ln">1458</span><span class="cd">	if (usb_endpoint_xfer_control(desc))</span></div>
+<div class="cl hot" data-line="1459" data-hot="slot:0"><span class="ln">1459</span><span class="cd">		index = (unsigned int) (usb_endpoint_num(desc)*2);</span></div>
+<div class="cl" data-line="1460"><span class="ln">1460</span><span class="cd">	else</span></div>
+<div class="cl hot" data-line="1461" data-hot="slot:1"><span class="ln">1461</span><span class="cd">		index = (unsigned int) (usb_endpoint_num(desc)*2) +</span></div>
+<div class="cl" data-line="1462"><span class="ln">1462</span><span class="cd">			(usb_endpoint_dir_in(desc) ? 1 : 0) - 1;</span></div>
+<div class="cl" data-line="1463"><span class="ln">1463</span><span class="cd">	return index;</span></div>
+<div class="cl" data-line="1464"><span class="ln">1464</span><span class="cd">}</span></div>
+<div class="cl" data-line="1465"><span class="ln">1465</span><span class="cd">EXPORT_SYMBOL_GPL(xhci_get_endpoint_index);</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:4225-4306 · xhci_alloc_dev · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4225:4306"><div class="cl" data-line="4225"><span class="ln">4225</span><span class="cd">int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)</span></div>
+<div class="cl" data-line="4226"><span class="ln">4226</span><span class="cd">{</span></div>
+<div class="cl" data-line="4227"><span class="ln">4227</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="4228"><span class="ln">4228</span><span class="cd">	struct xhci_virt_device *vdev;</span></div>
+<div class="cl" data-line="4229"><span class="ln">4229</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="4230"><span class="ln">4230</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="4231"><span class="ln">4231</span><span class="cd">	int ret, slot_id;</span></div>
+<div class="cl" data-line="4232"><span class="ln">4232</span><span class="cd">	struct xhci_command *command;</span></div>
+<div class="cl" data-line="4233"><span class="ln">4233</span><span class="cd"></span></div>
+<div class="cl" data-line="4234"><span class="ln">4234</span><span class="cd">	command = xhci_alloc_command(xhci, true, GFP_KERNEL);</span></div>
+<div class="cl" data-line="4235"><span class="ln">4235</span><span class="cd">	if (!command)</span></div>
+<div class="cl" data-line="4236"><span class="ln">4236</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="4237"><span class="ln">4237</span><span class="cd"></span></div>
+<div class="cl" data-line="4238"><span class="ln">4238</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl hot" data-line="4239" data-hot="slot:2"><span class="ln">4239</span><span class="cd">	ret = xhci_queue_slot_control(xhci, command, TRB_ENABLE_SLOT, 0);</span></div>
+<div class="cl" data-line="4240"><span class="ln">4240</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="4241"><span class="ln">4241</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4242"><span class="ln">4242</span><span class="cd">		xhci_dbg(xhci, "FIXME: allocate a command ring segment\n");</span></div>
+<div class="cl" data-line="4243"><span class="ln">4243</span><span class="cd">		xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4244"><span class="ln">4244</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="4245"><span class="ln">4245</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="4246" data-hot="slot:3"><span class="ln">4246</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="4247"><span class="ln">4247</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4248"><span class="ln">4248</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4249" data-hot="slot:4"><span class="ln">4249</span><span class="cd">	wait_for_completion(command-&gt;completion);</span></div>
+<div class="cl hot" data-line="4250" data-hot="slot:5"><span class="ln">4250</span><span class="cd">	slot_id = command-&gt;slot_id;</span></div>
+<div class="cl" data-line="4251"><span class="ln">4251</span><span class="cd"></span></div>
+<div class="cl" data-line="4252"><span class="ln">4252</span><span class="cd">	if (!slot_id || command-&gt;status != COMP_SUCCESS) {</span></div>
+<div class="cl" data-line="4253"><span class="ln">4253</span><span class="cd">		xhci_err(xhci, "Error while assigning device slot ID: %s\n",</span></div>
+<div class="cl" data-line="4254"><span class="ln">4254</span><span class="cd">			 xhci_trb_comp_code_string(command-&gt;status));</span></div>
+<div class="cl" data-line="4255"><span class="ln">4255</span><span class="cd">		xhci_err(xhci, "Max number of devices this xHCI host supports is %u.\n",</span></div>
+<div class="cl" data-line="4256"><span class="ln">4256</span><span class="cd">			 xhci-&gt;max_slots);</span></div>
+<div class="cl" data-line="4257"><span class="ln">4257</span><span class="cd">		xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4258"><span class="ln">4258</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="4259"><span class="ln">4259</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4260"><span class="ln">4260</span><span class="cd"></span></div>
+<div class="cl" data-line="4261"><span class="ln">4261</span><span class="cd">	xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4262"><span class="ln">4262</span><span class="cd"></span></div>
+<div class="cl" data-line="4263"><span class="ln">4263</span><span class="cd">	if ((xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK)) {</span></div>
+<div class="cl" data-line="4264"><span class="ln">4264</span><span class="cd">		spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4265"><span class="ln">4265</span><span class="cd">		ret = xhci_reserve_host_control_ep_resources(xhci);</span></div>
+<div class="cl" data-line="4266"><span class="ln">4266</span><span class="cd">		if (ret) {</span></div>
+<div class="cl" data-line="4267"><span class="ln">4267</span><span class="cd">			spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4268"><span class="ln">4268</span><span class="cd">			xhci_warn(xhci, "Not enough host resources, "</span></div>
+<div class="cl" data-line="4269"><span class="ln">4269</span><span class="cd">					"active endpoint contexts = %u\n",</span></div>
+<div class="cl" data-line="4270"><span class="ln">4270</span><span class="cd">					xhci-&gt;num_active_eps);</span></div>
+<div class="cl" data-line="4271"><span class="ln">4271</span><span class="cd">			goto disable_slot;</span></div>
+<div class="cl" data-line="4272"><span class="ln">4272</span><span class="cd">		}</span></div>
+<div class="cl" data-line="4273"><span class="ln">4273</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4274"><span class="ln">4274</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4275"><span class="ln">4275</span><span class="cd">	/* Use GFP_NOIO, since this function can be called from</span></div>
+<div class="cl" data-line="4276"><span class="ln">4276</span><span class="cd">	 * xhci_discover_or_reset_device(), which may be called as part of</span></div>
+<div class="cl" data-line="4277"><span class="ln">4277</span><span class="cd">	 * mass storage driver error handling.</span></div>
+<div class="cl" data-line="4278"><span class="ln">4278</span><span class="cd">	 */</span></div>
+<div class="cl hot" data-line="4279" data-hot="slot:6"><span class="ln">4279</span><span class="cd">	if (!xhci_alloc_virt_device(xhci, slot_id, udev, GFP_NOIO)) {</span></div>
+<div class="cl" data-line="4280"><span class="ln">4280</span><span class="cd">		xhci_warn(xhci, "Could not allocate xHCI USB device data structures\n");</span></div>
+<div class="cl" data-line="4281"><span class="ln">4281</span><span class="cd">		goto disable_slot;</span></div>
+<div class="cl" data-line="4282"><span class="ln">4282</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4283"><span class="ln">4283</span><span class="cd">	vdev = xhci-&gt;devs[slot_id];</span></div>
+<div class="cl" data-line="4284"><span class="ln">4284</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, vdev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="4285"><span class="ln">4285</span><span class="cd">	trace_xhci_alloc_dev(slot_ctx);</span></div>
+<div class="cl" data-line="4286"><span class="ln">4286</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4287" data-hot="slot:7"><span class="ln">4287</span><span class="cd">	udev-&gt;slot_id = slot_id;</span></div>
+<div class="cl" data-line="4288"><span class="ln">4288</span><span class="cd"></span></div>
+<div class="cl" data-line="4289"><span class="ln">4289</span><span class="cd">	xhci_debugfs_create_slot(xhci, slot_id);</span></div>
+<div class="cl" data-line="4290"><span class="ln">4290</span><span class="cd"></span></div>
+<div class="cl" data-line="4291"><span class="ln">4291</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="4292"><span class="ln">4292</span><span class="cd">	 * If resetting upon resume, we can't put the controller into runtime</span></div>
+<div class="cl" data-line="4293"><span class="ln">4293</span><span class="cd">	 * suspend if there is a device attached.</span></div>
+<div class="cl" data-line="4294"><span class="ln">4294</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4295"><span class="ln">4295</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_RESET_ON_RESUME)</span></div>
+<div class="cl" data-line="4296"><span class="ln">4296</span><span class="cd">		pm_runtime_get_noresume(hcd-&gt;self.controller);</span></div>
+<div class="cl" data-line="4297"><span class="ln">4297</span><span class="cd"></span></div>
+<div class="cl" data-line="4298"><span class="ln">4298</span><span class="cd">	/* Is this a LS or FS device under a HS hub? */</span></div>
+<div class="cl" data-line="4299"><span class="ln">4299</span><span class="cd">	/* Hub or peripheral? */</span></div>
+<div class="cl" data-line="4300"><span class="ln">4300</span><span class="cd">	return 1;</span></div>
+<div class="cl" data-line="4301"><span class="ln">4301</span><span class="cd"></span></div>
+<div class="cl" data-line="4302"><span class="ln">4302</span><span class="cd">disable_slot:</span></div>
+<div class="cl" data-line="4303"><span class="ln">4303</span><span class="cd">	xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="4304"><span class="ln">4304</span><span class="cd"></span></div>
+<div class="cl" data-line="4305"><span class="ln">4305</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="4306"><span class="ln">4306</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-mem.c:969-1039 · xhci_alloc_virt_device · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:969:1039"><div class="cl" data-line="969"><span class="ln">969</span><span class="cd">int xhci_alloc_virt_device(struct xhci_hcd *xhci, int slot_id,</span></div>
+<div class="cl" data-line="970"><span class="ln">970</span><span class="cd">		struct usb_device *udev, gfp_t flags)</span></div>
+<div class="cl" data-line="971"><span class="ln">971</span><span class="cd">{</span></div>
+<div class="cl" data-line="972"><span class="ln">972</span><span class="cd">	struct xhci_virt_device *dev;</span></div>
+<div class="cl" data-line="973"><span class="ln">973</span><span class="cd">	int i;</span></div>
+<div class="cl" data-line="974"><span class="ln">974</span><span class="cd"></span></div>
+<div class="cl" data-line="975"><span class="ln">975</span><span class="cd">	/* Slot ID 0 is reserved */</span></div>
+<div class="cl hot" data-line="976" data-hot="slot:8"><span class="ln">976</span><span class="cd">	if (slot_id == 0 || xhci-&gt;devs[slot_id]) {</span></div>
+<div class="cl" data-line="977"><span class="ln">977</span><span class="cd">		xhci_warn(xhci, "Bad Slot ID %d\n", slot_id);</span></div>
+<div class="cl" data-line="978"><span class="ln">978</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="979"><span class="ln">979</span><span class="cd">	}</span></div>
+<div class="cl" data-line="980"><span class="ln">980</span><span class="cd"></span></div>
+<div class="cl" data-line="981"><span class="ln">981</span><span class="cd">	dev = kzalloc_obj(*dev, flags);</span></div>
+<div class="cl" data-line="982"><span class="ln">982</span><span class="cd">	if (!dev)</span></div>
+<div class="cl" data-line="983"><span class="ln">983</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="984"><span class="ln">984</span><span class="cd"></span></div>
+<div class="cl" data-line="985"><span class="ln">985</span><span class="cd">	dev-&gt;slot_id = slot_id;</span></div>
+<div class="cl" data-line="986"><span class="ln">986</span><span class="cd"></span></div>
+<div class="cl" data-line="987"><span class="ln">987</span><span class="cd">	/* Allocate the (output) device context that will be used in the HC. */</span></div>
+<div class="cl" data-line="988"><span class="ln">988</span><span class="cd">	dev-&gt;out_ctx = xhci_alloc_container_ctx(xhci, XHCI_CTX_TYPE_DEVICE, flags);</span></div>
+<div class="cl" data-line="989"><span class="ln">989</span><span class="cd">	if (!dev-&gt;out_ctx)</span></div>
+<div class="cl" data-line="990"><span class="ln">990</span><span class="cd">		goto fail;</span></div>
+<div class="cl" data-line="991"><span class="ln">991</span><span class="cd"></span></div>
+<div class="cl" data-line="992"><span class="ln">992</span><span class="cd">	xhci_dbg(xhci, "Slot %d output ctx = %pad (dma)\n", slot_id, &amp;dev-&gt;out_ctx-&gt;dma);</span></div>
+<div class="cl" data-line="993"><span class="ln">993</span><span class="cd"></span></div>
+<div class="cl" data-line="994"><span class="ln">994</span><span class="cd">	/* Allocate the (input) device context for address device command */</span></div>
+<div class="cl" data-line="995"><span class="ln">995</span><span class="cd">	dev-&gt;in_ctx = xhci_alloc_container_ctx(xhci, XHCI_CTX_TYPE_INPUT, flags);</span></div>
+<div class="cl" data-line="996"><span class="ln">996</span><span class="cd">	if (!dev-&gt;in_ctx)</span></div>
+<div class="cl" data-line="997"><span class="ln">997</span><span class="cd">		goto fail;</span></div>
+<div class="cl" data-line="998"><span class="ln">998</span><span class="cd"></span></div>
+<div class="cl" data-line="999"><span class="ln">999</span><span class="cd">	xhci_dbg(xhci, "Slot %d input ctx = %pad (dma)\n", slot_id, &amp;dev-&gt;in_ctx-&gt;dma);</span></div>
+<div class="cl" data-line="1000"><span class="ln">1000</span><span class="cd"></span></div>
+<div class="cl" data-line="1001"><span class="ln">1001</span><span class="cd">	/* Initialize the cancellation and bandwidth list for each ep */</span></div>
+<div class="cl" data-line="1002"><span class="ln">1002</span><span class="cd">	for (i = 0; i &lt; 31; i++) {</span></div>
+<div class="cl" data-line="1003"><span class="ln">1003</span><span class="cd">		dev-&gt;eps[i].ep_index = i;</span></div>
+<div class="cl" data-line="1004"><span class="ln">1004</span><span class="cd">		dev-&gt;eps[i].vdev = dev;</span></div>
+<div class="cl" data-line="1005"><span class="ln">1005</span><span class="cd">		INIT_LIST_HEAD(&amp;dev-&gt;eps[i].cancelled_td_list);</span></div>
+<div class="cl" data-line="1006"><span class="ln">1006</span><span class="cd">		INIT_LIST_HEAD(&amp;dev-&gt;eps[i].bw_endpoint_list);</span></div>
+<div class="cl" data-line="1007"><span class="ln">1007</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1008"><span class="ln">1008</span><span class="cd"></span></div>
+<div class="cl" data-line="1009"><span class="ln">1009</span><span class="cd">	/* Allocate endpoint 0 ring */</span></div>
+<div class="cl" data-line="1010"><span class="ln">1010</span><span class="cd">	dev-&gt;eps[0].ring = xhci_ring_alloc(xhci, 2, TYPE_CTRL, 0, flags);</span></div>
+<div class="cl" data-line="1011"><span class="ln">1011</span><span class="cd">	if (!dev-&gt;eps[0].ring)</span></div>
+<div class="cl" data-line="1012"><span class="ln">1012</span><span class="cd">		goto fail;</span></div>
+<div class="cl" data-line="1013"><span class="ln">1013</span><span class="cd"></span></div>
+<div class="cl" data-line="1014"><span class="ln">1014</span><span class="cd">	xhci_ring_init(xhci, dev-&gt;eps[0].ring);</span></div>
+<div class="cl" data-line="1015"><span class="ln">1015</span><span class="cd"></span></div>
+<div class="cl" data-line="1016"><span class="ln">1016</span><span class="cd">	dev-&gt;udev = udev;</span></div>
+<div class="cl" data-line="1017"><span class="ln">1017</span><span class="cd"></span></div>
+<div class="cl" data-line="1018"><span class="ln">1018</span><span class="cd">	/* Point to output device context in dcbaa. */</span></div>
+<div class="cl hot" data-line="1019" data-hot="slot:9"><span class="ln">1019</span><span class="cd">	xhci-&gt;dcbaa.ctx_array[slot_id] = cpu_to_le64(dev-&gt;out_ctx-&gt;dma);</span></div>
+<div class="cl" data-line="1020"><span class="ln">1020</span><span class="cd">	xhci_dbg(xhci, "Set slot id %d dcbaa entry %p to 0x%llx\n",</span></div>
+<div class="cl" data-line="1021"><span class="ln">1021</span><span class="cd">		 slot_id,</span></div>
+<div class="cl" data-line="1022"><span class="ln">1022</span><span class="cd">		 &amp;xhci-&gt;dcbaa.ctx_array[slot_id],</span></div>
+<div class="cl" data-line="1023"><span class="ln">1023</span><span class="cd">		 le64_to_cpu(xhci-&gt;dcbaa.ctx_array[slot_id]));</span></div>
+<div class="cl" data-line="1024"><span class="ln">1024</span><span class="cd"></span></div>
+<div class="cl" data-line="1025"><span class="ln">1025</span><span class="cd">	trace_xhci_alloc_virt_device(dev);</span></div>
+<div class="cl" data-line="1026"><span class="ln">1026</span><span class="cd"></span></div>
+<div class="cl hot" data-line="1027" data-hot="slot:10"><span class="ln">1027</span><span class="cd">	xhci-&gt;devs[slot_id] = dev;</span></div>
+<div class="cl" data-line="1028"><span class="ln">1028</span><span class="cd"></span></div>
+<div class="cl" data-line="1029"><span class="ln">1029</span><span class="cd">	return 1;</span></div>
+<div class="cl" data-line="1030"><span class="ln">1030</span><span class="cd">fail:</span></div>
+<div class="cl" data-line="1031"><span class="ln">1031</span><span class="cd"></span></div>
+<div class="cl" data-line="1032"><span class="ln">1032</span><span class="cd">	if (dev-&gt;in_ctx)</span></div>
+<div class="cl" data-line="1033"><span class="ln">1033</span><span class="cd">		xhci_free_container_ctx(xhci, dev-&gt;in_ctx);</span></div>
+<div class="cl" data-line="1034"><span class="ln">1034</span><span class="cd">	if (dev-&gt;out_ctx)</span></div>
+<div class="cl" data-line="1035"><span class="ln">1035</span><span class="cd">		xhci_free_container_ctx(xhci, dev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="1036"><span class="ln">1036</span><span class="cd">	kfree(dev);</span></div>
+<div class="cl" data-line="1037"><span class="ln">1037</span><span class="cd"></span></div>
+<div class="cl" data-line="1038"><span class="ln">1038</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="1039"><span class="ln">1039</span><span class="cd">}</span></div></pre>
+    </div>
+
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">45-device-slot-management</span>
+        <span class="spec">建槽路径：Enable Slot 命令 → Slot ID 分配 → 虚拟设备 + DCBAA 装载 → 槽状态机</span>
+      </div>
+      <video controls preload="metadata" src="45-device-slot-management.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=4">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m5">交互操作台 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
+    </div>
+
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">单文件自包含 · 交互台分节锚定（#m1-#m6）</span>
+      </div>
+      <p class="int-note"><b>模块五 · 拔除与槽位管理台：</b>设备拔除（PORTSC CCS/CSC 变化 → Disable Slot 命令 → 槽位回收）与设备槽分配（Enable Slot 命令 → Slot ID → DCBAA 装载 → 槽状态机）双剧本走读——对应 <a class="sr-ln" href="p44.html#s44">§4.4</a> 拔除链与 <a class="sr-ln" href="#s45">§4.5</a> 建槽链</p>
+    </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit 2eb03376151bb8585caa23ed2673583107bb5193 · 2025-08-19 · Weitao Wang（Zhaoxin 兆芯） · 5 文件 +35/-23（xhci-ring.c / xhci.c / xhci-mem.c / xhci-hub.c / xhci.h） · 核心 hunks @@ -1592,7 +1592,8 @@（xhci_handle_cmd_disable_slot）+ @@ -1856,7 +1861,7 @@（TRB_DISABLE_SLOT case）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:2eb03376151bb8585caa23ed2673583107bb5193">commit 2eb03376151bb8585caa23ed2673583107bb5193
+Author: Weitao Wang &lt;WeitaoWang-oc@zhaoxin.com&gt;
+Date:   Tue Aug 19 15:58:43 2025 +0300
+
+    usb: xhci: Fix slot_id resource race conflict
+    
+    xHC controller may immediately reuse a slot_id after it's disabled,
+    giving it to a new enumerating device before the xhci driver freed
+    all resources related to the disabled device.
+    
+    In such a scenario, device-A with slot_id equal to 1 is disconnecting
+    while device-B is enumerating, device-B will fail to enumerate in the
+    follow sequence.
+    
+    1.[device-A] send disable slot command
+    2.[device-B] send enable slot command
+    3.[device-A] disable slot command completed and wakeup waiting thread
+    4.[device-B] enable slot command completed with slot_id equal to 1 and
+                 wakeup waiting thread
+    5.[device-B] driver checks that slot_id is still in use (by device-A) in
+                 xhci_alloc_virt_device, and fail to enumerate due to this
+                 conflict
+    6.[device-A] xhci-&gt;devs[slot_id] set to NULL in xhci_free_virt_device
+    
+    To fix driver's slot_id resources conflict, clear xhci-&gt;devs[slot_id] and
+    xhci-&gt;dcbba-&gt;dev_context_ptrs[slot_id] pointers in the interrupt context
+    when disable slot command completes successfully. Simultaneously, adjust
+    function xhci_free_virt_device to accurately handle device release.
+    
+    [minor smatch warning and commit message fix -Mathias]
+    
+    Cc: stable@vger.kernel.org
+    Fixes: 7faac1953ed1 ("xhci: avoid race between disable slot command and host runtime suspend")
+    Signed-off-by: Weitao Wang &lt;WeitaoWang-oc@zhaoxin.com&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20250819125844.2042452-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c</span>
+<span class="d-meta">index 92bb84f8132a..b3a59ce1b3f4 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-hub.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-hub.c</span>
+<span class="d-hunk">@@ -704,8 +704,7 @@ static int xhci_enter_test_mode(struct xhci_hcd *xhci,</span>
+<span class="d-ctx"> 		if (!xhci-&gt;devs[i])</span>
+<span class="d-ctx"> 			continue;</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-		retval = xhci_disable_slot(xhci, i);</span>
+<span class="d-del">-		xhci_free_virt_device(xhci, i);</span>
+<span class="d-add">+		retval = xhci_disable_and_free_slot(xhci, i);</span>
+<span class="d-ctx"> 		if (retval)</span>
+<span class="d-ctx"> 			xhci_err(xhci, "Failed to disable slot %d, %d. Enter test mode anyway\n",</span>
+<span class="d-ctx"> 				 i, retval);</span>
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c</span>
+<span class="d-meta">index 07289333a1e8..81eaad87a3d9 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-mem.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-mem.c</span>
+<span class="d-hunk">@@ -865,21 +865,20 @@ int xhci_alloc_tt_info(struct xhci_hcd *xhci,</span>
+<span class="d-ctx">  * will be manipulated by the configure endpoint, allocate device, or update</span>
+<span class="d-ctx">  * hub functions while this function is removing the TT entries from the list.</span>
+<span class="d-ctx">  */</span>
+<span class="d-del">-void xhci_free_virt_device(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-add">+void xhci_free_virt_device(struct xhci_hcd *xhci, struct xhci_virt_device *dev,</span>
+<span class="d-add">+		int slot_id)</span>
+<span class="d-ctx"> {</span>
+<span class="d-del">-	struct xhci_virt_device *dev;</span>
+<span class="d-ctx"> 	int i;</span>
+<span class="d-ctx"> 	int old_active_eps = 0;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	/* Slot ID 0 is reserved */</span>
+<span class="d-del">-	if (slot_id == 0 || !xhci-&gt;devs[slot_id])</span>
+<span class="d-add">+	if (slot_id == 0 || !dev)</span>
+<span class="d-ctx"> 		return;</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-	dev = xhci-&gt;devs[slot_id];</span>
+<span class="d-del">-</span>
+<span class="d-del">-	xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id] = 0;</span>
+<span class="d-del">-	if (!dev)</span>
+<span class="d-del">-		return;</span>
+<span class="d-add">+	/* If device ctx array still points to _this_ device, clear it */</span>
+<span class="d-add">+	if (dev-&gt;out_ctx &amp;&amp;</span>
+<span class="d-add">+	    xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id] == cpu_to_le64(dev-&gt;out_ctx-&gt;dma))</span>
+<span class="d-add">+		xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id] = 0;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	trace_xhci_free_virt_device(dev);</span>
+<span class="d-ctx"> </span>
+<span class="d-hunk">@@ -920,8 +919,9 @@ void xhci_free_virt_device(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-ctx"> 		dev-&gt;udev-&gt;slot_id = 0;</span>
+<span class="d-ctx"> 	if (dev-&gt;rhub_port &amp;&amp; dev-&gt;rhub_port-&gt;slot_id == slot_id)</span>
+<span class="d-ctx"> 		dev-&gt;rhub_port-&gt;slot_id = 0;</span>
+<span class="d-del">-	kfree(xhci-&gt;devs[slot_id]);</span>
+<span class="d-del">-	xhci-&gt;devs[slot_id] = NULL;</span>
+<span class="d-add">+	if (xhci-&gt;devs[slot_id] == dev)</span>
+<span class="d-add">+		xhci-&gt;devs[slot_id] = NULL;</span>
+<span class="d-add">+	kfree(dev);</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> /*</span>
+<span class="d-hunk">@@ -962,7 +962,7 @@ static void xhci_free_virt_devices_depth_first(struct xhci_hcd *xhci, int slot_i</span>
+<span class="d-ctx"> out:</span>
+<span class="d-ctx"> 	/* we are now at a leaf device */</span>
+<span class="d-ctx"> 	xhci_debugfs_remove_slot(xhci, slot_id);</span>
+<span class="d-del">-	xhci_free_virt_device(xhci, slot_id);</span>
+<span class="d-add">+	xhci_free_virt_device(xhci, vdev, slot_id);</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> int xhci_alloc_virt_device(struct xhci_hcd *xhci, int slot_id,</span>
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index ecd757d482c5..4f8f5aab109d 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -1592,7 +1592,8 @@ static void xhci_handle_cmd_enable_slot(int slot_id, struct xhci_command *comman</span>
+<span class="d-ctx"> 		command-&gt;slot_id = 0;</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-add">+static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id,</span>
+<span class="d-add">+					u32 cmd_comp_code)</span>
+<span class="d-ctx"> {</span>
+<span class="d-ctx"> 	struct xhci_virt_device *virt_dev;</span>
+<span class="d-ctx"> 	struct xhci_slot_ctx *slot_ctx;</span>
+<span class="d-hunk">@@ -1607,6 +1608,10 @@ static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-ctx"> 	if (xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK)</span>
+<span class="d-ctx"> 		/* Delete default control endpoint resources */</span>
+<span class="d-ctx"> 		xhci_free_device_endpoint_resources(xhci, virt_dev, true);</span>
+<span class="d-add">+	if (cmd_comp_code == COMP_SUCCESS) {</span>
+<span class="d-add">+		xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id] = 0;</span>
+<span class="d-add">+		xhci-&gt;devs[slot_id] = NULL;</span>
+<span class="d-add">+	}</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> static void xhci_handle_cmd_config_ep(struct xhci_hcd *xhci, int slot_id)</span>
+<span class="d-hunk">@@ -1856,7 +1861,7 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,</span>
+<span class="d-ctx"> 		xhci_handle_cmd_enable_slot(slot_id, cmd, cmd_comp_code);</span>
+<span class="d-ctx"> 		break;</span>
+<span class="d-ctx"> 	case TRB_DISABLE_SLOT:</span>
+<span class="d-del">-		xhci_handle_cmd_disable_slot(xhci, slot_id);</span>
+<span class="d-add">+		xhci_handle_cmd_disable_slot(xhci, slot_id, cmd_comp_code);</span>
+<span class="d-ctx"> 		break;</span>
+<span class="d-ctx"> 	case TRB_CONFIG_EP:</span>
+<span class="d-ctx"> 		if (!cmd-&gt;completion)</span>
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c</span>
+<span class="d-meta">index 47151ca527bf..0e03691f03bf 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.c</span>
+<span class="d-hunk">@@ -3932,8 +3932,7 @@ static int xhci_discover_or_reset_device(struct usb_hcd *hcd,</span>
+<span class="d-ctx"> 		 * Obtaining a new device slot to inform the xHCI host that</span>
+<span class="d-ctx"> 		 * the USB device has been reset.</span>
+<span class="d-ctx"> 		 */</span>
+<span class="d-del">-		ret = xhci_disable_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-del">-		xhci_free_virt_device(xhci, udev-&gt;slot_id);</span>
+<span class="d-add">+		ret = xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-ctx"> 		if (!ret) {</span>
+<span class="d-ctx"> 			ret = xhci_alloc_dev(hcd, udev);</span>
+<span class="d-ctx"> 			if (ret == 1)</span>
+<span class="d-hunk">@@ -4090,7 +4089,7 @@ static void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)</span>
+<span class="d-ctx"> 	xhci_disable_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span>
+<span class="d-del">-	xhci_free_virt_device(xhci, udev-&gt;slot_id);</span>
+<span class="d-add">+	xhci_free_virt_device(xhci, virt_dev, udev-&gt;slot_id);</span>
+<span class="d-ctx"> 	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> }</span>
+<span class="d-hunk">@@ -4139,6 +4138,16 @@ int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)</span>
+<span class="d-ctx"> 	return 0;</span>
+<span class="d-ctx"> }</span>
+<span class="d-ctx"> </span>
+<span class="d-add">+int xhci_disable_and_free_slot(struct xhci_hcd *xhci, u32 slot_id)</span>
+<span class="d-add">+{</span>
+<span class="d-add">+	struct xhci_virt_device *vdev = xhci-&gt;devs[slot_id];</span>
+<span class="d-add">+	int ret;</span>
+<span class="d-add">+</span>
+<span class="d-add">+	ret = xhci_disable_slot(xhci, slot_id);</span>
+<span class="d-add">+	xhci_free_virt_device(xhci, vdev, slot_id);</span>
+<span class="d-add">+	return ret;</span>
+<span class="d-add">+}</span>
+<span class="d-add">+</span>
+<span class="d-ctx"> /*</span>
+<span class="d-ctx">  * Checks if we have enough host controller resources for the default control</span>
+<span class="d-ctx">  * endpoint.</span>
+<span class="d-hunk">@@ -4245,8 +4254,7 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)</span>
+<span class="d-ctx"> 	return 1;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> disable_slot:</span>
+<span class="d-del">-	xhci_disable_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-del">-	xhci_free_virt_device(xhci, udev-&gt;slot_id);</span>
+<span class="d-add">+	xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	return 0;</span>
+<span class="d-ctx"> }</span>
+<span class="d-hunk">@@ -4382,8 +4390,7 @@ static int xhci_setup_device(struct usb_hcd *hcd, struct usb_device *udev,</span>
+<span class="d-ctx"> 		dev_warn(&amp;udev-&gt;dev, "Device not responding to setup %s.\n", act);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 		mutex_unlock(&amp;xhci-&gt;mutex);</span>
+<span class="d-del">-		ret = xhci_disable_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-del">-		xhci_free_virt_device(xhci, udev-&gt;slot_id);</span>
+<span class="d-add">+		ret = xhci_disable_and_free_slot(xhci, udev-&gt;slot_id);</span>
+<span class="d-ctx"> 		if (!ret) {</span>
+<span class="d-ctx"> 			if (xhci_alloc_dev(hcd, udev) == 1)</span>
+<span class="d-ctx"> 				xhci_setup_addressable_virt_dev(xhci, udev);</span>
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h</span>
+<span class="d-meta">index a20f4e7cd43a..85d5b964bf1e 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.h</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.h</span>
+<span class="d-hunk">@@ -1791,7 +1791,7 @@ void xhci_dbg_trace(struct xhci_hcd *xhci, void (*trace)(struct va_format *),</span>
+<span class="d-ctx"> /* xHCI memory management */</span>
+<span class="d-ctx"> void xhci_mem_cleanup(struct xhci_hcd *xhci);</span>
+<span class="d-ctx"> int xhci_mem_init(struct xhci_hcd *xhci, gfp_t flags);</span>
+<span class="d-del">-void xhci_free_virt_device(struct xhci_hcd *xhci, int slot_id);</span>
+<span class="d-add">+void xhci_free_virt_device(struct xhci_hcd *xhci, struct xhci_virt_device *dev, int slot_id);</span>
+<span class="d-ctx"> int xhci_alloc_virt_device(struct xhci_hcd *xhci, int slot_id, struct usb_device *udev, gfp_t flags);</span>
+<span class="d-ctx"> int xhci_setup_addressable_virt_dev(struct xhci_hcd *xhci, struct usb_device *udev);</span>
+<span class="d-ctx"> void xhci_copy_ep0_dequeue_into_input_ctx(struct xhci_hcd *xhci,</span>
+<span class="d-hunk">@@ -1888,6 +1888,7 @@ void xhci_reset_bandwidth(struct usb_hcd *hcd, struct usb_device *udev);</span>
+<span class="d-ctx"> int xhci_update_hub_device(struct usb_hcd *hcd, struct usb_device *hdev,</span>
+<span class="d-ctx"> 			   struct usb_tt *tt, gfp_t mem_flags);</span>
+<span class="d-ctx"> int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id);</span>
+<span class="d-add">+int xhci_disable_and_free_slot(struct xhci_hcd *xhci, u32 slot_id);</span>
+<span class="d-ctx"> int xhci_ext_cap_init(struct xhci_hcd *xhci);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> int xhci_suspend(struct xhci_hcd *xhci, bool do_wakeup);</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2025 年 8 月，兆芯（Zhaoxin）Weitao Wang 报告并修复；Fixes 追溯 7faac1953ed1（disable slot 与运行时挂起竞态修复引入的形态）。场景：device-A（slot_id=1）正在断开、device-B 正在枚举——xHC 对「同一 slot_id 先 disable 再 enable」的复用没有软件可见的延迟承诺，控制器可以在 disable 完成的瞬间就把刚释放的 slot_id 分给新设备。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">六步竞态时序（补丁信息原文）：① A 发 Disable Slot；② B 发 Enable Slot；③ A 的 Disable 完成并唤醒等待线程；④ B 的 Enable 完成且拿到的正是 slot_id=1；⑤ B 在 <code>xhci_alloc_virt_device</code> 检查 <code>xhci-&gt;devs[1]</code> 仍被 A 占用 → 枚举失败；⑥ A 的 <code>xhci_free_virt_device</code> 才把 devs[1] 置 NULL——永远晚一步。规范背景：<a class="sr-ln" href="#s45">Table 4-1</a>（p86）Disabled 态 DCBAA 指针无效、槽不可用——驱动侧软件镜像（devs[] / DCBAA）必须与 xHC 的槽状态同步翻转，而原实现把它们留到进程上下文的慢路径。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">把清理前移到命令完成事件的中断上下文：<code>xhci_handle_cmd_disable_slot</code> 增加 cmd_comp_code 形参（TRB_DISABLE_SLOT case 分派行同步传入），COMP_SUCCESS 时即刻清 <code>xhci-&gt;dcbaa-&gt;dev_context_ptrs[slot_id]</code> 与 <code>xhci-&gt;devs[slot_id]</code>——DCBAA 指针清零即 Disabled 态的规范形态，此后 B 的 Enable Slot 完成时 devs[1] 已空，枚举照常。配套：<code>xhci_free_virt_device</code> 改为显式传 virt_dev 指针、只在数组仍指向本设备时清指针（防误清新主）；新增 <code>xhci_disable_and_free_slot()</code> 收拢全部「禁槽 + 释放」调用对。与贴码对读：<a class="sr-ln" href="p44.html#s44">§4.4</a> 段 det:6 热行即本补丁在中断上下文清 DCBAA 指针的新增块（基线形态 <code>xhci-&gt;dcbaa.ctx_array[slot_id] = 0</code>）、<a class="sr-ln" href="#s45">§4.5</a> 段 slot:8 冲突检测热行（B 被挡的判定点）与 slot:9 DCBAA 装载热行（装载/清零互为正反操作）——本补丁已在基线 d9008e061539 内，贴码即补丁后形态。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=53">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。
+  </footer>
+</div>
+<div id="tipdocs" hidden>
+<div class="tipdoc" id="tip-slot-0">
+<p class="tipnote">DCI 公式 Control 分支：index = epnum*2——内核 0 基数组 index = DCI-1，对应规范 DCI = (Endpoint Number * 2) + 1</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L101-L102">For Control type endpoints: 
+           DCI = (Endpoint Number * 2) + 1. </blockquote><div class="qzh"><div class="qzh-body">2. 对于控制类型端点：DCI = (Endpoint Number * 2) + 1。</div><div class="qsrc">—— evidence/spec-45.txt L101-L102（p83）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-1">
+<p class="tipnote">非控制端点分支：index = epnum*2 + direction - 1（direction：OUT=0 / IN=1）——规范 <a class="sr-ln" href="#s45">§4.5.1</a> 公式 DCI = (Endpoint Number * 2) + Direction</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L96-L99">For Isoch, Interrupt, or Bulk type endpoints the DCI is calculated from the 
+Endpoint Number and Direction with the following formula; 
+          DCI = (Endpoint Number * 2) + Direction, 
+where Direction = ‘0’ for OUT endpoints and ‘1’ for IN endpoints. </blockquote><div class="qzh"><div class="qzh-body">1. 对于等时（Isoch）、中断或批量类型端点，DCI 由端点号（Endpoint Number）与方向（Direction）按以下公式计算：DCI = (Endpoint Number * 2) + Direction，其中 OUT 端点的 Direction = ‘0’，IN 端点的 Direction = ‘1’。</div><div class="qsrc">—— evidence/spec-45.txt L96-L99（p83）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-2">
+<p class="tipnote">Enable Slot 命令 TRB 入命令环——Disabled 态唯一允许软件发出的命令（<a class="sr-ln" href="#s45">§4.5.3.2</a> p86）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L284-L287">In this slot state the Device Slot is disabled, that is, the slot’s Doorbell register 
+is disabled and the pointer to the slot’s Output Device Context in the Device 
+Context Base Address Array is invalid. The only command that software is 
+allowed to issue for the slot in this state is the Enable Slot Command. </blockquote><div class="qzh"><div class="qzh-body">在此槽状态下，设备槽处于禁用（disabled），即该槽的门铃寄存器被禁用，且设备上下文基址数组中指向该槽输出设备上下文（Output Device Context）的指针无效。软件在此状态下被允许为该槽发出的唯一命令是 Enable Slot 命令（启用槽命令）。</div><div class="qsrc">—— evidence/spec-45.txt L284-L287（p86）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-3">
+<p class="tipnote">敲主机命令门铃：DB Target = Host Controller Command（<a class="sr-ln" href="#s45">§4.5</a> p83）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L82-L84">Ringing the Host Controller Doorbell (Doorbell Register 0) with the DB Target = 
+Host Controller Command, indicates to the xHC that software has defined a 
+command in the Command Ring that it wants executed. </blockquote><div class="qzh"><div class="qzh-body">以 DB Target = Host Controller Command 敲响主机控制器门铃（门铃寄存器 0），即向 xHC 表明软件已在命令环（Command Ring）中定义了一条希望执行的命令。</div><div class="qsrc">—— evidence/spec-45.txt L82-L84（p83）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-4">
+<p class="tipnote">等 Enable Slot 完成事件：成功后槽从 Disabled 迁入 Enabled（<a class="sr-ln" href="#s45">§4.5.3.2</a> p86）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L291-L292">When in the Disabled state, the slot shall transition to the Enabled state due to 
+the successful completion of an Enable Slot Command. </blockquote><div class="qzh"><div class="qzh-body">处于 Disabled 状态时，槽必须在 Enable Slot 命令成功完成后迁移到 Enabled 状态。</div><div class="qsrc">—— evidence/spec-45.txt L291-L292（p86）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-5">
+<p class="tipnote">从完成事件的命令结构取回 xHC 分配的 Slot ID——它是软件访问 DCBAA 与门铃数组的索引</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L9-L11">The Slot ID is the index that software uses when accessing the Device Context 
+Base Address Array to retrieve a pointer to the Device Context data structure 
+or to access the Doorbell Register associated with a device. </blockquote><div class="qzh"><div class="qzh-body">Slot ID 是软件访问设备上下文基址数组以取回指向设备上下文数据结构的指针、或访问与某设备关联的门铃寄存器时所用的索引。</div><div class="qsrc">—— evidence/spec-45.txt L9-L11（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-6">
+<p class="tipnote">按 Slot ID 分配虚拟设备（out/in 上下文 + EP0 传输环）——2eb03376151b 竞态场景里 device-B 被挡住的检测点</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L298-L302">In this slot state the Device Slot has been allocated to software by the Enable 
+Slot Command, however the Doorbell register for the slot is not enabled and 
+the pointer to the slot’s Output Device Context in the Device Context Base 
+Address Array is invalid. The only commands that software is allowed to issue 
+for a slot in this state are the Address Device and Disable Slot. </blockquote><div class="qzh"><div class="qzh-body">在此槽状态下，设备槽已由 Enable Slot 命令分配给软件，但该槽的门铃寄存器尚未启用，且设备上下文基址数组中指向该槽输出设备上下文的指针无效。软件在此状态下被允许为该槽发出的命令仅有 Address Device 与 Disable Slot。</div><div class="qsrc">—— evidence/spec-45.txt L298-L302（p86）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-7">
+<p class="tipnote">Slot ID 记入 usb_device：此后内核各处都以它索引该设备的槽三件套</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L60-L61">The Slot ID is the index that system software uses when accessing a specific 
+Device Slot in the Device Context Base Address Array and the Doorbell Array. </blockquote><div class="qzh"><div class="qzh-body">Slot ID 是系统软件在设备上下文基址数组和门铃数组中访问特定设备槽时所用的索引。</div><div class="qsrc">—— evidence/spec-45.txt L60-L61（p82）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-8">
+<p class="tipnote">Slot 0 保留 + 槽位占用冲突检测——2eb03376151b：device-A 残留占用时 device-B 在此被拒，枚举失败</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L13-L15">11The total number of USB devices supported by the xHCI architecture is less than 256 (the number of Device Context slots) because 
+some of the Device Context slots are reserved by the xHCI for special purposes and are not available for enumerating USB 
+devices. For example, If virtualization is enabled, slots allocated to one VF will appear to be “reserved” to another VF. </blockquote><div class="qzh"><div class="qzh-body">注 11：xHCI 架构支持的 USB 设备总数小于 256（即设备上下文槽的数量），因为部分设备上下文槽被 xHCI 保留用于特殊用途，不能用于枚举 USB 设备。例如，若启用了虚拟化，分配给某个 VF（Virtual Function，虚拟功能）的槽在另一个 VF 看来将是“保留”的。</div><div class="qsrc">—— evidence/spec-45.txt L13-L15（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-9">
+<p class="tipnote">DCBAA 装载行：ctx_array[slot_id] = 输出设备上下文 DMA 地址——数组元素是 64 位指针（<a class="sr-ln" href="#s45">§4.5</a> p81）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L6-L8">The Device Context Base Address Array supports up to 25511 USB devices 
+or hubs, where each element in the array is a 64-bit pointer to the base 
+address of a Device Context data structure. </blockquote><div class="qzh"><div class="qzh-body">设备上下文基址数组最多支持 255（注 11）个 USB 设备或集线器，数组中每个元素都是一个 64 位指针，指向一个设备上下文数据结构的基址。</div><div class="qsrc">—— evidence/spec-45.txt L6-L8（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-slot-10">
+<p class="tipnote">devs[slot_id] = dev：软件侧槽位登记，与 DCBAA 指针、门铃寄存器并列为槽三件套的驱动镜像</p>
+<div class="qpair"><blockquote data-ck="spec:spec-45.txt:L3-L5">to a Device Slot. Each xHC Device Slot is comprised of 3 major components: an 
+entry in the Device Context Base Address Array, a Device Context data 
+structure, and a Doorbell Register in the Doorbell Array. </blockquote><div class="qzh"><div class="qzh-body">xHCI 最多支持 255 个 USB 设备，每个 USB 设备被指派给一个设备槽（Device Slot）。每个 xHC 设备槽由 3 个主要部分组成：设备上下文基址数组（Device Context Base Address Array）中的一个条目、一个设备上下文（Device Context）数据结构，以及门铃数组（Doorbell Array）中的一个门铃寄存器（Doorbell Register）。</div><div class="qsrc">—— evidence/spec-45.txt L3-L5（p81）</div></div></div>
+</div>
+</div>
+<div id="codetip" hidden><div class="tipbody"></div></div>
+<script>
+(function () {
+  'use strict';
+  var tip = document.getElementById('codetip');
+  var body = tip ? tip.querySelector('.tipbody') : null;
+  if (!tip || !body) { return; }
+  function show(row, pin) {
+    var key = row.getAttribute('data-hot');
+    var doc = document.getElementById('tip-' + key.replace(':', '-'));
+    if (!doc) { return; }
+    body.innerHTML = '';
+    body.appendChild(doc.cloneNode(true));
+    tip.setAttribute('data-for', key);
+    if (pin) { tip.setAttribute('data-pin', key); }
+    tip.hidden = false;
+    var r = row.getBoundingClientRect();
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = Math.max(8, Math.min(r.left + window.scrollX + (r.width - tw) / 2,
+        document.documentElement.scrollWidth - tw - 8));
+    var y = r.top + window.scrollY - th - 10;
+    if (y < window.scrollY + 4) { y = r.bottom + window.scrollY + 10; }
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  function unpinned() { return !tip.getAttribute('data-pin'); }
+  function hide() { if (unpinned()) { tip.hidden = true; } }
+  function unpin() { tip.removeAttribute('data-pin'); tip.hidden = true; }
+  var rows = document.querySelectorAll('.codeseg .cl.hot');
+  for (var i = 0; i < rows.length; i++) {
+    (function (row) {
+      row.addEventListener('mouseenter', function () { if (unpinned()) { show(row, false); } });
+      row.addEventListener('mouseleave', hide);
+      row.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var key = row.getAttribute('data-hot');
+        if (tip.getAttribute('data-pin') === key) { unpin(); }
+        else { show(row, true); }
+      });
+    })(rows[i]);
+  }
+  document.addEventListener('click', function () { unpin(); });
+})();
+</script>
+</body>
+</html>

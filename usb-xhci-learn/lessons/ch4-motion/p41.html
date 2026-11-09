@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xHCI 第 4 章视频课件 · 4.1 命令操作</title>
+<!-- data-ck 锚点块书写约定（机检 scripts/check_landing_code.py 依赖）：
+     1) data-ck 必须是开标签的最后一个属性；
+     2) 闭合标签紧贴内容末字符，中间不留任何空白；
+     3) 多行块（blockquote/pre）的第 2 行起内容顶格（零缩进）。
+     锚点 schema：
+     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止；
+                                  同一锚点值允许多次出现，按 EXPECTED_SPEC 多重集对账）
+     patch:<hash>               → git show <hash> 完整 stdout（不加路径过滤；diff 部分
+                                  逐行 d-meta/d-hunk/d-add/d-del/d-ctx 着色 span）
+     贴码段走 data-src 通道（pre.codeseg，data-src="短文件名:起始行:结束行"），
+     机检按段校验（行内容 == git show d9008e061539:<路径> 切片）+ 摘录覆盖 35/35；
+     摘录行 class="cl hot" + data-hot="组:下标"，tooltip 引文在页尾 #tipdocs。-->
+<style>
+  :root {
+    --bg: #0b0f15;
+    --panel: #111823;
+    --line: #1d2735;
+    --text: #e8edf5;
+    --muted: #8fa0b8;
+    --blue: #7c9ff0;
+    --amber: #d9a860;
+    --green: #86bd7a;
+    --teal: #7fd0b2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 64px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  h1 .tag { color: var(--amber); font-size: 15px; font-weight: 600; margin-left: 10px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meta b { color: var(--green); font-weight: 600; }
+  .lead { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+  .toc { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 4px; }
+  .toc a {
+    display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--text); text-decoration: none; font-size: 13.5px; background: var(--panel);
+  }
+  .toc a:hover { border-color: var(--blue); color: var(--blue); }
+  h2 { font-size: 19px; margin: 40px 0 14px; }
+  h2 .no { color: var(--amber); margin-right: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .card.b1 { border-left: 3px solid var(--blue); }
+  .card.b2 { border-left: 3px solid var(--teal); }
+  .card.b3 { border-left: 3px solid var(--green); }
+  .card.b4 { border-left: 3px solid var(--amber); }
+  .bhead { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .badge {
+    display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
+    border-radius: 6px; background: #18212f; color: var(--amber); font-size: 13px; font-weight: 700; flex: none;
+  }
+  h3 { font-size: 14px; margin: 16px 0 8px; color: var(--blue); }
+  h3 .cmt { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .qtitle { margin: 14px 0 0; font-size: 13.5px; font-weight: 600; }
+  blockquote {
+    margin: 8px 0 4px; padding: 10px 14px; border-left: 3px solid var(--blue); background: #0d1420;
+    border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap;
+  }
+  .qsrc { margin: 0 0 6px 17px; color: var(--muted); font-size: 12px; }
+  pre.diffblock {
+    margin: 0 0 4px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.55; color: #c7d3e6;
+  }
+  .exnote { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .foot-note { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .vhead .name { font-size: 16px; font-weight: 600; font-family: ui-monospace, Menlo, monospace; }
+  .vhead .spec { color: var(--muted); font-size: 12.5px; }
+  .card video { width: 100%; border-radius: 6px; background: #000; display: block; }
+  .btn {
+    display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 13.5px;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; border: 1px solid var(--teal); color: var(--teal); }
+  .act { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .act .note { color: var(--muted); font-size: 12.5px; }
+  .int-note { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
+  .int-note b { color: var(--teal); font-weight: 600; }
+  .phead {
+    font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px;
+    background: #0d1420; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px;
+    margin-bottom: 10px; overflow-wrap: anywhere;
+  }
+  .ph { font-size: 13.5px; color: var(--amber); margin: 14px 0 4px; font-weight: 600; }
+  .pbody { margin: 0 0 6px; font-size: 13.5px; color: var(--text); }
+  .d-meta { color: #67788f; }
+  .d-hunk { color: var(--blue); }
+  .d-add { color: var(--green); background: rgba(134, 189, 122, 0.12); }
+  .d-del { color: #e08c8c; background: rgba(224, 140, 140, 0.12); }
+  .d-ctx { color: #a8b6ca; }
+  .exhead2 { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin: 14px 0 4px; }
+  pre.codeseg {
+    margin: 0 0 10px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 0; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.5; color: #c7d3e6; white-space: normal;
+  }
+  .codeseg .cl { display: flex; padding: 0 12px; }
+  .codeseg .cl:hover { background: rgba(124, 159, 240, 0.06); }
+  .codeseg .ln { flex: none; width: 4.2em; text-align: right; padding-right: 14px; color: #51617a; user-select: none; }
+  .codeseg .cd { white-space: pre; flex: 1 1 auto; }
+  .codeseg .cl.hot { background: rgba(217, 168, 96, 0.09); box-shadow: inset 3px 0 0 var(--amber); cursor: pointer; }
+  .codeseg .cl.hot .ln { color: var(--amber); font-weight: 600; }
+  #tipdocs { display: none; }
+  #codetip {
+    position: absolute; z-index: 60; left: 0; top: 0; max-width: 660px; min-width: 300px;
+    background: var(--panel); border: 1px solid var(--blue); border-radius: 10px;
+    padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-height: 70vh; overflow: auto;
+  }
+  #codetip[hidden] { display: none; }
+  .tipdoc .tipnote { margin: 0 0 6px; font-size: 13px; color: var(--text); }
+  .tipdoc blockquote { margin: 6px 0 4px; font-size: 12.5px; }
+  code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
+
+  /* R13-A 分页：目录页卡片 + 页内粘性卡导航（共享 head，s46 内嵌样式已上提并入） */
+  .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
+  .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
+  a.ch46g:hover { border-color: var(--blue); }
+  .ch46g .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .s46tag { flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .s46tag.mech { color: #7c9ff0; border-color: #7c9ff0; }
+  .s46tag.core { color: var(--amber); border-color: var(--amber); }
+  .qsrc { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .s46head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .s46ttl { font-weight: 600; }
+  .s46pg { color: var(--muted); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .s46todo { opacity: .74; }
+  /* R11 批 A D2：规范样式表格（重建自规范 PDF 版面；样式单处） */
+  .tabwrap { overflow-x: auto; margin: 2px 0 12px; }
+  .spectab { border-collapse: collapse; width: 100%; font-size: 12.5px; background: var(--panel); }
+  .spectab caption { caption-side: top; text-align: left; font-weight: 600; font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px; padding: 0 0 6px; }
+  .spectab th, .spectab td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .spectab thead th { background: rgba(124, 159, 240, 0.14); }
+  .spectab tbody tr:nth-child(even) { background: rgba(124, 159, 240, 0.055); }
+  .spectab .tabnote { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+  .tabfoot { margin: -6px 0 12px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  /* R12 批 A-2（意见②）：流程图产线换血 drawio——SVG 内联（.fcn HTML 家族退役；
+     数据层 flowcharts.json，产物 build_flowcharts.py） */
+  .fcf { margin: 2px 0 12px; }
+  .fct { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin-bottom: 6px; }
+  .fcf svg.fcsvg { display: block; width: 100%; height: auto; max-width: 1080px; margin: 0 auto; }
+  @media (max-width: 760px) { .fcf svg.fcsvg { max-width: 100%; } }
+  /* R12 批 A-2（意见③）：规范引用跳转三类——已建锚/出界注记/待建注记 */
+  .sr-ln { color: var(--teal); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .sr-ln:hover { color: #8fd8cc; text-decoration-style: solid; }
+  .sr-out { color: var(--muted); border-bottom: 1px dashed #43536e; cursor: help; }
+  .sr-todo { color: var(--muted); border-bottom: 1px dotted #43536e; cursor: help; }
+  details.fcdoc { margin: 0 0 4px; }
+  details.fcdoc summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details.fcdoc[open] summary { margin-bottom: 6px; }
+  /* R11 批 A-2 D5：规范引文双语 side-by-side（左 EN 右 ZH；qsrc 并入 ZH 栏尾；
+     ZH 在 .qzh——data-ck 元素内部只含 EN 原文，逐字通道不受影响） */
+  .qpair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; align-items: start; }
+  .qpair blockquote { margin: 8px 0 2px; }
+  .qzh { margin: 8px 0 2px; padding: 10px 14px; border-left: 3px solid var(--teal); background: #0d1420; border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap; line-height: 1.55; }
+  .qzh .qsrc { margin: 8px 0 0 17px; }
+  .tipdoc .qzh { font-size: 12.5px; }
+  @media (max-width: 860px) { .qpair { grid-template-columns: 1fr; } }
+  .pgnav { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding: 9px 2px; margin: 0 0 22px; background: rgba(10, 16, 26, 0.94); border-bottom: 1px solid var(--line); }
+  .pgnav .pgback { flex: none; font-size: 13px; color: var(--teal); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 2px 10px; }
+  .pgnav .pgback:hover { border-color: var(--teal); }
+  .pgnav .pgsec { flex: none; font-weight: 600; font-size: 13.5px; }
+  .pgnav .pgsec .no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; margin-right: 7px; }
+  .pgnav a.pgchip { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+  .pgnav a.pgchip:hover { color: var(--blue); border-color: var(--blue); }
+  .pgcrumb { margin: 26px 0 10px; font-size: 13px; color: var(--muted); }
+  .pgcrumb a { color: var(--teal); text-decoration: none; }
+  .pgcrumb a:hover { text-decoration: underline; }
+  .tocgroup { margin: 24px 0 4px; font-size: 13px; color: var(--muted); }
+  .tocgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 10px 0 6px; }
+  a.toccard { display: block; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 15px; text-decoration: none; color: var(--text); }
+  a.toccard:hover { border-color: var(--blue); }
+  .toccard .tcno { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .toccard .tcttl { font-weight: 600; margin-left: 8px; }
+  .toccard .tcmeta { display: block; margin-top: 4px; font-size: 12px; color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .toccard .tcblurb { display: block; margin-top: 7px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .toccard .tcgo { display: block; margin-top: 9px; font-size: 12px; color: var(--teal); }
+</style>
+<body>
+<div class="wrap">
+  <p class="pgcrumb"><a href="index.html">xHCI 第 4 章视频课件 · 目录</a></p>
+  <nav class="pgnav">
+    <a class="pgback" href="index.html">← 目录</a>
+    <span class="pgsec"><span class="no">4.1</span>命令操作</span>
+  </nav>
+  <section id="s41">
+    <h2><span class="no"><a class="sr-ln" href="#s41">§4.1</a></span>命令操作</h2>
+
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>规范要点（xHCI 规范 <a class="sr-ln" href="#s41">§4.1</a> · p68）</h3>
+      <p class="qtitle">要点 1 · 只有一条命令环，所有 xHC 命令都走它</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-41.txt:L2">There is only one Command Ring that is used for issuing xHC specific 
+commands or commands related to Device Slots.</blockquote><div class="qzh"><div class="qzh-body">只有一个命令环（Command Ring），用于发出 xHC 专属的命令或与设备槽（Device Slot）相关的命令。</div><div class="qsrc">—— evidence/spec-41.txt L2（p68）</div></div></div>
+      <p class="qtitle">要点 2 · 发出三拍：TRB 上环 → 敲门铃寄存器 0（DB Target=0）→ xHC 执行</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-41.txt:L8-L10">All xHC commands are issued by placing the desired Command TRB(s) (<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 
+6.4.3</span> Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 5.6</span> Doorbell Registers).</blockquote><div class="qzh"><div class="qzh-body">所有 xHC 命令的下发方式为：将所需的命令 TRB（Command TRB，见 6.4.3 节“命令 TRB”）放置到命令环上，然后敲响 xHC 命令门铃寄存器（Doorbell Register），即把 Host Controller Command 代码写入 0 号门铃寄存器的 DB Target 字段（参见 5.6 节“门铃寄存器（Doorbell Registers）”）。</div><div class="qsrc">—— evidence/spec-41.txt L8-L10（p68）</div></div></div>
+      <p class="qtitle">要点 3 · 一切命令必产 Command Completion Event TRB 上事件环</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-41.txt:L19">All commands result in the generation of a Command Completion Event TRB 
+(<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 6.4.3</span> Command TRBs) on the Event Ring.</blockquote><div class="qzh"><div class="qzh-body">所有命令都会在事件环（Event Ring）上生成一个命令完成事件 TRB（Command Completion Event TRB，见 6.4.3 节“命令 TRB”）。</div><div class="qsrc">—— evidence/spec-41.txt L19（p68）</div></div></div>
+      <p class="qtitle">要点 4 · CRCR（命令环控制寄存器）属 Operational 寄存器空间（§5.4.5）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-41.txt:L3">The Command Ring Control 
+Register is defined in the Operational Register space</blockquote><div class="qzh"><div class="qzh-body">命令环控制寄存器（Command Ring Control Register）定义在操作寄存器空间（Operational Register space）中（参见 5.4.5 节“设备槽管理（Device Slot Management）”）。</div><div class="qsrc">—— evidence/spec-41.txt L3（p68）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:4354-4400 · queue_command · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:4354:4400"><div class="cl hot" data-line="4354" data-hot="cmd:0"><span class="ln">4354</span><span class="cd">static int queue_command(struct xhci_hcd *xhci, struct xhci_command *cmd,</span></div>
+<div class="cl" data-line="4355"><span class="ln">4355</span><span class="cd">			 u32 field1, u32 field2,</span></div>
+<div class="cl" data-line="4356"><span class="ln">4356</span><span class="cd">			 u32 field3, u32 field4, bool command_must_succeed)</span></div>
+<div class="cl" data-line="4357"><span class="ln">4357</span><span class="cd">{</span></div>
+<div class="cl" data-line="4358"><span class="ln">4358</span><span class="cd">	int reserved_trbs = xhci-&gt;cmd_ring_reserved_trbs;</span></div>
+<div class="cl" data-line="4359"><span class="ln">4359</span><span class="cd">	struct usb_hcd *hcd = xhci_to_hcd(xhci);</span></div>
+<div class="cl" data-line="4360"><span class="ln">4360</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="4361"><span class="ln">4361</span><span class="cd"></span></div>
+<div class="cl" data-line="4362"><span class="ln">4362</span><span class="cd">	if ((xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) ||</span></div>
+<div class="cl" data-line="4363"><span class="ln">4363</span><span class="cd">		(xhci-&gt;xhc_state &amp; XHCI_STATE_HALTED)) {</span></div>
+<div class="cl" data-line="4364"><span class="ln">4364</span><span class="cd">		xhci_dbg(xhci, "xHCI dying or halted, can't queue_command. state: 0x%x\n",</span></div>
+<div class="cl" data-line="4365"><span class="ln">4365</span><span class="cd">			 xhci-&gt;xhc_state);</span></div>
+<div class="cl" data-line="4366"><span class="ln">4366</span><span class="cd">		return -ESHUTDOWN;</span></div>
+<div class="cl" data-line="4367"><span class="ln">4367</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4368"><span class="ln">4368</span><span class="cd"></span></div>
+<div class="cl" data-line="4369"><span class="ln">4369</span><span class="cd">	if (!HCD_HW_ACCESSIBLE(hcd)) {</span></div>
+<div class="cl" data-line="4370"><span class="ln">4370</span><span class="cd">		xhci_warn(xhci, "Can't queue command, xHC not accessible\n");</span></div>
+<div class="cl" data-line="4371"><span class="ln">4371</span><span class="cd">		return -ESHUTDOWN;</span></div>
+<div class="cl" data-line="4372"><span class="ln">4372</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4373"><span class="ln">4373</span><span class="cd"></span></div>
+<div class="cl" data-line="4374"><span class="ln">4374</span><span class="cd">	if (!command_must_succeed)</span></div>
+<div class="cl" data-line="4375"><span class="ln">4375</span><span class="cd">		reserved_trbs++;</span></div>
+<div class="cl" data-line="4376"><span class="ln">4376</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4377" data-hot="cmd:1"><span class="ln">4377</span><span class="cd">	ret = prepare_ring(xhci, xhci-&gt;cmd_ring, EP_STATE_RUNNING,</span></div>
+<div class="cl" data-line="4378"><span class="ln">4378</span><span class="cd">			reserved_trbs, GFP_ATOMIC);</span></div>
+<div class="cl" data-line="4379"><span class="ln">4379</span><span class="cd">	if (ret &lt; 0) {</span></div>
+<div class="cl" data-line="4380"><span class="ln">4380</span><span class="cd">		xhci_err(xhci, "ERR: No room for command on command ring\n");</span></div>
+<div class="cl" data-line="4381"><span class="ln">4381</span><span class="cd">		if (command_must_succeed)</span></div>
+<div class="cl" data-line="4382"><span class="ln">4382</span><span class="cd">			xhci_err(xhci, "ERR: Reserved TRB counting for "</span></div>
+<div class="cl" data-line="4383"><span class="ln">4383</span><span class="cd">					"unfailable commands failed.\n");</span></div>
+<div class="cl" data-line="4384"><span class="ln">4384</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="4385"><span class="ln">4385</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4386"><span class="ln">4386</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4387" data-hot="cmd:2"><span class="ln">4387</span><span class="cd">	cmd-&gt;command_trb = xhci-&gt;cmd_ring-&gt;enqueue;</span></div>
+<div class="cl" data-line="4388"><span class="ln">4388</span><span class="cd"></span></div>
+<div class="cl" data-line="4389"><span class="ln">4389</span><span class="cd">	/* if there are no other commands queued we start the timeout timer */</span></div>
+<div class="cl" data-line="4390"><span class="ln">4390</span><span class="cd">	if (list_empty(&amp;xhci-&gt;cmd_list)) {</span></div>
+<div class="cl" data-line="4391"><span class="ln">4391</span><span class="cd">		xhci-&gt;current_cmd = cmd;</span></div>
+<div class="cl" data-line="4392"><span class="ln">4392</span><span class="cd">		xhci_mod_cmd_timer(xhci);</span></div>
+<div class="cl" data-line="4393"><span class="ln">4393</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4394"><span class="ln">4394</span><span class="cd"></span></div>
+<div class="cl" data-line="4395"><span class="ln">4395</span><span class="cd">	list_add_tail(&amp;cmd-&gt;cmd_list, &amp;xhci-&gt;cmd_list);</span></div>
+<div class="cl" data-line="4396"><span class="ln">4396</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4397" data-hot="cmd:3"><span class="ln">4397</span><span class="cd">	queue_trb(xhci, xhci-&gt;cmd_ring, false, field1, field2, field3,</span></div>
+<div class="cl" data-line="4398"><span class="ln">4398</span><span class="cd">			field4 | xhci-&gt;cmd_ring-&gt;cycle_state);</span></div>
+<div class="cl" data-line="4399"><span class="ln">4399</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="4400"><span class="ln">4400</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:429-441 · xhci_ring_cmd_db · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:429:441"><div class="cl" data-line="429"><span class="ln">429</span><span class="cd">void xhci_ring_cmd_db(struct xhci_hcd *xhci)</span></div>
+<div class="cl" data-line="430"><span class="ln">430</span><span class="cd">{</span></div>
+<div class="cl" data-line="431"><span class="ln">431</span><span class="cd">	if (!(xhci-&gt;cmd_ring_state &amp; CMD_RING_STATE_RUNNING))</span></div>
+<div class="cl" data-line="432"><span class="ln">432</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="433"><span class="ln">433</span><span class="cd"></span></div>
+<div class="cl" data-line="434"><span class="ln">434</span><span class="cd">	xhci_dbg(xhci, "// Ding dong!\n");</span></div>
+<div class="cl" data-line="435"><span class="ln">435</span><span class="cd"></span></div>
+<div class="cl" data-line="436"><span class="ln">436</span><span class="cd">	trace_xhci_ring_host_doorbell(0, DB_VALUE_HOST);</span></div>
+<div class="cl" data-line="437"><span class="ln">437</span><span class="cd"></span></div>
+<div class="cl hot" data-line="438" data-hot="cmd:4"><span class="ln">438</span><span class="cd">	writel(DB_VALUE_HOST, &amp;xhci-&gt;dba-&gt;doorbell[0]);</span></div>
+<div class="cl" data-line="439"><span class="ln">439</span><span class="cd">	/* Flush PCI posted writes */</span></div>
+<div class="cl" data-line="440"><span class="ln">440</span><span class="cd">	readl(&amp;xhci-&gt;dba-&gt;doorbell[0]);</span></div>
+<div class="cl" data-line="441"><span class="ln">441</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:2994-3039 · xhci_handle_event_trb · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:2994:3039"><div class="cl" data-line="2994"><span class="ln">2994</span><span class="cd">static int xhci_handle_event_trb(struct xhci_hcd *xhci, struct xhci_interrupter *ir,</span></div>
+<div class="cl" data-line="2995"><span class="ln">2995</span><span class="cd">				 union xhci_trb *event)</span></div>
+<div class="cl" data-line="2996"><span class="ln">2996</span><span class="cd">{</span></div>
+<div class="cl" data-line="2997"><span class="ln">2997</span><span class="cd">	u32 trb_type;</span></div>
+<div class="cl" data-line="2998"><span class="ln">2998</span><span class="cd"></span></div>
+<div class="cl" data-line="2999"><span class="ln">2999</span><span class="cd">	trace_xhci_handle_event(ir-&gt;event_ring, &amp;event-&gt;generic,</span></div>
+<div class="cl" data-line="3000"><span class="ln">3000</span><span class="cd">				xhci_trb_virt_to_dma(ir-&gt;event_ring-&gt;deq_seg,</span></div>
+<div class="cl" data-line="3001"><span class="ln">3001</span><span class="cd">						     ir-&gt;event_ring-&gt;dequeue));</span></div>
+<div class="cl" data-line="3002"><span class="ln">3002</span><span class="cd"></span></div>
+<div class="cl" data-line="3003"><span class="ln">3003</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3004"><span class="ln">3004</span><span class="cd">	 * Barrier between reading the TRB_CYCLE (valid) flag before, and any</span></div>
+<div class="cl" data-line="3005"><span class="ln">3005</span><span class="cd">	 * speculative reads of the event's flags/data below.</span></div>
+<div class="cl" data-line="3006"><span class="ln">3006</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3007"><span class="ln">3007</span><span class="cd">	rmb();</span></div>
+<div class="cl" data-line="3008"><span class="ln">3008</span><span class="cd">	trb_type = TRB_FIELD_TO_TYPE(le32_to_cpu(event-&gt;event_cmd.flags));</span></div>
+<div class="cl" data-line="3009"><span class="ln">3009</span><span class="cd">	/* FIXME: Handle more event types. */</span></div>
+<div class="cl" data-line="3010"><span class="ln">3010</span><span class="cd"></span></div>
+<div class="cl" data-line="3011"><span class="ln">3011</span><span class="cd">	switch (trb_type) {</span></div>
+<div class="cl" data-line="3012"><span class="ln">3012</span><span class="cd">	case TRB_COMPLETION:</span></div>
+<div class="cl hot" data-line="3013" data-hot="cmd:5"><span class="ln">3013</span><span class="cd">		handle_cmd_completion(xhci, &amp;event-&gt;event_cmd);</span></div>
+<div class="cl" data-line="3014"><span class="ln">3014</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3015"><span class="ln">3015</span><span class="cd">	case TRB_PORT_STATUS:</span></div>
+<div class="cl" data-line="3016"><span class="ln">3016</span><span class="cd">		handle_port_status(xhci, event);</span></div>
+<div class="cl" data-line="3017"><span class="ln">3017</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3018"><span class="ln">3018</span><span class="cd">	case TRB_TRANSFER:</span></div>
+<div class="cl" data-line="3019"><span class="ln">3019</span><span class="cd">		handle_tx_event(xhci, ir, &amp;event-&gt;trans_event);</span></div>
+<div class="cl" data-line="3020"><span class="ln">3020</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3021"><span class="ln">3021</span><span class="cd">	case TRB_DEV_NOTE:</span></div>
+<div class="cl" data-line="3022"><span class="ln">3022</span><span class="cd">		handle_device_notification(xhci, event);</span></div>
+<div class="cl" data-line="3023"><span class="ln">3023</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3024"><span class="ln">3024</span><span class="cd">	default:</span></div>
+<div class="cl" data-line="3025"><span class="ln">3025</span><span class="cd">		if (trb_type &gt;= TRB_VENDOR_DEFINED_LOW)</span></div>
+<div class="cl" data-line="3026"><span class="ln">3026</span><span class="cd">			handle_vendor_event(xhci, event, trb_type);</span></div>
+<div class="cl" data-line="3027"><span class="ln">3027</span><span class="cd">		else</span></div>
+<div class="cl" data-line="3028"><span class="ln">3028</span><span class="cd">			xhci_warn(xhci, "ERROR unknown event type %d\n", trb_type);</span></div>
+<div class="cl" data-line="3029"><span class="ln">3029</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3030"><span class="ln">3030</span><span class="cd">	/* Any of the above functions may drop and re-acquire the lock, so check</span></div>
+<div class="cl" data-line="3031"><span class="ln">3031</span><span class="cd">	 * to make sure a watchdog timer didn't mark the host as non-responsive.</span></div>
+<div class="cl" data-line="3032"><span class="ln">3032</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3033"><span class="ln">3033</span><span class="cd">	if (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) {</span></div>
+<div class="cl" data-line="3034"><span class="ln">3034</span><span class="cd">		xhci_dbg(xhci, "xHCI host dying, returning from event handler.\n");</span></div>
+<div class="cl" data-line="3035"><span class="ln">3035</span><span class="cd">		return -ENODEV;</span></div>
+<div class="cl" data-line="3036"><span class="ln">3036</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3037"><span class="ln">3037</span><span class="cd"></span></div>
+<div class="cl" data-line="3038"><span class="ln">3038</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="3039"><span class="ln">3039</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:1810-1948 · handle_cmd_completion · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1810:1948"><div class="cl hot" data-line="1810" data-hot="cmd:6"><span class="ln">1810</span><span class="cd">static void handle_cmd_completion(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="1811"><span class="ln">1811</span><span class="cd">		struct xhci_event_cmd *event)</span></div>
+<div class="cl" data-line="1812"><span class="ln">1812</span><span class="cd">{</span></div>
+<div class="cl" data-line="1813"><span class="ln">1813</span><span class="cd">	unsigned int slot_id = TRB_TO_SLOT_ID(le32_to_cpu(event-&gt;flags));</span></div>
+<div class="cl" data-line="1814"><span class="ln">1814</span><span class="cd">	u32 status = le32_to_cpu(event-&gt;status);</span></div>
+<div class="cl" data-line="1815"><span class="ln">1815</span><span class="cd">	u64 cmd_dma;</span></div>
+<div class="cl" data-line="1816"><span class="ln">1816</span><span class="cd">	dma_addr_t cmd_dequeue_dma;</span></div>
+<div class="cl" data-line="1817"><span class="ln">1817</span><span class="cd">	u32 cmd_comp_code;</span></div>
+<div class="cl" data-line="1818"><span class="ln">1818</span><span class="cd">	union xhci_trb *cmd_trb;</span></div>
+<div class="cl" data-line="1819"><span class="ln">1819</span><span class="cd">	struct xhci_command *cmd;</span></div>
+<div class="cl" data-line="1820"><span class="ln">1820</span><span class="cd">	u32 cmd_type;</span></div>
+<div class="cl" data-line="1821"><span class="ln">1821</span><span class="cd"></span></div>
+<div class="cl" data-line="1822"><span class="ln">1822</span><span class="cd">	if (slot_id &gt; xhci-&gt;max_slots) {</span></div>
+<div class="cl" data-line="1823"><span class="ln">1823</span><span class="cd">		xhci_warn(xhci, "Invalid slot_id %u\n", slot_id);</span></div>
+<div class="cl" data-line="1824"><span class="ln">1824</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1825"><span class="ln">1825</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1826"><span class="ln">1826</span><span class="cd"></span></div>
+<div class="cl" data-line="1827"><span class="ln">1827</span><span class="cd">	cmd_dma = le64_to_cpu(event-&gt;cmd_trb);</span></div>
+<div class="cl" data-line="1828"><span class="ln">1828</span><span class="cd">	cmd_trb = xhci-&gt;cmd_ring-&gt;dequeue;</span></div>
+<div class="cl" data-line="1829"><span class="ln">1829</span><span class="cd"></span></div>
+<div class="cl" data-line="1830"><span class="ln">1830</span><span class="cd">	trace_xhci_handle_command(xhci-&gt;cmd_ring, &amp;cmd_trb-&gt;generic, cmd_dma);</span></div>
+<div class="cl" data-line="1831"><span class="ln">1831</span><span class="cd"></span></div>
+<div class="cl hot" data-line="1832" data-hot="cmd:7"><span class="ln">1832</span><span class="cd">	cmd_comp_code = GET_COMP_CODE(le32_to_cpu(event-&gt;status));</span></div>
+<div class="cl" data-line="1833"><span class="ln">1833</span><span class="cd"></span></div>
+<div class="cl" data-line="1834"><span class="ln">1834</span><span class="cd">	/* If CMD ring stopped we own the trbs between enqueue and dequeue */</span></div>
+<div class="cl" data-line="1835"><span class="ln">1835</span><span class="cd">	if (cmd_comp_code == COMP_COMMAND_RING_STOPPED) {</span></div>
+<div class="cl" data-line="1836"><span class="ln">1836</span><span class="cd">		complete_all(&amp;xhci-&gt;cmd_ring_stop_completion);</span></div>
+<div class="cl" data-line="1837"><span class="ln">1837</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1838"><span class="ln">1838</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1839"><span class="ln">1839</span><span class="cd"></span></div>
+<div class="cl" data-line="1840"><span class="ln">1840</span><span class="cd">	cmd_dequeue_dma = xhci_trb_virt_to_dma(xhci-&gt;cmd_ring-&gt;deq_seg,</span></div>
+<div class="cl" data-line="1841"><span class="ln">1841</span><span class="cd">			cmd_trb);</span></div>
+<div class="cl" data-line="1842"><span class="ln">1842</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="1843"><span class="ln">1843</span><span class="cd">	 * Check whether the completion event is for our internal kept</span></div>
+<div class="cl" data-line="1844"><span class="ln">1844</span><span class="cd">	 * command.</span></div>
+<div class="cl" data-line="1845"><span class="ln">1845</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="1846"><span class="ln">1846</span><span class="cd">	if (!cmd_dequeue_dma || cmd_dma != (u64)cmd_dequeue_dma) {</span></div>
+<div class="cl" data-line="1847"><span class="ln">1847</span><span class="cd">		xhci_warn(xhci,</span></div>
+<div class="cl" data-line="1848"><span class="ln">1848</span><span class="cd">			  "ERROR mismatched command completion event\n");</span></div>
+<div class="cl" data-line="1849"><span class="ln">1849</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1850"><span class="ln">1850</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1851"><span class="ln">1851</span><span class="cd"></span></div>
+<div class="cl" data-line="1852"><span class="ln">1852</span><span class="cd">	cmd = list_first_entry(&amp;xhci-&gt;cmd_list, struct xhci_command, cmd_list);</span></div>
+<div class="cl" data-line="1853"><span class="ln">1853</span><span class="cd"></span></div>
+<div class="cl" data-line="1854"><span class="ln">1854</span><span class="cd">	cancel_delayed_work(&amp;xhci-&gt;cmd_timer);</span></div>
+<div class="cl" data-line="1855"><span class="ln">1855</span><span class="cd"></span></div>
+<div class="cl" data-line="1856"><span class="ln">1856</span><span class="cd">	if (cmd-&gt;command_trb != xhci-&gt;cmd_ring-&gt;dequeue) {</span></div>
+<div class="cl" data-line="1857"><span class="ln">1857</span><span class="cd">		xhci_err(xhci,</span></div>
+<div class="cl" data-line="1858"><span class="ln">1858</span><span class="cd">			 "Command completion event does not match command\n");</span></div>
+<div class="cl" data-line="1859"><span class="ln">1859</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1860"><span class="ln">1860</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1861"><span class="ln">1861</span><span class="cd"></span></div>
+<div class="cl" data-line="1862"><span class="ln">1862</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="1863"><span class="ln">1863</span><span class="cd">	 * Host aborted the command ring, check if the current command was</span></div>
+<div class="cl" data-line="1864"><span class="ln">1864</span><span class="cd">	 * supposed to be aborted, otherwise continue normally.</span></div>
+<div class="cl" data-line="1865"><span class="ln">1865</span><span class="cd">	 * The command ring is stopped now, but the xHC will issue a Command</span></div>
+<div class="cl" data-line="1866"><span class="ln">1866</span><span class="cd">	 * Ring Stopped event which will cause us to restart it.</span></div>
+<div class="cl" data-line="1867"><span class="ln">1867</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="1868"><span class="ln">1868</span><span class="cd">	if (cmd_comp_code == COMP_COMMAND_ABORTED) {</span></div>
+<div class="cl" data-line="1869"><span class="ln">1869</span><span class="cd">		xhci-&gt;cmd_ring_state = CMD_RING_STATE_STOPPED;</span></div>
+<div class="cl" data-line="1870"><span class="ln">1870</span><span class="cd">		if (cmd-&gt;status == COMP_COMMAND_ABORTED) {</span></div>
+<div class="cl" data-line="1871"><span class="ln">1871</span><span class="cd">			if (xhci-&gt;current_cmd == cmd)</span></div>
+<div class="cl" data-line="1872"><span class="ln">1872</span><span class="cd">				xhci-&gt;current_cmd = NULL;</span></div>
+<div class="cl" data-line="1873"><span class="ln">1873</span><span class="cd">			goto event_handled;</span></div>
+<div class="cl" data-line="1874"><span class="ln">1874</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1875"><span class="ln">1875</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1876"><span class="ln">1876</span><span class="cd"></span></div>
+<div class="cl" data-line="1877"><span class="ln">1877</span><span class="cd">	cmd_type = TRB_FIELD_TO_TYPE(le32_to_cpu(cmd_trb-&gt;generic.field[3]));</span></div>
+<div class="cl" data-line="1878"><span class="ln">1878</span><span class="cd">	switch (cmd_type) {</span></div>
+<div class="cl" data-line="1879"><span class="ln">1879</span><span class="cd">	case TRB_ENABLE_SLOT:</span></div>
+<div class="cl" data-line="1880"><span class="ln">1880</span><span class="cd">		xhci_handle_cmd_enable_slot(slot_id, cmd, cmd_comp_code);</span></div>
+<div class="cl" data-line="1881"><span class="ln">1881</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1882"><span class="ln">1882</span><span class="cd">	case TRB_DISABLE_SLOT:</span></div>
+<div class="cl" data-line="1883"><span class="ln">1883</span><span class="cd">		xhci_handle_cmd_disable_slot(xhci, slot_id, cmd_comp_code);</span></div>
+<div class="cl" data-line="1884"><span class="ln">1884</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1885"><span class="ln">1885</span><span class="cd">	case TRB_CONFIG_EP:</span></div>
+<div class="cl" data-line="1886"><span class="ln">1886</span><span class="cd">		if (!cmd-&gt;completion)</span></div>
+<div class="cl" data-line="1887"><span class="ln">1887</span><span class="cd">			xhci_handle_cmd_config_ep(xhci, slot_id);</span></div>
+<div class="cl" data-line="1888"><span class="ln">1888</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1889"><span class="ln">1889</span><span class="cd">	case TRB_EVAL_CONTEXT:</span></div>
+<div class="cl" data-line="1890"><span class="ln">1890</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1891"><span class="ln">1891</span><span class="cd">	case TRB_ADDR_DEV:</span></div>
+<div class="cl" data-line="1892"><span class="ln">1892</span><span class="cd">		xhci_handle_cmd_addr_dev(xhci, slot_id);</span></div>
+<div class="cl" data-line="1893"><span class="ln">1893</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1894"><span class="ln">1894</span><span class="cd">	case TRB_STOP_RING:</span></div>
+<div class="cl" data-line="1895"><span class="ln">1895</span><span class="cd">		WARN_ON(slot_id != TRB_TO_SLOT_ID(</span></div>
+<div class="cl" data-line="1896"><span class="ln">1896</span><span class="cd">				le32_to_cpu(cmd_trb-&gt;generic.field[3])));</span></div>
+<div class="cl" data-line="1897"><span class="ln">1897</span><span class="cd">		if (!cmd-&gt;completion)</span></div>
+<div class="cl" data-line="1898"><span class="ln">1898</span><span class="cd">			xhci_handle_cmd_stop_ep(xhci, slot_id, cmd_trb,</span></div>
+<div class="cl" data-line="1899"><span class="ln">1899</span><span class="cd">						cmd_comp_code);</span></div>
+<div class="cl" data-line="1900"><span class="ln">1900</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1901"><span class="ln">1901</span><span class="cd">	case TRB_SET_DEQ:</span></div>
+<div class="cl" data-line="1902"><span class="ln">1902</span><span class="cd">		WARN_ON(slot_id != TRB_TO_SLOT_ID(</span></div>
+<div class="cl" data-line="1903"><span class="ln">1903</span><span class="cd">				le32_to_cpu(cmd_trb-&gt;generic.field[3])));</span></div>
+<div class="cl" data-line="1904"><span class="ln">1904</span><span class="cd">		xhci_handle_cmd_set_deq(xhci, slot_id, cmd_trb, cmd_comp_code);</span></div>
+<div class="cl" data-line="1905"><span class="ln">1905</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1906"><span class="ln">1906</span><span class="cd">	case TRB_CMD_NOOP:</span></div>
+<div class="cl" data-line="1907"><span class="ln">1907</span><span class="cd">		/* Is this an aborted command turned to NO-OP? */</span></div>
+<div class="cl" data-line="1908"><span class="ln">1908</span><span class="cd">		if (cmd-&gt;status == COMP_COMMAND_RING_STOPPED)</span></div>
+<div class="cl" data-line="1909"><span class="ln">1909</span><span class="cd">			cmd_comp_code = COMP_COMMAND_RING_STOPPED;</span></div>
+<div class="cl" data-line="1910"><span class="ln">1910</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1911"><span class="ln">1911</span><span class="cd">	case TRB_RESET_EP:</span></div>
+<div class="cl" data-line="1912"><span class="ln">1912</span><span class="cd">		WARN_ON(slot_id != TRB_TO_SLOT_ID(</span></div>
+<div class="cl" data-line="1913"><span class="ln">1913</span><span class="cd">				le32_to_cpu(cmd_trb-&gt;generic.field[3])));</span></div>
+<div class="cl" data-line="1914"><span class="ln">1914</span><span class="cd">		xhci_handle_cmd_reset_ep(xhci, slot_id, cmd_trb, cmd_comp_code);</span></div>
+<div class="cl" data-line="1915"><span class="ln">1915</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1916"><span class="ln">1916</span><span class="cd">	case TRB_RESET_DEV:</span></div>
+<div class="cl" data-line="1917"><span class="ln">1917</span><span class="cd">		/* SLOT_ID field in reset device cmd completion event TRB is 0.</span></div>
+<div class="cl" data-line="1918"><span class="ln">1918</span><span class="cd">		 * Use the SLOT_ID from the command TRB instead (xhci 4.6.11)</span></div>
+<div class="cl" data-line="1919"><span class="ln">1919</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="1920"><span class="ln">1920</span><span class="cd">		slot_id = TRB_TO_SLOT_ID(</span></div>
+<div class="cl" data-line="1921"><span class="ln">1921</span><span class="cd">				le32_to_cpu(cmd_trb-&gt;generic.field[3]));</span></div>
+<div class="cl" data-line="1922"><span class="ln">1922</span><span class="cd">		xhci_handle_cmd_reset_dev(xhci, slot_id);</span></div>
+<div class="cl" data-line="1923"><span class="ln">1923</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1924"><span class="ln">1924</span><span class="cd">	case TRB_NEC_GET_FW:</span></div>
+<div class="cl" data-line="1925"><span class="ln">1925</span><span class="cd">		xhci_handle_cmd_nec_get_fw(xhci, event);</span></div>
+<div class="cl" data-line="1926"><span class="ln">1926</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1927"><span class="ln">1927</span><span class="cd">	case TRB_GET_BW:</span></div>
+<div class="cl" data-line="1928"><span class="ln">1928</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1929"><span class="ln">1929</span><span class="cd">	default:</span></div>
+<div class="cl" data-line="1930"><span class="ln">1930</span><span class="cd">		/* Skip over unknown commands on the event ring */</span></div>
+<div class="cl" data-line="1931"><span class="ln">1931</span><span class="cd">		xhci_info(xhci, "INFO unknown command type %d\n", cmd_type);</span></div>
+<div class="cl" data-line="1932"><span class="ln">1932</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1933"><span class="ln">1933</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1934"><span class="ln">1934</span><span class="cd"></span></div>
+<div class="cl" data-line="1935"><span class="ln">1935</span><span class="cd">	/* restart timer if this wasn't the last command */</span></div>
+<div class="cl" data-line="1936"><span class="ln">1936</span><span class="cd">	if (!list_is_singular(&amp;xhci-&gt;cmd_list)) {</span></div>
+<div class="cl" data-line="1937"><span class="ln">1937</span><span class="cd">		xhci-&gt;current_cmd = list_first_entry(&amp;cmd-&gt;cmd_list,</span></div>
+<div class="cl" data-line="1938"><span class="ln">1938</span><span class="cd">						struct xhci_command, cmd_list);</span></div>
+<div class="cl" data-line="1939"><span class="ln">1939</span><span class="cd">		xhci_mod_cmd_timer(xhci);</span></div>
+<div class="cl" data-line="1940"><span class="ln">1940</span><span class="cd">	} else if (xhci-&gt;current_cmd == cmd) {</span></div>
+<div class="cl" data-line="1941"><span class="ln">1941</span><span class="cd">		xhci-&gt;current_cmd = NULL;</span></div>
+<div class="cl" data-line="1942"><span class="ln">1942</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1943"><span class="ln">1943</span><span class="cd"></span></div>
+<div class="cl" data-line="1944"><span class="ln">1944</span><span class="cd">event_handled:</span></div>
+<div class="cl hot" data-line="1945" data-hot="cmd:8"><span class="ln">1945</span><span class="cd">	xhci_complete_del_and_free_cmd(cmd, cmd_comp_code, COMP_PARAM(status));</span></div>
+<div class="cl" data-line="1946"><span class="ln">1946</span><span class="cd"></span></div>
+<div class="cl hot" data-line="1947" data-hot="cmd:10"><span class="ln">1947</span><span class="cd">	inc_deq(xhci, xhci-&gt;cmd_ring);</span></div>
+<div class="cl" data-line="1948"><span class="ln">1948</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:1711-1722 · xhci_complete_del_and_free_cmd · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1711:1722"><div class="cl" data-line="1711"><span class="ln">1711</span><span class="cd">static void xhci_complete_del_and_free_cmd(struct xhci_command *cmd, u32 comp_code, u32 comp_param)</span></div>
+<div class="cl" data-line="1712"><span class="ln">1712</span><span class="cd">{</span></div>
+<div class="cl" data-line="1713"><span class="ln">1713</span><span class="cd">	list_del(&amp;cmd-&gt;cmd_list);</span></div>
+<div class="cl" data-line="1714"><span class="ln">1714</span><span class="cd"></span></div>
+<div class="cl" data-line="1715"><span class="ln">1715</span><span class="cd">	if (cmd-&gt;completion) {</span></div>
+<div class="cl" data-line="1716"><span class="ln">1716</span><span class="cd">		cmd-&gt;status = comp_code;</span></div>
+<div class="cl" data-line="1717"><span class="ln">1717</span><span class="cd">		cmd-&gt;comp_param = comp_param;</span></div>
+<div class="cl hot" data-line="1718" data-hot="cmd:9"><span class="ln">1718</span><span class="cd">		complete(cmd-&gt;completion);</span></div>
+<div class="cl" data-line="1719"><span class="ln">1719</span><span class="cd">	} else {</span></div>
+<div class="cl" data-line="1720"><span class="ln">1720</span><span class="cd">		kfree(cmd);</span></div>
+<div class="cl" data-line="1721"><span class="ln">1721</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1722"><span class="ln">1722</span><span class="cd">}</span></div></pre>
+    </div>
+
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">41-command-operation</span>
+        <span class="spec">命令路径：xhci_submit_command → 命令 TRB 入环 → 门铃 writel</span>
+      </div>
+      <video controls preload="metadata" src="41-command-operation.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=0">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
+    </div>
+
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html#m1">模块一 · 三环操作台 →</a>
+        <span class="note">单文件自包含 · 交互台四模块分节锚定（#m1-#m4）</span>
+      </div>
+      <p class="int-note"><b>模块一 · 三环操作台：</b>传输环 / 事件环 / 命令环手动 enq · deq 推进、cycle bit 翻转、Link 回绕、门铃 DB 写、事件产生/消费——对应本节“上环 → 门铃 → 事件回执”三拍</p>
+      <p class="int-note"><b>模块四 · 代码解读：</b>4.1 命令操作题组（贴码行可点 + 规范锚点卡），入口 <a href="interactive/index.html#m4">interactive/index.html#m4</a></p>
+    </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit 576667bad341516edc4e18eb85acb0a2b4c9c9d9 · 2021-01-15 · Mathias Nyman（Intel） · drivers/usb/host/xhci-ring.c +2 行 · hunk @@ -2931,6 +2931,8 @@（queue_trb）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:576667bad341516edc4e18eb85acb0a2b4c9c9d9">commit 576667bad341516edc4e18eb85acb0a2b4c9c9d9
+Author: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+Date:   Fri Jan 15 18:19:06 2021 +0200
+
+    xhci: make sure TRB is fully written before giving it to the controller
+    
+    Once the command ring doorbell is rung the xHC controller will parse all
+    command TRBs on the command ring that have the cycle bit set properly.
+    
+    If the driver just started writing the next command TRB to the ring when
+    hardware finished the previous TRB, then HW might fetch an incomplete TRB
+    as long as its cycle bit set correctly.
+    
+    A command TRB is 16 bytes (128 bits) long.
+    Driver writes the command TRB in four 32 bit chunks, with the chunk
+    containing the cycle bit last. This does however not guarantee that
+    chunks actually get written in that order.
+    
+    This was detected in stress testing when canceling URBs with several
+    connected USB devices.
+    Two consecutive "Set TR Dequeue pointer" commands got queued right
+    after each other, and the second one was only partially written when
+    the controller parsed it, causing the dequeue pointer to be set
+    to bogus values. This was seen as error messages:
+    
+    "Mismatch between completed Set TR Deq Ptr command &amp; xHCI internal state"
+    
+    Solution is to add a write memory barrier before writing the cycle bit.
+    
+    Cc: &lt;stable@vger.kernel.org&gt;
+    Tested-by: Ross Zwisler &lt;zwisler@google.com&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20210115161907.2875631-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index 5677b81c0915..cf0c93a90200 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -2931,6 +2931,8 @@ static void queue_trb(struct xhci_hcd *xhci, struct xhci_ring *ring,</span>
+<span class="d-ctx"> 	trb-&gt;field[0] = cpu_to_le32(field1);</span>
+<span class="d-ctx"> 	trb-&gt;field[1] = cpu_to_le32(field2);</span>
+<span class="d-ctx"> 	trb-&gt;field[2] = cpu_to_le32(field3);</span>
+<span class="d-add">+	/* make sure TRB is fully written before giving it to the controller */</span>
+<span class="d-add">+	wmb();</span>
+<span class="d-ctx"> 	trb-&gt;field[3] = cpu_to_le32(field4);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	trace_xhci_queue_trb(ring, trb);</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2021 年 1 月，xHCI 子系统维护者 Mathias Nyman（Intel）合入这枚补丁。问题发现于压力测试：多个 USB 设备同时在线、反复取消 URB 的场景——两条「Set TR Dequeue Pointer」命令背靠背进入命令环，第二条命令 TRB 还没写完就被控制器取走解析。硬件本身没有缺陷，这是纯软件侧的内存序问题：门铃敲响后 xHC 会立即回来解析命令环上 cycle 位已就绪的命令 TRB（<a class="sr-ln" href="#s41">§4.1</a> p68 的发出节拍），而驱动「先写完 TRB、再敲门铃」这个顺序在写缓冲与多核环境下并没有任何机制保证。对应课程 4.1 的三拍：上环→敲门铃→xHC 取指执行，补丁保证第一拍真正先于第二拍对硬件生效。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：压力测试中反复出现 "Mismatch between completed Set TR Deq Ptr command &amp; xHCI internal state" 告警，出环指针被设成 bogus 值。机制：命令 TRB 长 16 字节，驱动分四个 32 位分片写入，含 cycle bit 的分片安排在最后写——但这只是程序顺序，普通 store 不保证实际落盘次序；当前一条命令完成、硬件立刻回来取下一条时，可能读到只写了一半、而 cycle bit 恰好已置位的 TRB，于是照常执行。规范背景（<a class="sr-ln" href="#s41">§4.1</a> p68）：命令的发出流程是「把命令 TRB 放上命令环，然后敲命令门铃寄存器 0」——“放完才敲”的语义在 SMP 下必须由写屏障兑现，否则门铃会抢在 TRB 完整之前通知 xHC。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">补丁前：<code>queue_trb()</code> 依次写 <code>field[0..3]</code>，<code>field[3]</code>（含 cycle bit）程序上最后写但无屏障——硬件可能在 <code>field[0..2]</code> 尚未全局可见时就看到 cycle 位翻转，取走半颗 TRB。补丁后：在写 <code>field[3]</code> 之前插入 <code>wmb()</code> 写屏障并加注释行（+2 行），保证前三个分片先于 cycle 位翻转全局可见——“TRB 完整写好才交给控制器”由架构屏障兑现；此后命令完成事件（Command Completion Event，<a class="sr-ln" href="#s41">§4.1</a> p68）回执对应的总是一颗完整 TRB。与代码摘录（drafts/code-excerpts.json cmd 组 L4397 <code>queue_trb(...)</code> 入环行、L438 门铃行）对读，补丁改动恰好落在“写 TRB”与“敲门铃”两拍之间的写路径上；对映课程动画，节拍从此是“写四片 → wmb → cycle 翻转 → 门铃”，任何一环都不会被硬件抢先看到。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=51">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。
+  </footer>
+</div>
+<div id="tipdocs" hidden>
+<div class="tipdoc" id="tip-cmd-0">
+<p class="tipnote">组装命令 TRB 入命令环的通用函数：所有 xHCI 命令（编址/配置端点等）都经它入环</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L2-L3">There is only one Command Ring that is used for issuing xHC specific 
+commands or commands related to Device Slots.</blockquote><div class="qzh"><div class="qzh-body">只有一个命令环（Command Ring），用于发出 xHC 专属的命令或与设备槽（Device Slot）相关的命令。</div><div class="qsrc">—— evidence/spec-41.txt L2-L3（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-1">
+<p class="tipnote">先 prepare_ring 检查命令环有空位（含必须成功命令的预留 TRB），动画中“腾位置”动作</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L8-L11">All xHC commands are issued by placing the desired Command TRB(s) (<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 
+6.4.3</span> Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 5.6</span> Doorbell Registers).</blockquote><div class="qzh"><div class="qzh-body">所有 xHC 命令的下发方式为：将所需的命令 TRB（Command TRB，见 6.4.3 节“命令 TRB”）放置到命令环上，然后敲响 xHC 命令门铃寄存器（Doorbell Register），即把 Host Controller Command 代码写入 0 号门铃寄存器的 DB Target 字段（参见 5.6 节“门铃寄存器（Doorbell Registers）”）。</div><div class="qsrc">—— evidence/spec-41.txt L8-L11（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-2">
+<p class="tipnote">记下本命令 TRB 的环上位置，完成事件回来按它配对命令</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L19-L20">All commands result in the generation of a Command Completion Event TRB 
+(<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 6.4.3</span> Command TRBs) on the Event Ring.</blockquote><div class="qzh"><div class="qzh-body">所有命令都会在事件环（Event Ring）上生成一个命令完成事件 TRB（Command Completion Event TRB，见 6.4.3 节“命令 TRB”）。</div><div class="qsrc">—— evidence/spec-41.txt L19-L20（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-3">
+<p class="tipnote">queue_trb 把命令四个字段写进命令环 enqueue 指向的 TRB</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L8-L11">All xHC commands are issued by placing the desired Command TRB(s) (<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 
+6.4.3</span> Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 5.6</span> Doorbell Registers).</blockquote><div class="qzh"><div class="qzh-body">所有 xHC 命令的下发方式为：将所需的命令 TRB（Command TRB，见 6.4.3 节“命令 TRB”）放置到命令环上，然后敲响 xHC 命令门铃寄存器（Doorbell Register），即把 Host Controller Command 代码写入 0 号门铃寄存器的 DB Target 字段（参见 5.6 节“门铃寄存器（Doorbell Registers）”）。</div><div class="qsrc">—— evidence/spec-41.txt L8-L11（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-4">
+<p class="tipnote">敲主机门铃：写 doorbell[0]，DB Target=0（DB_VALUE_HOST），通知 xHC 命令环有新命令</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L8-L11">All xHC commands are issued by placing the desired Command TRB(s) (<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 
+6.4.3</span> Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 5.6</span> Doorbell Registers).</blockquote><div class="qzh"><div class="qzh-body">所有 xHC 命令的下发方式为：将所需的命令 TRB（Command TRB，见 6.4.3 节“命令 TRB”）放置到命令环上，然后敲响 xHC 命令门铃寄存器（Doorbell Register），即把 Host Controller Command 代码写入 0 号门铃寄存器的 DB Target 字段（参见 5.6 节“门铃寄存器（Doorbell Registers）”）。</div><div class="qsrc">—— evidence/spec-41.txt L8-L11（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-5">
+<p class="tipnote">事件环读到 TRB_COMPLETION（命令完成事件），分派给 handle_cmd_completion</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L19-L20">All commands result in the generation of a Command Completion Event TRB 
+(<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 6.4.3</span> Command TRBs) on the Event Ring.</blockquote><div class="qzh"><div class="qzh-body">所有命令都会在事件环（Event Ring）上生成一个命令完成事件 TRB（Command Completion Event TRB，见 6.4.3 节“命令 TRB”）。</div><div class="qsrc">—— evidence/spec-41.txt L19-L20（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-6">
+<p class="tipnote">命令完成事件处理函数入口（形参就是事件环上的 event_cmd）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L19-L20">All commands result in the generation of a Command Completion Event TRB 
+(<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 6.4.3</span> Command TRBs) on the Event Ring.</blockquote><div class="qzh"><div class="qzh-body">所有命令都会在事件环（Event Ring）上生成一个命令完成事件 TRB（Command Completion Event TRB，见 6.4.3 节“命令 TRB”）。</div><div class="qsrc">—— evidence/spec-41.txt L19-L20（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-7">
+<p class="tipnote">从事件 status 里解出完成码：动画里的“回执”（成功/失败判定）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L19-L20">All commands result in the generation of a Command Completion Event TRB 
+(<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 6.4.3</span> Command TRBs) on the Event Ring.</blockquote><div class="qzh"><div class="qzh-body">所有命令都会在事件环（Event Ring）上生成一个命令完成事件 TRB（Command Completion Event TRB，见 6.4.3 节“命令 TRB”）。</div><div class="qsrc">—— evidence/spec-41.txt L19-L20（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-8">
+<p class="tipnote">event_handled 收尾：把命令从 cmd_list 摘除并触发唤醒</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L258-L259">System software shall wait for the Command Completion Event associated with 
+the Enable Slot Command before issuing any more commands to the slot.</blockquote><div class="qzh"><div class="qzh-body">在向该槽发出更多命令之前，系统软件应等待与 Enable Slot Command 关联的命令完成事件（Command Completion Event）。</div><div class="qsrc">—— evidence/spec-43.txt L258-L259（p75）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-9">
+<p class="tipnote">complete() 唤醒正在 wait_for_completion 的发令线程，命令路径闭环</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L256-L259">System software executes the Slot Assignment process by successfully 
+completing an Enable Slot Command as described in section 4.11.4.2. 
+System software shall wait for the Command Completion Event associated with 
+the Enable Slot Command before issuing any more commands to the slot.</blockquote><div class="qzh"><div class="qzh-body">系统软件通过成功完成一个 Enable Slot Command 来执行槽分配（Slot Assignment）流程，如 4.11.4.2 节所述。
+
+在向该槽发出更多命令之前，系统软件应等待与 Enable Slot Command 关联的命令完成事件（Command Completion Event）。</div><div class="qsrc">—— evidence/spec-43.txt L256-L259（p75）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-cmd-10">
+<p class="tipnote">命令环 dequeue 指针前移一格，环回到可发下一条的状态</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L8-L11">All xHC commands are issued by placing the desired Command TRB(s) (<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 
+6.4.3</span> Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 5.6</span> Doorbell Registers).</blockquote><div class="qzh"><div class="qzh-body">所有 xHC 命令的下发方式为：将所需的命令 TRB（Command TRB，见 6.4.3 节“命令 TRB”）放置到命令环上，然后敲响 xHC 命令门铃寄存器（Doorbell Register），即把 Host Controller Command 代码写入 0 号门铃寄存器的 DB Target 字段（参见 5.6 节“门铃寄存器（Doorbell Registers）”）。</div><div class="qsrc">—— evidence/spec-41.txt L8-L11（p68）</div></div></div>
+</div>
+</div>
+<div id="codetip" hidden><div class="tipbody"></div></div>
+<script>
+(function () {
+  'use strict';
+  var tip = document.getElementById('codetip');
+  var body = tip ? tip.querySelector('.tipbody') : null;
+  if (!tip || !body) { return; }
+  function show(row, pin) {
+    var key = row.getAttribute('data-hot');
+    var doc = document.getElementById('tip-' + key.replace(':', '-'));
+    if (!doc) { return; }
+    body.innerHTML = '';
+    body.appendChild(doc.cloneNode(true));
+    tip.setAttribute('data-for', key);
+    if (pin) { tip.setAttribute('data-pin', key); }
+    tip.hidden = false;
+    var r = row.getBoundingClientRect();
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = Math.max(8, Math.min(r.left + window.scrollX + (r.width - tw) / 2,
+        document.documentElement.scrollWidth - tw - 8));
+    var y = r.top + window.scrollY - th - 10;
+    if (y < window.scrollY + 4) { y = r.bottom + window.scrollY + 10; }
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  function unpinned() { return !tip.getAttribute('data-pin'); }
+  function hide() { if (unpinned()) { tip.hidden = true; } }
+  function unpin() { tip.removeAttribute('data-pin'); tip.hidden = true; }
+  var rows = document.querySelectorAll('.codeseg .cl.hot');
+  for (var i = 0; i < rows.length; i++) {
+    (function (row) {
+      row.addEventListener('mouseenter', function () { if (unpinned()) { show(row, false); } });
+      row.addEventListener('mouseleave', hide);
+      row.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var key = row.getAttribute('data-hot');
+        if (tip.getAttribute('data-pin') === key) { unpin(); }
+        else { show(row, true); }
+      });
+    })(rows[i]);
+  }
+  document.addEventListener('click', function () { unpin(); });
+})();
+</script>
+</body>
+</html>

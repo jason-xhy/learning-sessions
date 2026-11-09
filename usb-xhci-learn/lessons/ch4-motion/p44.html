@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xHCI 第 4 章视频课件 · 4.4 设备拔除</title>
+<!-- data-ck 锚点块书写约定（机检 scripts/check_landing_code.py 依赖）：
+     1) data-ck 必须是开标签的最后一个属性；
+     2) 闭合标签紧贴内容末字符，中间不留任何空白；
+     3) 多行块（blockquote/pre）的第 2 行起内容顶格（零缩进）。
+     锚点 schema：
+     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止；
+                                  同一锚点值允许多次出现，按 EXPECTED_SPEC 多重集对账）
+     patch:<hash>               → git show <hash> 完整 stdout（不加路径过滤；diff 部分
+                                  逐行 d-meta/d-hunk/d-add/d-del/d-ctx 着色 span）
+     贴码段走 data-src 通道（pre.codeseg，data-src="短文件名:起始行:结束行"），
+     机检按段校验（行内容 == git show d9008e061539:<路径> 切片）+ 摘录覆盖 35/35；
+     摘录行 class="cl hot" + data-hot="组:下标"，tooltip 引文在页尾 #tipdocs。-->
+<style>
+  :root {
+    --bg: #0b0f15;
+    --panel: #111823;
+    --line: #1d2735;
+    --text: #e8edf5;
+    --muted: #8fa0b8;
+    --blue: #7c9ff0;
+    --amber: #d9a860;
+    --green: #86bd7a;
+    --teal: #7fd0b2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 64px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  h1 .tag { color: var(--amber); font-size: 15px; font-weight: 600; margin-left: 10px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meta b { color: var(--green); font-weight: 600; }
+  .lead { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+  .toc { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 4px; }
+  .toc a {
+    display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--text); text-decoration: none; font-size: 13.5px; background: var(--panel);
+  }
+  .toc a:hover { border-color: var(--blue); color: var(--blue); }
+  h2 { font-size: 19px; margin: 40px 0 14px; }
+  h2 .no { color: var(--amber); margin-right: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .card.b1 { border-left: 3px solid var(--blue); }
+  .card.b2 { border-left: 3px solid var(--teal); }
+  .card.b3 { border-left: 3px solid var(--green); }
+  .card.b4 { border-left: 3px solid var(--amber); }
+  .bhead { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .badge {
+    display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
+    border-radius: 6px; background: #18212f; color: var(--amber); font-size: 13px; font-weight: 700; flex: none;
+  }
+  h3 { font-size: 14px; margin: 16px 0 8px; color: var(--blue); }
+  h3 .cmt { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .qtitle { margin: 14px 0 0; font-size: 13.5px; font-weight: 600; }
+  blockquote {
+    margin: 8px 0 4px; padding: 10px 14px; border-left: 3px solid var(--blue); background: #0d1420;
+    border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap;
+  }
+  .qsrc { margin: 0 0 6px 17px; color: var(--muted); font-size: 12px; }
+  pre.diffblock {
+    margin: 0 0 4px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.55; color: #c7d3e6;
+  }
+  .exnote { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .foot-note { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .vhead .name { font-size: 16px; font-weight: 600; font-family: ui-monospace, Menlo, monospace; }
+  .vhead .spec { color: var(--muted); font-size: 12.5px; }
+  .card video { width: 100%; border-radius: 6px; background: #000; display: block; }
+  .btn {
+    display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 13.5px;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; border: 1px solid var(--teal); color: var(--teal); }
+  .act { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .act .note { color: var(--muted); font-size: 12.5px; }
+  .int-note { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
+  .int-note b { color: var(--teal); font-weight: 600; }
+  .phead {
+    font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px;
+    background: #0d1420; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px;
+    margin-bottom: 10px; overflow-wrap: anywhere;
+  }
+  .ph { font-size: 13.5px; color: var(--amber); margin: 14px 0 4px; font-weight: 600; }
+  .pbody { margin: 0 0 6px; font-size: 13.5px; color: var(--text); }
+  .d-meta { color: #67788f; }
+  .d-hunk { color: var(--blue); }
+  .d-add { color: var(--green); background: rgba(134, 189, 122, 0.12); }
+  .d-del { color: #e08c8c; background: rgba(224, 140, 140, 0.12); }
+  .d-ctx { color: #a8b6ca; }
+  .exhead2 { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin: 14px 0 4px; }
+  pre.codeseg {
+    margin: 0 0 10px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 0; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.5; color: #c7d3e6; white-space: normal;
+  }
+  .codeseg .cl { display: flex; padding: 0 12px; }
+  .codeseg .cl:hover { background: rgba(124, 159, 240, 0.06); }
+  .codeseg .ln { flex: none; width: 4.2em; text-align: right; padding-right: 14px; color: #51617a; user-select: none; }
+  .codeseg .cd { white-space: pre; flex: 1 1 auto; }
+  .codeseg .cl.hot { background: rgba(217, 168, 96, 0.09); box-shadow: inset 3px 0 0 var(--amber); cursor: pointer; }
+  .codeseg .cl.hot .ln { color: var(--amber); font-weight: 600; }
+  #tipdocs { display: none; }
+  #codetip {
+    position: absolute; z-index: 60; left: 0; top: 0; max-width: 660px; min-width: 300px;
+    background: var(--panel); border: 1px solid var(--blue); border-radius: 10px;
+    padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-height: 70vh; overflow: auto;
+  }
+  #codetip[hidden] { display: none; }
+  .tipdoc .tipnote { margin: 0 0 6px; font-size: 13px; color: var(--text); }
+  .tipdoc blockquote { margin: 6px 0 4px; font-size: 12.5px; }
+  code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
+
+  /* R13-A 分页：目录页卡片 + 页内粘性卡导航（共享 head，s46 内嵌样式已上提并入） */
+  .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
+  .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
+  a.ch46g:hover { border-color: var(--blue); }
+  .ch46g .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .s46tag { flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .s46tag.mech { color: #7c9ff0; border-color: #7c9ff0; }
+  .s46tag.core { color: var(--amber); border-color: var(--amber); }
+  .qsrc { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .s46head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .s46ttl { font-weight: 600; }
+  .s46pg { color: var(--muted); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .s46todo { opacity: .74; }
+  /* R11 批 A D2：规范样式表格（重建自规范 PDF 版面；样式单处） */
+  .tabwrap { overflow-x: auto; margin: 2px 0 12px; }
+  .spectab { border-collapse: collapse; width: 100%; font-size: 12.5px; background: var(--panel); }
+  .spectab caption { caption-side: top; text-align: left; font-weight: 600; font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px; padding: 0 0 6px; }
+  .spectab th, .spectab td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .spectab thead th { background: rgba(124, 159, 240, 0.14); }
+  .spectab tbody tr:nth-child(even) { background: rgba(124, 159, 240, 0.055); }
+  .spectab .tabnote { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+  .tabfoot { margin: -6px 0 12px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  /* R12 批 A-2（意见②）：流程图产线换血 drawio——SVG 内联（.fcn HTML 家族退役；
+     数据层 flowcharts.json，产物 build_flowcharts.py） */
+  .fcf { margin: 2px 0 12px; }
+  .fct { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin-bottom: 6px; }
+  .fcf svg.fcsvg { display: block; width: 100%; height: auto; max-width: 1080px; margin: 0 auto; }
+  @media (max-width: 760px) { .fcf svg.fcsvg { max-width: 100%; } }
+  /* R12 批 A-2（意见③）：规范引用跳转三类——已建锚/出界注记/待建注记 */
+  .sr-ln { color: var(--teal); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .sr-ln:hover { color: #8fd8cc; text-decoration-style: solid; }
+  .sr-out { color: var(--muted); border-bottom: 1px dashed #43536e; cursor: help; }
+  .sr-todo { color: var(--muted); border-bottom: 1px dotted #43536e; cursor: help; }
+  details.fcdoc { margin: 0 0 4px; }
+  details.fcdoc summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details.fcdoc[open] summary { margin-bottom: 6px; }
+  /* R11 批 A-2 D5：规范引文双语 side-by-side（左 EN 右 ZH；qsrc 并入 ZH 栏尾；
+     ZH 在 .qzh——data-ck 元素内部只含 EN 原文，逐字通道不受影响） */
+  .qpair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; align-items: start; }
+  .qpair blockquote { margin: 8px 0 2px; }
+  .qzh { margin: 8px 0 2px; padding: 10px 14px; border-left: 3px solid var(--teal); background: #0d1420; border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap; line-height: 1.55; }
+  .qzh .qsrc { margin: 8px 0 0 17px; }
+  .tipdoc .qzh { font-size: 12.5px; }
+  @media (max-width: 860px) { .qpair { grid-template-columns: 1fr; } }
+  .pgnav { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding: 9px 2px; margin: 0 0 22px; background: rgba(10, 16, 26, 0.94); border-bottom: 1px solid var(--line); }
+  .pgnav .pgback { flex: none; font-size: 13px; color: var(--teal); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 2px 10px; }
+  .pgnav .pgback:hover { border-color: var(--teal); }
+  .pgnav .pgsec { flex: none; font-weight: 600; font-size: 13.5px; }
+  .pgnav .pgsec .no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; margin-right: 7px; }
+  .pgnav a.pgchip { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+  .pgnav a.pgchip:hover { color: var(--blue); border-color: var(--blue); }
+  .pgcrumb { margin: 26px 0 10px; font-size: 13px; color: var(--muted); }
+  .pgcrumb a { color: var(--teal); text-decoration: none; }
+  .pgcrumb a:hover { text-decoration: underline; }
+  .tocgroup { margin: 24px 0 4px; font-size: 13px; color: var(--muted); }
+  .tocgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 10px 0 6px; }
+  a.toccard { display: block; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 15px; text-decoration: none; color: var(--text); }
+  a.toccard:hover { border-color: var(--blue); }
+  .toccard .tcno { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .toccard .tcttl { font-weight: 600; margin-left: 8px; }
+  .toccard .tcmeta { display: block; margin-top: 4px; font-size: 12px; color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .toccard .tcblurb { display: block; margin-top: 7px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .toccard .tcgo { display: block; margin-top: 9px; font-size: 12px; color: var(--teal); }
+</style>
+<body>
+<div class="wrap">
+  <p class="pgcrumb"><a href="index.html">xHCI 第 4 章视频课件 · 目录</a></p>
+  <nav class="pgnav">
+    <a class="pgback" href="index.html">← 目录</a>
+    <span class="pgsec"><span class="no">4.4</span>设备拔除</span>
+  </nav>
+  <section id="s44">
+    <h2><span class="no"><a class="sr-ln" href="#s44">§4.4</a></span>设备拔除</h2>
+
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:4105-4142 · xhci_free_dev · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4105:4142"><div class="cl" data-line="4105"><span class="ln">4105</span><span class="cd">static void xhci_free_dev(struct usb_hcd *hcd, struct usb_device *udev)</span></div>
+<div class="cl" data-line="4106"><span class="ln">4106</span><span class="cd">{</span></div>
+<div class="cl" data-line="4107"><span class="ln">4107</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="4108"><span class="ln">4108</span><span class="cd">	struct xhci_virt_device *virt_dev;</span></div>
+<div class="cl" data-line="4109"><span class="ln">4109</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="4110"><span class="ln">4110</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="4111"><span class="ln">4111</span><span class="cd">	int i, ret;</span></div>
+<div class="cl" data-line="4112"><span class="ln">4112</span><span class="cd"></span></div>
+<div class="cl" data-line="4113"><span class="ln">4113</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="4114"><span class="ln">4114</span><span class="cd">	 * We called pm_runtime_get_noresume when the device was attached.</span></div>
+<div class="cl" data-line="4115"><span class="ln">4115</span><span class="cd">	 * Decrement the counter here to allow controller to runtime suspend</span></div>
+<div class="cl" data-line="4116"><span class="ln">4116</span><span class="cd">	 * if no devices remain.</span></div>
+<div class="cl" data-line="4117"><span class="ln">4117</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4118"><span class="ln">4118</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_RESET_ON_RESUME)</span></div>
+<div class="cl" data-line="4119"><span class="ln">4119</span><span class="cd">		pm_runtime_put_noidle(hcd-&gt;self.controller);</span></div>
+<div class="cl" data-line="4120"><span class="ln">4120</span><span class="cd"></span></div>
+<div class="cl" data-line="4121"><span class="ln">4121</span><span class="cd">	ret = xhci_check_args(hcd, udev, NULL, 0, true, __func__);</span></div>
+<div class="cl" data-line="4122"><span class="ln">4122</span><span class="cd">	/* If the host is halted due to driver unload, we still need to free the</span></div>
+<div class="cl" data-line="4123"><span class="ln">4123</span><span class="cd">	 * device.</span></div>
+<div class="cl" data-line="4124"><span class="ln">4124</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4125"><span class="ln">4125</span><span class="cd">	if (ret &lt;= 0 &amp;&amp; ret != -ENODEV)</span></div>
+<div class="cl" data-line="4126"><span class="ln">4126</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="4127"><span class="ln">4127</span><span class="cd"></span></div>
+<div class="cl" data-line="4128"><span class="ln">4128</span><span class="cd">	virt_dev = xhci-&gt;devs[udev-&gt;slot_id];</span></div>
+<div class="cl" data-line="4129"><span class="ln">4129</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="4130"><span class="ln">4130</span><span class="cd">	trace_xhci_free_dev(slot_ctx);</span></div>
+<div class="cl" data-line="4131"><span class="ln">4131</span><span class="cd"></span></div>
+<div class="cl" data-line="4132"><span class="ln">4132</span><span class="cd">	/* Stop any wayward timer functions (which may grab the lock) */</span></div>
+<div class="cl" data-line="4133"><span class="ln">4133</span><span class="cd">	for (i = 0; i &lt; 31; i++)</span></div>
+<div class="cl" data-line="4134"><span class="ln">4134</span><span class="cd">		virt_dev-&gt;eps[i].ep_state &amp;= ~EP_STOP_CMD_PENDING;</span></div>
+<div class="cl" data-line="4135"><span class="ln">4135</span><span class="cd">	virt_dev-&gt;udev = NULL;</span></div>
+<div class="cl hot" data-line="4136" data-hot="det:0"><span class="ln">4136</span><span class="cd">	xhci_disable_slot(xhci, udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="4137"><span class="ln">4137</span><span class="cd"></span></div>
+<div class="cl" data-line="4138"><span class="ln">4138</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl hot" data-line="4139" data-hot="det:7"><span class="ln">4139</span><span class="cd">	xhci_free_virt_device(xhci, virt_dev, udev-&gt;slot_id);</span></div>
+<div class="cl" data-line="4140"><span class="ln">4140</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4141"><span class="ln">4141</span><span class="cd"></span></div>
+<div class="cl" data-line="4142"><span class="ln">4142</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:4144-4186 · xhci_disable_slot · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4144:4186"><div class="cl" data-line="4144"><span class="ln">4144</span><span class="cd">int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)</span></div>
+<div class="cl" data-line="4145"><span class="ln">4145</span><span class="cd">{</span></div>
+<div class="cl" data-line="4146"><span class="ln">4146</span><span class="cd">	struct xhci_command *command;</span></div>
+<div class="cl" data-line="4147"><span class="ln">4147</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="4148"><span class="ln">4148</span><span class="cd">	u32 state;</span></div>
+<div class="cl" data-line="4149"><span class="ln">4149</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="4150"><span class="ln">4150</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4151" data-hot="det:1"><span class="ln">4151</span><span class="cd">	command = xhci_alloc_command(xhci, true, GFP_KERNEL);</span></div>
+<div class="cl" data-line="4152"><span class="ln">4152</span><span class="cd">	if (!command)</span></div>
+<div class="cl" data-line="4153"><span class="ln">4153</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="4154"><span class="ln">4154</span><span class="cd"></span></div>
+<div class="cl" data-line="4155"><span class="ln">4155</span><span class="cd">	xhci_debugfs_remove_slot(xhci, slot_id);</span></div>
+<div class="cl" data-line="4156"><span class="ln">4156</span><span class="cd"></span></div>
+<div class="cl" data-line="4157"><span class="ln">4157</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4158"><span class="ln">4158</span><span class="cd">	/* Don't disable the slot if the host controller is dead. */</span></div>
+<div class="cl" data-line="4159"><span class="ln">4159</span><span class="cd">	state = readl(&amp;xhci-&gt;op_regs-&gt;status);</span></div>
+<div class="cl" data-line="4160"><span class="ln">4160</span><span class="cd">	if (state == 0xffffffff || (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) ||</span></div>
+<div class="cl" data-line="4161"><span class="ln">4161</span><span class="cd">			(xhci-&gt;xhc_state &amp; XHCI_STATE_HALTED)) {</span></div>
+<div class="cl" data-line="4162"><span class="ln">4162</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl hot" data-line="4163" data-hot="det:5"><span class="ln">4163</span><span class="cd">		xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4164"><span class="ln">4164</span><span class="cd">		return -ENODEV;</span></div>
+<div class="cl" data-line="4165"><span class="ln">4165</span><span class="cd">	}</span></div>
+<div class="cl" data-line="4166"><span class="ln">4166</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4167" data-hot="det:2"><span class="ln">4167</span><span class="cd">	ret = xhci_queue_slot_control(xhci, command, TRB_DISABLE_SLOT,</span></div>
+<div class="cl" data-line="4168"><span class="ln">4168</span><span class="cd">				slot_id);</span></div>
+<div class="cl" data-line="4169"><span class="ln">4169</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="4170"><span class="ln">4170</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4171"><span class="ln">4171</span><span class="cd">		xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4172"><span class="ln">4172</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="4173"><span class="ln">4173</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="4174" data-hot="det:3"><span class="ln">4174</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="4175"><span class="ln">4175</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4176"><span class="ln">4176</span><span class="cd"></span></div>
+<div class="cl hot" data-line="4177" data-hot="det:4"><span class="ln">4177</span><span class="cd">	wait_for_completion(command-&gt;completion);</span></div>
+<div class="cl" data-line="4178"><span class="ln">4178</span><span class="cd"></span></div>
+<div class="cl" data-line="4179"><span class="ln">4179</span><span class="cd">	if (command-&gt;status != COMP_SUCCESS)</span></div>
+<div class="cl" data-line="4180"><span class="ln">4180</span><span class="cd">		xhci_warn(xhci, "Unsuccessful disable slot %u command, status %d\n",</span></div>
+<div class="cl" data-line="4181"><span class="ln">4181</span><span class="cd">			  slot_id, command-&gt;status);</span></div>
+<div class="cl" data-line="4182"><span class="ln">4182</span><span class="cd"></span></div>
+<div class="cl" data-line="4183"><span class="ln">4183</span><span class="cd">	xhci_free_command(xhci, command);</span></div>
+<div class="cl" data-line="4184"><span class="ln">4184</span><span class="cd"></span></div>
+<div class="cl" data-line="4185"><span class="ln">4185</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="4186"><span class="ln">4186</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:1614-1634 · xhci_handle_cmd_disable_slot · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:1614:1634"><div class="cl" data-line="1614"><span class="ln">1614</span><span class="cd">static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id,</span></div>
+<div class="cl" data-line="1615"><span class="ln">1615</span><span class="cd">					u32 cmd_comp_code)</span></div>
+<div class="cl" data-line="1616"><span class="ln">1616</span><span class="cd">{</span></div>
+<div class="cl" data-line="1617"><span class="ln">1617</span><span class="cd">	struct xhci_virt_device *virt_dev;</span></div>
+<div class="cl" data-line="1618"><span class="ln">1618</span><span class="cd">	struct xhci_slot_ctx *slot_ctx;</span></div>
+<div class="cl" data-line="1619"><span class="ln">1619</span><span class="cd"></span></div>
+<div class="cl" data-line="1620"><span class="ln">1620</span><span class="cd">	virt_dev = xhci-&gt;devs[slot_id];</span></div>
+<div class="cl" data-line="1621"><span class="ln">1621</span><span class="cd">	if (!virt_dev)</span></div>
+<div class="cl" data-line="1622"><span class="ln">1622</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="1623"><span class="ln">1623</span><span class="cd"></span></div>
+<div class="cl" data-line="1624"><span class="ln">1624</span><span class="cd">	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev-&gt;out_ctx);</span></div>
+<div class="cl" data-line="1625"><span class="ln">1625</span><span class="cd">	trace_xhci_handle_cmd_disable_slot(slot_ctx);</span></div>
+<div class="cl" data-line="1626"><span class="ln">1626</span><span class="cd"></span></div>
+<div class="cl" data-line="1627"><span class="ln">1627</span><span class="cd">	if (xhci-&gt;quirks &amp; XHCI_EP_LIMIT_QUIRK)</span></div>
+<div class="cl" data-line="1628"><span class="ln">1628</span><span class="cd">		/* Delete default control endpoint resources */</span></div>
+<div class="cl" data-line="1629"><span class="ln">1629</span><span class="cd">		xhci_free_device_endpoint_resources(xhci, virt_dev, true);</span></div>
+<div class="cl" data-line="1630"><span class="ln">1630</span><span class="cd">	if (cmd_comp_code == COMP_SUCCESS) {</span></div>
+<div class="cl hot" data-line="1631" data-hot="det:6"><span class="ln">1631</span><span class="cd">		xhci-&gt;dcbaa.ctx_array[slot_id] = 0;</span></div>
+<div class="cl" data-line="1632"><span class="ln">1632</span><span class="cd">		xhci-&gt;devs[slot_id] = NULL;</span></div>
+<div class="cl" data-line="1633"><span class="ln">1633</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1634"><span class="ln">1634</span><span class="cd">}</span></div></pre>
+    </div>
+
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">44-device-detach</span>
+        <span class="spec">拔除路径：PORTSC 变化事件 → xhci_free_dev → Disable Slot 命令 → 槽位回收</span>
+      </div>
+      <video controls preload="metadata" src="44-device-detach.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=3">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m5">交互操作台 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
+    </div>
+
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">单文件自包含 · 交互台分节锚定（#m1-#m6）</span>
+      </div>
+      <p class="int-note"><b>模块五 · 拔除与槽位管理台：</b>设备拔除（PORTSC CCS/CSC 变化 → Disable Slot 命令 → 槽位回收）与设备槽分配（Enable Slot 命令 → Slot ID → DCBAA 装载 → 槽状态机）双剧本走读——对应 <a class="sr-ln" href="#s44">§4.4</a> 拔除链与 <a class="sr-ln" href="p45.html#s45">§4.5</a> 建槽链</p>
+    </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit c1c8550e70401159184130a1afc6261db01fc0ce · 2026-03-05 · Zilin Guan（东南大学，LLVM 静态分析） · drivers/usb/host/xhci.c 1 文件 +2/-2 · hunks @@ -4146,7 +4146,7 @@ / @@ -4154,7 +4154,7 @@（xhci_disable_slot 两条错误路径）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:c1c8550e70401159184130a1afc6261db01fc0ce">commit c1c8550e70401159184130a1afc6261db01fc0ce
+Author: Zilin Guan &lt;zilin@seu.edu.cn&gt;
+Date:   Thu Mar 5 00:36:37 2026 +0200
+
+    usb: xhci: Fix memory leak in xhci_disable_slot()
+    
+    xhci_alloc_command() allocates a command structure and, when the
+    second argument is true, also allocates a completion structure.
+    Currently, the error handling path in xhci_disable_slot() only frees
+    the command structure using kfree(), causing the completion structure
+    to leak.
+    
+    Use xhci_free_command() instead of kfree(). xhci_free_command() correctly
+    frees both the command structure and the associated completion structure.
+    Since the command structure is allocated with zero-initialization,
+    command-&gt;in_ctx is NULL and will not be erroneously freed by
+    xhci_free_command().
+    
+    This bug was found using an experimental static analysis tool we are
+    developing. The tool is based on the LLVM framework and is specifically
+    designed to detect memory management issues. It is currently under
+    active development and not yet publicly available, but we plan to
+    open-source it after our research is published.
+    
+    The bug was originally detected on v6.13-rc1 using our static analysis
+    tool, and we have verified that the issue persists in the latest mainline
+    kernel.
+    
+    We performed build testing on x86_64 with allyesconfig using GCC=11.4.0.
+    Since triggering these error paths in xhci_disable_slot() requires specific
+    hardware conditions or abnormal state, we were unable to construct a test
+    case to reliably trigger these specific error paths at runtime.
+    
+    Fixes: 7faac1953ed1 ("xhci: avoid race between disable slot command and host runtime suspend")
+    CC: stable@vger.kernel.org
+    Signed-off-by: Zilin Guan &lt;zilin@seu.edu.cn&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://patch.msgid.link/20260304223639.3882398-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c</span>
+<span class="d-meta">index c36ab323d68e..ef6d8662adec 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.c</span>
+<span class="d-hunk">@@ -4146,7 +4146,7 @@ int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)</span>
+<span class="d-ctx"> 	if (state == 0xffffffff || (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) ||</span>
+<span class="d-ctx"> 			(xhci-&gt;xhc_state &amp; XHCI_STATE_HALTED)) {</span>
+<span class="d-ctx"> 		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span>
+<span class="d-del">-		kfree(command);</span>
+<span class="d-add">+		xhci_free_command(xhci, command);</span>
+<span class="d-ctx"> 		return -ENODEV;</span>
+<span class="d-ctx"> 	}</span>
+<span class="d-ctx"> </span>
+<span class="d-hunk">@@ -4154,7 +4154,7 @@ int xhci_disable_slot(struct xhci_hcd *xhci, u32 slot_id)</span>
+<span class="d-ctx"> 				slot_id);</span>
+<span class="d-ctx"> 	if (ret) {</span>
+<span class="d-ctx"> 		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span>
+<span class="d-del">-		kfree(command);</span>
+<span class="d-add">+		xhci_free_command(xhci, command);</span>
+<span class="d-ctx"> 		return ret;</span>
+<span class="d-ctx"> 	}</span>
+<span class="d-ctx"> 	xhci_ring_cmd_db(xhci);</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2026 年 3 月，东南大学 Zilin Guan 以基于 LLVM 框架的实验性静态分析工具发现并提交（工具随论文研发中，bug 最初在 v6.13-rc1 检出、主线仍在）；x86_64 allyesconfig、GCC 11.4.0 构建验证。这两条错误路径要求 host 已死或命令入环失败等异常状态才走到，难以构造运行时用例稳定触发，属「静态分析发现 + 构建验证」类交付。对应 <a class="sr-ln" href="#s44">§4.4</a> 拔除链的下半程：设备拔除（PORTSC CCS 清 0 / CSC 置 1，p81）→ 端口变化事件 → usbcore 调 <code>xhci_free_dev</code> → <code>xhci_disable_slot</code>——控制器异常时走的正是被修的两条错误返回路径。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：<code>xhci_disable_slot()</code> 的两条错误路径（host 控制器已死 / Disable Slot 命令入环失败）各泄漏一个 completion 结构。机制：L4151 的 <code>xhci_alloc_command(xhci, true, GFP_KERNEL)</code> 第二参为 true 时，除命令结构外还分配 completion 结构；错误路径只用 <code>kfree(command)</code> 释放命令结构本身，completion 结构泄漏。规范背景（<a class="sr-ln" href="#s44">§4.4</a> p81）：检出拔除后软件须对受影响槽发 Disable Slot Command——若控制器恰在此刻死亡，命令发出前就返回，每次异常拔除都留下一个孤儿 completion。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">把两条错误路径的 <code>kfree(command)</code> 改为 <code>xhci_free_command(xhci, command)</code>（+2/-2）：后者同时释放命令结构与关联的 completion 结构；命令结构零初始化使 <code>command-&gt;in_ctx</code> 为 NULL，不会被误释放。补丁前：kfree 只放一半，completion 泄漏；补丁后：错误路径与成功路径（L4183）释放形态统一，任何退出路径都不留孤儿。与贴码对读：det:1 分配行（true=带 completion）、det:5 热行即被改的错误路径之一——本补丁已在基线 d9008e061539 内，贴码即补丁后形态；<a class="sr-ln" href="#s44">§4.4</a> 拔除剧本的「异常退出」分支从此与正常分支同构。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=52">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。
+  </footer>
+</div>
+<div id="tipdocs" hidden>
+<div class="tipdoc" id="tip-det-0">
+<p class="tipnote">拔除断开的软件收口：free_dev 钩子对受影响槽发 Disable Slot Command（规范 <a class="sr-ln" href="#s44">§4.4</a> p81 的 shall 义务）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-44.txt:L6-L8">detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote><div class="qzh"><div class="qzh-body">检测到 detach 之后，系统软件必须通过对受影响的槽发出 Disable Slot 命令，禁用与该端口关联的设备槽（Device Slot）。Disable Slot 命令的描述参见<a class="sr-ln" href="p46.html#s46-04">第 4.6.4 节</a>。</div><div class="qsrc">—— evidence/spec-44.txt L6-L8（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-det-1">
+<p class="tipnote">分配命令结构：第二参 true = 连 completion 一起分配——补丁 c1c8550e7040 修的就是这些错误路径的 completion 泄漏</p>
+<div class="qpair"><blockquote data-ck="spec:spec-44.txt:L2-L4">When the device is detached from a Root Hub port, the PORTSC Current 
+Connection Status (CCS) bit shall be cleared to ‘0’ and the Connect Status 
+Change (CSC) bit shall be set to ‘1’. If a ‘0’ to ‘1’ transition of PSCEG (4.19.2), </blockquote><div class="qzh"><div class="qzh-body">当设备从根集线器端口 detach（移除）时，PORTSC 的 Current Connection Status（CCS）位必须清零为 ‘0’，Connect Status Change（CSC）位必须置为 ‘1’。若 PSCEG（4.19.2）发生 ‘0’ 到 ‘1’ 的跳变，xHC 必须通过端口状态变化事件（Port Status Change Event）报告该变化。</div><div class="qsrc">—— evidence/spec-44.txt L2-L4（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-det-2">
+<p class="tipnote">Disable Slot 命令 TRB 入命令环：slot_id 随 TRB 字段带给 xHC</p>
+<div class="qpair"><blockquote data-ck="spec:spec-44.txt:L7-L8">with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote><div class="qzh"><div class="qzh-body">检测到 detach 之后，系统软件必须通过对受影响的槽发出 Disable Slot 命令，禁用与该端口关联的设备槽（Device Slot）。Disable Slot 命令的描述参见<a class="sr-ln" href="p46.html#s46-04">第 4.6.4 节</a>。</div><div class="qsrc">—— evidence/spec-44.txt L7-L8（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-det-3">
+<p class="tipnote">敲主机命令门铃（DB Target=0）：xHC 开始执行 Disable Slot——命令三拍第二拍</p>
+<div class="qpair"><blockquote data-ck="spec:spec-44.txt:L6-L8">detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote><div class="qzh"><div class="qzh-body">检测到 detach 之后，系统软件必须通过对受影响的槽发出 Disable Slot 命令，禁用与该端口关联的设备槽（Device Slot）。Disable Slot 命令的描述参见<a class="sr-ln" href="p46.html#s46-04">第 4.6.4 节</a>。</div><div class="qsrc">—— evidence/spec-44.txt L6-L8（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-det-4">
+<p class="tipnote">等 Disable Slot 完成事件：命令路径通用三拍的第三拍（回执）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-44.txt:L6-L8">detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote><div class="qzh"><div class="qzh-body">检测到 detach 之后，系统软件必须通过对受影响的槽发出 Disable Slot 命令，禁用与该端口关联的设备槽（Device Slot）。Disable Slot 命令的描述参见<a class="sr-ln" href="p46.html#s46-04">第 4.6.4 节</a>。</div><div class="qsrc">—— evidence/spec-44.txt L6-L8（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-det-5">
+<p class="tipnote">host 已死的错误路径释放命令——原为 kfree(command) 只放命令结构不放 completion，补丁后改为 xhci_free_command</p>
+<div class="qpair"><blockquote data-ck="spec:spec-44.txt:L7-L8">with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote><div class="qzh"><div class="qzh-body">检测到 detach 之后，系统软件必须通过对受影响的槽发出 Disable Slot 命令，禁用与该端口关联的设备槽（Device Slot）。Disable Slot 命令的描述参见<a class="sr-ln" href="p46.html#s46-04">第 4.6.4 节</a>。</div><div class="qsrc">—— evidence/spec-44.txt L7-L8（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-det-6">
+<p class="tipnote">Disable Slot 成功（命令完成事件的中断上下文）即清 DCBAA 指针——2eb03376151b 新增行，Disabled 态 DCBAA 指针无效（<a class="sr-ln" href="p45.html#s45">Table 4-1</a>）的驱动兑现</p>
+<div class="qpair"><blockquote data-ck="spec:spec-44.txt:L6-L8">detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote><div class="qzh"><div class="qzh-body">检测到 detach 之后，系统软件必须通过对受影响的槽发出 Disable Slot 命令，禁用与该端口关联的设备槽（Device Slot）。Disable Slot 命令的描述参见<a class="sr-ln" href="p46.html#s46-04">第 4.6.4 节</a>。</div><div class="qsrc">—— evidence/spec-44.txt L6-L8（p81）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-det-7">
+<p class="tipnote">槽资源软件侧释放（三参形态即 2eb03376151b 之后：传 virt_dev 而非按 slot_id 反查）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-44.txt:L2-L8">When the device is detached from a Root Hub port, the PORTSC Current 
+Connection Status (CCS) bit shall be cleared to ‘0’ and the Connect Status 
+Change (CSC) bit shall be set to ‘1’. If a ‘0’ to ‘1’ transition of PSCEG (4.19.2), 
+the xHC shall report the change through a Port Status Change Event. After the 
+detection of a detach, system software shall disable the Device Slot associated 
+with the port by issuing a Disable Slot Command for the affected slot. Refer to 
+section 4.6.4 for a description of the Disable Slot command. </blockquote><div class="qzh"><div class="qzh-body">当设备从根集线器端口 detach（移除）时，PORTSC 的 Current Connection Status（CCS）位必须清零为 ‘0’，Connect Status Change（CSC）位必须置为 ‘1’。若 PSCEG（4.19.2）发生 ‘0’ 到 ‘1’ 的跳变，xHC 必须通过端口状态变化事件（Port Status Change Event）报告该变化。检测到 detach 之后，系统软件必须通过对受影响的槽发出 Disable Slot 命令，禁用与该端口关联的设备槽（Device Slot）。Disable Slot 命令的描述参见<a class="sr-ln" href="p46.html#s46-04">第 4.6.4 节</a>。</div><div class="qsrc">—— evidence/spec-44.txt L2-L8（p81）</div></div></div>
+</div>
+</div>
+<div id="codetip" hidden><div class="tipbody"></div></div>
+<script>
+(function () {
+  'use strict';
+  var tip = document.getElementById('codetip');
+  var body = tip ? tip.querySelector('.tipbody') : null;
+  if (!tip || !body) { return; }
+  function show(row, pin) {
+    var key = row.getAttribute('data-hot');
+    var doc = document.getElementById('tip-' + key.replace(':', '-'));
+    if (!doc) { return; }
+    body.innerHTML = '';
+    body.appendChild(doc.cloneNode(true));
+    tip.setAttribute('data-for', key);
+    if (pin) { tip.setAttribute('data-pin', key); }
+    tip.hidden = false;
+    var r = row.getBoundingClientRect();
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = Math.max(8, Math.min(r.left + window.scrollX + (r.width - tw) / 2,
+        document.documentElement.scrollWidth - tw - 8));
+    var y = r.top + window.scrollY - th - 10;
+    if (y < window.scrollY + 4) { y = r.bottom + window.scrollY + 10; }
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  function unpinned() { return !tip.getAttribute('data-pin'); }
+  function hide() { if (unpinned()) { tip.hidden = true; } }
+  function unpin() { tip.removeAttribute('data-pin'); tip.hidden = true; }
+  var rows = document.querySelectorAll('.codeseg .cl.hot');
+  for (var i = 0; i < rows.length; i++) {
+    (function (row) {
+      row.addEventListener('mouseenter', function () { if (unpinned()) { show(row, false); } });
+      row.addEventListener('mouseleave', hide);
+      row.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var key = row.getAttribute('data-hot');
+        if (tip.getAttribute('data-pin') === key) { unpin(); }
+        else { show(row, true); }
+      });
+    })(rows[i]);
+  }
+  document.addEventListener('click', function () { unpin(); });
+})();
+</script>
+</body>
+</html>

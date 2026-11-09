@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xHCI 第 4 章视频课件 · 4.8 端点 Endpoint</title>
+<!-- data-ck 锚点块书写约定（机检 scripts/check_landing_code.py 依赖）：
+     1) data-ck 必须是开标签的最后一个属性；
+     2) 闭合标签紧贴内容末字符，中间不留任何空白；
+     3) 多行块（blockquote/pre）的第 2 行起内容顶格（零缩进）。
+     锚点 schema：
+     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止；
+                                  同一锚点值允许多次出现，按 EXPECTED_SPEC 多重集对账）
+     patch:<hash>               → git show <hash> 完整 stdout（不加路径过滤；diff 部分
+                                  逐行 d-meta/d-hunk/d-add/d-del/d-ctx 着色 span）
+     贴码段走 data-src 通道（pre.codeseg，data-src="短文件名:起始行:结束行"），
+     机检按段校验（行内容 == git show d9008e061539:<路径> 切片）+ 摘录覆盖 35/35；
+     摘录行 class="cl hot" + data-hot="组:下标"，tooltip 引文在页尾 #tipdocs。-->
+<style>
+  :root {
+    --bg: #0b0f15;
+    --panel: #111823;
+    --line: #1d2735;
+    --text: #e8edf5;
+    --muted: #8fa0b8;
+    --blue: #7c9ff0;
+    --amber: #d9a860;
+    --green: #86bd7a;
+    --teal: #7fd0b2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 64px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  h1 .tag { color: var(--amber); font-size: 15px; font-weight: 600; margin-left: 10px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meta b { color: var(--green); font-weight: 600; }
+  .lead { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+  .toc { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 4px; }
+  .toc a {
+    display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--text); text-decoration: none; font-size: 13.5px; background: var(--panel);
+  }
+  .toc a:hover { border-color: var(--blue); color: var(--blue); }
+  h2 { font-size: 19px; margin: 40px 0 14px; }
+  h2 .no { color: var(--amber); margin-right: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .card.b1 { border-left: 3px solid var(--blue); }
+  .card.b2 { border-left: 3px solid var(--teal); }
+  .card.b3 { border-left: 3px solid var(--green); }
+  .card.b4 { border-left: 3px solid var(--amber); }
+  .bhead { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .badge {
+    display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
+    border-radius: 6px; background: #18212f; color: var(--amber); font-size: 13px; font-weight: 700; flex: none;
+  }
+  h3 { font-size: 14px; margin: 16px 0 8px; color: var(--blue); }
+  h3 .cmt { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .qtitle { margin: 14px 0 0; font-size: 13.5px; font-weight: 600; }
+  blockquote {
+    margin: 8px 0 4px; padding: 10px 14px; border-left: 3px solid var(--blue); background: #0d1420;
+    border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap;
+  }
+  .qsrc { margin: 0 0 6px 17px; color: var(--muted); font-size: 12px; }
+  pre.diffblock {
+    margin: 0 0 4px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.55; color: #c7d3e6;
+  }
+  .exnote { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .foot-note { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .vhead .name { font-size: 16px; font-weight: 600; font-family: ui-monospace, Menlo, monospace; }
+  .vhead .spec { color: var(--muted); font-size: 12.5px; }
+  .card video { width: 100%; border-radius: 6px; background: #000; display: block; }
+  .btn {
+    display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 13.5px;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; border: 1px solid var(--teal); color: var(--teal); }
+  .act { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .act .note { color: var(--muted); font-size: 12.5px; }
+  .int-note { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
+  .int-note b { color: var(--teal); font-weight: 600; }
+  .phead {
+    font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px;
+    background: #0d1420; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px;
+    margin-bottom: 10px; overflow-wrap: anywhere;
+  }
+  .ph { font-size: 13.5px; color: var(--amber); margin: 14px 0 4px; font-weight: 600; }
+  .pbody { margin: 0 0 6px; font-size: 13.5px; color: var(--text); }
+  .d-meta { color: #67788f; }
+  .d-hunk { color: var(--blue); }
+  .d-add { color: var(--green); background: rgba(134, 189, 122, 0.12); }
+  .d-del { color: #e08c8c; background: rgba(224, 140, 140, 0.12); }
+  .d-ctx { color: #a8b6ca; }
+  .exhead2 { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin: 14px 0 4px; }
+  pre.codeseg {
+    margin: 0 0 10px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 0; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.5; color: #c7d3e6; white-space: normal;
+  }
+  .codeseg .cl { display: flex; padding: 0 12px; }
+  .codeseg .cl:hover { background: rgba(124, 159, 240, 0.06); }
+  .codeseg .ln { flex: none; width: 4.2em; text-align: right; padding-right: 14px; color: #51617a; user-select: none; }
+  .codeseg .cd { white-space: pre; flex: 1 1 auto; }
+  .codeseg .cl.hot { background: rgba(217, 168, 96, 0.09); box-shadow: inset 3px 0 0 var(--amber); cursor: pointer; }
+  .codeseg .cl.hot .ln { color: var(--amber); font-weight: 600; }
+  #tipdocs { display: none; }
+  #codetip {
+    position: absolute; z-index: 60; left: 0; top: 0; max-width: 660px; min-width: 300px;
+    background: var(--panel); border: 1px solid var(--blue); border-radius: 10px;
+    padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-height: 70vh; overflow: auto;
+  }
+  #codetip[hidden] { display: none; }
+  .tipdoc .tipnote { margin: 0 0 6px; font-size: 13px; color: var(--text); }
+  .tipdoc blockquote { margin: 6px 0 4px; font-size: 12.5px; }
+  code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
+
+  /* R13-A 分页：目录页卡片 + 页内粘性卡导航（共享 head，s46 内嵌样式已上提并入） */
+  .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
+  .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
+  a.ch46g:hover { border-color: var(--blue); }
+  .ch46g .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .s46tag { flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .s46tag.mech { color: #7c9ff0; border-color: #7c9ff0; }
+  .s46tag.core { color: var(--amber); border-color: var(--amber); }
+  .qsrc { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .s46head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .s46ttl { font-weight: 600; }
+  .s46pg { color: var(--muted); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .s46todo { opacity: .74; }
+  /* R11 批 A D2：规范样式表格（重建自规范 PDF 版面；样式单处） */
+  .tabwrap { overflow-x: auto; margin: 2px 0 12px; }
+  .spectab { border-collapse: collapse; width: 100%; font-size: 12.5px; background: var(--panel); }
+  .spectab caption { caption-side: top; text-align: left; font-weight: 600; font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px; padding: 0 0 6px; }
+  .spectab th, .spectab td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .spectab thead th { background: rgba(124, 159, 240, 0.14); }
+  .spectab tbody tr:nth-child(even) { background: rgba(124, 159, 240, 0.055); }
+  .spectab .tabnote { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+  .tabfoot { margin: -6px 0 12px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  /* R12 批 A-2（意见②）：流程图产线换血 drawio——SVG 内联（.fcn HTML 家族退役；
+     数据层 flowcharts.json，产物 build_flowcharts.py） */
+  .fcf { margin: 2px 0 12px; }
+  .fct { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin-bottom: 6px; }
+  .fcf svg.fcsvg { display: block; width: 100%; height: auto; max-width: 1080px; margin: 0 auto; }
+  @media (max-width: 760px) { .fcf svg.fcsvg { max-width: 100%; } }
+  /* R12 批 A-2（意见③）：规范引用跳转三类——已建锚/出界注记/待建注记 */
+  .sr-ln { color: var(--teal); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .sr-ln:hover { color: #8fd8cc; text-decoration-style: solid; }
+  .sr-out { color: var(--muted); border-bottom: 1px dashed #43536e; cursor: help; }
+  .sr-todo { color: var(--muted); border-bottom: 1px dotted #43536e; cursor: help; }
+  details.fcdoc { margin: 0 0 4px; }
+  details.fcdoc summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details.fcdoc[open] summary { margin-bottom: 6px; }
+  /* R11 批 A-2 D5：规范引文双语 side-by-side（左 EN 右 ZH；qsrc 并入 ZH 栏尾；
+     ZH 在 .qzh——data-ck 元素内部只含 EN 原文，逐字通道不受影响） */
+  .qpair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; align-items: start; }
+  .qpair blockquote { margin: 8px 0 2px; }
+  .qzh { margin: 8px 0 2px; padding: 10px 14px; border-left: 3px solid var(--teal); background: #0d1420; border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap; line-height: 1.55; }
+  .qzh .qsrc { margin: 8px 0 0 17px; }
+  .tipdoc .qzh { font-size: 12.5px; }
+  @media (max-width: 860px) { .qpair { grid-template-columns: 1fr; } }
+  .pgnav { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding: 9px 2px; margin: 0 0 22px; background: rgba(10, 16, 26, 0.94); border-bottom: 1px solid var(--line); }
+  .pgnav .pgback { flex: none; font-size: 13px; color: var(--teal); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 2px 10px; }
+  .pgnav .pgback:hover { border-color: var(--teal); }
+  .pgnav .pgsec { flex: none; font-weight: 600; font-size: 13.5px; }
+  .pgnav .pgsec .no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; margin-right: 7px; }
+  .pgnav a.pgchip { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+  .pgnav a.pgchip:hover { color: var(--blue); border-color: var(--blue); }
+  .pgcrumb { margin: 26px 0 10px; font-size: 13px; color: var(--muted); }
+  .pgcrumb a { color: var(--teal); text-decoration: none; }
+  .pgcrumb a:hover { text-decoration: underline; }
+  .tocgroup { margin: 24px 0 4px; font-size: 13px; color: var(--muted); }
+  .tocgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 10px 0 6px; }
+  a.toccard { display: block; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 15px; text-decoration: none; color: var(--text); }
+  a.toccard:hover { border-color: var(--blue); }
+  .toccard .tcno { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .toccard .tcttl { font-weight: 600; margin-left: 8px; }
+  .toccard .tcmeta { display: block; margin-top: 4px; font-size: 12px; color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .toccard .tcblurb { display: block; margin-top: 7px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .toccard .tcgo { display: block; margin-top: 9px; font-size: 12px; color: var(--teal); }
+</style>
+<body>
+<div class="wrap">
+  <p class="pgcrumb"><a href="index.html">xHCI 第 4 章视频课件 · 目录</a></p>
+  <nav class="pgnav">
+    <a class="pgback" href="index.html">← 目录</a>
+    <span class="pgsec"><span class="no">4.8</span>端点 Endpoint</span><a class="pgchip" href="#s48-01" title="Endpoint Addressing 端点寻址">4.8.1</a><a class="pgchip" href="#s48-02" title="Endpoint Context Initialization 端点上下文初始化">4.8.2</a><a class="pgchip" href="#s48-03" title="Endpoint Context State 端点上下文状态">4.8.3</a>
+  </nav>
+  <section id="s48">
+    <h2><span class="no"><a class="sr-ln" href="#s48">§4.8</a></span>Endpoint 端点 <span class="cmt">R12 批 A · 三小节三卡（寻址/上下文初始化/状态机）</span></h2>
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>大区导语 · 3 卡</div>
+      <p class="pbody">4.8 定义端点：寻址（Endpoint Number+Direction → 16 对 Endpoint Context，DCI 公式）、上下文初始化（Input Endpoint Context 全零起步+四端点型例外清单）、上下文状态（五态状态机：Disabled/Running/Halted/Stopped/Error 与命令驱动的转移）。本节无规范表（<a class="sr-ln" href="#s48-03">Figure 4-5</a> 为状态图非表）；补丁片已上线（dceea67058fe：EP 状态域掩码 0xf→0x7 勘正，引 spec 6.2.3 三位状态域）——补丁版块在 4.8.3 卡内（R12 批 A-3，§6 逐节全配）。</p>
+      <div class="ch46grid"><a class="ch46g" href="#s48-01"><span class="s46no">4.8.1</span>Endpoint Addressing 端点寻址<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s48-02"><span class="s46no">4.8.2</span>Endpoint Context Initialization 端点上下文初始化<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s48-03"><span class="s46no">4.8.3</span>Endpoint Context State 端点上下文状态<span class="s46tag mech">机制</span></a></div>
+    </div>
+    <div class="card s46card" id="s48-01">
+      <div class="s46head"><span class="s46no">4.8.1</span><span class="s46ttl">Endpoint Addressing 端点寻址</span><span class="s46tag mech">机制</span><span class="s46pg">p143-p144</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L3-L5">A USB device supports up to 31 endpoints (EPs): for example,15 IN, 15 OUT, 
+and 1 Control. The Default Control EP (0) is a bidirectional EP defined for all 
+USB devices. </blockquote><div class="qzh"><div class="qzh-body">一个 USB 设备最多支持 31 个端点（EP）：例如 15 个 IN、15 个 OUT 和 1 个 Control。默认控制 EP（0）是为所有 USB 设备定义的双向 EP。</div><div class="qsrc">—— evidence/spec-48.txt L3-L5（p143）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L41-L46">An Endpoint Address defined by a USB Endpoint Descriptor allows up to 31 
+possible values, where a 4-bit Endpoint Number is combined with a Direction 
+bit (refer to section 9.6.6 in the USB2 spec). The xHCI parallels this 
+organization by using the Endpoint Number to select one of 16 Endpoint 
+Context data structure pairs, and the Direction bit to select the IN or OUT 
+Endpoint Context of a pair. Refer to <a class="sr-ln" href="#s48-01">Figure 4-4</a> to the right. </blockquote><div class="qzh"><div class="qzh-body">由 USB 端点描述符（Endpoint Descriptor）定义的端点地址（Endpoint Address）最多允许 31 个可能的取值，其中 4 位的端点号（Endpoint Number）与一个方向位（Direction bit）组合而成（参见 USB2 规范第 9.6.6 节）。xHCI 仿照这一组织方式：用端点号从 16 对端点上下文（Endpoint Context）数据结构对中选出一对，再用方向位选出该对中的 IN 或 OUT 端点上下文。参见图 4-4（位于右侧）。</div><div class="qsrc">—— evidence/spec-48.txt L41-L46（p144）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L47-L53">A Control endpoint (for example, EP Number 0 in <a class="sr-ln" href="#s48-01">Figure 4-4</a>) is a bidirectional 
+endpoint and, per the USB specification, the Direction bit is “ignored” when 
+calculating its Endpoint Address, that is, only the Endpoint Number is used to 
+calculate the location of a Control Endpoint Context data structure. To 
+accommodate the addressing anomaly of USB bidirectional endpoint addressing 
+the xHC shall use the IN (odd) Endpoint Context of the pair to manage 
+bidirectional endpoints. </blockquote><div class="qzh"><div class="qzh-body">控制端点（例如图 4-4 中的 EP 号 0）是双向端点；按照 USB 规范，在计算其端点地址时方向位被“忽略”，也就是说，只用端点号来计算控制端点上下文（Control Endpoint Context）数据结构的位置。为兼容 USB 双向端点寻址的这一反常之处，xHC 必须使用该对中的 IN（奇数）端点上下文来管理双向端点。</div><div class="qsrc">—— evidence/spec-48.txt L47-L53（p144）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L54-L57">The USB specification allows a device to define additional Control (bidirectional) 
+endpoints, beyond the Default Control Endpoint (EP 0) required by the USB 
+Framework. Using the rules defined above, the xHCI is capable of supporting 
+additional Control endpoints. </blockquote><div class="qzh"><div class="qzh-body">USB 规范允许设备在 USB 框架所要求的默认控制端点（EP 0）之外，定义额外的控制（双向）端点。按照上述规则，xHCI 能够支持这些额外的控制端点。</div><div class="qsrc">—— evidence/spec-48.txt L54-L57（p144）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L58-L61">For all Endpoint Numbers greater than 0, the xHC shall ignore the OUT (even) 
+Endpoint Context of the pair of any endpoint that declares itself as a 
+bidirectional. Software shall use the IN (odd) Endpoint Context of a pair for 
+managing a Control Endpoint. </blockquote><div class="qzh"><div class="qzh-body">对于所有大于 0 的端点号，若某端点声明自身为双向，则 xHC 必须忽略其对中 OUT（偶数）端点上下文。软件必须使用一对中的 IN（奇数）端点上下文来管理控制端点。</div><div class="qsrc">—— evidence/spec-48.txt L58-L61（p144）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.c:1467-1495 · 端点索引辅助组（DCI 反查/Context Entries 计算） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:1467:1495"><div class="cl" data-line="1467"><span class="ln">1467</span><span class="cd">/* The reverse operation to xhci_get_endpoint_index. Calculate the USB endpoint</span></div>
+<div class="cl" data-line="1468"><span class="ln">1468</span><span class="cd"> * address from the XHCI endpoint index.</span></div>
+<div class="cl" data-line="1469"><span class="ln">1469</span><span class="cd"> */</span></div>
+<div class="cl" data-line="1470"><span class="ln">1470</span><span class="cd">static unsigned int xhci_get_endpoint_address(unsigned int ep_index)</span></div>
+<div class="cl" data-line="1471"><span class="ln">1471</span><span class="cd">{</span></div>
+<div class="cl" data-line="1472"><span class="ln">1472</span><span class="cd">	unsigned int number = DIV_ROUND_UP(ep_index, 2);</span></div>
+<div class="cl" data-line="1473"><span class="ln">1473</span><span class="cd">	unsigned int direction = ep_index % 2 ? USB_DIR_OUT : USB_DIR_IN;</span></div>
+<div class="cl" data-line="1474"><span class="ln">1474</span><span class="cd">	return direction | number;</span></div>
+<div class="cl" data-line="1475"><span class="ln">1475</span><span class="cd">}</span></div>
+<div class="cl" data-line="1476"><span class="ln">1476</span><span class="cd"></span></div>
+<div class="cl" data-line="1477"><span class="ln">1477</span><span class="cd">/* Find the flag for this endpoint (for use in the control context).  Use the</span></div>
+<div class="cl" data-line="1478"><span class="ln">1478</span><span class="cd"> * endpoint index to create a bitmask.  The slot context is bit 0, endpoint 0 is</span></div>
+<div class="cl" data-line="1479"><span class="ln">1479</span><span class="cd"> * bit 1, etc.</span></div>
+<div class="cl" data-line="1480"><span class="ln">1480</span><span class="cd"> */</span></div>
+<div class="cl" data-line="1481"><span class="ln">1481</span><span class="cd">static unsigned int xhci_get_endpoint_flag(struct usb_endpoint_descriptor *desc)</span></div>
+<div class="cl" data-line="1482"><span class="ln">1482</span><span class="cd">{</span></div>
+<div class="cl" data-line="1483"><span class="ln">1483</span><span class="cd">	return 1 &lt;&lt; (xhci_get_endpoint_index(desc) + 1);</span></div>
+<div class="cl" data-line="1484"><span class="ln">1484</span><span class="cd">}</span></div>
+<div class="cl" data-line="1485"><span class="ln">1485</span><span class="cd"></span></div>
+<div class="cl" data-line="1486"><span class="ln">1486</span><span class="cd">/* Compute the last valid endpoint context index.  Basically, this is the</span></div>
+<div class="cl" data-line="1487"><span class="ln">1487</span><span class="cd"> * endpoint index plus one.  For slot contexts with more than valid endpoint,</span></div>
+<div class="cl" data-line="1488"><span class="ln">1488</span><span class="cd"> * we find the most significant bit set in the added contexts flags.</span></div>
+<div class="cl" data-line="1489"><span class="ln">1489</span><span class="cd"> * e.g. ep 1 IN (with epnum 0x81) =&gt; added_ctxs = 0b1000</span></div>
+<div class="cl" data-line="1490"><span class="ln">1490</span><span class="cd"> * fls(0b1000) = 4, but the endpoint context index is 3, so subtract one.</span></div>
+<div class="cl" data-line="1491"><span class="ln">1491</span><span class="cd"> */</span></div>
+<div class="cl" data-line="1492"><span class="ln">1492</span><span class="cd">unsigned int xhci_last_valid_endpoint(u32 added_ctxs)</span></div>
+<div class="cl" data-line="1493"><span class="ln">1493</span><span class="cd">{</span></div>
+<div class="cl" data-line="1494"><span class="ln">1494</span><span class="cd">	return fls(added_ctxs) - 1;</span></div>
+<div class="cl" data-line="1495"><span class="ln">1495</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0801-endpoint-addressing.mp4"></video>
+        <a class="btn" href="player/index.html?scene=27">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · Zone B DCI 计算器：EP Number×2+Direction → DCI（Control 取 IN 奇上下文）——对应本节寻址规则</span>
+      </div>
+    </div>
+
+    <div class="card s46card" id="s48-02">
+      <div class="s46head"><span class="s46no">4.8.2</span><span class="s46ttl">Endpoint Context Initialization 端点上下文初始化</span><span class="s46tag mech">机制</span><span class="s46pg">p144-p146</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L64-L65">All fields of an Input Endpoint Context data structure (including the Reserved 
+fields) shall be initialized to ‘0’ with the following exceptions: </blockquote><div class="qzh"><div class="qzh-body">输入端点上下文（Input Endpoint Context）数据结构的所有字段（包括 Reserved 字段）都必须初始化为 ‘0’，但下列情况除外：</div><div class="qsrc">—— evidence/spec-48.txt L64-L65（p144）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-mem.c:1409-1515 · xhci_endpoint_init · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-mem.c:1409:1515"><div class="cl" data-line="1409"><span class="ln">1409</span><span class="cd">int xhci_endpoint_init(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="1410"><span class="ln">1410</span><span class="cd">		struct xhci_virt_device *virt_dev,</span></div>
+<div class="cl" data-line="1411"><span class="ln">1411</span><span class="cd">		struct usb_device *udev,</span></div>
+<div class="cl" data-line="1412"><span class="ln">1412</span><span class="cd">		struct usb_host_endpoint *ep,</span></div>
+<div class="cl" data-line="1413"><span class="ln">1413</span><span class="cd">		gfp_t mem_flags)</span></div>
+<div class="cl" data-line="1414"><span class="ln">1414</span><span class="cd">{</span></div>
+<div class="cl" data-line="1415"><span class="ln">1415</span><span class="cd">	unsigned int ep_index;</span></div>
+<div class="cl" data-line="1416"><span class="ln">1416</span><span class="cd">	struct xhci_ep_ctx *ep_ctx;</span></div>
+<div class="cl" data-line="1417"><span class="ln">1417</span><span class="cd">	struct xhci_ring *ep_ring;</span></div>
+<div class="cl" data-line="1418"><span class="ln">1418</span><span class="cd">	unsigned int max_packet;</span></div>
+<div class="cl" data-line="1419"><span class="ln">1419</span><span class="cd">	enum xhci_ring_type ring_type;</span></div>
+<div class="cl" data-line="1420"><span class="ln">1420</span><span class="cd">	u32 max_esit_payload;</span></div>
+<div class="cl" data-line="1421"><span class="ln">1421</span><span class="cd">	u32 endpoint_type;</span></div>
+<div class="cl" data-line="1422"><span class="ln">1422</span><span class="cd">	unsigned int max_burst;</span></div>
+<div class="cl" data-line="1423"><span class="ln">1423</span><span class="cd">	unsigned int interval;</span></div>
+<div class="cl" data-line="1424"><span class="ln">1424</span><span class="cd">	unsigned int mult;</span></div>
+<div class="cl" data-line="1425"><span class="ln">1425</span><span class="cd">	unsigned int avg_trb_len;</span></div>
+<div class="cl" data-line="1426"><span class="ln">1426</span><span class="cd">	unsigned int err_count = 0;</span></div>
+<div class="cl" data-line="1427"><span class="ln">1427</span><span class="cd"></span></div>
+<div class="cl" data-line="1428"><span class="ln">1428</span><span class="cd">	ep_index = xhci_get_endpoint_index(&amp;ep-&gt;desc);</span></div>
+<div class="cl" data-line="1429"><span class="ln">1429</span><span class="cd">	ep_ctx = xhci_get_ep_ctx(xhci, virt_dev-&gt;in_ctx, ep_index);</span></div>
+<div class="cl" data-line="1430"><span class="ln">1430</span><span class="cd"></span></div>
+<div class="cl" data-line="1431"><span class="ln">1431</span><span class="cd">	endpoint_type = xhci_get_endpoint_type(ep);</span></div>
+<div class="cl" data-line="1432"><span class="ln">1432</span><span class="cd">	if (!endpoint_type)</span></div>
+<div class="cl" data-line="1433"><span class="ln">1433</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="1434"><span class="ln">1434</span><span class="cd"></span></div>
+<div class="cl" data-line="1435"><span class="ln">1435</span><span class="cd">	ring_type = usb_endpoint_type(&amp;ep-&gt;desc);</span></div>
+<div class="cl" data-line="1436"><span class="ln">1436</span><span class="cd"></span></div>
+<div class="cl" data-line="1437"><span class="ln">1437</span><span class="cd">	/* Ensure host supports double isoc bandwidth for eUSB2 devices */</span></div>
+<div class="cl" data-line="1438"><span class="ln">1438</span><span class="cd">	if (usb_endpoint_is_hs_isoc_double(udev, ep) &amp;&amp; !(xhci-&gt;hcc_params2 &amp; HCC2_EUSB2_DIC))	{</span></div>
+<div class="cl" data-line="1439"><span class="ln">1439</span><span class="cd">		dev_dbg(&amp;udev-&gt;dev, "Double Isoc Bandwidth not supported by xhci\n");</span></div>
+<div class="cl" data-line="1440"><span class="ln">1440</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="1441"><span class="ln">1441</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1442"><span class="ln">1442</span><span class="cd"></span></div>
+<div class="cl" data-line="1443"><span class="ln">1443</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="1444"><span class="ln">1444</span><span class="cd">	 * Get values to fill the endpoint context, mostly from ep descriptor.</span></div>
+<div class="cl" data-line="1445"><span class="ln">1445</span><span class="cd">	 * The average TRB buffer lengt for bulk endpoints is unclear as we</span></div>
+<div class="cl" data-line="1446"><span class="ln">1446</span><span class="cd">	 * have no clue on scatter gather list entry size. For Isoc and Int,</span></div>
+<div class="cl" data-line="1447"><span class="ln">1447</span><span class="cd">	 * set it to max available. See xHCI 1.1 spec 4.14.1.1 for details.</span></div>
+<div class="cl" data-line="1448"><span class="ln">1448</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="1449"><span class="ln">1449</span><span class="cd">	max_esit_payload = usb_endpoint_max_periodic_payload(udev, ep);</span></div>
+<div class="cl" data-line="1450"><span class="ln">1450</span><span class="cd">	interval = xhci_get_endpoint_interval(udev, ep);</span></div>
+<div class="cl" data-line="1451"><span class="ln">1451</span><span class="cd"></span></div>
+<div class="cl" data-line="1452"><span class="ln">1452</span><span class="cd">	/* Periodic endpoint bInterval limit quirk */</span></div>
+<div class="cl" data-line="1453"><span class="ln">1453</span><span class="cd">	if (usb_endpoint_xfer_int(&amp;ep-&gt;desc) ||</span></div>
+<div class="cl" data-line="1454"><span class="ln">1454</span><span class="cd">	    usb_endpoint_xfer_isoc(&amp;ep-&gt;desc)) {</span></div>
+<div class="cl" data-line="1455"><span class="ln">1455</span><span class="cd">		if ((xhci-&gt;quirks &amp; XHCI_LIMIT_ENDPOINT_INTERVAL_9) &amp;&amp;</span></div>
+<div class="cl" data-line="1456"><span class="ln">1456</span><span class="cd">		    interval &gt;= 9) {</span></div>
+<div class="cl" data-line="1457"><span class="ln">1457</span><span class="cd">			interval = 8;</span></div>
+<div class="cl" data-line="1458"><span class="ln">1458</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1459"><span class="ln">1459</span><span class="cd">		if ((xhci-&gt;quirks &amp; XHCI_LIMIT_ENDPOINT_INTERVAL_7) &amp;&amp;</span></div>
+<div class="cl" data-line="1460"><span class="ln">1460</span><span class="cd">		    udev-&gt;speed &gt;= USB_SPEED_HIGH &amp;&amp;</span></div>
+<div class="cl" data-line="1461"><span class="ln">1461</span><span class="cd">		    interval &gt;= 7) {</span></div>
+<div class="cl" data-line="1462"><span class="ln">1462</span><span class="cd">			interval = 6;</span></div>
+<div class="cl" data-line="1463"><span class="ln">1463</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1464"><span class="ln">1464</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1465"><span class="ln">1465</span><span class="cd"></span></div>
+<div class="cl" data-line="1466"><span class="ln">1466</span><span class="cd">	mult = xhci_get_endpoint_mult(xhci, udev, ep);</span></div>
+<div class="cl" data-line="1467"><span class="ln">1467</span><span class="cd">	max_packet = xhci_usb_endpoint_maxp(udev, ep);</span></div>
+<div class="cl" data-line="1468"><span class="ln">1468</span><span class="cd">	max_burst = xhci_get_endpoint_max_burst(udev, ep);</span></div>
+<div class="cl" data-line="1469"><span class="ln">1469</span><span class="cd">	avg_trb_len = max_esit_payload;</span></div>
+<div class="cl" data-line="1470"><span class="ln">1470</span><span class="cd"></span></div>
+<div class="cl" data-line="1471"><span class="ln">1471</span><span class="cd">	/* FIXME dig Mult and streams info out of ep companion desc */</span></div>
+<div class="cl" data-line="1472"><span class="ln">1472</span><span class="cd"></span></div>
+<div class="cl" data-line="1473"><span class="ln">1473</span><span class="cd">	/* Allow 3 retries for everything but isoc, set CErr = 3 */</span></div>
+<div class="cl" data-line="1474"><span class="ln">1474</span><span class="cd">	if (!usb_endpoint_xfer_isoc(&amp;ep-&gt;desc))</span></div>
+<div class="cl" data-line="1475"><span class="ln">1475</span><span class="cd">		err_count = 3;</span></div>
+<div class="cl" data-line="1476"><span class="ln">1476</span><span class="cd">	/* HS bulk max packet should be 512, FS bulk supports 8, 16, 32 or 64 */</span></div>
+<div class="cl" data-line="1477"><span class="ln">1477</span><span class="cd">	if (usb_endpoint_xfer_bulk(&amp;ep-&gt;desc)) {</span></div>
+<div class="cl" data-line="1478"><span class="ln">1478</span><span class="cd">		if (udev-&gt;speed == USB_SPEED_HIGH)</span></div>
+<div class="cl" data-line="1479"><span class="ln">1479</span><span class="cd">			max_packet = 512;</span></div>
+<div class="cl" data-line="1480"><span class="ln">1480</span><span class="cd">		if (udev-&gt;speed == USB_SPEED_FULL) {</span></div>
+<div class="cl" data-line="1481"><span class="ln">1481</span><span class="cd">			max_packet = rounddown_pow_of_two(max_packet);</span></div>
+<div class="cl" data-line="1482"><span class="ln">1482</span><span class="cd">			max_packet = clamp_val(max_packet, 8, 64);</span></div>
+<div class="cl" data-line="1483"><span class="ln">1483</span><span class="cd">		}</span></div>
+<div class="cl" data-line="1484"><span class="ln">1484</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1485"><span class="ln">1485</span><span class="cd">	/* xHCI 1.0 and 1.1 indicates that ctrl ep avg TRB Length should be 8 */</span></div>
+<div class="cl" data-line="1486"><span class="ln">1486</span><span class="cd">	if (usb_endpoint_xfer_control(&amp;ep-&gt;desc) &amp;&amp; xhci-&gt;hci_version &gt;= 0x100)</span></div>
+<div class="cl" data-line="1487"><span class="ln">1487</span><span class="cd">		avg_trb_len = 8;</span></div>
+<div class="cl" data-line="1488"><span class="ln">1488</span><span class="cd"></span></div>
+<div class="cl" data-line="1489"><span class="ln">1489</span><span class="cd">	/* Set up the endpoint ring */</span></div>
+<div class="cl" data-line="1490"><span class="ln">1490</span><span class="cd">	virt_dev-&gt;eps[ep_index].new_ring =</span></div>
+<div class="cl" data-line="1491"><span class="ln">1491</span><span class="cd">		xhci_ring_alloc(xhci, 2, ring_type, max_packet, mem_flags);</span></div>
+<div class="cl" data-line="1492"><span class="ln">1492</span><span class="cd">	if (!virt_dev-&gt;eps[ep_index].new_ring)</span></div>
+<div class="cl" data-line="1493"><span class="ln">1493</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="1494"><span class="ln">1494</span><span class="cd"></span></div>
+<div class="cl" data-line="1495"><span class="ln">1495</span><span class="cd">	virt_dev-&gt;eps[ep_index].skip = false;</span></div>
+<div class="cl" data-line="1496"><span class="ln">1496</span><span class="cd">	virt_dev-&gt;eps[ep_index].next_uframe = -1;</span></div>
+<div class="cl" data-line="1497"><span class="ln">1497</span><span class="cd">	ep_ring = virt_dev-&gt;eps[ep_index].new_ring;</span></div>
+<div class="cl" data-line="1498"><span class="ln">1498</span><span class="cd">	xhci_ring_init(xhci, ep_ring);</span></div>
+<div class="cl" data-line="1499"><span class="ln">1499</span><span class="cd"></span></div>
+<div class="cl" data-line="1500"><span class="ln">1500</span><span class="cd">	/* Fill the endpoint context */</span></div>
+<div class="cl" data-line="1501"><span class="ln">1501</span><span class="cd">	ep_ctx-&gt;ep_info = cpu_to_le32(EP_MAX_ESIT_PAYLOAD_HI(max_esit_payload) |</span></div>
+<div class="cl" data-line="1502"><span class="ln">1502</span><span class="cd">				      EP_INTERVAL(interval) |</span></div>
+<div class="cl" data-line="1503"><span class="ln">1503</span><span class="cd">				      EP_MULT(mult));</span></div>
+<div class="cl" data-line="1504"><span class="ln">1504</span><span class="cd">	ep_ctx-&gt;ep_info2 = cpu_to_le32(EP_TYPE(endpoint_type) |</span></div>
+<div class="cl" data-line="1505"><span class="ln">1505</span><span class="cd">				       MAX_PACKET(max_packet) |</span></div>
+<div class="cl" data-line="1506"><span class="ln">1506</span><span class="cd">				       MAX_BURST(max_burst) |</span></div>
+<div class="cl" data-line="1507"><span class="ln">1507</span><span class="cd">				       ERROR_COUNT(err_count));</span></div>
+<div class="cl" data-line="1508"><span class="ln">1508</span><span class="cd">	ep_ctx-&gt;deq = cpu_to_le64(ep_ring-&gt;first_seg-&gt;dma |</span></div>
+<div class="cl" data-line="1509"><span class="ln">1509</span><span class="cd">				  ep_ring-&gt;cycle_state);</span></div>
+<div class="cl" data-line="1510"><span class="ln">1510</span><span class="cd"></span></div>
+<div class="cl" data-line="1511"><span class="ln">1511</span><span class="cd">	ep_ctx-&gt;tx_info = cpu_to_le32(EP_MAX_ESIT_PAYLOAD_LO(max_esit_payload) |</span></div>
+<div class="cl" data-line="1512"><span class="ln">1512</span><span class="cd">				      EP_AVG_TRB_LENGTH(avg_trb_len));</span></div>
+<div class="cl" data-line="1513"><span class="ln">1513</span><span class="cd"></span></div>
+<div class="cl" data-line="1514"><span class="ln">1514</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="1515"><span class="ln">1515</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0802-endpoint-context-init.mp4"></video>
+        <a class="btn" href="player/index.html?scene=28">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · Zone A/B 建槽剧本里 Input EP0 Context 的装配步骤（EP Type/Max Packet Size/CErr/TR Deq+DCS）——对应本节初始化清单</span>
+      </div>
+      <p class="ph">规范算法全文收纳（算法流程图 + 折叠原文逐字备查；短片降密度：片内只讲机制主线）</p>
+      <div class="fcf"><div class="fct" id="fc-x0802-init">流程图 · 4.8.2 端点上下文初始化（Input Endpoint Context） · 依据 spec-48.txt L62-L158</div><svg class="fcsvg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="817px" height="1406px" viewBox="0 0 817 1406"><defs/><g><g data-cell-id="0"><g data-cell-id="1"><g data-cell-id="n1"><g><rect x="284.9" y="0" width="317.6" height="74.5" rx="4.47" ry="4.47" fill="#101a2b" stroke="#7c9ff0" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(16, 26, 43), rgb(208, 216, 231)); stroke: light-dark(rgb(124, 159, 240), rgb(72, 103, 172));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 316px; height: 1px; padding-top: 37px; margin-left: 286px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #e2e9f7; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#e2e9f7, #202632); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Input Endpoint Context 全字段（含 Reserved）初始化为 ‘0’——以下按端点类型只设例外字段</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n15"><g transform="translate(0.5,0.5)"><path d="M 443.7 118.6 L 600.2 177.6 L 443.7 236.6 L 287.2 177.6 Z" fill="#241c0e" stroke="#d99e3d" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(36, 28, 14), rgb(219, 212, 200)); stroke: light-dark(rgb(217, 158, 61), rgb(142, 92, 8));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 311px; height: 1px; padding-top: 178px; margin-left: 288px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #f0d9ac; "><div style="display: inline-block; font-size: 12.5px; font-family: Helvetica; color: light-dark(#f0d9ac, #44300a); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">端点类型？（§4.8.2.1-4.8.2.4）</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n3"><g transform="translate(0.5,0.5)"><rect x="73" y="276.6" width="354" height="177.1" rx="7.08" ry="7.08" fill="none" stroke="#43536e" stroke-dasharray="6 4" pointer-events="all" style="stroke: light-dark(rgb(67, 83, 110), rgb(155, 169, 192));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 344px; height: 1px; padding-top: 288px; margin-left: 83px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Default Control EP0</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n2"><g><rect x="89" y="306.6" width="322" height="131.1" rx="7.87" ry="7.87" fill="#101a2b" stroke="#7c9ff0" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(16, 26, 43), rgb(208, 216, 231)); stroke: light-dark(rgb(124, 159, 240), rgb(72, 103, 172));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 320px; height: 1px; padding-top: 372px; margin-left: 90px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #e2e9f7; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#e2e9f7, #202632); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">EP Type=Control；Max Packet Size=Device Descriptor:bMaxPacketSize0（可先设默认值，Addressed 态后用 Evaluate Context 修改）；CErr=3（3 次重试）；TR Dequeue Pointer=先前分配 Transfer Ring 首段起始；DCS=‘1’</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n16"><g><rect x="1" y="343.1" width="148.2" height="16" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-end; justify-content: unsafe flex-end; width: 1px; height: 1px; padding-top: 356px; margin-left: 147px;"><div style="box-sizing: border-box; font-size: 0; text-align: right; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: nowrap; ">Default Control EP0</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n5"><g transform="translate(0.5,0.5)"><rect x="73" y="493.7" width="308" height="120.5" rx="4.82" ry="4.82" fill="none" stroke="#43536e" stroke-dasharray="6 4" pointer-events="all" style="stroke: light-dark(rgb(67, 83, 110), rgb(155, 169, 192));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 298px; height: 1px; padding-top: 505px; margin-left: 83px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">其余 Control 端点</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n4"><g><rect x="89" y="523.6" width="276" height="74.5" rx="4.47" ry="4.47" fill="#101a2b" stroke="#7c9ff0" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(16, 26, 43), rgb(208, 216, 231)); stroke: light-dark(rgb(124, 159, 240), rgb(72, 103, 172));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 274px; height: 1px; padding-top: 561px; margin-left: 90px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #e2e9f7; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#e2e9f7, #202632); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">与 Default Control EP 相同，唯 Max Packet Size=Endpoint Descriptor:wMaxPacketSize</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n17"><g><rect x="1" y="531.9" width="126.6" height="16" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-end; justify-content: unsafe flex-end; width: 1px; height: 1px; padding-top: 545px; margin-left: 126px;"><div style="box-sizing: border-box; font-size: 0; text-align: right; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: nowrap; ">其余 Control 端点</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n12"><g transform="translate(0.5,0.5)"><rect x="73" y="654.2" width="741.3" height="493.9" rx="19.76" ry="19.76" fill="none" stroke="#43536e" stroke-dasharray="6 4" pointer-events="all" style="stroke: light-dark(rgb(67, 83, 110), rgb(155, 169, 192));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 731px; height: 1px; padding-top: 665px; margin-left: 83px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Bulk</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n6"><g><rect x="284.8" y="684.2" width="317.8" height="74.5" rx="4.47" ry="4.47" fill="#101a2b" stroke="#7c9ff0" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(16, 26, 43), rgb(208, 216, 231)); stroke: light-dark(rgb(124, 159, 240), rgb(72, 103, 172));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 316px; height: 1px; padding-top: 721px; margin-left: 286px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #e2e9f7; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#e2e9f7, #202632); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">EP Type=Bulk IN/OUT；Max Packet Size=wMaxPacketSize；Max Burst=SS Companion:bMaxBurst（USB2=‘0’）；CErr=3</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n11"><g transform="translate(0.5,0.5)"><path d="M 443.7 802.8 L 585.7 877.8 L 443.7 952.8 L 301.7 877.8 Z" fill="#241c0e" stroke="#d99e3d" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(36, 28, 14), rgb(219, 212, 200)); stroke: light-dark(rgb(217, 158, 61), rgb(142, 92, 8));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 282px; height: 1px; padding-top: 878px; margin-left: 303px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #f0d9ac; "><div style="display: inline-block; font-size: 12.5px; font-family: Helvetica; color: light-dark(#f0d9ac, #44300a); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Streams 使能？（bmAttributes MaxStreams&gt;‘0’）</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n8"><g transform="translate(0.5,0.5)"><rect x="89" y="992.8" width="319.7" height="139.4" rx="5.58" ry="5.58" fill="none" stroke="#43536e" stroke-dasharray="6 4" pointer-events="all" style="stroke: light-dark(rgb(67, 83, 110), rgb(155, 169, 192));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 310px; height: 1px; padding-top: 1004px; margin-left: 99px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">是</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n7"><g><rect x="105" y="1022.8" width="287.7" height="93.4" rx="5.6" ry="5.6" fill="#101a2b" stroke="#7c9ff0" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(16, 26, 43), rgb(208, 216, 231)); stroke: light-dark(rgb(124, 159, 240), rgb(72, 103, 172));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 286px; height: 1px; padding-top: 1070px; margin-left: 106px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #e2e9f7; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#e2e9f7, #202632); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">分配并清零 Primary Stream Array；MaxPStreams=数组尺寸；TR Dequeue Pointer=Primary Stream Array 起始；HID/LSA 按需初始化</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n10"><g transform="translate(0.5,0.5)"><rect x="452.7" y="992.8" width="345.7" height="101.7" rx="4.07" ry="4.07" fill="none" stroke="#43536e" stroke-dasharray="6 4" pointer-events="all" style="stroke: light-dark(rgb(67, 83, 110), rgb(155, 169, 192));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 336px; height: 1px; padding-top: 1004px; margin-left: 463px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">否</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n9"><g><rect x="468.7" y="1022.8" width="313.7" height="55.7" rx="3.34" ry="3.34" fill="#101a2b" stroke="#7c9ff0" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(16, 26, 43), rgb(208, 216, 231)); stroke: light-dark(rgb(124, 159, 240), rgb(72, 103, 172));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 312px; height: 1px; padding-top: 1051px; margin-left: 470px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #e2e9f7; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#e2e9f7, #202632); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">MaxPStreams=‘0’；TR Dequeue Pointer=Transfer Ring 首段起始；DCS=‘1’</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n18"><g><rect x="1" y="879.2" width="60" height="16" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-end; justify-content: unsafe flex-end; width: 1px; height: 1px; padding-top: 892px; margin-left: 59px;"><div style="box-sizing: border-box; font-size: 0; text-align: right; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: nowrap; ">Bulk</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n14"><g transform="translate(0.5,0.5)"><rect x="73" y="1188.2" width="354.5" height="214.8" rx="8.59" ry="8.59" fill="none" stroke="#43536e" stroke-dasharray="6 4" pointer-events="all" style="stroke: light-dark(rgb(67, 83, 110), rgb(155, 169, 192));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 345px; height: 1px; padding-top: 1199px; margin-left: 83px;"><div style="box-sizing: border-box; font-size: 0; text-align: left; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">Isoch / Interrupt</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n13"><g><rect x="89" y="1218.2" width="322.5" height="168.8" rx="10.13" ry="10.13" fill="#101a2b" stroke="#7c9ff0" stroke-width="1.5" pointer-events="all" style="fill: light-dark(rgb(16, 26, 43), rgb(208, 216, 231)); stroke: light-dark(rgb(124, 159, 240), rgb(72, 103, 172));"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 321px; height: 1px; padding-top: 1303px; margin-left: 90px;"><div style="box-sizing: border-box; font-size: 0; text-align: center; color: #e2e9f7; "><div style="display: inline-block; font-size: 13px; font-family: Helvetica; color: light-dark(#e2e9f7, #202632); line-height: 1.2; pointer-events: all; white-space: normal; word-wrap: normal; ">EP Type=Isoch/Interrupt IN/OUT；Max Packet Size=wMaxPacketSize &amp; 07FFh；Max Burst=SS Companion:bMaxBurst 或 (wMaxPacketSize &amp; 1800h)&gt;&gt;11；Mult=SS Companion:Mult（Interrupt 恒 ‘0’）；CErr=3（Interrupt）/‘0’（Isoch 不重试）；TR Dequeue Pointer=首段起始；DCS=‘1’；Max ESIT Payload=§4.14.2</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="n19"><g><rect x="1" y="1273.5" width="134.3" height="16" fill="none" stroke="none" pointer-events="all"/></g><g><g><switch><foreignObject style="overflow: visible; text-align: left;" pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"><div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-end; justify-content: unsafe flex-end; width: 1px; height: 1px; padding-top: 1287px; margin-left: 133px;"><div style="box-sizing: border-box; font-size: 0; text-align: right; color: #e0a64d; "><div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: light-dark(#e0a64d, #855407); line-height: 1.2; pointer-events: all; white-space: nowrap; ">Isoch / Interrupt</div></div></div></foreignObject></switch></g></g></g><g data-cell-id="e4"><g transform="translate(0.5,0.5)"><path d="M 443.7 236.6 L 443.7 244.6 Q 443.7 252.6 433.7 252.6 L 17 252.6 Q 7 252.6 7 262.6 L 7 355.2 Q 7 365.2 17 365.19 L 65.88 365.16" fill="none" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/><path d="M 71.43 365.15 L 64.04 368.86 L 65.88 365.16 L 64.03 361.46 Z" fill="#8298b8" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(130, 152, 184), rgb(91, 110, 137)); stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/></g></g><g data-cell-id="e5"><g transform="translate(0.5,0.5)"><path d="M 443.7 236.6 L 443.7 244.6 Q 443.7 252.6 433.7 252.6 L 17 252.6 Q 7 252.6 7 262.6 L 7 544 Q 7 554 17 553.99 L 65.88 553.96" fill="none" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/><path d="M 71.43 553.95 L 64.04 557.66 L 65.88 553.96 L 64.03 550.26 Z" fill="#8298b8" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(130, 152, 184), rgb(91, 110, 137)); stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/></g></g><g data-cell-id="e1"><g transform="translate(0.5,0.5)"><path d="M 443.7 952.8 L 443.7 962.8 Q 443.7 972.8 433.7 972.8 L 258.9 972.8 Q 248.9 972.8 248.88 979.24 L 248.87 985.68" fill="none" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/><path d="M 248.85 991.23 L 245.17 983.83 L 248.87 985.68 L 252.57 983.84 Z" fill="#8298b8" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(130, 152, 184), rgb(91, 110, 137)); stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/></g></g><g data-cell-id="e2"><g transform="translate(0.5,0.5)"><path d="M 443.7 952.8 L 443.7 962.8 Q 443.7 972.8 453.7 972.8 L 615.6 972.8 Q 625.6 972.8 625.58 979.24 L 625.57 985.68" fill="none" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/><path d="M 625.55 991.23 L 621.87 983.83 L 625.57 985.68 L 629.27 983.84 Z" fill="#8298b8" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(130, 152, 184), rgb(91, 110, 137)); stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/></g></g><g data-cell-id="e3"><g transform="translate(0.5,0.5)"><path d="M 443.7 758.7 L 443.7 795.68" fill="none" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/><path d="M 443.7 801.23 L 440 793.83 L 443.7 795.68 L 447.4 793.83 Z" fill="#8298b8" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(130, 152, 184), rgb(91, 110, 137)); stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/></g></g><g data-cell-id="e6"><g transform="translate(0.5,0.5)"><path d="M 443.7 236.6 L 443.7 244.6 Q 443.7 252.6 433.7 252.6 L 17 252.6 Q 7 252.6 7 262.6 L 7 891.2 Q 7 901.2 17 901.19 L 65.88 901.16" fill="none" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/><path d="M 71.43 901.15 L 64.04 904.86 L 65.88 901.16 L 64.03 897.46 Z" fill="#8298b8" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(130, 152, 184), rgb(91, 110, 137)); stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/></g></g><g data-cell-id="e7"><g transform="translate(0.5,0.5)"><path d="M 443.7 236.6 L 443.7 244.6 Q 443.7 252.6 433.7 252.6 L 17 252.6 Q 7 252.6 7 262.6 L 7 1285.6 Q 7 1295.6 17 1295.6 L 65.88 1295.6" fill="none" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/><path d="M 71.43 1295.6 L 64.03 1299.3 L 65.88 1295.6 L 64.03 1291.9 Z" fill="#8298b8" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(130, 152, 184), rgb(91, 110, 137)); stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/></g></g><g data-cell-id="e8"><g transform="translate(0.5,0.5)"><path d="M 443.7 74.5 L 443.7 111.48" fill="none" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="stroke" style="stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/><path d="M 443.7 117.03 L 440 109.63 L 443.7 111.48 L 447.4 109.63 Z" fill="#8298b8" stroke="#8298b8" stroke-width="1.4" stroke-miterlimit="10" pointer-events="all" style="fill: light-dark(rgb(130, 152, 184), rgb(91, 110, 137)); stroke: light-dark(rgb(130, 152, 184), rgb(91, 110, 137));"/></g></g></g></g></g></svg></div><details class="fcdoc"><summary>规范原文（本流程图依据 · 逐字机检）</summary>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L74-L87">•  
+EP Type = Control. Refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Table 6-9</span> for the encoding. 
+•  
+Max Packet Size = For USB2 devices: Device Descriptor:bMaxPacketSize0 or for USB3 devices” Device 
+Descriptor:2bMaxPacketSize0. May be set to Default Endpoint Max Packet Size until USB Device Descriptor 
+is retrieved. An Evaluate Endpoint Command shall be used to modify the value of Max Packet Size 
+when the device slot is in the Addressed state. 
+•  
+CErr = 3. Enables 3 retries. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR Dequeue 
+Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs written by software. </blockquote><div class="qzh"><div class="qzh-body">- EP Type = Control。编码参见表 6-9。
+- Max Packet Size = 对于 USB2 设备：Device Descriptor:bMaxPacketSize0；对于 USB3 设备：Device Descriptor:2bMaxPacketSize0。在取回 USB 设备描述符之前，可以先将其设为默认端点 Max Packet Size。当设备槽位处于 Addressed 状态时，必须使用 Evaluate Endpoint 命令（评估端点命令）来修改 Max Packet Size 的值。
+- CErr = 3。启用 3 次重试。
+- TR Dequeue Pointer = 此前分配的传输环第一个段（segment）的起始地址。
+- Dequeue Cycle State（DCS）= 1。假设 TR Dequeue Pointer 所引用段中的所有 TRB 均已被初始化为 ‘0’，则该字段反映软件写入的有效 TRB 的 Cycle bit 状态。</div><div class="qsrc">—— evidence/spec-48.txt L74-L87（p145）</div></div></div>
+      </details>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L90-L91">Identical to the Default Control Endpoint except that the Max Packet Size shall 
+be set to the value of the associated Endpoint Descriptor:wMaxPacketSize. </blockquote><div class="qzh"><div class="qzh-body">与默认控制端点相同，唯一区别是 Max Packet Size 必须被置为关联的 Endpoint Descriptor:wMaxPacketSize 的值。</div><div class="qsrc">—— evidence/spec-48.txt L90-L91（p145）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L94-L129">•  
+EP Type = Bulk IN or Bulk OUT. Refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Table 6-9</span> for the encoding. 
+•  
+Max Packet Size = Endpoint Descriptor:wMaxPacketSize. 
+•  
+Max Burst Size = For USB3 devices: SuperSpeed Endpoint Companion Descriptor:bMaxBurst, for 
+USB2 devices: ‘0’. 
+•  
+CErr = 3. Enables 3 retries. 
+•  
+If Streams are enabled (that is, SuperSpeed Endpoint Companion Descriptor:bmAttributes 
+MaxStreams field &gt; 0): 
+•  
+Allocate and clear Primary Stream Array. 
+•  
+MaxPStreams = Size of Primary Stream Array. 
+•  
+TR Dequeue Pointer = Start address of Primary Stream Array. 
+•  
+HID = Initialize as required to enable or disable Host Initiated Move Data operations. 
+•  
+LSA = Initialize as required to enable or disable Linear Stream Array operations. 
+•  
+else 
+•  
+MaxPStreams = ‘0’. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer 
+Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR 
+Dequeue Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs 
+written by software. 
+ 
+The Endpoint Context Dequeue Cycle State (DCS) field is not applicable if the Streams are 
+enabled. </blockquote><div class="qzh"><div class="qzh-body">- EP Type = Bulk IN 或 Bulk OUT。编码参见表 6-9。
+- Max Packet Size = Endpoint Descriptor:wMaxPacketSize。
+- Max Burst Size = 对于 USB3 设备：SuperSpeed Endpoint Companion Descriptor:bMaxBurst；对于 USB2 设备：‘0’。
+- CErr = 3。启用 3 次重试。
+- 若启用了流（Stream）（即 SuperSpeed Endpoint Companion Descriptor:bmAttributes 的 MaxStreams 字段 &gt; 0）：• 分配并清零主流数组（Primary Stream Array）。• MaxPStreams = 主流数组的大小。• TR Dequeue Pointer = 主流数组的起始地址。• HID = 按需初始化，以启用或禁用 Host Initiated Move Data 操作。• LSA = 按需初始化，以启用或禁用线性流数组（Linear Stream Array）操作。
+- 否则（else）• MaxPStreams = ‘0’。• TR Dequeue Pointer = 此前分配的传输环第一个段的起始地址。• Dequeue Cycle State（DCS）= 1。假设 TR Dequeue Pointer 所引用段中的所有 TRB 均已被初始化为 ‘0’，则该字段反映软件写入的有效 TRB 的 Cycle bit 状态。
+
+若启用了流，则端点上下文的 Dequeue Cycle State（DCS）字段不适用。</div><div class="qsrc">—— evidence/spec-48.txt L94-L129（p145）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L140-L158">•  
+Max Packet Size = Endpoint Descriptor:wMaxPacketSize &amp; 07FFh. 
+•  
+Max Burst Size = SuperSpeed Endpoint Companion Descriptor:bMaxBurst or (Endpoint Descriptor: 
+wMaxPacketSize &amp; 1800h) &gt;&gt; 11. 
+•  
+Mult = SuperSpeed Endpoint Companion Descriptor:bmAttributes:Mult field. Always ‘0’ for Interrupt 
+endpoints. 
+•  
+CErr = 3 for Interrupt endpoints. Enables 3 retries. 
+CErr = 0 for Isoch endpoints. Retries are not performed for Isoch endpoints. 
+•  
+TR Dequeue Pointer = Start address of the first segment of the previously allocated Transfer Ring. 
+•  
+Dequeue Cycle State (DCS) = 1. Assuming that all TRBs in the segment referenced by the TR 
+Dequeue Pointer have been initialized to ‘0’, this field reflects Cycle bit state for valid TRBs written 
+by software. 
+•  
+Max ESIT Payload = Refer to section 4.14.2 for value. </blockquote><div class="qzh"><div class="qzh-body">- Max Packet Size = Endpoint Descriptor:wMaxPacketSize &amp; 07FFh。
+- Max Burst Size = SuperSpeed Endpoint Companion Descriptor:bMaxBurst 或 (Endpoint Descriptor: wMaxPacketSize &amp; 1800h) &gt;&gt; 11。
+- Mult = SuperSpeed Endpoint Companion Descriptor:bmAttributes:Mult 字段。对中断端点恒为 ‘0’。
+- CErr = 3（对中断端点）。启用 3 次重试。CErr = 0（对等时端点）。等时端点不执行重试。
+- TR Dequeue Pointer = 此前分配的传输环第一个段的起始地址。
+- Dequeue Cycle State（DCS）= 1。假设 TR Dequeue Pointer 所引用段中的所有 TRB 均已被初始化为 ‘0’，则该字段反映软件写入的有效 TRB 的 Cycle bit 状态。
+- Max ESIT Payload = 取值参见<span class="sr-todo" title="第 4 章本节卡未上线（后续批次量产），暂无跳转目标">第 4.14.2 节</span>。</div><div class="qsrc">—— evidence/spec-48.txt L140-L158（p146）</div></div></div>
+    </div>
+
+    <div class="card s46card" id="s48-03">
+      <div class="s46head"><span class="s46no">4.8.3</span><span class="s46ttl">Endpoint Context State 端点上下文状态</span><span class="s46tag mech">机制</span><span class="s46pg">p146-p149</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L161-L162">The current state of an Endpoint Context is identified by its respective Endpoint 
+State (EP State) field. <a class="sr-ln" href="#s48-03">Figure 4-5</a> defines the Endpoint States. </blockquote><div class="qzh"><div class="qzh-body">端点上下文（Endpoint Context）的当前状态由其相应的端点状态（Endpoint State，EP State）字段标识。图 4-5 定义了各端点状态。</div><div class="qsrc">—— evidence/spec-48.txt L161-L162（p146）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L170-L178">1. The Address Device Command transitions the Default Control Endpoint from the 
+Disabled to the Running state. 
+2. The Configure Endpoint Command (Add (A)= ‘1’and Drop (D) = ‘0’) shall transition 
+an endpoint, except the Default Control Endpoint, from the Disabled to the Running 
+state. 
+3. The Configure Endpoint Command (Add (A)= ‘0’ and Drop (D) = ‘1’) or Reset Device 
+Command shall transition an endpoint, from any state to the Disabled state, except 
+the Default Control Endpoint which may transition from the Stopped to the Running 
+state or remain in the Stopped state. </blockquote><div class="qzh"><div class="qzh-body">1. Address Device 命令（寻址设备命令）使默认控制端点从 Disabled 状态迁移到 Running 状态。
+
+2. Configure Endpoint 命令（Add (A) = ‘1’ 且 Drop (D) = ‘0’）必须使除默认控制端点之外的端点从 Disabled 状态迁移到 Running 状态。
+
+3. Configure Endpoint 命令（Add (A) = ‘0’ 且 Drop (D) = ‘1’）或 Reset Device 命令必须使一个端点从任何状态迁移到 Disabled 状态；但默认控制端点例外——它可以从 Stopped 状态迁移到 Running 状态，或保持停留在 Stopped 状态。</div><div class="qsrc">—— evidence/spec-48.txt L170-L178（p146）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L185-L195">4. The Disable Slot Command shall transition all endpoints of a Device Slot, including 
+the Default Control Endpoint, from any state to the Disabled state. 
+5. In the Running state, a Set TR Dequeue Pointer Command should only be issued to 
+the non-active Transfer Rings of a Stream endpoint. Refer to section 4.12 for active 
+vs. non-active Stream Context information. 
+6. The Configure Endpoint Command (Add (A) = ‘1’ and Drop (D) = ‘1’) shall transition 
+an endpoint, except the Default Control Endpoint, from the Stopped to the Running 
+state. 
+7. In the Stopped state, a Set TR Dequeue Pointer Command may be used to modify 
+the starting TRB of an endpoint or non-active Stream prior to ringing the Doorbell. 
+Refer to section 4.12 for active vs. non-active Stream Context information. </blockquote><div class="qzh"><div class="qzh-body">4. Disable Slot 命令必须使一个设备槽位的所有端点（包括默认控制端点）从任何状态迁移到 Disabled 状态。
+
+5. 在 Running 状态下，Set TR Dequeue Pointer 命令建议只发给流端点（Stream endpoint）的非活动传输环。活动与非活动流上下文（Stream Context）信息参见<span class="sr-todo" title="第 4 章本节卡未上线（后续批次量产），暂无跳转目标">第 4.12 节</span>。
+
+6. Configure Endpoint 命令（Add (A) = ‘1’ 且 Drop (D) = ‘1’）必须使除默认控制端点之外的端点从 Stopped 状态迁移到 Running 状态。
+
+7. 在 Stopped 状态下，可以在振铃门铃之前使用 Set TR Dequeue Pointer 命令来修改端点或非活动流（Stream）的起始 TRB。活动与非活动流上下文信息参见<span class="sr-todo" title="第 4 章本节卡未上线（后续批次量产），暂无跳转目标">第 4.12 节</span>。</div><div class="qsrc">—— evidence/spec-48.txt L185-L195（p147）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L196-L209"><a class="sr-ln" href="#s48-03">Figure 4-5</a> illustrates the state transitions presented by an endpoint. The 
+Disabled to Running transition for the Default Control Endpoint shall occur due 
+to an Address Device Command, and for all other endpoints the transition shall 
+be invoked by a Configure Endpoint Command. Refer to Appendix E for state 
+machine notation. 
+A Halt condition, for example, a Stall Error, Invalid Stream Type Error, Invalid 
+Stream ID Error, Babble Detected Error, Event Lost Error, USB Transaction 
+Error, or a Split Transaction Error detected on a USB pipe shall cause a 
+Running Endpoint to transition to the Halted state. A Reset Endpoint Command 
+shall be used to clear the Halt condition on the endpoint and transition the 
+endpoint to the Stopped state. A Stop Endpoint Command received while an 
+endpoint is in the Halted state shall have no effect and shall generate a 
+Command Completion Event with the Completion Code set to Context State 
+Error. </blockquote><div class="qzh"><div class="qzh-body">图 4-5 图示了端点所呈现的状态迁移。默认控制端点从 Disabled 到 Running 的迁移必须由 Address Device 命令引发；对所有其他端点，该迁移必须由 Configure Endpoint 命令触发。状态机记法参见附录 E。
+
+在 USB 管道上检测到的 halt（停机）条件——例如 Stall Error、Invalid Stream Type Error、Invalid Stream ID Error、Babble Detected Error、Event Lost Error、USB Transaction Error 或 Split Transaction Error——必须使处于 Running 的端点迁移到 Halted 状态。必须使用 Reset Endpoint 命令来清除端点上的 halt 条件，并把端点迁移到 Stopped 状态。端点处于 Halted 状态期间收到的 Stop Endpoint 命令不得产生任何效果，且必须生成一个 Completion Code 被置为 Context State Error 的命令完成事件（Command Completion Event）。</div><div class="qsrc">—— evidence/spec-48.txt L196-L209（p147）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L210-L224">Note: A STALL detected on any stage (Setup, Data, or Status) of a Default Control 
+Endpoint request shall transition the Endpoint Context to the Halted state. A 
+Default Control Endpoint STALL condition is cleared by a Reset Endpoint 
+Command which transitions the endpoint from the Halted to the Stopped 
+state. The Default Control Endpoint shall return to the Running state when the 
+Doorbell is rung for the next Setup Stage TD sent to the endpoint. 
+ 
+<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 8.5.3.4</span> of the USB2 spec and section 8.12.2.3 of the USB3 spec state 
+of Control pipes, “Unlike the case of a functional stall, protocol stall does not 
+indicate an error with the device.” The xHC treats a functional stall and 
+protocol stall identically, by Halting the endpoint and requiring software to 
+clear the condition by issuing a Reset Endpoint Command. 
+Note: If the STALL condition is detected on the Setup or Data Stage TD of a 
+request, software shall be responsible for removing the Data Stage or Status 
+Stage TDs, respectively, associated with the request from the Transfer Ring. </blockquote><div class="qzh"><div class="qzh-body">注：在默认控制端点请求的任何阶段（Setup、Data 或 Status）检测到 STALL（停滞）时，都必须把端点上下文迁移到 Halted 状态。默认控制端点的 STALL 条件由 Reset Endpoint 命令清除，该命令把端点从 Halted 状态迁移到 Stopped 状态。当为发送给该端点的下一个 Setup Stage TD 振铃门铃时，默认控制端点必须返回 Running 状态。USB2 规范第 8.5.3.4 节与 USB3 规范第 8.12.2.3 节在讲述控制管道的状态时指出：“与功能停滞（functional stall）的情形不同，协议停滞（protocol stall）并不表示设备出错。”xHC 对功能停滞与协议停滞同等对待：halt 该端点，并要求软件通过发出 Reset Endpoint 命令来清除该条件。
+
+注：若在某个请求的 Setup 或 Data Stage TD 上检测到 STALL 条件，则软件必须负责把与该请求关联的 Data Stage 或 Status Stage TD 分别从传输环上移除。</div><div class="qsrc">—— evidence/spec-48.txt L210-L224（p147）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L225-L230">A TRB Error condition should cause a Running Endpoint to transition to the 
+Error state. A Set TR Dequeue Pointer Command shall be used to transition the 
+endpoint to the Stopped state. A Stop Endpoint Command received while an 
+endpoint is in the Error state shall have no effect and shall generate a 
+Command Completion Event with the Completion Code set to Context State 
+Error. </blockquote><div class="qzh"><div class="qzh-body">TRB Error 条件建议使处于 Running 的端点迁移到 Error 状态。必须使用 Set TR Dequeue Pointer 命令把端点迁移到 Stopped 状态。端点处于 Error 状态期间收到的 Stop Endpoint 命令不得产生任何效果，且必须生成一个 Completion Code 被置为 Context State Error 的命令完成事件。</div><div class="qsrc">—— evidence/spec-48.txt L225-L230（p147）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L237-L243">Note: An endpoint in the Running state may be Busy (actively processing TRBs on 
+its Transfer Ring) or Idle (the endpoint is not processing TRBs and waiting for 
+a doorbell ring) sub-state, that is, an endpoint does not exit the Running state 
+if it exhausts its Transfer Ring. 
+Note: Some xHC implementations may not handle a TRB Error gracefully, resulting 
+in undefined behavior and possibly the assertion of HCE. It is the 
+responsibility of software to always present correctly formed TRBs to the xHC. </blockquote><div class="qzh"><div class="qzh-body">注：处于 Running 状态的端点可以处于 Busy（正在其传输环上活跃地处理 TRB）或 Idle（端点未在处理 TRB，正在等待门铃振铃）子状态；也就是说，端点耗尽其传输环时并不会退出 Running 状态。
+
+注：某些 xHC 实现可能无法妥善处理 TRB Error，从而导致未定义行为，并可能置起（assert）HCE。始终向 xHC 呈现格式正确的 TRB 是软件的责任。</div><div class="qsrc">—— evidence/spec-48.txt L237-L243（p148）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L244-L260">A Stop Endpoint Command shall also transition the endpoint to the Stopped 
+state. While in the Stopped state, the ownership of the Transfer Ring is 
+relinquished up by the xHC, allowing software to add, delete, or modify any TD 
+on the ring. 
+If an endpoint is in the Stopped state when the doorbell is rung, it will 
+transition to the Running state. A Configure Endpoint Command shall also 
+transition a Stopped endpoint to the Running state. Note that a Configure 
+Endpoint Command does not affect the Default Control Endpoint, therefore 
+shall not transition the Default Control Endpoint from the Stopped to the 
+Running state. 
+A Configure Endpoint “deconfigure” (DC = ‘1’) or Reset Device Command shall 
+transition all endpoints, except for the Default Control Endpoint, from the 
+Running, Halted, Error, or Stopped states to the Disabled state. 
+A Disable Slot Command shall transition all endpoints, including the Default 
+Control Endpoint, from the Running, Halted, Error, or Stopped states to the 
+Disabled state, as noted by the large bubble. System software is responsible 
+for issuing a Disable Slot Command when a device detach event is detected. </blockquote><div class="qzh"><div class="qzh-body">Stop Endpoint 命令也必须使端点迁移到 Stopped 状态。处于 Stopped 状态期间，传输环的所有权由 xHC 交出，从而允许软件在环上添加、删除或修改任何 TD。
+
+若端点在门铃振铃时处于 Stopped 状态，它将迁移到 Running 状态。Configure Endpoint 命令也必须使处于 Stopped 的端点迁移到 Running 状态。注意，Configure Endpoint 命令不影响默认控制端点，因此不得使默认控制端点从 Stopped 状态迁移到 Running 状态。
+
+Configure Endpoint 的“去配置”（deconfigure）（DC = ‘1’）或 Reset Device 命令必须使除默认控制端点之外的所有端点从 Running、Halted、Error 或 Stopped 状态迁移到 Disabled 状态。
+
+Disable Slot 命令必须使所有端点（包括默认控制端点）从 Running、Halted、Error 或 Stopped 状态迁移到 Disabled 状态，如图中大圆圈（bubble）所标注。当检测到设备 detach 事件时，由系统软件负责发出 Disable Slot 命令。</div><div class="qsrc">—— evidence/spec-48.txt L244-L260（p148）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L261-L267">A Set TR Dequeue Pointer Command may be issued to a non-active Stream 
+Context of an endpoint to set its Dequeue Pointer while the endpoint is in the 
+Running state. Refer to sections 4.6.10 and 4.12. 
+An endpoint in the Stopped state shall not generate Transfer Events. 
+When an endpoint transitions from the Stopped to the Running state due to a 
+doorbell ring, the EP State field of the Output Endpoint Context shall be 
+updated by the xHC to running before any Transfer Events are generated. </blockquote><div class="qzh"><div class="qzh-body">可以向端点的非活动流上下文（Stream Context）发出 Set TR Dequeue Pointer 命令，以便在端点处于 Running 状态时设置其出队指针（Dequeue Pointer）。参见<a class="sr-ln" href="p46.html#s46-10">第 4.6.10 节</a>与<span class="sr-todo" title="第 4 章本节卡未上线（后续批次量产），暂无跳转目标">第 4.12 节</span>。
+
+处于 Stopped 状态的端点不得生成传输事件（Transfer Event）。
+
+当端点因门铃振铃而从 Stopped 状态迁移到 Running 状态时，xHC 必须在任何传输事件生成之前，把输出端点上下文（Output Endpoint Context）的 EP State 字段更新为 Running。</div><div class="qsrc">—— evidence/spec-48.txt L261-L267（p148）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L268-L272">Note: If the xHC is reset while an endpoint is not in the Disabled state, the value of 
+the Endpoint State (EP State) field shall be invalid. 
+Note: An Endpoint is considered “enabled” if it is not in the Disabled state. 
+Note: Software shall not write to the Doorbell register with the DB Target field value 
+set to an endpoint that is in the Disabled state. </blockquote><div class="qzh"><div class="qzh-body">注：若在端点不处于 Disabled 状态时 xHC 被复位，则端点状态（EP State）字段的值将为无效。
+
+注：端点只要不处于 Disabled 状态，即被视为“已启用”（enabled）。
+
+注：软件不得在 DB Target 字段值被置为处于 Disabled 状态端点的情况下写门铃寄存器。</div><div class="qsrc">—— evidence/spec-48.txt L268-L272（p148）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L288-L302">Note: There are several cases where the EP State field in the Output Endpoint 
+Context may not reflect the current state of an endpoint. The xHC should 
+attempt to keep EP State as current as possible, however it may defer these 
+updates to perform higher priority references to memory, for example, Isoch 
+data transfers, etc. Software should maintain an internal variable that tracks 
+the state of an endpoint and not depend on EP State to represent the 
+instantaneous state of an endpoint. 
+ 
+For example, when a Command that affects EP State is issued, the value of 
+EP State may be updated anytime between when software rings the 
+Command Ring doorbell for a command and when the associated Command 
+Completion Event is placed on the Event Ring by the xHC. The update of EP 
+State may also be delayed relative to a Doorbell ring or error condition (for 
+example, TRB Error, STALL, or USB Transaction Error) that causes an EP 
+State change not generated by a command. </blockquote><div class="qzh"><div class="qzh-body">注：有多种情形下，输出端点上下文中的 EP State 字段可能不反映端点的当前状态。建议 xHC 尽量让 EP State 保持最新，但它可能把这些更新推迟，以执行对内存的更高优先级引用，例如等时数据传输等。建议软件维护一个跟踪端点状态的内部变量，而不要依赖 EP State 来表示端点的瞬时状态。例如，当发出一条影响 EP State 的命令时，EP State 的值可能在软件为该命令振铃命令环门铃之后、到 xHC 把相关命令完成事件放到事件环上之前的任何时刻被更新。相对于门铃振铃，或相对于引发 EP State 变化（非由命令产生）的错误条件（例如 TRB Error、STALL 或 USB Transaction Error），EP State 的更新也可能被延迟。</div><div class="qsrc">—— evidence/spec-48.txt L288-L302（p149）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-48.txt:L304-L320">Software should maintain an accurate value for EP State, by tracking it with 
+an internal variable that is driven by Events and Doorbell accesses associated 
+with an endpoint using the following method: 
+• 
+When a command is issued to an endpoint that affects its state, software 
+should use the Command Completion Event to update its image of EP State 
+to the appropriate state. 
+• 
+When a Transfer Event reports a TRB Error, software should update its 
+image of EP State to Error. 
+• 
+When a Transfer Event reports a Stall Error or USB Transaction Error, 
+software should update its image of EP State to Halted. 
+• 
+When software rings the Doorbell of an endpoint to transition it from the 
+Stopped to Running state, it should update its image of EP State to 
+Running. </blockquote><div class="qzh"><div class="qzh-body">相对于门铃振铃，或相对于引发 EP State 变化（非由命令产生）的错误条件（例如 TRB Error、STALL 或 USB Transaction Error），EP State 的更新也可能被延迟。建议软件用以下方法来维护 EP State 的准确值：用一个由与该端点相关联的事件和门铃访问所驱动的内部变量来跟踪它：
+
+- 当向一个端点发出影响其状态的命令时，建议软件用命令完成事件把其 EP State 映像（image）更新为适当的状态。
+- 当传输事件报告 TRB Error 时，建议软件把其 EP State 映像更新为 Error。
+- 当传输事件报告 Stall Error 或 USB Transaction Error 时，建议软件把其 EP State 映像更新为 Halted。
+- 当软件振铃端点的门铃使其从 Stopped 状态迁移到 Running 状态时，建议软件把其 EP State 映像更新为 Running。</div><div class="qsrc">—— evidence/spec-48.txt L304-L320（p149）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:3270-3330 · prepare_ring · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:3270:3330"><div class="cl" data-line="3270"><span class="ln">3270</span><span class="cd">static int prepare_ring(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,</span></div>
+<div class="cl" data-line="3271"><span class="ln">3271</span><span class="cd">		u32 ep_state, unsigned int num_trbs, gfp_t mem_flags)</span></div>
+<div class="cl" data-line="3272"><span class="ln">3272</span><span class="cd">{</span></div>
+<div class="cl" data-line="3273"><span class="ln">3273</span><span class="cd">	unsigned int new_segs = 0;</span></div>
+<div class="cl" data-line="3274"><span class="ln">3274</span><span class="cd"></span></div>
+<div class="cl" data-line="3275"><span class="ln">3275</span><span class="cd">	/* Make sure the endpoint has been added to xHC schedule */</span></div>
+<div class="cl" data-line="3276"><span class="ln">3276</span><span class="cd">	switch (ep_state) {</span></div>
+<div class="cl" data-line="3277"><span class="ln">3277</span><span class="cd">	case EP_STATE_DISABLED:</span></div>
+<div class="cl" data-line="3278"><span class="ln">3278</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="3279"><span class="ln">3279</span><span class="cd">		 * USB core changed config/interfaces without notifying us,</span></div>
+<div class="cl" data-line="3280"><span class="ln">3280</span><span class="cd">		 * or hardware is reporting the wrong state.</span></div>
+<div class="cl" data-line="3281"><span class="ln">3281</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3282"><span class="ln">3282</span><span class="cd">		xhci_warn(xhci, "WARN urb submitted to disabled ep\n");</span></div>
+<div class="cl" data-line="3283"><span class="ln">3283</span><span class="cd">		return -ENOENT;</span></div>
+<div class="cl" data-line="3284"><span class="ln">3284</span><span class="cd">	case EP_STATE_ERROR:</span></div>
+<div class="cl" data-line="3285"><span class="ln">3285</span><span class="cd">		xhci_warn(xhci, "WARN waiting for error on ep to be cleared\n");</span></div>
+<div class="cl" data-line="3286"><span class="ln">3286</span><span class="cd">		/* FIXME event handling code for error needs to clear it */</span></div>
+<div class="cl" data-line="3287"><span class="ln">3287</span><span class="cd">		/* XXX not sure if this should be -ENOENT or not */</span></div>
+<div class="cl" data-line="3288"><span class="ln">3288</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3289"><span class="ln">3289</span><span class="cd">	case EP_STATE_HALTED:</span></div>
+<div class="cl" data-line="3290"><span class="ln">3290</span><span class="cd">		xhci_dbg(xhci, "WARN halted endpoint, queueing URB anyway.\n");</span></div>
+<div class="cl" data-line="3291"><span class="ln">3291</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3292"><span class="ln">3292</span><span class="cd">	case EP_STATE_STOPPED:</span></div>
+<div class="cl" data-line="3293"><span class="ln">3293</span><span class="cd">	case EP_STATE_RUNNING:</span></div>
+<div class="cl" data-line="3294"><span class="ln">3294</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="3295"><span class="ln">3295</span><span class="cd">	default:</span></div>
+<div class="cl" data-line="3296"><span class="ln">3296</span><span class="cd">		xhci_err(xhci, "ERROR unknown endpoint state for ep\n");</span></div>
+<div class="cl" data-line="3297"><span class="ln">3297</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="3298"><span class="ln">3298</span><span class="cd">		 * FIXME issue Configure Endpoint command to try to get the HC</span></div>
+<div class="cl" data-line="3299"><span class="ln">3299</span><span class="cd">		 * back into a known state.</span></div>
+<div class="cl" data-line="3300"><span class="ln">3300</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3301"><span class="ln">3301</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3302"><span class="ln">3302</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3303"><span class="ln">3303</span><span class="cd"></span></div>
+<div class="cl" data-line="3304"><span class="ln">3304</span><span class="cd">	if (ep_ring != xhci-&gt;cmd_ring) {</span></div>
+<div class="cl" data-line="3305"><span class="ln">3305</span><span class="cd">		new_segs = xhci_ring_expansion_needed(xhci, ep_ring, num_trbs);</span></div>
+<div class="cl" data-line="3306"><span class="ln">3306</span><span class="cd">	} else if (xhci_num_trbs_free(ep_ring) &lt;= num_trbs) {</span></div>
+<div class="cl" data-line="3307"><span class="ln">3307</span><span class="cd">		xhci_err(xhci, "Do not support expand command ring\n");</span></div>
+<div class="cl" data-line="3308"><span class="ln">3308</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="3309"><span class="ln">3309</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3310"><span class="ln">3310</span><span class="cd"></span></div>
+<div class="cl" data-line="3311"><span class="ln">3311</span><span class="cd">	if (new_segs) {</span></div>
+<div class="cl" data-line="3312"><span class="ln">3312</span><span class="cd">		xhci_dbg_trace(xhci, trace_xhci_dbg_ring_expansion,</span></div>
+<div class="cl" data-line="3313"><span class="ln">3313</span><span class="cd">				"ERROR no room on ep ring, try ring expansion");</span></div>
+<div class="cl" data-line="3314"><span class="ln">3314</span><span class="cd">		if (xhci_ring_expansion(xhci, ep_ring, new_segs, mem_flags)) {</span></div>
+<div class="cl" data-line="3315"><span class="ln">3315</span><span class="cd">			xhci_err(xhci, "Ring expansion failed\n");</span></div>
+<div class="cl" data-line="3316"><span class="ln">3316</span><span class="cd">			return -ENOMEM;</span></div>
+<div class="cl" data-line="3317"><span class="ln">3317</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3318"><span class="ln">3318</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3319"><span class="ln">3319</span><span class="cd"></span></div>
+<div class="cl" data-line="3320"><span class="ln">3320</span><span class="cd">	/* Ensure that new TRBs won't overwrite a link */</span></div>
+<div class="cl" data-line="3321"><span class="ln">3321</span><span class="cd">	if (trb_is_link(ep_ring-&gt;enqueue))</span></div>
+<div class="cl" data-line="3322"><span class="ln">3322</span><span class="cd">		inc_enq_past_link(xhci, ep_ring, 0);</span></div>
+<div class="cl" data-line="3323"><span class="ln">3323</span><span class="cd"></span></div>
+<div class="cl" data-line="3324"><span class="ln">3324</span><span class="cd">	if (last_trb_on_seg(ep_ring-&gt;enq_seg, ep_ring-&gt;enqueue)) {</span></div>
+<div class="cl" data-line="3325"><span class="ln">3325</span><span class="cd">		xhci_warn(xhci, "Missing link TRB at end of ring segment\n");</span></div>
+<div class="cl" data-line="3326"><span class="ln">3326</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3327"><span class="ln">3327</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3328"><span class="ln">3328</span><span class="cd"></span></div>
+<div class="cl" data-line="3329"><span class="ln">3329</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="3330"><span class="ln">3330</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0803-endpoint-context-state.mp4"></video>
+        <a class="btn" href="player/index.html?scene=29">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · Zone C 槽状态机驱动端点态：Address Device→EP0 Running、Configure Endpoint→其余端点、Disable Slot→全 Disabled——对应本节状态转移</span>
+      </div>
+      <div class="phead">上游 commit dceea67058fe22075db3aed62d5cb62092be5053 · 2020-06-24 · Mathias Nyman（Intel） · drivers/usb/host/xhci.h 1 文件 +1/-1 · hunk @@ -716,7（EP_STATE_MASK）· Cc: stable</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:dceea67058fe22075db3aed62d5cb62092be5053">commit dceea67058fe22075db3aed62d5cb62092be5053
+Author: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+Date:   Wed Jun 24 16:59:45 2020 +0300
+
+    xhci: Fix incorrect EP_STATE_MASK
+    
+    EP_STATE_MASK should be 0x7 instead of 0xf
+    
+    xhci spec 6.2.3 shows that the EP state field in the endpoint context data
+    structure consist of bits [2:0].
+    The old value included a bit from the next field which fortunately is a
+     RsvdZ region. So hopefully this hasn't caused too much harm
+    
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20200624135949.22611-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h</span>
+<span class="d-meta">index 2c6c4f8d1ee1..c295e8a7f5ae 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.h</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.h</span>
+<span class="d-hunk">@@ -716,7 +716,7 @@ struct xhci_ep_ctx {</span>
+<span class="d-ctx">  * 4 - TRB error</span>
+<span class="d-ctx">  * 5-7 - reserved</span>
+<span class="d-ctx">  */</span>
+<span class="d-del">-#define EP_STATE_MASK		(0xf)</span>
+<span class="d-add">+#define EP_STATE_MASK		(0x7)</span>
+<span class="d-ctx"> #define EP_STATE_DISABLED	0</span>
+<span class="d-ctx"> #define EP_STATE_RUNNING	1</span>
+<span class="d-ctx"> #define EP_STATE_HALTED		2</span></pre>
+      <p class="ph">背景（何时 / 谁修 / 为什么是它）</p>
+      <p class="pbody">2020 年 6 月，Intel Mathias Nyman 提交。EP_STATE_MASK 是从端点上下文提取 EP State 的掩码（消费者 <code>GET_EP_CTX_STATE</code>，基线 L462）；<a class="sr-ln" href="#s48-03">§4.8.3</a> 定义端点上下文状态（<a class="sr-ln" href="#s48-03">Figure 4-5</a> 五态：Disabled/Running/Halted/Stopped/Error），状态值落在 EP State 域。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：掩码 0xf=b1111 比 EP State 域（bits[2:0]）多罩一位——bit 3 属域外邻域位，按域布局是 RsvdZ（恒 0），message 原文自评 "hopefully this hasn't caused too much harm"（幸而无害的勘误）。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">一行勘正 0xf→0x7：b0111 恰罩 bits[2:0]；五态值 0-4+5-7 保留，恰好填满三位域。位宽权威=补丁 message 引 spec 6.2.3 域布局（第 6 章，出本章界——章界口径注记不展开）；下方对读段注释头 L448 "Endpoint State - bits 0:2" 与 L454 "5-7 - reserved" 即内核侧域宽双证。分帧走读见 xh0803p（scene=58）。</p>
+      <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 零摘录热行（判据=diff 原文+规范引文）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.h:448-462 · EP 状态域定义（注释头+五态 defines+提取宏） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.h:448:462"><div class="cl" data-line="448"><span class="ln">448</span><span class="cd"> * Endpoint State - bits 0:2</span></div>
+<div class="cl" data-line="449"><span class="ln">449</span><span class="cd"> * 0 - disabled</span></div>
+<div class="cl" data-line="450"><span class="ln">450</span><span class="cd"> * 1 - running</span></div>
+<div class="cl" data-line="451"><span class="ln">451</span><span class="cd"> * 2 - halted due to halt condition - ok to manipulate endpoint ring</span></div>
+<div class="cl" data-line="452"><span class="ln">452</span><span class="cd"> * 3 - stopped</span></div>
+<div class="cl" data-line="453"><span class="ln">453</span><span class="cd"> * 4 - TRB error</span></div>
+<div class="cl" data-line="454"><span class="ln">454</span><span class="cd"> * 5-7 - reserved</span></div>
+<div class="cl" data-line="455"><span class="ln">455</span><span class="cd"> */</span></div>
+<div class="cl" data-line="456"><span class="ln">456</span><span class="cd">#define EP_STATE_MASK		(0x7)</span></div>
+<div class="cl" data-line="457"><span class="ln">457</span><span class="cd">#define EP_STATE_DISABLED	0</span></div>
+<div class="cl" data-line="458"><span class="ln">458</span><span class="cd">#define EP_STATE_RUNNING	1</span></div>
+<div class="cl" data-line="459"><span class="ln">459</span><span class="cd">#define EP_STATE_HALTED		2</span></div>
+<div class="cl" data-line="460"><span class="ln">460</span><span class="cd">#define EP_STATE_STOPPED	3</span></div>
+<div class="cl" data-line="461"><span class="ln">461</span><span class="cd">#define EP_STATE_ERROR		4</span></div>
+<div class="cl" data-line="462"><span class="ln">462</span><span class="cd">#define GET_EP_CTX_STATE(ctx)	(le32_to_cpu((ctx)-&gt;ep_info) &amp; EP_STATE_MASK)</span></div></pre>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=58">补丁分帧动画 · 三幕走读 →</a>
+        <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 <a class="sr-ln" href="#s48-03">§4.8.3</a> <a class="sr-ln" href="#s48-03">Figure 4-5</a> 五态恰填三位域）</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xHCI 第 4 章视频课件 · 4.7 门铃 Doorbells</title>
+<!-- data-ck 锚点块书写约定（机检 scripts/check_landing_code.py 依赖）：
+     1) data-ck 必须是开标签的最后一个属性；
+     2) 闭合标签紧贴内容末字符，中间不留任何空白；
+     3) 多行块（blockquote/pre）的第 2 行起内容顶格（零缩进）。
+     锚点 schema：
+     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止；
+                                  同一锚点值允许多次出现，按 EXPECTED_SPEC 多重集对账）
+     patch:<hash>               → git show <hash> 完整 stdout（不加路径过滤；diff 部分
+                                  逐行 d-meta/d-hunk/d-add/d-del/d-ctx 着色 span）
+     贴码段走 data-src 通道（pre.codeseg，data-src="短文件名:起始行:结束行"），
+     机检按段校验（行内容 == git show d9008e061539:<路径> 切片）+ 摘录覆盖 35/35；
+     摘录行 class="cl hot" + data-hot="组:下标"，tooltip 引文在页尾 #tipdocs。-->
+<style>
+  :root {
+    --bg: #0b0f15;
+    --panel: #111823;
+    --line: #1d2735;
+    --text: #e8edf5;
+    --muted: #8fa0b8;
+    --blue: #7c9ff0;
+    --amber: #d9a860;
+    --green: #86bd7a;
+    --teal: #7fd0b2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 64px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  h1 .tag { color: var(--amber); font-size: 15px; font-weight: 600; margin-left: 10px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meta b { color: var(--green); font-weight: 600; }
+  .lead { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+  .toc { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 4px; }
+  .toc a {
+    display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--text); text-decoration: none; font-size: 13.5px; background: var(--panel);
+  }
+  .toc a:hover { border-color: var(--blue); color: var(--blue); }
+  h2 { font-size: 19px; margin: 40px 0 14px; }
+  h2 .no { color: var(--amber); margin-right: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .card.b1 { border-left: 3px solid var(--blue); }
+  .card.b2 { border-left: 3px solid var(--teal); }
+  .card.b3 { border-left: 3px solid var(--green); }
+  .card.b4 { border-left: 3px solid var(--amber); }
+  .bhead { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .badge {
+    display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
+    border-radius: 6px; background: #18212f; color: var(--amber); font-size: 13px; font-weight: 700; flex: none;
+  }
+  h3 { font-size: 14px; margin: 16px 0 8px; color: var(--blue); }
+  h3 .cmt { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .qtitle { margin: 14px 0 0; font-size: 13.5px; font-weight: 600; }
+  blockquote {
+    margin: 8px 0 4px; padding: 10px 14px; border-left: 3px solid var(--blue); background: #0d1420;
+    border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap;
+  }
+  .qsrc { margin: 0 0 6px 17px; color: var(--muted); font-size: 12px; }
+  pre.diffblock {
+    margin: 0 0 4px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.55; color: #c7d3e6;
+  }
+  .exnote { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .foot-note { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .vhead .name { font-size: 16px; font-weight: 600; font-family: ui-monospace, Menlo, monospace; }
+  .vhead .spec { color: var(--muted); font-size: 12.5px; }
+  .card video { width: 100%; border-radius: 6px; background: #000; display: block; }
+  .btn {
+    display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 13.5px;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; border: 1px solid var(--teal); color: var(--teal); }
+  .act { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .act .note { color: var(--muted); font-size: 12.5px; }
+  .int-note { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
+  .int-note b { color: var(--teal); font-weight: 600; }
+  .phead {
+    font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px;
+    background: #0d1420; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px;
+    margin-bottom: 10px; overflow-wrap: anywhere;
+  }
+  .ph { font-size: 13.5px; color: var(--amber); margin: 14px 0 4px; font-weight: 600; }
+  .pbody { margin: 0 0 6px; font-size: 13.5px; color: var(--text); }
+  .d-meta { color: #67788f; }
+  .d-hunk { color: var(--blue); }
+  .d-add { color: var(--green); background: rgba(134, 189, 122, 0.12); }
+  .d-del { color: #e08c8c; background: rgba(224, 140, 140, 0.12); }
+  .d-ctx { color: #a8b6ca; }
+  .exhead2 { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin: 14px 0 4px; }
+  pre.codeseg {
+    margin: 0 0 10px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 0; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.5; color: #c7d3e6; white-space: normal;
+  }
+  .codeseg .cl { display: flex; padding: 0 12px; }
+  .codeseg .cl:hover { background: rgba(124, 159, 240, 0.06); }
+  .codeseg .ln { flex: none; width: 4.2em; text-align: right; padding-right: 14px; color: #51617a; user-select: none; }
+  .codeseg .cd { white-space: pre; flex: 1 1 auto; }
+  .codeseg .cl.hot { background: rgba(217, 168, 96, 0.09); box-shadow: inset 3px 0 0 var(--amber); cursor: pointer; }
+  .codeseg .cl.hot .ln { color: var(--amber); font-weight: 600; }
+  #tipdocs { display: none; }
+  #codetip {
+    position: absolute; z-index: 60; left: 0; top: 0; max-width: 660px; min-width: 300px;
+    background: var(--panel); border: 1px solid var(--blue); border-radius: 10px;
+    padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-height: 70vh; overflow: auto;
+  }
+  #codetip[hidden] { display: none; }
+  .tipdoc .tipnote { margin: 0 0 6px; font-size: 13px; color: var(--text); }
+  .tipdoc blockquote { margin: 6px 0 4px; font-size: 12.5px; }
+  code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
+
+  /* R13-A 分页：目录页卡片 + 页内粘性卡导航（共享 head，s46 内嵌样式已上提并入） */
+  .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
+  .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
+  a.ch46g:hover { border-color: var(--blue); }
+  .ch46g .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .s46tag { flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .s46tag.mech { color: #7c9ff0; border-color: #7c9ff0; }
+  .s46tag.core { color: var(--amber); border-color: var(--amber); }
+  .qsrc { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .s46head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .s46ttl { font-weight: 600; }
+  .s46pg { color: var(--muted); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .s46todo { opacity: .74; }
+  /* R11 批 A D2：规范样式表格（重建自规范 PDF 版面；样式单处） */
+  .tabwrap { overflow-x: auto; margin: 2px 0 12px; }
+  .spectab { border-collapse: collapse; width: 100%; font-size: 12.5px; background: var(--panel); }
+  .spectab caption { caption-side: top; text-align: left; font-weight: 600; font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px; padding: 0 0 6px; }
+  .spectab th, .spectab td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .spectab thead th { background: rgba(124, 159, 240, 0.14); }
+  .spectab tbody tr:nth-child(even) { background: rgba(124, 159, 240, 0.055); }
+  .spectab .tabnote { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+  .tabfoot { margin: -6px 0 12px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  /* R12 批 A-2（意见②）：流程图产线换血 drawio——SVG 内联（.fcn HTML 家族退役；
+     数据层 flowcharts.json，产物 build_flowcharts.py） */
+  .fcf { margin: 2px 0 12px; }
+  .fct { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin-bottom: 6px; }
+  .fcf svg.fcsvg { display: block; width: 100%; height: auto; max-width: 1080px; margin: 0 auto; }
+  @media (max-width: 760px) { .fcf svg.fcsvg { max-width: 100%; } }
+  /* R12 批 A-2（意见③）：规范引用跳转三类——已建锚/出界注记/待建注记 */
+  .sr-ln { color: var(--teal); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .sr-ln:hover { color: #8fd8cc; text-decoration-style: solid; }
+  .sr-out { color: var(--muted); border-bottom: 1px dashed #43536e; cursor: help; }
+  .sr-todo { color: var(--muted); border-bottom: 1px dotted #43536e; cursor: help; }
+  details.fcdoc { margin: 0 0 4px; }
+  details.fcdoc summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details.fcdoc[open] summary { margin-bottom: 6px; }
+  /* R11 批 A-2 D5：规范引文双语 side-by-side（左 EN 右 ZH；qsrc 并入 ZH 栏尾；
+     ZH 在 .qzh——data-ck 元素内部只含 EN 原文，逐字通道不受影响） */
+  .qpair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; align-items: start; }
+  .qpair blockquote { margin: 8px 0 2px; }
+  .qzh { margin: 8px 0 2px; padding: 10px 14px; border-left: 3px solid var(--teal); background: #0d1420; border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap; line-height: 1.55; }
+  .qzh .qsrc { margin: 8px 0 0 17px; }
+  .tipdoc .qzh { font-size: 12.5px; }
+  @media (max-width: 860px) { .qpair { grid-template-columns: 1fr; } }
+  .pgnav { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding: 9px 2px; margin: 0 0 22px; background: rgba(10, 16, 26, 0.94); border-bottom: 1px solid var(--line); }
+  .pgnav .pgback { flex: none; font-size: 13px; color: var(--teal); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 2px 10px; }
+  .pgnav .pgback:hover { border-color: var(--teal); }
+  .pgnav .pgsec { flex: none; font-weight: 600; font-size: 13.5px; }
+  .pgnav .pgsec .no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; margin-right: 7px; }
+  .pgnav a.pgchip { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+  .pgnav a.pgchip:hover { color: var(--blue); border-color: var(--blue); }
+  .pgcrumb { margin: 26px 0 10px; font-size: 13px; color: var(--muted); }
+  .pgcrumb a { color: var(--teal); text-decoration: none; }
+  .pgcrumb a:hover { text-decoration: underline; }
+  .tocgroup { margin: 24px 0 4px; font-size: 13px; color: var(--muted); }
+  .tocgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 10px 0 6px; }
+  a.toccard { display: block; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 15px; text-decoration: none; color: var(--text); }
+  a.toccard:hover { border-color: var(--blue); }
+  .toccard .tcno { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .toccard .tcttl { font-weight: 600; margin-left: 8px; }
+  .toccard .tcmeta { display: block; margin-top: 4px; font-size: 12px; color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .toccard .tcblurb { display: block; margin-top: 7px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .toccard .tcgo { display: block; margin-top: 9px; font-size: 12px; color: var(--teal); }
+</style>
+<body>
+<div class="wrap">
+  <p class="pgcrumb"><a href="index.html">xHCI 第 4 章视频课件 · 目录</a></p>
+  <nav class="pgnav">
+    <a class="pgback" href="index.html">← 目录</a>
+    <span class="pgsec"><span class="no">4.7</span>门铃 Doorbells</span><a class="pgchip" href="#s47-01" title="Doorbells 门铃">4.7</a>
+  </nav>
+  <section id="s47">
+    <h2><span class="no"><a class="sr-ln" href="#s47-01">§4.7</a></span>Doorbells 门铃 <span class="cmt">R12 批 A · xh 命名首验批 · 最短节单卡</span></h2>
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>大区导语 · 1 卡</div>
+      <p class="pbody">4.7 是门铃机制总节（全章最短、零小节）：门铃寄存器阵列按 Device Slot ID 索引、DB Target 字段说明「为什么敲」，0 号=主机控制器专用，1-255=设备上下文门铃（1:1 映射设备槽）；xHC 内部记录全部门铃写引用、无需清除；Disabled 槽/端点禁写并回 Endpoint Not Enabled Error。本节无算法块（不硬凑流程图）、无规范表；补丁片已上线（d66eaf9f8950：门铃路径 ring_doorbell_for_active_rings 空指针崩溃判空修复，与本卡贴码同函数）——补丁版块在本区卡内（R12 批 A-3，§6 逐节全配）。</p>
+      <div class="ch46grid"><a class="ch46g" href="#s47-01"><span class="s46no">4.7</span>Doorbells 门铃<span class="s46tag mech">机制</span></a></div>
+    </div>
+    <div class="card s46card" id="s47-01">
+      <div class="s46head"><span class="s46no">4.7</span><span class="s46ttl">Doorbells 门铃</span><span class="s46tag mech">机制</span><span class="s46pg">p142-p143</span></div>
+      <p class="ph">规范引文（机制主线）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L3-L10">The xHCI presents an array of up to 256 32-bit Doorbell Registers (refer to 
+section 5.6), which reside in MMIO space and are indexed by Device Slot ID. 
+The base of the Doorbell Register Array is pointed to by the Doorbell Offset 
+(DBOFF) register in the xHCI Capability Registers (refer to section 5.3.7). 
+Each Doorbell Register contains a DB Target field, which is used to indicate the 
+reason for a software reference to the register. System software “rings” a 
+doorbell by writing a Doorbell Register with the appropriate value in the DB 
+Target field. </blockquote><div class="qzh"><div class="qzh-body">xHCI 提供了最多 256 个 32 位门铃寄存器（Doorbell Register）构成的数组（参见第 5.6 节），这些寄存器驻留在 MMIO 空间中，并以 Device Slot ID 为索引。门铃寄存器数组的基址由 xHCI 能力寄存器（xHCI Capability Registers）中的门铃偏移（Doorbell Offset，DBOFF）寄存器指向（参见第 5.3.7 节）。
+
+每个门铃寄存器都包含一个 DB Target 字段，用于指示软件访问该寄存器的原因。系统软件通过向门铃寄存器写入、并在 DB Target 字段中填入适当取值来“振铃”（ring）一个门铃。</div><div class="qsrc">—— evidence/spec-47.txt L3-L10（p142）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L11-L13">Doorbell Register 0 is dedicated to the Host Controller. For this register, there 
+is only one valid value for the DB Target field, 0 (Host Controller Command). 
+The remaining values (1-255) are reserved. </blockquote><div class="qzh"><div class="qzh-body">门铃寄存器 0 专用于主机控制器。对于该寄存器，DB Target 字段只有一个有效取值，即 0（Host Controller Command）。其余取值（1-255）为保留值。</div><div class="qsrc">—— evidence/spec-47.txt L11-L13（p142）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L14-L20">Doorbell Registers 1-255 are referred to as the Device Context Doorbell 
+registers. There is a 1:1 mapping of Device Context Doorbell registers to 
+Device Slots. System software rings a Device Context Doorbell after it has 
+inserted work on a Transfer Ring (endpoint/Stream) associated with the 
+respective Device Slot. The DB Target and DB Stream ID fields of a Device 
+Context Doorbell register is used to identify which Transfer Ring of a device has 
+been modified. Refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Table 5-43</span> for the encoding of the DB Target field. </blockquote><div class="qzh"><div class="qzh-body">门铃寄存器 1-255 被称为设备上下文门铃寄存器（Device Context Doorbell Register）。设备上下文门铃寄存器与设备槽位之间存在 1:1 映射。在向与相应设备槽位关联的某个传输环（端点/流）插入工作之后，系统软件才振铃设备上下文门铃。设备上下文门铃寄存器的 DB Target 与 DB Stream ID 字段用于标识设备的哪个传输环被修改。DB Target 字段的编码参见表 5-43。</div><div class="qsrc">—— evidence/spec-47.txt L14-L20（p142）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L27-L33">The xHC internally records all Doorbell Register write references and uses the 
+information to determine if the Command Ring or a Transfer Ring has newly 
+posted work items (TDs). There is no need to “clear” a Doorbell Register. To 
+inform the xHC that work has been posted to two separate Transfer Rings of a 
+device, system software shall post two writes to the associated Doorbell 
+Registers, where the value of the DB Target field identifies the respective 
+Transfer Ring. </blockquote><div class="qzh"><div class="qzh-body">xHC 会在内部记录所有门铃寄存器写入引用，并利用该信息来判定命令环或某个传输环是否新投递了工作项（TD）。无需“清除”门铃寄存器。为通知 xHC 已向一个设备的两个独立传输环投递了工作，系统软件必须向相应的门铃寄存器发出两次写入，其中 DB Target 字段的值标识各自的传输环。</div><div class="qsrc">—— evidence/spec-47.txt L27-L33（p143）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L35-L47">Software shall not write to a Doorbell register: 
+• 
+If the associated Device Slot is in the Disabled state. 
+• 
+If the associated Device Slot is not in the Disabled state and the DB Target 
+field is set to an endpoint that is in the Disabled state. 
+If a doorbell register is written by software with the DB Target value that 
+references an endpoint that is in the Disabled state, the xHC should generate a 
+Transfer Event TRB with the TRB Pointer, TRB Transfer Length, Event Data 
+(ED) fields set to ‘0’, a Completion Code of Endpoint Not Enabled Error, and the 
+Slot ID and Endpoint ID fields contain the IDs of device slot/endpoint that the 
+doorbell that was rung for. This transfer Event TRB shall be posted to the 
+Primary Event Ring. </blockquote><div class="qzh"><div class="qzh-body">软件不得在以下情况下向门铃寄存器写入：
+
+- 关联的设备槽位处于 Disabled 状态。
+- 关联的设备槽位不处于 Disabled 状态，而 DB Target 字段被置为处于 Disabled 状态的某个端点。
+
+若软件向门铃寄存器写入的 DB Target 取值引用了处于 Disabled 状态的端点，则建议 xHC 生成一个传输事件 TRB（Transfer Event TRB），其 TRB Pointer、TRB Transfer Length、Event Data（ED）字段被置为 ‘0’，Completion Code 为 Endpoint Not Enabled Error，且 Slot ID 与 Endpoint ID 字段包含被振铃门铃所对应的设备槽位/端点的 ID。该传输事件 TRB 必须被投递到主事件环（Primary Event Ring）。</div><div class="qsrc">—— evidence/spec-47.txt L35-L47（p143）</div></div></div>
+      <div class="qpair"><blockquote data-ck="spec:spec-47.txt:L48-L54">An Endpoint Not Enabled Error should be generated for doorbell register writes 
+to Device Slots that are in the Disabled state regardless of the DB Target value 
+provided. 
+The xHC may ignore doorbell references to Device Slots in the Disabled state or 
+endpoints in the Disabled state. 
+The xHC shall ignore doorbell references to endpoints in the Halted or Error 
+state. </blockquote><div class="qzh"><div class="qzh-body">对于向处于 Disabled 状态的设备槽位发出的门铃寄存器写入，无论提供的 DB Target 取值如何，都建议生成 Endpoint Not Enabled Error。
+
+xHC 可以忽略指向处于 Disabled 状态的设备槽位或处于 Disabled 状态的端点的门铃引用。
+
+xHC 必须忽略指向处于 Halted 或 Error 状态端点的门铃引用。</div><div class="qsrc">—— evidence/spec-47.txt L48-L54（p143）</div></div></div>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 段内零摘录热行（机制判据见卡内规范引文与流程图）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:585-607 · xhci_ring_doorbell_for_active_rings · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:585:607"><div class="cl" data-line="585"><span class="ln">585</span><span class="cd">void xhci_ring_doorbell_for_active_rings(struct xhci_hcd *xhci, unsigned int slot_id,</span></div>
+<div class="cl" data-line="586"><span class="ln">586</span><span class="cd">					 unsigned int ep_index)</span></div>
+<div class="cl" data-line="587"><span class="ln">587</span><span class="cd">{</span></div>
+<div class="cl" data-line="588"><span class="ln">588</span><span class="cd">	unsigned int stream_id;</span></div>
+<div class="cl" data-line="589"><span class="ln">589</span><span class="cd">	struct xhci_virt_ep *ep;</span></div>
+<div class="cl" data-line="590"><span class="ln">590</span><span class="cd"></span></div>
+<div class="cl" data-line="591"><span class="ln">591</span><span class="cd">	ep = &amp;xhci-&gt;devs[slot_id]-&gt;eps[ep_index];</span></div>
+<div class="cl" data-line="592"><span class="ln">592</span><span class="cd"></span></div>
+<div class="cl" data-line="593"><span class="ln">593</span><span class="cd">	/* A ring has pending URBs if its TD list is not empty */</span></div>
+<div class="cl" data-line="594"><span class="ln">594</span><span class="cd">	if (!(ep-&gt;ep_state &amp; EP_HAS_STREAMS)) {</span></div>
+<div class="cl" data-line="595"><span class="ln">595</span><span class="cd">		if (ep-&gt;ring &amp;&amp; !(list_empty(&amp;ep-&gt;ring-&gt;td_list)))</span></div>
+<div class="cl" data-line="596"><span class="ln">596</span><span class="cd">			xhci_ring_ep_doorbell(xhci, slot_id, ep_index, 0);</span></div>
+<div class="cl" data-line="597"><span class="ln">597</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="598"><span class="ln">598</span><span class="cd">	}</span></div>
+<div class="cl" data-line="599"><span class="ln">599</span><span class="cd"></span></div>
+<div class="cl" data-line="600"><span class="ln">600</span><span class="cd">	for (stream_id = 1; stream_id &lt; ep-&gt;stream_info-&gt;num_streams;</span></div>
+<div class="cl" data-line="601"><span class="ln">601</span><span class="cd">			stream_id++) {</span></div>
+<div class="cl" data-line="602"><span class="ln">602</span><span class="cd">		struct xhci_stream_info *stream_info = ep-&gt;stream_info;</span></div>
+<div class="cl" data-line="603"><span class="ln">603</span><span class="cd">		if (!list_empty(&amp;stream_info-&gt;stream_rings[stream_id]-&gt;td_list))</span></div>
+<div class="cl" data-line="604"><span class="ln">604</span><span class="cd">			xhci_ring_ep_doorbell(xhci, slot_id, ep_index,</span></div>
+<div class="cl" data-line="605"><span class="ln">605</span><span class="cd">						stream_id);</span></div>
+<div class="cl" data-line="606"><span class="ln">606</span><span class="cd">	}</span></div>
+<div class="cl" data-line="607"><span class="ln">607</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <video controls preload="metadata" src="xh0700-doorbells.mp4"></video>
+        <a class="btn" href="player/index.html?scene=26">分帧版 · 逐真帧步进 →</a>
+        <a class="btn ghost" href="interactive/index.html#m1">模块一 · 三环操作台 →</a>
+        <span class="note">与视频 1:1 同源 · 教学拍步进 · 门铃 DB 写 / 事件环消费 / 命令环推进手动演练——对应本节「软件写 Doorbell 寄存器 → xHC 取新工作」节拍</span>
+      </div>
+      <div class="phead">上游 commit d66eaf9f89502971fddcb0de550b01fa6f409d83 · 2013-07-21 · Oleksij Rempel（独立贡献者，Sarah Sharp 签收） · drivers/usb/host/xhci-ring.c 1 文件 +1/-1 · hunk @@ -434,7（ring_doorbell_for_active_rings）· Cc: stable，回移至 2.6.35+（e9df17eb1408 起）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:d66eaf9f89502971fddcb0de550b01fa6f409d83">commit d66eaf9f89502971fddcb0de550b01fa6f409d83
+Author: Oleksij Rempel &lt;linux@rempel-privat.de&gt;
+Date:   Sun Jul 21 15:36:19 2013 +0200
+
+    xhci: fix null pointer dereference on ring_doorbell_for_active_rings
+    
+    in some cases where device is attched to xhci port and do not responding,
+    for example ath9k_htc with stalled firmware, kernel will
+    crash on ring_doorbell_for_active_rings.
+    This patch check if pointer exist before it is used.
+    
+    This patch should be backported to kernels as old as 2.6.35, that
+    contain the commit e9df17eb1408cfafa3d1844bfc7f22c7237b31b8 "USB: xhci:
+    Correct assumptions about number of rings per endpoint"
+    
+    Signed-off-by: Oleksij Rempel &lt;linux@rempel-privat.de&gt;
+    Signed-off-by: Sarah Sharp &lt;sarah.a.sharp@linux.intel.com&gt;
+    Cc: stable@vger.kernel.org
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index 1e57eafa6910..5b08cd85f8e7 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -434,7 +434,7 @@ static void ring_doorbell_for_active_rings(struct xhci_hcd *xhci,</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	/* A ring has pending URBs if its TD list is not empty */</span>
+<span class="d-ctx"> 	if (!(ep-&gt;ep_state &amp; EP_HAS_STREAMS)) {</span>
+<span class="d-del">-		if (!(list_empty(&amp;ep-&gt;ring-&gt;td_list)))</span>
+<span class="d-add">+		if (ep-&gt;ring &amp;&amp; !(list_empty(&amp;ep-&gt;ring-&gt;td_list)))</span>
+<span class="d-ctx"> 			xhci_ring_ep_doorbell(xhci, slot_id, ep_index, 0);</span>
+<span class="d-ctx"> 		return;</span>
+<span class="d-ctx"> 	}</span></pre>
+      <p class="ph">背景（何时 / 谁修 / 为什么是它）</p>
+      <p class="pbody">2013 年 7 月，Oleksij Rempel 提交。场景（message 原文）：设备挂在 xHCI 口上但不响应——举例 ath9k_htc 固件停摆——内核在 <code>ring_doorbell_for_active_rings()</code> 里崩溃。对应 <a class="sr-ln" href="#s47-01">§4.7</a> 门铃机制：软件放好工作后敲门铃、xHC 记录写引用判断新 TD——本卡贴码段（L585-L607）正是这条路径的内核侧。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：空指针解引用内核崩溃。机制：函数对每个「有挂起 TD」的环敲门铃（函数注释原文 "A ring has pending URBs if its TD list is not empty"）；但走到非流端点分支时 <code>ep->ring</code> 可能为 NULL（端点尚无环），<code>&ep->ring->td_list</code> 一取址即崩。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">用前判空：<code>if (ep->ring &amp;&amp; !(list_empty(&ep->ring->td_list)))</code>——有环且有挂起 TD 两条件都成立才敲。规范对齐：<a class="sr-ln" href="#s47-01">§4.7</a> p142 "System software rings a Device Context Doorbell after it has inserted work on a Transfer Ring"——ep->ring 为 NULL 时连关联的 Transfer Ring 都不存在，判空把敲铃收回到「有工作才敲」的规范语义内。对读注记：修复行=基线 L595，恰在本卡上方贴码段（L585-L607）内——贴码即补丁后形态，故无独立对读段（ch4610p 先例）；分帧走读见 xh0700p（scene=57）。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=57">补丁分帧动画 · 三幕走读 →</a>
+        <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 <a class="sr-ln" href="#s47-01">§4.7</a> p142「有工作才敲」敲铃语义）</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。
+  </footer>
+</div>
+</body>
+</html>

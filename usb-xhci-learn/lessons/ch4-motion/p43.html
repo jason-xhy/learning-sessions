@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xHCI 第 4 章视频课件 · 4.3 USB 设备初始化</title>
+<!-- data-ck 锚点块书写约定（机检 scripts/check_landing_code.py 依赖）：
+     1) data-ck 必须是开标签的最后一个属性；
+     2) 闭合标签紧贴内容末字符，中间不留任何空白；
+     3) 多行块（blockquote/pre）的第 2 行起内容顶格（零缩进）。
+     锚点 schema：
+     spec:<文件>:L<起>[-L<止>]  → evidence/<文件> 原文逐字切片（允许行内起止；
+                                  同一锚点值允许多次出现，按 EXPECTED_SPEC 多重集对账）
+     patch:<hash>               → git show <hash> 完整 stdout（不加路径过滤；diff 部分
+                                  逐行 d-meta/d-hunk/d-add/d-del/d-ctx 着色 span）
+     贴码段走 data-src 通道（pre.codeseg，data-src="短文件名:起始行:结束行"），
+     机检按段校验（行内容 == git show d9008e061539:<路径> 切片）+ 摘录覆盖 35/35；
+     摘录行 class="cl hot" + data-hot="组:下标"，tooltip 引文在页尾 #tipdocs。-->
+<style>
+  :root {
+    --bg: #0b0f15;
+    --panel: #111823;
+    --line: #1d2735;
+    --text: #e8edf5;
+    --muted: #8fa0b8;
+    --blue: #7c9ff0;
+    --amber: #d9a860;
+    --green: #86bd7a;
+    --teal: #7fd0b2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 64px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 28px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  h1 .tag { color: var(--amber); font-size: 15px; font-weight: 600; margin-left: 10px; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .meta b { color: var(--green); font-weight: 600; }
+  .lead { color: var(--muted); font-size: 13.5px; margin: 10px 0 0; }
+  .toc { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0 4px; }
+  .toc a {
+    display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--text); text-decoration: none; font-size: 13.5px; background: var(--panel);
+  }
+  .toc a:hover { border-color: var(--blue); color: var(--blue); }
+  h2 { font-size: 19px; margin: 40px 0 14px; }
+  h2 .no { color: var(--amber); margin-right: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; }
+  .card.b1 { border-left: 3px solid var(--blue); }
+  .card.b2 { border-left: 3px solid var(--teal); }
+  .card.b3 { border-left: 3px solid var(--green); }
+  .card.b4 { border-left: 3px solid var(--amber); }
+  .bhead { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .badge {
+    display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center;
+    border-radius: 6px; background: #18212f; color: var(--amber); font-size: 13px; font-weight: 700; flex: none;
+  }
+  h3 { font-size: 14px; margin: 16px 0 8px; color: var(--blue); }
+  h3 .cmt { color: var(--muted); font-weight: 400; font-size: 12px; margin-left: 8px; font-family: ui-monospace, Menlo, monospace; }
+  .qtitle { margin: 14px 0 0; font-size: 13.5px; font-weight: 600; }
+  blockquote {
+    margin: 8px 0 4px; padding: 10px 14px; border-left: 3px solid var(--blue); background: #0d1420;
+    border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap;
+  }
+  .qsrc { margin: 0 0 6px 17px; color: var(--muted); font-size: 12px; }
+  pre.diffblock {
+    margin: 0 0 4px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 12px; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.55; color: #c7d3e6;
+  }
+  .exnote { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .foot-note { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .vhead .name { font-size: 16px; font-weight: 600; font-family: ui-monospace, Menlo, monospace; }
+  .vhead .spec { color: var(--muted); font-size: 12.5px; }
+  .card video { width: 100%; border-radius: 6px; background: #000; display: block; }
+  .btn {
+    display: inline-block; padding: 8px 16px; border-radius: 8px; text-decoration: none;
+    background: var(--teal); color: #0b0f15; font-weight: 600; font-size: 13.5px;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; border: 1px solid var(--teal); color: var(--teal); }
+  .act { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .act .note { color: var(--muted); font-size: 12.5px; }
+  .int-note { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
+  .int-note b { color: var(--teal); font-weight: 600; }
+  .phead {
+    font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px;
+    background: #0d1420; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px;
+    margin-bottom: 10px; overflow-wrap: anywhere;
+  }
+  .ph { font-size: 13.5px; color: var(--amber); margin: 14px 0 4px; font-weight: 600; }
+  .pbody { margin: 0 0 6px; font-size: 13.5px; color: var(--text); }
+  .d-meta { color: #67788f; }
+  .d-hunk { color: var(--blue); }
+  .d-add { color: var(--green); background: rgba(134, 189, 122, 0.12); }
+  .d-del { color: #e08c8c; background: rgba(224, 140, 140, 0.12); }
+  .d-ctx { color: #a8b6ca; }
+  .exhead2 { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin: 14px 0 4px; }
+  pre.codeseg {
+    margin: 0 0 10px; background: #0d131d; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 0; overflow-x: auto; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px; line-height: 1.5; color: #c7d3e6; white-space: normal;
+  }
+  .codeseg .cl { display: flex; padding: 0 12px; }
+  .codeseg .cl:hover { background: rgba(124, 159, 240, 0.06); }
+  .codeseg .ln { flex: none; width: 4.2em; text-align: right; padding-right: 14px; color: #51617a; user-select: none; }
+  .codeseg .cd { white-space: pre; flex: 1 1 auto; }
+  .codeseg .cl.hot { background: rgba(217, 168, 96, 0.09); box-shadow: inset 3px 0 0 var(--amber); cursor: pointer; }
+  .codeseg .cl.hot .ln { color: var(--amber); font-weight: 600; }
+  #tipdocs { display: none; }
+  #codetip {
+    position: absolute; z-index: 60; left: 0; top: 0; max-width: 660px; min-width: 300px;
+    background: var(--panel); border: 1px solid var(--blue); border-radius: 10px;
+    padding: 12px 14px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-height: 70vh; overflow: auto;
+  }
+  #codetip[hidden] { display: none; }
+  .tipdoc .tipnote { margin: 0 0 6px; font-size: 13px; color: var(--text); }
+  .tipdoc blockquote { margin: 6px 0 4px; font-size: 12.5px; }
+  code { background: #18212f; border-radius: 4px; padding: 1px 6px; font-size: 12px; }
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px; color: var(--muted); font-size: 12.5px; }
+
+  /* R13-A 分页：目录页卡片 + 页内粘性卡导航（共享 head，s46 内嵌样式已上提并入） */
+  .ch46grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
+  .ch46g { display: inline-flex; align-items: baseline; gap: 7px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); font-size: 13px; color: var(--text); text-decoration: none; }
+  a.ch46g:hover { border-color: var(--blue); }
+  .ch46g .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .s46tag { flex: none; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .s46tag.mech { color: #7c9ff0; border-color: #7c9ff0; }
+  .s46tag.core { color: var(--amber); border-color: var(--amber); }
+  .qsrc { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .s46head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .s46no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .s46ttl { font-weight: 600; }
+  .s46pg { color: var(--muted); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .s46todo { opacity: .74; }
+  /* R11 批 A D2：规范样式表格（重建自规范 PDF 版面；样式单处） */
+  .tabwrap { overflow-x: auto; margin: 2px 0 12px; }
+  .spectab { border-collapse: collapse; width: 100%; font-size: 12.5px; background: var(--panel); }
+  .spectab caption { caption-side: top; text-align: left; font-weight: 600; font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12.5px; padding: 0 0 6px; }
+  .spectab th, .spectab td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .spectab thead th { background: rgba(124, 159, 240, 0.14); }
+  .spectab tbody tr:nth-child(even) { background: rgba(124, 159, 240, 0.055); }
+  .spectab .tabnote { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+  .tabfoot { margin: -6px 0 12px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  /* R12 批 A-2（意见②）：流程图产线换血 drawio——SVG 内联（.fcn HTML 家族退役；
+     数据层 flowcharts.json，产物 build_flowcharts.py） */
+  .fcf { margin: 2px 0 12px; }
+  .fct { font-family: ui-monospace, Menlo, monospace; color: var(--amber); font-size: 12px; margin-bottom: 6px; }
+  .fcf svg.fcsvg { display: block; width: 100%; height: auto; max-width: 1080px; margin: 0 auto; }
+  @media (max-width: 760px) { .fcf svg.fcsvg { max-width: 100%; } }
+  /* R12 批 A-2（意见③）：规范引用跳转三类——已建锚/出界注记/待建注记 */
+  .sr-ln { color: var(--teal); text-decoration: underline dotted; text-underline-offset: 3px; }
+  .sr-ln:hover { color: #8fd8cc; text-decoration-style: solid; }
+  .sr-out { color: var(--muted); border-bottom: 1px dashed #43536e; cursor: help; }
+  .sr-todo { color: var(--muted); border-bottom: 1px dotted #43536e; cursor: help; }
+  details.fcdoc { margin: 0 0 4px; }
+  details.fcdoc summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  details.fcdoc[open] summary { margin-bottom: 6px; }
+  /* R11 批 A-2 D5：规范引文双语 side-by-side（左 EN 右 ZH；qsrc 并入 ZH 栏尾；
+     ZH 在 .qzh——data-ck 元素内部只含 EN 原文，逐字通道不受影响） */
+  .qpair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; align-items: start; }
+  .qpair blockquote { margin: 8px 0 2px; }
+  .qzh { margin: 8px 0 2px; padding: 10px 14px; border-left: 3px solid var(--teal); background: #0d1420; border-radius: 0 8px 8px 0; font-size: 13.5px; color: var(--text); white-space: pre-wrap; line-height: 1.55; }
+  .qzh .qsrc { margin: 8px 0 0 17px; }
+  .tipdoc .qzh { font-size: 12.5px; }
+  @media (max-width: 860px) { .qpair { grid-template-columns: 1fr; } }
+  .pgnav { position: sticky; top: 0; z-index: 40; display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding: 9px 2px; margin: 0 0 22px; background: rgba(10, 16, 26, 0.94); border-bottom: 1px solid var(--line); }
+  .pgnav .pgback { flex: none; font-size: 13px; color: var(--teal); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 2px 10px; }
+  .pgnav .pgback:hover { border-color: var(--teal); }
+  .pgnav .pgsec { flex: none; font-weight: 600; font-size: 13.5px; }
+  .pgnav .pgsec .no { color: var(--amber); font-family: ui-monospace, Menlo, monospace; margin-right: 7px; }
+  .pgnav a.pgchip { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+  .pgnav a.pgchip:hover { color: var(--blue); border-color: var(--blue); }
+  .pgcrumb { margin: 26px 0 10px; font-size: 13px; color: var(--muted); }
+  .pgcrumb a { color: var(--teal); text-decoration: none; }
+  .pgcrumb a:hover { text-decoration: underline; }
+  .tocgroup { margin: 24px 0 4px; font-size: 13px; color: var(--muted); }
+  .tocgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 10px 0 6px; }
+  a.toccard { display: block; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 13px 15px; text-decoration: none; color: var(--text); }
+  a.toccard:hover { border-color: var(--blue); }
+  .toccard .tcno { color: var(--amber); font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .toccard .tcttl { font-weight: 600; margin-left: 8px; }
+  .toccard .tcmeta { display: block; margin-top: 4px; font-size: 12px; color: var(--amber); font-family: ui-monospace, Menlo, monospace; }
+  .toccard .tcblurb { display: block; margin-top: 7px; font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+  .toccard .tcgo { display: block; margin-top: 9px; font-size: 12px; color: var(--teal); }
+</style>
+<body>
+<div class="wrap">
+  <p class="pgcrumb"><a href="index.html">xHCI 第 4 章视频课件 · 目录</a></p>
+  <nav class="pgnav">
+    <a class="pgback" href="index.html">← 目录</a>
+    <span class="pgsec"><span class="no">4.3</span>USB 设备初始化</span>
+  </nav>
+  <section id="s43">
+    <h2><span class="no"><a class="sr-ln" href="#s43">§4.3</a></span>USB 设备初始化</h2>
+
+    <div class="card b1">
+      <div class="bhead"><span class="badge">①</span>规范与代码分析</div>
+      <h3>规范要点（xHCI 规范 <a class="sr-ln" href="#s43">§4.3</a> · p71-80）</h3>
+      <p class="qtitle">要点 1 · FS 设备先经 EP0 读 Device Descriptor 前 8 字节取 bMaxPacketSize0</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-43.txt:L103-L107">For FS devices, system software should initially read the first 8 bytes of the 
+USB Device Descriptor to retrieve the value of the bMaxPacketSize0 field and 
+determine the actual Max Packet Size for the Default Control Endpoint, by 
+issuing a USB GET_DESCRIPTOR request to the device, update the Default 
+Control Endpoint Context with the actual Max Packet Size and inform the xHC 
+of the context change. Step a describes this operation.</blockquote><div class="qzh"><div class="qzh-body">对 FS 设备，系统软件应先读取 USB 设备描述符（Device Descriptor）的前 8 字节，以取得 bMaxPacketSize0 字段的值，从而确定默认控制端点的实际 Max Packet Size（最大包大小）——做法是向设备发出 USB GET_DESCRIPTOR 请求，用实际 Max Packet Size 更新默认控制端点上下文（Default Control Endpoint Context），并把该上下文变更告知 xHC。步骤 a 描述了这一操作。</div><div class="qsrc">—— evidence/spec-43.txt L103-L107（p72）</div></div></div>
+      <p class="qtitle">要点 2 · 控制传输三段顺序：Setup → Data → Status（shall 要求）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-43.txt:L115-L116">The USB GET_DESCRIPTOR request requires a Data Stage, so the 
+Setup Stage TD shall be followed by a Data Stage TD, then a Status 
+Stage TD.</blockquote><div class="qzh"><div class="qzh-body">a. USB GET_DESCRIPTOR 请求需要数据阶段（Data Stage），因此 Setup Stage TD 之后应跟一个 Data Stage TD，再跟一个 Status Stage TD。为此软件应：</div><div class="qsrc">—— evidence/spec-43.txt L115-L116（p73）</div></div></div>
+      <p class="qtitle">要点 3 · Setup Stage TRB 字段：TRT=IN Data Stage(3)/Length=8/IOC=0/IDT=1/bmRequestType=80h/bRequest=6/wValue=0100h/wLength=8</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-43.txt:L120-L125">Initialize the Setup Stage TD (a single Setup Stage TRB) on the 
+Endpoint 0 Transfer Ring. 
+•  TRB Type = Setup Stage TRB. 
+•  Transfer Type (TRT) = IN Data Stage (3). 
+•  TRB Transfer Length = 8. 
+•  Interrupt On Completion (IOC) = 0. 
+•  Immediate Data (IDT) = 1.</blockquote><div class="qzh"><div class="qzh-body">ii. 在端点 0 传输环（Endpoint 0 Transfer Ring）上初始化 Setup Stage TD（单个 Setup Stage TRB）。• TRB Type = Setup Stage TRB。• Transfer Type（TRT）= IN Data Stage（3）。• TRB Transfer Length = 8。• Interrupt On Completion（IOC）= 0。• Immediate Data（IDT）= 1。• bmRequestType = 80h。</div><div class="qsrc">—— evidence/spec-43.txt L120-L125（p73）</div></div></div>
+      <p class="qtitle">要点 4 · 三段就绪后敲设备槽门铃：DB Target = Control EP 0 Enqueue Pointer Update</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-43.txt:L181">Ring the Device Slots’ Doorbell with DB Target = Control EP 0 
+Enqueue Pointer Update.</blockquote><div class="qzh"><div class="qzh-body">viii. 敲响该 Device Slot 的门铃，DB Target = Control EP 0 Enqueue Pointer Update。</div><div class="qsrc">—— evidence/spec-43.txt L181（p74）</div></div></div>
+      <p class="qtitle">要点 5 · Address Device 命令完成后才能对该槽发更多命令（等待语义）</p>
+      <div class="qpair"><blockquote data-ck="spec:spec-43.txt:L346">System software shall wait for Address Device Command completion event on 
+the Event Ring before issuing any more commands to the slot.</blockquote><div class="qzh"><div class="qzh-body">在向该槽发出更多命令之前，系统软件应在事件环上等待 Address Device Command 完成事件。</div><div class="qsrc">—— evidence/spec-43.txt L346（p76）</div></div></div>
+      <p class="foot-note">补充（见引文卡）：Data/Status Stage TRB 字段——evidence/spec-43.txt L136-154 / L156-173（p73）；Address Device 命令指向 Input Context——evidence/spec-43.txt L331-334（p76）。</p>
+      <h3>调用链整段贴码 <span class="cmt">commit d9008e061539 · 函数整段 · 琥珀高亮行 = 摘录行（hover 看行注释 + 规范引文，触屏点按）</span></h3>
+      <div class="exhead2">drivers/usb/core/message.c:150-176 · usb_control_msg · d9008e061539</div>
+      <pre class="codeseg" data-src="message.c:150:176"><div class="cl hot" data-line="150" data-hot="dev:0"><span class="ln">150</span><span class="cd">int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request,</span></div>
+<div class="cl" data-line="151"><span class="ln">151</span><span class="cd">		    __u8 requesttype, __u16 value, __u16 index, void *data,</span></div>
+<div class="cl" data-line="152"><span class="ln">152</span><span class="cd">		    __u16 size, int timeout)</span></div>
+<div class="cl" data-line="153"><span class="ln">153</span><span class="cd">{</span></div>
+<div class="cl" data-line="154"><span class="ln">154</span><span class="cd">	struct usb_ctrlrequest *dr;</span></div>
+<div class="cl" data-line="155"><span class="ln">155</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="156"><span class="ln">156</span><span class="cd"></span></div>
+<div class="cl" data-line="157"><span class="ln">157</span><span class="cd">	dr = kmalloc_obj(struct usb_ctrlrequest, GFP_NOIO);</span></div>
+<div class="cl" data-line="158"><span class="ln">158</span><span class="cd">	if (!dr)</span></div>
+<div class="cl" data-line="159"><span class="ln">159</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="160"><span class="ln">160</span><span class="cd"></span></div>
+<div class="cl" data-line="161"><span class="ln">161</span><span class="cd">	dr-&gt;bRequestType = requesttype;</span></div>
+<div class="cl" data-line="162"><span class="ln">162</span><span class="cd">	dr-&gt;bRequest = request;</span></div>
+<div class="cl" data-line="163"><span class="ln">163</span><span class="cd">	dr-&gt;wValue = cpu_to_le16(value);</span></div>
+<div class="cl" data-line="164"><span class="ln">164</span><span class="cd">	dr-&gt;wIndex = cpu_to_le16(index);</span></div>
+<div class="cl" data-line="165"><span class="ln">165</span><span class="cd">	dr-&gt;wLength = cpu_to_le16(size);</span></div>
+<div class="cl" data-line="166"><span class="ln">166</span><span class="cd"></span></div>
+<div class="cl" data-line="167"><span class="ln">167</span><span class="cd">	ret = usb_internal_control_msg(dev, pipe, dr, data, size, timeout);</span></div>
+<div class="cl" data-line="168"><span class="ln">168</span><span class="cd"></span></div>
+<div class="cl" data-line="169"><span class="ln">169</span><span class="cd">	/* Linger a bit, prior to the next control message. */</span></div>
+<div class="cl" data-line="170"><span class="ln">170</span><span class="cd">	if (dev-&gt;quirks &amp; USB_QUIRK_DELAY_CTRL_MSG)</span></div>
+<div class="cl" data-line="171"><span class="ln">171</span><span class="cd">		msleep(200);</span></div>
+<div class="cl" data-line="172"><span class="ln">172</span><span class="cd"></span></div>
+<div class="cl" data-line="173"><span class="ln">173</span><span class="cd">	kfree(dr);</span></div>
+<div class="cl" data-line="174"><span class="ln">174</span><span class="cd"></span></div>
+<div class="cl" data-line="175"><span class="ln">175</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="176"><span class="ln">176</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:1620-1721 · xhci_urb_enqueue · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:1620:1721"><div class="cl" data-line="1620"><span class="ln">1620</span><span class="cd">static int xhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flags)</span></div>
+<div class="cl" data-line="1621"><span class="ln">1621</span><span class="cd">{</span></div>
+<div class="cl" data-line="1622"><span class="ln">1622</span><span class="cd">	struct xhci_hcd *xhci = hcd_to_xhci(hcd);</span></div>
+<div class="cl" data-line="1623"><span class="ln">1623</span><span class="cd">	unsigned long flags;</span></div>
+<div class="cl" data-line="1624"><span class="ln">1624</span><span class="cd">	int ret = 0;</span></div>
+<div class="cl" data-line="1625"><span class="ln">1625</span><span class="cd">	unsigned int slot_id, ep_index;</span></div>
+<div class="cl" data-line="1626"><span class="ln">1626</span><span class="cd">	unsigned int *ep_state;</span></div>
+<div class="cl" data-line="1627"><span class="ln">1627</span><span class="cd">	struct urb_priv	*urb_priv;</span></div>
+<div class="cl" data-line="1628"><span class="ln">1628</span><span class="cd">	int num_tds;</span></div>
+<div class="cl" data-line="1629"><span class="ln">1629</span><span class="cd"></span></div>
+<div class="cl" data-line="1630"><span class="ln">1630</span><span class="cd">	ep_index = xhci_get_endpoint_index(&amp;urb-&gt;ep-&gt;desc);</span></div>
+<div class="cl" data-line="1631"><span class="ln">1631</span><span class="cd"></span></div>
+<div class="cl" data-line="1632"><span class="ln">1632</span><span class="cd">	if (usb_endpoint_xfer_isoc(&amp;urb-&gt;ep-&gt;desc))</span></div>
+<div class="cl" data-line="1633"><span class="ln">1633</span><span class="cd">		num_tds = urb-&gt;number_of_packets;</span></div>
+<div class="cl" data-line="1634"><span class="ln">1634</span><span class="cd">	else if (usb_endpoint_is_bulk_out(&amp;urb-&gt;ep-&gt;desc) &amp;&amp;</span></div>
+<div class="cl" data-line="1635"><span class="ln">1635</span><span class="cd">	    urb-&gt;transfer_buffer_length &gt; 0 &amp;&amp;</span></div>
+<div class="cl" data-line="1636"><span class="ln">1636</span><span class="cd">	    urb-&gt;transfer_flags &amp; URB_ZERO_PACKET &amp;&amp;</span></div>
+<div class="cl" data-line="1637"><span class="ln">1637</span><span class="cd">	    !(urb-&gt;transfer_buffer_length % usb_endpoint_maxp(&amp;urb-&gt;ep-&gt;desc)))</span></div>
+<div class="cl" data-line="1638"><span class="ln">1638</span><span class="cd">		num_tds = 2;</span></div>
+<div class="cl" data-line="1639"><span class="ln">1639</span><span class="cd">	else</span></div>
+<div class="cl" data-line="1640"><span class="ln">1640</span><span class="cd">		num_tds = 1;</span></div>
+<div class="cl" data-line="1641"><span class="ln">1641</span><span class="cd"></span></div>
+<div class="cl" data-line="1642"><span class="ln">1642</span><span class="cd">	urb_priv = kzalloc_flex(*urb_priv, td, num_tds, mem_flags);</span></div>
+<div class="cl" data-line="1643"><span class="ln">1643</span><span class="cd">	if (!urb_priv)</span></div>
+<div class="cl" data-line="1644"><span class="ln">1644</span><span class="cd">		return -ENOMEM;</span></div>
+<div class="cl" data-line="1645"><span class="ln">1645</span><span class="cd"></span></div>
+<div class="cl" data-line="1646"><span class="ln">1646</span><span class="cd">	urb_priv-&gt;num_tds = num_tds;</span></div>
+<div class="cl" data-line="1647"><span class="ln">1647</span><span class="cd">	urb_priv-&gt;num_tds_done = 0;</span></div>
+<div class="cl" data-line="1648"><span class="ln">1648</span><span class="cd">	urb-&gt;hcpriv = urb_priv;</span></div>
+<div class="cl" data-line="1649"><span class="ln">1649</span><span class="cd"></span></div>
+<div class="cl" data-line="1650"><span class="ln">1650</span><span class="cd">	trace_xhci_urb_enqueue(urb);</span></div>
+<div class="cl" data-line="1651"><span class="ln">1651</span><span class="cd"></span></div>
+<div class="cl" data-line="1652"><span class="ln">1652</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="1653"><span class="ln">1653</span><span class="cd"></span></div>
+<div class="cl" data-line="1654"><span class="ln">1654</span><span class="cd">	ret = xhci_check_args(hcd, urb-&gt;dev, urb-&gt;ep,</span></div>
+<div class="cl" data-line="1655"><span class="ln">1655</span><span class="cd">			      true, true, __func__);</span></div>
+<div class="cl" data-line="1656"><span class="ln">1656</span><span class="cd">	if (ret &lt;= 0) {</span></div>
+<div class="cl" data-line="1657"><span class="ln">1657</span><span class="cd">		ret = ret ? ret : -EINVAL;</span></div>
+<div class="cl" data-line="1658"><span class="ln">1658</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1659"><span class="ln">1659</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1660"><span class="ln">1660</span><span class="cd"></span></div>
+<div class="cl" data-line="1661"><span class="ln">1661</span><span class="cd">	slot_id = urb-&gt;dev-&gt;slot_id;</span></div>
+<div class="cl" data-line="1662"><span class="ln">1662</span><span class="cd"></span></div>
+<div class="cl" data-line="1663"><span class="ln">1663</span><span class="cd">	if (!HCD_HW_ACCESSIBLE(hcd)) {</span></div>
+<div class="cl" data-line="1664"><span class="ln">1664</span><span class="cd">		ret = -ESHUTDOWN;</span></div>
+<div class="cl" data-line="1665"><span class="ln">1665</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1666"><span class="ln">1666</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1667"><span class="ln">1667</span><span class="cd"></span></div>
+<div class="cl" data-line="1668"><span class="ln">1668</span><span class="cd">	if (xhci-&gt;devs[slot_id]-&gt;rhub_port-&gt;link_inactive) {</span></div>
+<div class="cl" data-line="1669"><span class="ln">1669</span><span class="cd">		xhci_dbg(xhci, "Can't queue urb, port error, link inactive\n");</span></div>
+<div class="cl" data-line="1670"><span class="ln">1670</span><span class="cd">		ret = -ENODEV;</span></div>
+<div class="cl" data-line="1671"><span class="ln">1671</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1672"><span class="ln">1672</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1673"><span class="ln">1673</span><span class="cd"></span></div>
+<div class="cl" data-line="1674"><span class="ln">1674</span><span class="cd">	if (xhci-&gt;xhc_state &amp; XHCI_STATE_DYING) {</span></div>
+<div class="cl" data-line="1675"><span class="ln">1675</span><span class="cd">		xhci_dbg(xhci, "Ep 0x%x: URB %p submitted for non-responsive xHCI host.\n",</span></div>
+<div class="cl" data-line="1676"><span class="ln">1676</span><span class="cd">			 urb-&gt;ep-&gt;desc.bEndpointAddress, urb);</span></div>
+<div class="cl" data-line="1677"><span class="ln">1677</span><span class="cd">		ret = -ESHUTDOWN;</span></div>
+<div class="cl" data-line="1678"><span class="ln">1678</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1679"><span class="ln">1679</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1680"><span class="ln">1680</span><span class="cd"></span></div>
+<div class="cl" data-line="1681"><span class="ln">1681</span><span class="cd">	ep_state = &amp;xhci-&gt;devs[slot_id]-&gt;eps[ep_index].ep_state;</span></div>
+<div class="cl" data-line="1682"><span class="ln">1682</span><span class="cd"></span></div>
+<div class="cl" data-line="1683"><span class="ln">1683</span><span class="cd">	if (*ep_state &amp; (EP_GETTING_STREAMS | EP_GETTING_NO_STREAMS)) {</span></div>
+<div class="cl" data-line="1684"><span class="ln">1684</span><span class="cd">		xhci_warn(xhci, "WARN: Can't enqueue URB, ep in streams transition state %x\n",</span></div>
+<div class="cl" data-line="1685"><span class="ln">1685</span><span class="cd">			  *ep_state);</span></div>
+<div class="cl" data-line="1686"><span class="ln">1686</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="1687"><span class="ln">1687</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1688"><span class="ln">1688</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1689"><span class="ln">1689</span><span class="cd">	if (*ep_state &amp; EP_SOFT_CLEAR_TOGGLE) {</span></div>
+<div class="cl" data-line="1690"><span class="ln">1690</span><span class="cd">		xhci_warn(xhci, "Can't enqueue URB while manually clearing toggle\n");</span></div>
+<div class="cl" data-line="1691"><span class="ln">1691</span><span class="cd">		ret = -EINVAL;</span></div>
+<div class="cl" data-line="1692"><span class="ln">1692</span><span class="cd">		goto free_priv;</span></div>
+<div class="cl" data-line="1693"><span class="ln">1693</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1694"><span class="ln">1694</span><span class="cd"></span></div>
+<div class="cl" data-line="1695"><span class="ln">1695</span><span class="cd">	switch (usb_endpoint_type(&amp;urb-&gt;ep-&gt;desc)) {</span></div>
+<div class="cl" data-line="1696"><span class="ln">1696</span><span class="cd"></span></div>
+<div class="cl" data-line="1697"><span class="ln">1697</span><span class="cd">	case USB_ENDPOINT_XFER_CONTROL:</span></div>
+<div class="cl hot" data-line="1698" data-hot="dev:1"><span class="ln">1698</span><span class="cd">		ret = xhci_queue_ctrl_tx(xhci, GFP_ATOMIC, urb,</span></div>
+<div class="cl" data-line="1699"><span class="ln">1699</span><span class="cd">					 slot_id, ep_index);</span></div>
+<div class="cl" data-line="1700"><span class="ln">1700</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1701"><span class="ln">1701</span><span class="cd">	case USB_ENDPOINT_XFER_BULK:</span></div>
+<div class="cl" data-line="1702"><span class="ln">1702</span><span class="cd">		ret = xhci_queue_bulk_tx(xhci, GFP_ATOMIC, urb,</span></div>
+<div class="cl" data-line="1703"><span class="ln">1703</span><span class="cd">					 slot_id, ep_index);</span></div>
+<div class="cl" data-line="1704"><span class="ln">1704</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1705"><span class="ln">1705</span><span class="cd">	case USB_ENDPOINT_XFER_INT:</span></div>
+<div class="cl" data-line="1706"><span class="ln">1706</span><span class="cd">		ret = xhci_queue_intr_tx(xhci, GFP_ATOMIC, urb,</span></div>
+<div class="cl" data-line="1707"><span class="ln">1707</span><span class="cd">				slot_id, ep_index);</span></div>
+<div class="cl" data-line="1708"><span class="ln">1708</span><span class="cd">		break;</span></div>
+<div class="cl" data-line="1709"><span class="ln">1709</span><span class="cd">	case USB_ENDPOINT_XFER_ISOC:</span></div>
+<div class="cl" data-line="1710"><span class="ln">1710</span><span class="cd">		ret = xhci_queue_isoc_tx_prepare(xhci, GFP_ATOMIC, urb,</span></div>
+<div class="cl" data-line="1711"><span class="ln">1711</span><span class="cd">				slot_id, ep_index);</span></div>
+<div class="cl" data-line="1712"><span class="ln">1712</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1713"><span class="ln">1713</span><span class="cd"></span></div>
+<div class="cl" data-line="1714"><span class="ln">1714</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="1715"><span class="ln">1715</span><span class="cd">free_priv:</span></div>
+<div class="cl" data-line="1716"><span class="ln">1716</span><span class="cd">		xhci_urb_free_priv(urb_priv);</span></div>
+<div class="cl" data-line="1717"><span class="ln">1717</span><span class="cd">		urb-&gt;hcpriv = NULL;</span></div>
+<div class="cl" data-line="1718"><span class="ln">1718</span><span class="cd">	}</span></div>
+<div class="cl" data-line="1719"><span class="ln">1719</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="1720"><span class="ln">1720</span><span class="cd">	return ret;</span></div>
+<div class="cl" data-line="1721"><span class="ln">1721</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:3774-3919 · xhci_queue_ctrl_tx · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:3774:3919"><div class="cl" data-line="3774"><span class="ln">3774</span><span class="cd">int xhci_queue_ctrl_tx(struct xhci_hcd *xhci, gfp_t mem_flags,</span></div>
+<div class="cl" data-line="3775"><span class="ln">3775</span><span class="cd">		struct urb *urb, int slot_id, unsigned int ep_index)</span></div>
+<div class="cl" data-line="3776"><span class="ln">3776</span><span class="cd">{</span></div>
+<div class="cl" data-line="3777"><span class="ln">3777</span><span class="cd">	struct xhci_ring *ep_ring;</span></div>
+<div class="cl" data-line="3778"><span class="ln">3778</span><span class="cd">	int num_trbs;</span></div>
+<div class="cl" data-line="3779"><span class="ln">3779</span><span class="cd">	int ret;</span></div>
+<div class="cl" data-line="3780"><span class="ln">3780</span><span class="cd">	struct usb_ctrlrequest *setup;</span></div>
+<div class="cl" data-line="3781"><span class="ln">3781</span><span class="cd">	struct xhci_generic_trb *start_trb;</span></div>
+<div class="cl" data-line="3782"><span class="ln">3782</span><span class="cd">	int start_cycle;</span></div>
+<div class="cl" data-line="3783"><span class="ln">3783</span><span class="cd">	u32 field;</span></div>
+<div class="cl" data-line="3784"><span class="ln">3784</span><span class="cd">	struct urb_priv *urb_priv;</span></div>
+<div class="cl" data-line="3785"><span class="ln">3785</span><span class="cd">	struct xhci_td *td;</span></div>
+<div class="cl" data-line="3786"><span class="ln">3786</span><span class="cd"></span></div>
+<div class="cl" data-line="3787"><span class="ln">3787</span><span class="cd">	ep_ring = xhci_urb_to_transfer_ring(xhci, urb);</span></div>
+<div class="cl" data-line="3788"><span class="ln">3788</span><span class="cd">	if (!ep_ring)</span></div>
+<div class="cl" data-line="3789"><span class="ln">3789</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3790"><span class="ln">3790</span><span class="cd"></span></div>
+<div class="cl" data-line="3791"><span class="ln">3791</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3792"><span class="ln">3792</span><span class="cd">	 * Need to copy setup packet into setup TRB, so we can't use the setup</span></div>
+<div class="cl" data-line="3793"><span class="ln">3793</span><span class="cd">	 * DMA address.</span></div>
+<div class="cl" data-line="3794"><span class="ln">3794</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3795"><span class="ln">3795</span><span class="cd">	if (!urb-&gt;setup_packet)</span></div>
+<div class="cl" data-line="3796"><span class="ln">3796</span><span class="cd">		return -EINVAL;</span></div>
+<div class="cl" data-line="3797"><span class="ln">3797</span><span class="cd"></span></div>
+<div class="cl" data-line="3798"><span class="ln">3798</span><span class="cd">	if ((xhci-&gt;quirks &amp; XHCI_ETRON_HOST) &amp;&amp;</span></div>
+<div class="cl" data-line="3799"><span class="ln">3799</span><span class="cd">	    urb-&gt;dev-&gt;speed &gt;= USB_SPEED_SUPER) {</span></div>
+<div class="cl" data-line="3800"><span class="ln">3800</span><span class="cd">		/*</span></div>
+<div class="cl" data-line="3801"><span class="ln">3801</span><span class="cd">		 * If next available TRB is the Link TRB in the ring segment then</span></div>
+<div class="cl" data-line="3802"><span class="ln">3802</span><span class="cd">		 * enqueue a No Op TRB, this can prevent the Setup and Data Stage</span></div>
+<div class="cl" data-line="3803"><span class="ln">3803</span><span class="cd">		 * TRB to be broken by the Link TRB.</span></div>
+<div class="cl" data-line="3804"><span class="ln">3804</span><span class="cd">		 */</span></div>
+<div class="cl" data-line="3805"><span class="ln">3805</span><span class="cd">		if (last_trb_on_seg(ep_ring-&gt;enq_seg, ep_ring-&gt;enqueue + 1)) {</span></div>
+<div class="cl" data-line="3806"><span class="ln">3806</span><span class="cd">			field = TRB_TYPE(TRB_TR_NOOP) | ep_ring-&gt;cycle_state;</span></div>
+<div class="cl" data-line="3807"><span class="ln">3807</span><span class="cd">			queue_trb(xhci, ep_ring, false, 0, 0,</span></div>
+<div class="cl" data-line="3808"><span class="ln">3808</span><span class="cd">					TRB_INTR_TARGET(0), field);</span></div>
+<div class="cl" data-line="3809"><span class="ln">3809</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3810"><span class="ln">3810</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3811"><span class="ln">3811</span><span class="cd"></span></div>
+<div class="cl" data-line="3812"><span class="ln">3812</span><span class="cd">	/* 1 TRB for setup, 1 for status */</span></div>
+<div class="cl" data-line="3813"><span class="ln">3813</span><span class="cd">	num_trbs = 2;</span></div>
+<div class="cl" data-line="3814"><span class="ln">3814</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3815"><span class="ln">3815</span><span class="cd">	 * Don't need to check if we need additional event data and normal TRBs,</span></div>
+<div class="cl" data-line="3816"><span class="ln">3816</span><span class="cd">	 * since data in control transfers will never get bigger than 16MB</span></div>
+<div class="cl" data-line="3817"><span class="ln">3817</span><span class="cd">	 * XXX: can we get a buffer that crosses 64KB boundaries?</span></div>
+<div class="cl" data-line="3818"><span class="ln">3818</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3819"><span class="ln">3819</span><span class="cd">	if (urb-&gt;transfer_buffer_length &gt; 0)</span></div>
+<div class="cl" data-line="3820"><span class="ln">3820</span><span class="cd">		num_trbs++;</span></div>
+<div class="cl" data-line="3821"><span class="ln">3821</span><span class="cd">	ret = prepare_transfer(xhci, xhci-&gt;devs[slot_id],</span></div>
+<div class="cl" data-line="3822"><span class="ln">3822</span><span class="cd">			ep_index, urb-&gt;stream_id,</span></div>
+<div class="cl" data-line="3823"><span class="ln">3823</span><span class="cd">			num_trbs, urb, 0, mem_flags);</span></div>
+<div class="cl" data-line="3824"><span class="ln">3824</span><span class="cd">	if (ret &lt; 0)</span></div>
+<div class="cl" data-line="3825"><span class="ln">3825</span><span class="cd">		return ret;</span></div>
+<div class="cl" data-line="3826"><span class="ln">3826</span><span class="cd"></span></div>
+<div class="cl" data-line="3827"><span class="ln">3827</span><span class="cd">	urb_priv = urb-&gt;hcpriv;</span></div>
+<div class="cl" data-line="3828"><span class="ln">3828</span><span class="cd">	td = &amp;urb_priv-&gt;td[0];</span></div>
+<div class="cl" data-line="3829"><span class="ln">3829</span><span class="cd"></span></div>
+<div class="cl" data-line="3830"><span class="ln">3830</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="3831"><span class="ln">3831</span><span class="cd">	 * Don't give the first TRB to the hardware (by toggling the cycle bit)</span></div>
+<div class="cl" data-line="3832"><span class="ln">3832</span><span class="cd">	 * until we've finished creating all the other TRBs.  The ring's cycle</span></div>
+<div class="cl" data-line="3833"><span class="ln">3833</span><span class="cd">	 * state may change as we enqueue the other TRBs, so save it too.</span></div>
+<div class="cl" data-line="3834"><span class="ln">3834</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="3835"><span class="ln">3835</span><span class="cd">	start_trb = &amp;ep_ring-&gt;enqueue-&gt;generic;</span></div>
+<div class="cl" data-line="3836"><span class="ln">3836</span><span class="cd">	start_cycle = ep_ring-&gt;cycle_state;</span></div>
+<div class="cl" data-line="3837"><span class="ln">3837</span><span class="cd"></span></div>
+<div class="cl" data-line="3838"><span class="ln">3838</span><span class="cd">	/* Queue setup TRB - see section 6.4.1.2.1 */</span></div>
+<div class="cl" data-line="3839"><span class="ln">3839</span><span class="cd">	/* FIXME better way to translate setup_packet into two u32 fields? */</span></div>
+<div class="cl" data-line="3840"><span class="ln">3840</span><span class="cd">	setup = (struct usb_ctrlrequest *) urb-&gt;setup_packet;</span></div>
+<div class="cl" data-line="3841"><span class="ln">3841</span><span class="cd">	field = 0;</span></div>
+<div class="cl hot" data-line="3842" data-hot="dev:2"><span class="ln">3842</span><span class="cd">	field |= TRB_IDT | TRB_TYPE(TRB_SETUP);</span></div>
+<div class="cl" data-line="3843"><span class="ln">3843</span><span class="cd">	if (start_cycle == 0)</span></div>
+<div class="cl" data-line="3844"><span class="ln">3844</span><span class="cd">		field |= 0x1;</span></div>
+<div class="cl" data-line="3845"><span class="ln">3845</span><span class="cd"></span></div>
+<div class="cl" data-line="3846"><span class="ln">3846</span><span class="cd">	/* xHCI 1.0/1.1 6.4.1.2.1: Transfer Type field */</span></div>
+<div class="cl" data-line="3847"><span class="ln">3847</span><span class="cd">	if ((xhci-&gt;hci_version &gt;= 0x100) || (xhci-&gt;quirks &amp; XHCI_MTK_HOST)) {</span></div>
+<div class="cl" data-line="3848"><span class="ln">3848</span><span class="cd">		if (urb-&gt;transfer_buffer_length &gt; 0) {</span></div>
+<div class="cl" data-line="3849"><span class="ln">3849</span><span class="cd">			if (setup-&gt;bRequestType &amp; USB_DIR_IN)</span></div>
+<div class="cl" data-line="3850"><span class="ln">3850</span><span class="cd">				field |= TRB_TX_TYPE(TRB_DATA_IN);</span></div>
+<div class="cl" data-line="3851"><span class="ln">3851</span><span class="cd">			else</span></div>
+<div class="cl" data-line="3852"><span class="ln">3852</span><span class="cd">				field |= TRB_TX_TYPE(TRB_DATA_OUT);</span></div>
+<div class="cl" data-line="3853"><span class="ln">3853</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3854"><span class="ln">3854</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3855"><span class="ln">3855</span><span class="cd"></span></div>
+<div class="cl hot" data-line="3856" data-hot="dev:3"><span class="ln">3856</span><span class="cd">	queue_trb(xhci, ep_ring, true,</span></div>
+<div class="cl" data-line="3857"><span class="ln">3857</span><span class="cd">		  setup-&gt;bRequestType | setup-&gt;bRequest &lt;&lt; 8 | le16_to_cpu(setup-&gt;wValue) &lt;&lt; 16,</span></div>
+<div class="cl" data-line="3858"><span class="ln">3858</span><span class="cd">		  le16_to_cpu(setup-&gt;wIndex) | le16_to_cpu(setup-&gt;wLength) &lt;&lt; 16,</span></div>
+<div class="cl" data-line="3859"><span class="ln">3859</span><span class="cd">		  TRB_LEN(8) | TRB_INTR_TARGET(0),</span></div>
+<div class="cl" data-line="3860"><span class="ln">3860</span><span class="cd">		  /* Immediate data in pointer */</span></div>
+<div class="cl" data-line="3861"><span class="ln">3861</span><span class="cd">		  field);</span></div>
+<div class="cl" data-line="3862"><span class="ln">3862</span><span class="cd"></span></div>
+<div class="cl" data-line="3863"><span class="ln">3863</span><span class="cd">	/* If there's data, queue data TRBs */</span></div>
+<div class="cl" data-line="3864"><span class="ln">3864</span><span class="cd">	/* Only set interrupt on short packet for IN endpoints */</span></div>
+<div class="cl" data-line="3865"><span class="ln">3865</span><span class="cd">	if (usb_urb_dir_in(urb))</span></div>
+<div class="cl hot" data-line="3866" data-hot="dev:4"><span class="ln">3866</span><span class="cd">		field = TRB_ISP | TRB_TYPE(TRB_DATA);</span></div>
+<div class="cl" data-line="3867"><span class="ln">3867</span><span class="cd">	else</span></div>
+<div class="cl" data-line="3868"><span class="ln">3868</span><span class="cd">		field = TRB_TYPE(TRB_DATA);</span></div>
+<div class="cl" data-line="3869"><span class="ln">3869</span><span class="cd"></span></div>
+<div class="cl" data-line="3870"><span class="ln">3870</span><span class="cd">	if (urb-&gt;transfer_buffer_length &gt; 0) {</span></div>
+<div class="cl" data-line="3871"><span class="ln">3871</span><span class="cd">		u32 length_field, remainder;</span></div>
+<div class="cl" data-line="3872"><span class="ln">3872</span><span class="cd">		u64 addr;</span></div>
+<div class="cl" data-line="3873"><span class="ln">3873</span><span class="cd"></span></div>
+<div class="cl" data-line="3874"><span class="ln">3874</span><span class="cd">		if (xhci_urb_suitable_for_idt(urb)) {</span></div>
+<div class="cl" data-line="3875"><span class="ln">3875</span><span class="cd">			memcpy(&amp;addr, urb-&gt;transfer_buffer,</span></div>
+<div class="cl" data-line="3876"><span class="ln">3876</span><span class="cd">			       urb-&gt;transfer_buffer_length);</span></div>
+<div class="cl" data-line="3877"><span class="ln">3877</span><span class="cd">			le64_to_cpus(&amp;addr);</span></div>
+<div class="cl" data-line="3878"><span class="ln">3878</span><span class="cd">			field |= TRB_IDT;</span></div>
+<div class="cl" data-line="3879"><span class="ln">3879</span><span class="cd">		} else {</span></div>
+<div class="cl" data-line="3880"><span class="ln">3880</span><span class="cd">			addr = (u64) urb-&gt;transfer_dma;</span></div>
+<div class="cl" data-line="3881"><span class="ln">3881</span><span class="cd">		}</span></div>
+<div class="cl" data-line="3882"><span class="ln">3882</span><span class="cd"></span></div>
+<div class="cl" data-line="3883"><span class="ln">3883</span><span class="cd">		remainder = xhci_td_remainder(xhci, 0,</span></div>
+<div class="cl" data-line="3884"><span class="ln">3884</span><span class="cd">				urb-&gt;transfer_buffer_length,</span></div>
+<div class="cl" data-line="3885"><span class="ln">3885</span><span class="cd">				urb-&gt;transfer_buffer_length,</span></div>
+<div class="cl" data-line="3886"><span class="ln">3886</span><span class="cd">				urb, 1);</span></div>
+<div class="cl" data-line="3887"><span class="ln">3887</span><span class="cd">		length_field = TRB_LEN(urb-&gt;transfer_buffer_length) |</span></div>
+<div class="cl" data-line="3888"><span class="ln">3888</span><span class="cd">				TRB_TD_SIZE(remainder) |</span></div>
+<div class="cl" data-line="3889"><span class="ln">3889</span><span class="cd">				TRB_INTR_TARGET(0);</span></div>
+<div class="cl" data-line="3890"><span class="ln">3890</span><span class="cd">		if (setup-&gt;bRequestType &amp; USB_DIR_IN)</span></div>
+<div class="cl" data-line="3891"><span class="ln">3891</span><span class="cd">			field |= TRB_DIR_IN;</span></div>
+<div class="cl hot" data-line="3892" data-hot="dev:5"><span class="ln">3892</span><span class="cd">		queue_trb(xhci, ep_ring, true,</span></div>
+<div class="cl" data-line="3893"><span class="ln">3893</span><span class="cd">				lower_32_bits(addr),</span></div>
+<div class="cl" data-line="3894"><span class="ln">3894</span><span class="cd">				upper_32_bits(addr),</span></div>
+<div class="cl" data-line="3895"><span class="ln">3895</span><span class="cd">				length_field,</span></div>
+<div class="cl" data-line="3896"><span class="ln">3896</span><span class="cd">				field | ep_ring-&gt;cycle_state);</span></div>
+<div class="cl" data-line="3897"><span class="ln">3897</span><span class="cd">	}</span></div>
+<div class="cl" data-line="3898"><span class="ln">3898</span><span class="cd"></span></div>
+<div class="cl" data-line="3899"><span class="ln">3899</span><span class="cd">	/* Save the DMA address of the last TRB in the TD */</span></div>
+<div class="cl" data-line="3900"><span class="ln">3900</span><span class="cd">	td-&gt;end_trb = ep_ring-&gt;enqueue;</span></div>
+<div class="cl" data-line="3901"><span class="ln">3901</span><span class="cd">	td-&gt;end_seg = ep_ring-&gt;enq_seg;</span></div>
+<div class="cl" data-line="3902"><span class="ln">3902</span><span class="cd"></span></div>
+<div class="cl" data-line="3903"><span class="ln">3903</span><span class="cd">	/* Queue status TRB - see Table 7 and sections 4.11.2.2 and 6.4.1.2.3 */</span></div>
+<div class="cl" data-line="3904"><span class="ln">3904</span><span class="cd">	/* If the device sent data, the status stage is an OUT transfer */</span></div>
+<div class="cl" data-line="3905"><span class="ln">3905</span><span class="cd">	if (urb-&gt;transfer_buffer_length &gt; 0 &amp;&amp; setup-&gt;bRequestType &amp; USB_DIR_IN)</span></div>
+<div class="cl" data-line="3906"><span class="ln">3906</span><span class="cd">		field = 0;</span></div>
+<div class="cl" data-line="3907"><span class="ln">3907</span><span class="cd">	else</span></div>
+<div class="cl" data-line="3908"><span class="ln">3908</span><span class="cd">		field = TRB_DIR_IN;</span></div>
+<div class="cl" data-line="3909"><span class="ln">3909</span><span class="cd">	queue_trb(xhci, ep_ring, false,</span></div>
+<div class="cl" data-line="3910"><span class="ln">3910</span><span class="cd">			0,</span></div>
+<div class="cl" data-line="3911"><span class="ln">3911</span><span class="cd">			0,</span></div>
+<div class="cl" data-line="3912"><span class="ln">3912</span><span class="cd">			TRB_INTR_TARGET(0),</span></div>
+<div class="cl" data-line="3913"><span class="ln">3913</span><span class="cd">			/* Event on completion */</span></div>
+<div class="cl hot" data-line="3914" data-hot="dev:6"><span class="ln">3914</span><span class="cd">			field | TRB_IOC | TRB_TYPE(TRB_STATUS) | ep_ring-&gt;cycle_state);</span></div>
+<div class="cl" data-line="3915"><span class="ln">3915</span><span class="cd"></span></div>
+<div class="cl hot" data-line="3916" data-hot="dev:7"><span class="ln">3916</span><span class="cd">	giveback_first_trb(xhci, slot_id, ep_index, 0,</span></div>
+<div class="cl" data-line="3917"><span class="ln">3917</span><span class="cd">			start_cycle, start_trb);</span></div>
+<div class="cl" data-line="3918"><span class="ln">3918</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="3919"><span class="ln">3919</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci-ring.c:558-582 · xhci_ring_ep_doorbell · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:558:582"><div class="cl" data-line="558"><span class="ln">558</span><span class="cd">void xhci_ring_ep_doorbell(struct xhci_hcd *xhci,</span></div>
+<div class="cl" data-line="559"><span class="ln">559</span><span class="cd">		unsigned int slot_id,</span></div>
+<div class="cl" data-line="560"><span class="ln">560</span><span class="cd">		unsigned int ep_index,</span></div>
+<div class="cl" data-line="561"><span class="ln">561</span><span class="cd">		unsigned int stream_id)</span></div>
+<div class="cl" data-line="562"><span class="ln">562</span><span class="cd">{</span></div>
+<div class="cl" data-line="563"><span class="ln">563</span><span class="cd">	__le32 __iomem *db_addr = &amp;xhci-&gt;dba-&gt;doorbell[slot_id];</span></div>
+<div class="cl" data-line="564"><span class="ln">564</span><span class="cd">	struct xhci_virt_ep *ep = &amp;xhci-&gt;devs[slot_id]-&gt;eps[ep_index];</span></div>
+<div class="cl" data-line="565"><span class="ln">565</span><span class="cd">	unsigned int ep_state = ep-&gt;ep_state;</span></div>
+<div class="cl" data-line="566"><span class="ln">566</span><span class="cd"></span></div>
+<div class="cl" data-line="567"><span class="ln">567</span><span class="cd">	/* Don't ring the doorbell for this endpoint if there are pending</span></div>
+<div class="cl" data-line="568"><span class="ln">568</span><span class="cd">	 * cancellations because we don't want to interrupt processing.</span></div>
+<div class="cl" data-line="569"><span class="ln">569</span><span class="cd">	 * We don't want to restart any stream rings if there's a set dequeue</span></div>
+<div class="cl" data-line="570"><span class="ln">570</span><span class="cd">	 * pointer command pending because the device can choose to start any</span></div>
+<div class="cl" data-line="571"><span class="ln">571</span><span class="cd">	 * stream once the endpoint is on the HW schedule.</span></div>
+<div class="cl" data-line="572"><span class="ln">572</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="573"><span class="ln">573</span><span class="cd">	if (ep_state &amp; (EP_STOP_CMD_PENDING | SET_DEQ_PENDING | EP_HALTED |</span></div>
+<div class="cl" data-line="574"><span class="ln">574</span><span class="cd">			EP_CLEARING_TT | EP_DROP_PENDING))</span></div>
+<div class="cl" data-line="575"><span class="ln">575</span><span class="cd">		return;</span></div>
+<div class="cl" data-line="576"><span class="ln">576</span><span class="cd"></span></div>
+<div class="cl" data-line="577"><span class="ln">577</span><span class="cd">	trace_xhci_ring_ep_doorbell(slot_id, DB_VALUE(ep_index, stream_id));</span></div>
+<div class="cl" data-line="578"><span class="ln">578</span><span class="cd"></span></div>
+<div class="cl hot" data-line="579" data-hot="dev:8"><span class="ln">579</span><span class="cd">	writel(DB_VALUE(ep_index, stream_id), db_addr);</span></div>
+<div class="cl" data-line="580"><span class="ln">580</span><span class="cd">	/* flush the write */</span></div>
+<div class="cl" data-line="581"><span class="ln">581</span><span class="cd">	readl(db_addr);</span></div>
+<div class="cl" data-line="582"><span class="ln">582</span><span class="cd">}</span></div></pre>
+      <div class="exhead2">drivers/usb/host/xhci.c:4393-4425 · xhci_setup_device · 节选（全函数 L4318-L4502） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.c:4393:4425"><div class="cl" data-line="4393"><span class="ln">4393</span><span class="cd">	/* Otherwise, update the control endpoint ring enqueue pointer. */</span></div>
+<div class="cl" data-line="4394"><span class="ln">4394</span><span class="cd">	else</span></div>
+<div class="cl" data-line="4395"><span class="ln">4395</span><span class="cd">		xhci_copy_ep0_dequeue_into_input_ctx(xhci, udev);</span></div>
+<div class="cl" data-line="4396"><span class="ln">4396</span><span class="cd">	ctrl_ctx-&gt;add_flags = cpu_to_le32(SLOT_FLAG | EP0_FLAG);</span></div>
+<div class="cl" data-line="4397"><span class="ln">4397</span><span class="cd">	ctrl_ctx-&gt;drop_flags = 0;</span></div>
+<div class="cl" data-line="4398"><span class="ln">4398</span><span class="cd"></span></div>
+<div class="cl" data-line="4399"><span class="ln">4399</span><span class="cd">	trace_xhci_address_ctx(xhci, virt_dev-&gt;in_ctx);</span></div>
+<div class="cl" data-line="4400"><span class="ln">4400</span><span class="cd"></span></div>
+<div class="cl" data-line="4401"><span class="ln">4401</span><span class="cd">	trace_xhci_address_ctrl_ctx(ctrl_ctx);</span></div>
+<div class="cl" data-line="4402"><span class="ln">4402</span><span class="cd">	spin_lock_irqsave(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4403"><span class="ln">4403</span><span class="cd">	trace_xhci_setup_device(virt_dev);</span></div>
+<div class="cl hot" data-line="4404" data-hot="dev:9"><span class="ln">4404</span><span class="cd">	ret = xhci_queue_address_device(xhci, command, virt_dev-&gt;in_ctx-&gt;dma,</span></div>
+<div class="cl" data-line="4405"><span class="ln">4405</span><span class="cd">					udev-&gt;slot_id, setup);</span></div>
+<div class="cl" data-line="4406"><span class="ln">4406</span><span class="cd">	if (ret) {</span></div>
+<div class="cl" data-line="4407"><span class="ln">4407</span><span class="cd">		spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4408"><span class="ln">4408</span><span class="cd">		xhci_dbg_trace(xhci, trace_xhci_dbg_address,</span></div>
+<div class="cl" data-line="4409"><span class="ln">4409</span><span class="cd">				"FIXME: allocate a command ring segment");</span></div>
+<div class="cl" data-line="4410"><span class="ln">4410</span><span class="cd">		goto out;</span></div>
+<div class="cl" data-line="4411"><span class="ln">4411</span><span class="cd">	}</span></div>
+<div class="cl hot" data-line="4412" data-hot="dev:10"><span class="ln">4412</span><span class="cd">	xhci_ring_cmd_db(xhci);</span></div>
+<div class="cl" data-line="4413"><span class="ln">4413</span><span class="cd">	spin_unlock_irqrestore(&amp;xhci-&gt;lock, flags);</span></div>
+<div class="cl" data-line="4414"><span class="ln">4414</span><span class="cd"></span></div>
+<div class="cl" data-line="4415"><span class="ln">4415</span><span class="cd">	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */</span></div>
+<div class="cl hot" data-line="4416" data-hot="dev:11"><span class="ln">4416</span><span class="cd">	wait_for_completion(command-&gt;completion);</span></div>
+<div class="cl" data-line="4417"><span class="ln">4417</span><span class="cd"></span></div>
+<div class="cl" data-line="4418"><span class="ln">4418</span><span class="cd">	/* FIXME: From section 4.3.4: "Software shall be responsible for timing</span></div>
+<div class="cl" data-line="4419"><span class="ln">4419</span><span class="cd">	 * the SetAddress() "recovery interval" required by USB and aborting the</span></div>
+<div class="cl" data-line="4420"><span class="ln">4420</span><span class="cd">	 * command on a timeout.</span></div>
+<div class="cl" data-line="4421"><span class="ln">4421</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="4422"><span class="ln">4422</span><span class="cd">	switch (command-&gt;status) {</span></div>
+<div class="cl" data-line="4423"><span class="ln">4423</span><span class="cd">	case COMP_COMMAND_ABORTED:</span></div>
+<div class="cl" data-line="4424"><span class="ln">4424</span><span class="cd">	case COMP_COMMAND_RING_STOPPED:</span></div>
+<div class="cl" data-line="4425"><span class="ln">4425</span><span class="cd">		xhci_warn(xhci, "Timeout while waiting for setup device command\n");</span></div></pre>
+    </div>
+
+    <div class="card b2">
+      <div class="bhead"><span class="badge">②</span>动画</div>
+      <div class="vhead">
+        <span class="name">43-usb-device-init</span>
+        <span class="spec">设备初始化：usb_control_msg → xhci_address_device / setup_device → URB enqueue</span>
+      </div>
+      <video controls preload="metadata" src="43-usb-device-init.mp4"></video>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=2">分帧版 · 逐真帧步进 →</a>
+        <span class="note">与视频 1:1 同源 · 上一帧/下一帧/播放暂停/进度条/键盘 ←→ 空格</span>
+      </div>
+    </div>
+
+    <div class="card b3">
+      <div class="bhead"><span class="badge">③</span>交互</div>
+      <div class="act" style="margin-top:0;">
+        <a class="btn ghost" href="interactive/index.html#m3">模块三 · URB→TRB→TD 组装 →</a>
+        <span class="note">单文件自包含 · 交互台四模块分节锚定（#m1-#m4）</span>
+      </div>
+      <p class="int-note"><b>模块三 · URB→TRB→TD 组装：</b>GET_DESCRIPTOR 8B 手动组装（Setup/Data/Status 三段 TRB 字段逐项核对）——对应本节控制传输三段与 EP0 门铃</p>
+      <p class="int-note"><b>模块四 · 代码解读：</b>4.3 设备初始化题组（贴码行可点 + 规范锚点卡），入口 <a href="interactive/index.html#m4">interactive/index.html#m4</a></p>
+    </div>
+
+    <div class="card b4">
+      <div class="bhead"><span class="badge">④</span>补丁收尾</div>
+      <div class="phead">上游 commit（正文引用）f72b9aa821a2bfe4b6dfec4be19f264d0673b008 · 2025-07-17 · Jay Chen · drivers/usb/host/xhci-mem.c +2 行 · hunk @@ -1195,6 +1195,8 @@（xhci_setup_addressable_virt_dev） · 本地核验件 dabf502ee893（stable 回移，diff 同）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:f72b9aa821a2bfe4b6dfec4be19f264d0673b008">commit f72b9aa821a2bfe4b6dfec4be19f264d0673b008
+Author: Jay Chen &lt;shawn2000100@gmail.com&gt;
+Date:   Thu Jul 17 10:31:07 2025 +0300
+
+    usb: xhci: Set avg_trb_len = 8 for EP0 during Address Device Command
+    
+    There is a subtle contradiction between sections of the xHCI 1.2 spec
+    regarding the initialization of Input Endpoint Context fields. Section
+    4.8.2 ("Endpoint Context Initialization") states that all fields should
+    be initialized to 0. However, Section 6.2.3 ("Endpoint Context", p.453)
+    specifies that the Average TRB Length (avg_trb_len) field shall be
+    greater than 0, and explicitly notes (p.454): "Software shall set
+    Average TRB Length to '8' for control endpoints."
+    
+    Strictly setting all fields to 0 during initialization conflicts with
+    the specific recommendation for control endpoints. In practice, setting
+    avg_trb_len = 0 is not meaningful for the hardware/firmware, as the
+    value is used for bandwidth calculation.
+    
+    Motivation: Our company is developing a custom Virtual xHC hardware
+    platform that strictly follows the xHCI spec and its recommendations.
+    During validation, we observed that enumeration fails and a parameter
+    error (TRB Completion Code = 5) is reported if avg_trb_len for EP0 is
+    not set to 8 as recommended by Section 6.2.3. This demonstrates the
+    importance of assigning a meaningful, non-zero value to avg_trb_len,
+    even in virtualized or emulated environments.
+    
+    This patch explicitly sets avg_trb_len to 8 for EP0 in
+    xhci_setup_addressable_virt_dev(), as recommended in Section 6.2.3, to
+    prevent potential issues with xHCI host controllers that enforce the
+    spec strictly.
+    
+    Link: https://bugzilla.kernel.org/show_bug.cgi?id=220033
+    Signed-off-by: Jay Chen &lt;shawn2000100@gmail.com&gt;
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20250717073107.488599-4-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c</span>
+<span class="d-meta">index 6680afa4f596..07289333a1e8 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-mem.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-mem.c</span>
+<span class="d-hunk">@@ -1195,6 +1195,8 @@ int xhci_setup_addressable_virt_dev(struct xhci_hcd *xhci, struct usb_device *ud</span>
+<span class="d-ctx"> 	ep0_ctx-&gt;deq = cpu_to_le64(dev-&gt;eps[0].ring-&gt;first_seg-&gt;dma |</span>
+<span class="d-ctx"> 				   dev-&gt;eps[0].ring-&gt;cycle_state);</span>
+<span class="d-ctx"> </span>
+<span class="d-add">+	ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</span>
+<span class="d-add">+</span>
+<span class="d-ctx"> 	trace_xhci_setup_addressable_virt_device(dev);</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	/* Steps 7 and 8 were done in xhci_alloc_virt_device() */</span></pre>
+      <p class="ph">背景（何时 / 何硬件 / 谁报）</p>
+      <p class="pbody">2025 年 7 月，Jay Chen 报告：其公司正在开发一个严格遵循 xHCI 规范的自研虚拟 xHC 硬件平台，验证阶段设备枚举失败——Address Device 命令回 TRB Completion Code = 5（Parameter Error），bug 单在 kernel bugzilla 220033。根因不在虚拟平台自身，而是 Linux 驱动对规范两处条文的取舍：初始化输入端点上下文时全字段清零，其中 Average TRB Length（avg_trb_len）= 0，而严格按规范实现的控制器会判定该参数非法。主流真实硬件恰好不校验这个字段，问题因此在真机上从未暴露——虚拟平台反而成了规范的忠实裁判。对应课程 4.3 的 Address Device 输入上下文节拍。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：严格按规范实现的（虚拟）xHC 在 EP0 编址时返回 Parameter Error（完成码 5），设备枚举失败。机制：规范 <a class="sr-ln" href="p48.html#s48-02">§4.8.2</a>（Endpoint Context Initialization）要求输入端点上下文所有字段初始化为 0；§6.2.3（Endpoint Context）却规定 Average TRB Length 应大于 0，且明确「Software shall set Average TRB Length to 8 for control endpoints」——两条条文在全 0 初始化面前互相矛盾。avg_trb_len 用于带宽计算，对控制端点填 0 没有意义。驱动此前按 <a class="sr-ln" href="p48.html#s48-02">§4.8.2</a> 字面义把 EP0 的 avg_trb_len 留成 0：宽容的硬件忽略它，严格的硬件判错。课程侧对应证据：<a class="sr-ln" href="#s43">§4.3.3</a>（p76）「Allocate an Input Context data structure (6.2.5) and initialize all fields to 0」之后逐字段初始化 EP0 Context——补丁即在这条全 0 路径上为控制端点开例外。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">+2 行（<code>drivers/usb/host/xhci-mem.c</code>，<code>xhci_setup_addressable_virt_dev()</code>）：在 <code>ep0_ctx-&gt;deq</code> 赋值之后、trace 之前插入 <code>ep0_ctx-&gt;tx_info = cpu_to_le32(EP_AVG_TRB_LENGTH(8));</code>（含一个空行）。补丁前：tx_info 整体为 0（含 avg_trb_len），严格控制器判 Parameter Error（CC=5）→ 枚举失败。补丁后：EP0 的 Average TRB Length = 8，与 §6.2.3 控制端点建议一致，虚拟 xHC 枚举通过；真实硬件行为不变。tx_info 是 Endpoint Context 里承载 Average TRB Length 的字组，该值供带宽计算使用；而 Address Device 命令的参数正是指向这份 Input Context（<a class="sr-ln" href="#s43">§4.3.3</a> p76：「Issue an Address Device Command…where the command points to the Input Context data structure」）——与代码摘录（drafts/code-excerpts.json dev 组 L4404/L4412/L4416 的编址路径）对读，补丁改的就是命令带上报给 xHC 的上下文内容。验收口径：正文引用一律主线上游 hash f72b9aa821a2，本地另以 stable 回移件 dabf502ee893 做同内容 diff 核验——两树基线行号不同，新增行逐字相同。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=49">补丁分帧动画 · 四幕走读 →</a>
+        <span class="note">背景现场 → 补丁前错误行为 → diff 逐行走读 → 补丁后行为（对照规范出处）</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    构建源与判据随本目录提交：<code>src/</code>（场景与零件库）· <code>drafts/</code>（代码摘录与分析文字稿）· <code>evidence/</code>（规范切片与上屏断言对照）· <code>interactive/</code>（交互操作台）· <code>player/</code>（分帧播放器）。
+    渲染工具链按 2026-09-26 裁定不入公开仓，权威副本在项目目录 xhci-ch4-motion。引文/补丁带 <code>data-ck</code> 机检锚点，贴码段带 <code>data-src</code> 段校验（基线 d9008e061539 逐字），逐字比对脚本见项目仓 <code>scripts/check_landing_code.py</code>。
+  </footer>
+</div>
+<div id="tipdocs" hidden>
+<div class="tipdoc" id="tip-dev-0">
+<p class="tipnote">USB 核同步控制传输入口：构造控制 URB、提交并等完成（动画起点，SET_ADDRESS 等由此发出）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L103-L108">For FS devices, system software should initially read the first 8 bytes of the 
+USB Device Descriptor to retrieve the value of the bMaxPacketSize0 field and 
+determine the actual Max Packet Size for the Default Control Endpoint, by 
+issuing a USB GET_DESCRIPTOR request to the device, update the Default 
+Control Endpoint Context with the actual Max Packet Size and inform the xHC 
+of the context change. Step a describes this operation.</blockquote><div class="qzh"><div class="qzh-body">对 FS 设备，系统软件应先读取 USB 设备描述符（Device Descriptor）的前 8 字节，以取得 bMaxPacketSize0 字段的值，从而确定默认控制端点的实际 Max Packet Size（最大包大小）——做法是向设备发出 USB GET_DESCRIPTOR 请求，用实际 Max Packet Size 更新默认控制端点上下文（Default Control Endpoint Context），并把该上下文变更告知 xHC。步骤 a 描述了这一操作。</div><div class="qsrc">—— evidence/spec-43.txt L103-L108（p72）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-1">
+<p class="tipnote">hc_driver urb_enqueue 按端点类型分派，控制传输走 xhci_queue_ctrl_tx（现名仍叫此）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L115-L117">The USB GET_DESCRIPTOR request requires a Data Stage, so the 
+Setup Stage TD shall be followed by a Data Stage TD, then a Status 
+Stage TD.</blockquote><div class="qzh"><div class="qzh-body">a. USB GET_DESCRIPTOR 请求需要数据阶段（Data Stage），因此 Setup Stage TD 之后应跟一个 Data Stage TD，再跟一个 Status Stage TD。为此软件应：</div><div class="qsrc">—— evidence/spec-43.txt L115-L117（p73）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-2">
+<p class="tipnote">Setup 段 TRB：TRB_SETUP + TRB_IDT（8 字节 SETUP 包作为立即数据随 TRB 走）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L120-L126">Initialize the Setup Stage TD (a single Setup Stage TRB) on the 
+Endpoint 0 Transfer Ring. 
+•  TRB Type = Setup Stage TRB. 
+•  Transfer Type (TRT) = IN Data Stage (3). 
+•  TRB Transfer Length = 8. 
+•  Interrupt On Completion (IOC) = 0. 
+•  Immediate Data (IDT) = 1.</blockquote><div class="qzh"><div class="qzh-body">ii. 在端点 0 传输环（Endpoint 0 Transfer Ring）上初始化 Setup Stage TD（单个 Setup Stage TRB）。• TRB Type = Setup Stage TRB。• Transfer Type（TRT）= IN Data Stage（3）。• TRB Transfer Length = 8。• Interrupt On Completion（IOC）= 0。• Immediate Data（IDT）= 1。• bmRequestType = 80h。</div><div class="qsrc">—— evidence/spec-43.txt L120-L126（p73）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-3">
+<p class="tipnote">Setup TRB 入 EP0 传输环（bRequestType/wValue 等打包成 TRB 前两个字段）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L115-L117">The USB GET_DESCRIPTOR request requires a Data Stage, so the 
+Setup Stage TD shall be followed by a Data Stage TD, then a Status 
+Stage TD.</blockquote><div class="qzh"><div class="qzh-body">a. USB GET_DESCRIPTOR 请求需要数据阶段（Data Stage），因此 Setup Stage TD 之后应跟一个 Data Stage TD，再跟一个 Status Stage TD。为此软件应：</div><div class="qsrc">—— evidence/spec-43.txt L115-L117（p73）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-4">
+<p class="tipnote">Data 段 TRB 类型：TRB_DATA（IN 方向带 ISP 短包中断）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L139-L149">TRB Type = Data Stage TRB. 
+•  
+Direction (DIR) = ‘1’. 
+•  
+TRB Transfer Length = 8. 
+•  
+Chain bit (CH) = 0. 
+•  
+Interrupt On Completion (IOC) = 0. 
+•  
+Immediate Data (IDT) = 0.</blockquote><div class="qzh"><div class="qzh-body">iv. 在端点 0 传输环上初始化 Data Stage TD（单个 Data Stage TRB）。• TRB Type = Data Stage TRB。• Direction（DIR）= ‘1’。• TRB Transfer Length = 8。• Chain bit（CH，件界标记）= 0。• Interrupt On Completion（IOC）= 0。• Immediate Data（IDT）= 0。</div><div class="qsrc">—— evidence/spec-43.txt L139-L149（p73）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-5">
+<p class="tipnote">Data TRB 入环：数据缓冲 DMA 地址 + 长度</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L136-L137">Initialize the Data Stage TD (a single Data Stage TRB) on the 
+Endpoint 0 Transfer Ring.</blockquote><div class="qzh"><div class="qzh-body">iii. 推进端点 0 传输环的入队指针（Enqueue Pointer）。iv. 在端点 0 传输环上初始化 Data Stage TD（单个 Data Stage TRB）。</div><div class="qsrc">—— evidence/spec-43.txt L136-L137（p73）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-6">
+<p class="tipnote">Status 段 TRB：TRB_STATUS + TRB_IOC，传输结束时产生完成事件</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L159-L167">TRB Type = Status Stage TRB. 
+•  
+Direction (DIR) = ‘0’. 
+•  
+TRB Transfer Length = 0. 
+•  
+Chain bit (CH) = 0. 
+•  
+Interrupt On Completion (IOC) = 1.</blockquote><div class="qzh"><div class="qzh-body">- TRB Type = Status Stage TRB。 • Direction（DIR）= ‘0’。 • TRB Transfer Length = 0。 • Chain bit（CH）= 0。 • Interrupt On Completion（IOC）= 1。</div><div class="qsrc">—— evidence/spec-43.txt L159-L167（p73）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-7">
+<p class="tipnote">giveback_first_trb：三段齐后翻转首 TRB 的 Cycle 位，整个 TD 一次性移交硬件</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L181-L182">Ring the Device Slots’ Doorbell with DB Target = Control EP 0 
+Enqueue Pointer Update.</blockquote><div class="qzh"><div class="qzh-body">viii. 敲响该 Device Slot 的门铃，DB Target = Control EP 0 Enqueue Pointer Update。</div><div class="qsrc">—— evidence/spec-43.txt L181-L182（p74）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-8">
+<p class="tipnote">敲设备门铃：writel DB_VALUE(ep_index=0)——EP0 时 DB Target=ep+1=1（宏见 xhci.h:313）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L181-L182">Ring the Device Slots’ Doorbell with DB Target = Control EP 0 
+Enqueue Pointer Update.</blockquote><div class="qzh"><div class="qzh-body">viii. 敲响该 Device Slot 的门铃，DB Target = Control EP 0 Enqueue Pointer Update。</div><div class="qsrc">—— evidence/spec-43.txt L181-L182（p74）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-9">
+<p class="tipnote">设备编址：xhci_queue_address_device 把 Address Device 命令 TRB 入命令环（入口是 .address_device=xhci_address_device）</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L331-L334">Issue an Address Device Command for the Device Slot, where the 
+command points to the Input Context data structure described above. Refer to 
+sections 3.3.4 and 6.4.3.4 for more information on the Address Device 
+Command.</blockquote><div class="qzh"><div class="qzh-body">11. 为该设备槽发出 Address Device Command，命令指向上述 Input Context 数据结构。Address Device Command 的更多信息参见 3.3.4 节与 6.4.3.4 节。</div><div class="qsrc">—— evidence/spec-43.txt L331-L334（p76）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-10">
+<p class="tipnote">敲命令门铃 DB Target=0，xHC 开始处理编址命令</p>
+<div class="qpair"><blockquote data-ck="spec:spec-41.txt:L8-L10">All xHC commands are issued by placing the desired Command TRB(s) (<span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 
+6.4.3</span> Command TRBs) on the Command Ring, then ringing the xHC command 
+Doorbell register, that is, writing the Host Controller Command code to the DB 
+Target field of Doorbell register 0 (refer to <span class="sr-out" title="第 5-8 章（寄存器/TRB/中断器定义）——章界外，本页不展开">Section 5.6</span> Doorbell Registers).</blockquote><div class="qzh"><div class="qzh-body">所有 xHC 命令的下发方式为：将所需的命令 TRB（Command TRB，见 6.4.3 节“命令 TRB”）放置到命令环上，然后敲响 xHC 命令门铃寄存器（Doorbell Register），即把 Host Controller Command 代码写入 0 号门铃寄存器的 DB Target 字段（参见 5.6 节“门铃寄存器（Doorbell Registers）”）。</div><div class="qsrc">—— evidence/spec-41.txt L8-L10（p68）</div></div></div>
+</div>
+<div class="tipdoc" id="tip-dev-11">
+<p class="tipnote">等命令完成事件：handle_cmd_completion 里 complete() 唤醒本行，设备拿到地址</p>
+<div class="qpair"><blockquote data-ck="spec:spec-43.txt:L346-L347">System software shall wait for Address Device Command completion event on 
+the Event Ring before issuing any more commands to the slot.</blockquote><div class="qzh"><div class="qzh-body">在向该槽发出更多命令之前，系统软件应在事件环上等待 Address Device Command 完成事件。</div><div class="qsrc">—— evidence/spec-43.txt L346-L347（p76）</div></div></div>
+</div>
+</div>
+<div id="codetip" hidden><div class="tipbody"></div></div>
+<script>
+(function () {
+  'use strict';
+  var tip = document.getElementById('codetip');
+  var body = tip ? tip.querySelector('.tipbody') : null;
+  if (!tip || !body) { return; }
+  function show(row, pin) {
+    var key = row.getAttribute('data-hot');
+    var doc = document.getElementById('tip-' + key.replace(':', '-'));
+    if (!doc) { return; }
+    body.innerHTML = '';
+    body.appendChild(doc.cloneNode(true));
+    tip.setAttribute('data-for', key);
+    if (pin) { tip.setAttribute('data-pin', key); }
+    tip.hidden = false;
+    var r = row.getBoundingClientRect();
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = Math.max(8, Math.min(r.left + window.scrollX + (r.width - tw) / 2,
+        document.documentElement.scrollWidth - tw - 8));
+    var y = r.top + window.scrollY - th - 10;
+    if (y < window.scrollY + 4) { y = r.bottom + window.scrollY + 10; }
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  function unpinned() { return !tip.getAttribute('data-pin'); }
+  function hide() { if (unpinned()) { tip.hidden = true; } }
+  function unpin() { tip.removeAttribute('data-pin'); tip.hidden = true; }
+  var rows = document.querySelectorAll('.codeseg .cl.hot');
+  for (var i = 0; i < rows.length; i++) {
+    (function (row) {
+      row.addEventListener('mouseenter', function () { if (unpinned()) { show(row, false); } });
+      row.addEventListener('mouseleave', hide);
+      row.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var key = row.getAttribute('data-hot');
+        if (tip.getAttribute('data-pin') === key) { unpin(); }
+        else { show(row, true); }
+      });
+    })(rows[i]);
+  }
+  document.addEventListener('click', function () { unpin(); });
+})();
+</script>
+</body>
+</html>

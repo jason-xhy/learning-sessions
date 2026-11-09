@@ -1406,3 +1406,22 @@ xh1101=13（含 4.11 导语 (2,4)）/xh1102a=6/xh1102b=17/xh1102c=17/xh1102d=7/x
   自证（isPatch 正则同构）；
 - r12c_beats_calc.py：帧表 beats 机核（distinct gap>=2，与 smoke_player
   公式同构）。
+
+### R12 批 C · 主会话渲染部署与终验（2026-11-09）
+
+- **渲染链**：r12c_render_chain.sh（mp4×11+vite build）。**16:33 中断**：xh1102c 收尾 meta 写超时群（console "Connection timeout when updating metadata for ch42…"）→render-server job 未释放→xh1102d 撞 409 `job already active`——前四支 mp4 ffprobe nb_frames==帧表 total 全 MATCH（1377/1067/1860/1487）后，r12c_resume_chain.sh 从 scene42 续跑，19:55 CHAIN-DONE（七支+build，~25 分钟）；11/11 mp4 帧数对帧表全 MATCH。
+- **主会话追加**：s411 九卡深链升级 #m7 族（xh1101→#m7、xh1102a/d→#m7&trb=normal、xh1102b→setup、xh1102c/e→isoch、xh1103→transferEvent、xh1105→link、xh1107→#m7；xh1104/xh1106 保持 #m6 对口）——TrackB 遗留④ m7 上线后升级；sr-ln 计数对账三处文案修（deep_note 裸节号 4.11.2.4/4.11.1.1 禁用、Table 4-7 保留一处合法表锚，176 终态）。
+- **注册**：smoke_player BASE/PATCH 扩 range(49)/range(49,63)（批 B 后陈旧未扩的缺省全集）；fullwalk_driver.sh 缺省改 seq 0-62。
+- **部署**：dist/*+11 mp4+interactive/index.html（cmp 同源）+src/drafts/evidence/public 镜像 cp→learning 树；deploy_hygiene 清孤儿 2 枚（player-b296fcbb/render-d2aa21a0）；**部署树 checker 复跑 ALL PASS 零 WARN**（MP4_DEPLOY_PENDING 清空）。
+- **本地 e2e**（静态服 8123 root=usb-xhci-learn，E2E_BASE=http://127.0.0.1:8123/lessons/ch4-motion）：首跑 9 FAIL=e2e 重排回归映射追加式扩容冲突（TrackB 追加新序未删批 B 旧序，scene38-49 双断言）——重排断言是映射表非增量清单，改表后 **251 ok / 0 FAIL ONLINE PASS**（207→+44）。
+- **learning 40a5877 已 commit**（155 files +11071），push 进行中；线上 e2e 待 Pages 生效后跑；fullwalk 63 片后台（caffeinate 护航）。
+- **ManimGX 对比结论（用户指令①，R13 备案）**：不换引擎（50 场景 TSX+零件库+12 轮门禁资产迁移成本>>速度收益；v0.1.1/1 个月/API 会动；wheel GPL-3.0）；吸收两点=渲染提速（多实例并行 playwright 共享 vite dev，串行截帧是 40 分钟瓶颈的主因）与 storyboard 概念（probe+fullwalk 已有等价物不重做）。详见 README 批 C 节+HANDOFF。
+
+## R13-A 分页轮（2026-11-09 晚：landing 按章节分页——锚点/引文零漂移实证）
+
+- **分页形态**：index.html 目录页 + 11 节页 p41..p411.html（每节一页；页内大区完整结构零漂移——卡序/卡锚 #sXX-NN/流程图锚 #fc-*/引文 data-ck 逐字通道全部原样）。构建=既有整页链全量产出后分页后处理（结构切片→跨页锚重写→每页组装→tipdocs 按页子集→12 页写出+分页计数门）。
+- **锚点零漂移实证**：① 分页前后整页 DOM 计数逐项同值（spec 494/patch 14/段 72/行 div 3948/hot 85/tipdoc 85/blockquote 494/fcf=details 43/表 6/qpair=qzh 494/sr 176-106-17）；② 12 页求和==整页口径（构建器"分页计数门 PASS（13 项逐项相等）"断言）；③ zh-quotes.json 473 键与单页时代备份 **byte 级 diff 零漂移**（备份 ~/.cache/zcode-tmp/zh-quotes-pre-r13a.json，diff -q 全等）；④ checker 分页全检 ALL PASS 零 WARN（逐页逐字+跨页汇总门）；⑤ 本地 e2e 277 ok / 0 FAIL（基线 251，只增不减）。
+- **跨页锚路由**：同页引用留 `#锚`；跨页引用统一 `pXX.html#锚`（如 p49 命令环轻片互链→p46.html#s46-01、p410/p411 卡内 sr-ln 跨节引用）。路由表=id→出现页集合；drawio SVG cell-id 跨页同名不受限，仅对被 href 引用片段裁决唯一落点。
+- **旧锚兼容零引用收口**：grep learning 仓+usb-xhci-study+xhci-ch4-motion 三仓 `ch4-motion/index.html#` 形态=零命中（2026-11-09 实测）——不加 index 锚路由 JS，按零引用收口；后续如有站外深链需求再议。
+- **tipdocs 分区装载**：85 条 tipdoc 按 hot 行所属组分页装载（p41=cmd/p42=init/p43=dev/p44=det/p45=slot/p46=cmd46），每条恰出现一次；tipdoc 引文内 sr-ln 跨页引用随所在页过重写（坑：尾巴漏重写=页内断锚，构建器断言当场拦截）。
+- **部署面**：learning 树 ch4-motion/ 新增 p41..p411.html 11 文件+index.html 由 2.1MB 单页换为 21.5KB 目录页；deploy_hygiene removed=(none)（无孤儿误删）；player/interactive/mp4/src/drafts 镜像未动。
