@@ -132,7 +132,7 @@
 <div class="wrap">
   <header>
     <h1>xHCI 第 4 章视频课件<span class="tag">R4 四段式 · 2026-11-06</span></h1>
-    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + <a class="sr-ln" href="#s46">§4.6</a> 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、4.6.2-4.6.18 十七命令与三支补丁片=18 小节全上线，六支可选规范项） + R12 批 A 环与传输三节（<a class="sr-ln" href="#s47-01">§4.7</a> 门铃 / <a class="sr-ln" href="#s48">§4.8</a> 端点 / <a class="sr-ln" href="#s49">§4.9</a> TRB 环，xh 命名量产首批 8 卡，R11 终态模板：引文双语+算法流程图+规范样式表+交互深链）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读；4.7-4.9 三节无可准入补丁=§6 省略豁免，不设补丁版块）。</p>
+    <p class="lead">命令操作 / 主机控制器初始化 / USB 设备初始化 / 设备拔除 / 设备槽管理五节 + <a class="sr-ln" href="#s46">§4.6</a> 命令接口大区（18 小节逐支短片线，已上线 4.6.1 机制片、4.6.2-4.6.18 十七命令与三支补丁片=18 小节全上线，六支可选规范项） + R12 批 A 环与传输三节（<a class="sr-ln" href="#s47-01">§4.7</a> 门铃 / <a class="sr-ln" href="#s48">§4.8</a> 端点 / <a class="sr-ln" href="#s49">§4.9</a> TRB 环，xh 命名量产首批 8 卡，R11 终态模板：引文双语+算法流程图+规范样式表+交互深链）：五节每节四版块：① 规范与代码分析（调用链函数整段贴码，琥珀高亮行 hover 显示行注释 + 规范引文） → ② 动画（mp4 + 分帧步进） → ③ 交互操作台（分节锚定 #m1-#m6） → ④ 真实上游补丁收尾（完整补丁 git show 逐字 + 分帧走读；4.7-4.9 三节补丁片三支 xh0700p/xh0803p/xh0902p 随批 A-3 上线=§6 逐节全配收官）。</p>
     <div class="meta">
       1920×1080 @ 30fps · motion-canvas 渲染 · 全帧文字交叠探针 <b>0 持续违例</b>（三主片+三补丁片，全帧非抽样）·
       判据 <code>evidence/spec-4x.txt</code> + <code>EVIDENCE.md</code>（随本目录提交）
@@ -6378,7 +6378,7 @@ with the Extended Capability specified in the Extended Capability ID. </blockquo
     <h2><span class="no"><a class="sr-ln" href="#s47-01">§4.7</a></span>Doorbells 门铃 <span class="cmt">R12 批 A · xh 命名首验批 · 最短节单卡</span></h2>
     <div class="card b1">
       <div class="bhead"><span class="badge">①</span>大区导语 · 1 卡</div>
-      <p class="pbody">4.7 是门铃机制总节（全章最短、零小节）：门铃寄存器阵列按 Device Slot ID 索引、DB Target 字段说明「为什么敲」，0 号=主机控制器专用，1-255=设备上下文门铃（1:1 映射设备槽）；xHC 内部记录全部门铃写引用、无需清除；Disabled 槽/端点禁写并回 Endpoint Not Enabled Error。本节无算法块（不硬凑流程图）、无规范表；补丁检索已实证获候选（d66eaf9f8950：门铃路径 ring_doorbell_for_active_rings 空指针崩溃修复，与本卡贴码同函数），<b>补丁片排批 A-1 补挂</b>（R12-SPEC §6 逐节全配）。</p>
+      <p class="pbody">4.7 是门铃机制总节（全章最短、零小节）：门铃寄存器阵列按 Device Slot ID 索引、DB Target 字段说明「为什么敲」，0 号=主机控制器专用，1-255=设备上下文门铃（1:1 映射设备槽）；xHC 内部记录全部门铃写引用、无需清除；Disabled 槽/端点禁写并回 Endpoint Not Enabled Error。本节无算法块（不硬凑流程图）、无规范表；补丁片已上线（d66eaf9f8950：门铃路径 ring_doorbell_for_active_rings 空指针崩溃判空修复，与本卡贴码同函数）——补丁版块在本区卡内（R12 批 A-3，§6 逐节全配）。</p>
       <div class="ch46grid"><a class="ch46g" href="#s47-01"><span class="s46no">4.7</span>Doorbells 门铃<span class="s46tag mech">机制</span></a></div>
     </div>
     <div class="card s46card" id="s47-01">
@@ -6471,6 +6471,50 @@ xHC 必须忽略指向处于 Halted 或 Error 状态端点的门铃引用。</di
         <a class="btn ghost" href="interactive/index.html#m1">模块一 · 三环操作台 →</a>
         <span class="note">与视频 1:1 同源 · 教学拍步进 · 门铃 DB 写 / 事件环消费 / 命令环推进手动演练——对应本节「软件写 Doorbell 寄存器 → xHC 取新工作」节拍</span>
       </div>
+      <div class="phead">上游 commit d66eaf9f89502971fddcb0de550b01fa6f409d83 · 2013-07-21 · Oleksij Rempel（独立贡献者，Sarah Sharp 签收） · drivers/usb/host/xhci-ring.c 1 文件 +1/-1 · hunk @@ -434,7（ring_doorbell_for_active_rings）· Cc: stable，回移至 2.6.35+（e9df17eb1408 起）</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:d66eaf9f89502971fddcb0de550b01fa6f409d83">commit d66eaf9f89502971fddcb0de550b01fa6f409d83
+Author: Oleksij Rempel &lt;linux@rempel-privat.de&gt;
+Date:   Sun Jul 21 15:36:19 2013 +0200
+
+    xhci: fix null pointer dereference on ring_doorbell_for_active_rings
+    
+    in some cases where device is attched to xhci port and do not responding,
+    for example ath9k_htc with stalled firmware, kernel will
+    crash on ring_doorbell_for_active_rings.
+    This patch check if pointer exist before it is used.
+    
+    This patch should be backported to kernels as old as 2.6.35, that
+    contain the commit e9df17eb1408cfafa3d1844bfc7f22c7237b31b8 "USB: xhci:
+    Correct assumptions about number of rings per endpoint"
+    
+    Signed-off-by: Oleksij Rempel &lt;linux@rempel-privat.de&gt;
+    Signed-off-by: Sarah Sharp &lt;sarah.a.sharp@linux.intel.com&gt;
+    Cc: stable@vger.kernel.org
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index 1e57eafa6910..5b08cd85f8e7 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -434,7 +434,7 @@ static void ring_doorbell_for_active_rings(struct xhci_hcd *xhci,</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	/* A ring has pending URBs if its TD list is not empty */</span>
+<span class="d-ctx"> 	if (!(ep-&gt;ep_state &amp; EP_HAS_STREAMS)) {</span>
+<span class="d-del">-		if (!(list_empty(&amp;ep-&gt;ring-&gt;td_list)))</span>
+<span class="d-add">+		if (ep-&gt;ring &amp;&amp; !(list_empty(&amp;ep-&gt;ring-&gt;td_list)))</span>
+<span class="d-ctx"> 			xhci_ring_ep_doorbell(xhci, slot_id, ep_index, 0);</span>
+<span class="d-ctx"> 		return;</span>
+<span class="d-ctx"> 	}</span></pre>
+      <p class="ph">背景（何时 / 谁修 / 为什么是它）</p>
+      <p class="pbody">2013 年 7 月，Oleksij Rempel 提交。场景（message 原文）：设备挂在 xHCI 口上但不响应——举例 ath9k_htc 固件停摆——内核在 <code>ring_doorbell_for_active_rings()</code> 里崩溃。对应 <a class="sr-ln" href="#s47-01">§4.7</a> 门铃机制：软件放好工作后敲门铃、xHC 记录写引用判断新 TD——本卡贴码段（L585-L607）正是这条路径的内核侧。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：空指针解引用内核崩溃。机制：函数对每个「有挂起 TD」的环敲门铃（函数注释原文 "A ring has pending URBs if its TD list is not empty"）；但走到非流端点分支时 <code>ep->ring</code> 可能为 NULL（端点尚无环），<code>&ep->ring->td_list</code> 一取址即崩。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">用前判空：<code>if (ep->ring &amp;&amp; !(list_empty(&ep->ring->td_list)))</code>——有环且有挂起 TD 两条件都成立才敲。规范对齐：<a class="sr-ln" href="#s47-01">§4.7</a> p142 "System software rings a Device Context Doorbell after it has inserted work on a Transfer Ring"——ep->ring 为 NULL 时连关联的 Transfer Ring 都不存在，判空把敲铃收回到「有工作才敲」的规范语义内。对读注记：修复行=基线 L595，恰在本卡上方贴码段（L585-L607）内——贴码即补丁后形态，故无独立对读段（ch4610p 先例）；分帧走读见 xh0700p（scene=41）。</p>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=41">补丁分帧动画 · 三幕走读 →</a>
+        <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 <a class="sr-ln" href="#s47-01">§4.7</a> p142「有工作才敲」敲铃语义）</span>
+      </div>
     </div>
   </section>
 
@@ -6478,7 +6522,7 @@ xHC 必须忽略指向处于 Halted 或 Error 状态端点的门铃引用。</di
     <h2><span class="no"><a class="sr-ln" href="#s48">§4.8</a></span>Endpoint 端点 <span class="cmt">R12 批 A · 三小节三卡（寻址/上下文初始化/状态机）</span></h2>
     <div class="card b1">
       <div class="bhead"><span class="badge">①</span>大区导语 · 3 卡</div>
-      <p class="pbody">4.8 定义端点：寻址（Endpoint Number+Direction → 16 对 Endpoint Context，DCI 公式）、上下文初始化（Input Endpoint Context 全零起步+四端点型例外清单）、上下文状态（五态状态机：Disabled/Running/Halted/Stopped/Error 与命令驱动的转移）。本节无规范表（<a class="sr-ln" href="#s48-03">Figure 4-5</a> 为状态图非表）；补丁检索已实证获候选（dceea67058fe：EP 状态域掩码 0xf→0x7 勘正，引 spec 6.2.3 三位状态域），<b>补丁片排批 A-1 补挂</b>（R12-SPEC §6 逐节全配）。</p>
+      <p class="pbody">4.8 定义端点：寻址（Endpoint Number+Direction → 16 对 Endpoint Context，DCI 公式）、上下文初始化（Input Endpoint Context 全零起步+四端点型例外清单）、上下文状态（五态状态机：Disabled/Running/Halted/Stopped/Error 与命令驱动的转移）。本节无规范表（<a class="sr-ln" href="#s48-03">Figure 4-5</a> 为状态图非表）；补丁片已上线（dceea67058fe：EP 状态域掩码 0xf→0x7 勘正，引 spec 6.2.3 三位状态域）——补丁版块在 4.8.3 卡内（R12 批 A-3，§6 逐节全配）。</p>
       <div class="ch46grid"><a class="ch46g" href="#s48-01"><span class="s46no">4.8.1</span>Endpoint Addressing 端点寻址<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s48-02"><span class="s46no">4.8.2</span>Endpoint Context Initialization 端点上下文初始化<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s48-03"><span class="s46no">4.8.3</span>Endpoint Context State 端点上下文状态<span class="s46tag mech">机制</span></a></div>
     </div>
     <div class="card s46card" id="s48-01">
@@ -6992,6 +7036,66 @@ Running. </blockquote><div class="qzh"><div class="qzh-body">相对于门铃振�
         <a class="btn ghost" href="interactive/index.html#m5">模块五 · 拔除与槽位管理台 →</a>
         <span class="note">与视频 1:1 同源 · 教学拍步进 · Zone C 槽状态机驱动端点态：Address Device→EP0 Running、Configure Endpoint→其余端点、Disable Slot→全 Disabled——对应本节状态转移</span>
       </div>
+      <div class="phead">上游 commit dceea67058fe22075db3aed62d5cb62092be5053 · 2020-06-24 · Mathias Nyman（Intel） · drivers/usb/host/xhci.h 1 文件 +1/-1 · hunk @@ -716,7（EP_STATE_MASK）· Cc: stable</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:dceea67058fe22075db3aed62d5cb62092be5053">commit dceea67058fe22075db3aed62d5cb62092be5053
+Author: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+Date:   Wed Jun 24 16:59:45 2020 +0300
+
+    xhci: Fix incorrect EP_STATE_MASK
+    
+    EP_STATE_MASK should be 0x7 instead of 0xf
+    
+    xhci spec 6.2.3 shows that the EP state field in the endpoint context data
+    structure consist of bits [2:0].
+    The old value included a bit from the next field which fortunately is a
+     RsvdZ region. So hopefully this hasn't caused too much harm
+    
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20200624135949.22611-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h</span>
+<span class="d-meta">index 2c6c4f8d1ee1..c295e8a7f5ae 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci.h</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci.h</span>
+<span class="d-hunk">@@ -716,7 +716,7 @@ struct xhci_ep_ctx {</span>
+<span class="d-ctx">  * 4 - TRB error</span>
+<span class="d-ctx">  * 5-7 - reserved</span>
+<span class="d-ctx">  */</span>
+<span class="d-del">-#define EP_STATE_MASK		(0xf)</span>
+<span class="d-add">+#define EP_STATE_MASK		(0x7)</span>
+<span class="d-ctx"> #define EP_STATE_DISABLED	0</span>
+<span class="d-ctx"> #define EP_STATE_RUNNING	1</span>
+<span class="d-ctx"> #define EP_STATE_HALTED		2</span></pre>
+      <p class="ph">背景（何时 / 谁修 / 为什么是它）</p>
+      <p class="pbody">2020 年 6 月，Intel Mathias Nyman 提交。EP_STATE_MASK 是从端点上下文提取 EP State 的掩码（消费者 <code>GET_EP_CTX_STATE</code>，基线 L462）；<a class="sr-ln" href="#s48-03">§4.8.3</a> 定义端点上下文状态（<a class="sr-ln" href="#s48-03">Figure 4-5</a> 五态：Disabled/Running/Halted/Stopped/Error），状态值落在 EP State 域。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：掩码 0xf=b1111 比 EP State 域（bits[2:0]）多罩一位——bit 3 属域外邻域位，按域布局是 RsvdZ（恒 0），message 原文自评 "hopefully this hasn't caused too much harm"（幸而无害的勘误）。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">一行勘正 0xf→0x7：b0111 恰罩 bits[2:0]；五态值 0-4+5-7 保留，恰好填满三位域。位宽权威=补丁 message 引 spec 6.2.3 域布局（第 6 章，出本章界——章界口径注记不展开）；下方对读段注释头 L448 "Endpoint State - bits 0:2" 与 L454 "5-7 - reserved" 即内核侧域宽双证。分帧走读见 xh0803p（scene=42）。</p>
+      <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 零摘录热行（判据=diff 原文+规范引文）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci.h:448-462 · EP 状态域定义（注释头+五态 defines+提取宏） · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci.h:448:462"><div class="cl" data-line="448"><span class="ln">448</span><span class="cd"> * Endpoint State - bits 0:2</span></div>
+<div class="cl" data-line="449"><span class="ln">449</span><span class="cd"> * 0 - disabled</span></div>
+<div class="cl" data-line="450"><span class="ln">450</span><span class="cd"> * 1 - running</span></div>
+<div class="cl" data-line="451"><span class="ln">451</span><span class="cd"> * 2 - halted due to halt condition - ok to manipulate endpoint ring</span></div>
+<div class="cl" data-line="452"><span class="ln">452</span><span class="cd"> * 3 - stopped</span></div>
+<div class="cl" data-line="453"><span class="ln">453</span><span class="cd"> * 4 - TRB error</span></div>
+<div class="cl" data-line="454"><span class="ln">454</span><span class="cd"> * 5-7 - reserved</span></div>
+<div class="cl" data-line="455"><span class="ln">455</span><span class="cd"> */</span></div>
+<div class="cl" data-line="456"><span class="ln">456</span><span class="cd">#define EP_STATE_MASK		(0x7)</span></div>
+<div class="cl" data-line="457"><span class="ln">457</span><span class="cd">#define EP_STATE_DISABLED	0</span></div>
+<div class="cl" data-line="458"><span class="ln">458</span><span class="cd">#define EP_STATE_RUNNING	1</span></div>
+<div class="cl" data-line="459"><span class="ln">459</span><span class="cd">#define EP_STATE_HALTED		2</span></div>
+<div class="cl" data-line="460"><span class="ln">460</span><span class="cd">#define EP_STATE_STOPPED	3</span></div>
+<div class="cl" data-line="461"><span class="ln">461</span><span class="cd">#define EP_STATE_ERROR		4</span></div>
+<div class="cl" data-line="462"><span class="ln">462</span><span class="cd">#define GET_EP_CTX_STATE(ctx)	(le32_to_cpu((ctx)-&gt;ep_info) &amp; EP_STATE_MASK)</span></div></pre>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=42">补丁分帧动画 · 三幕走读 →</a>
+        <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 <a class="sr-ln" href="#s48-03">§4.8.3</a> <a class="sr-ln" href="#s48-03">Figure 4-5</a> 五态恰填三位域）</span>
+      </div>
     </div>
   </section>
 
@@ -6999,7 +7103,7 @@ Running. </blockquote><div class="qzh"><div class="qzh-body">相对于门铃振�
     <h2><span class="no"><a class="sr-ln" href="#s49">§4.9</a></span>TRB Ring TRB 环 <span class="cmt">R12 批 A · 巨节四卡（环基础+TD/传输环管理/命令环管理轻片/事件环管理）</span></h2>
     <div class="card b1">
       <div class="bhead"><span class="badge">①</span>大区导语 · 4 卡</div>
-      <p class="pbody">4.9 定义 TRB 环机制：三环类型（Transfer/Event/Command）共用的循环队列模型、生产者/消费者指针与 Cycle bit、TD 结构，以及三类环各自的管理规则（4.9.2/4.9.3/4.9.4）。重叠面处置（R12-SPEC §0）：4.9.3 命令环管理为轻片互链 <a href="#s46-01">4.6.1 卡</a>；<a class="sr-ln" href="#s49-04">Table 4-4</a>（事件环状态机定义，p165-166 跨页）按 R11 批 A 配方重建为规范样式表。补丁检索已实证获候选（b234c70fefa7：环满被误判空环致扩容漏检——deq 越过 enq 特例，与 4.9.2 卡贴码教学点直接咬合），<b>补丁片排批 A-1 补挂</b>（R12-SPEC §6 逐节全配）。</p>
+      <p class="pbody">4.9 定义 TRB 环机制：三环类型（Transfer/Event/Command）共用的循环队列模型、生产者/消费者指针与 Cycle bit、TD 结构，以及三类环各自的管理规则（4.9.2/4.9.3/4.9.4）。重叠面处置（R12-SPEC §0）：4.9.3 命令环管理为轻片互链 <a href="#s46-01">4.6.1 卡</a>；<a class="sr-ln" href="#s49-04">Table 4-4</a>（事件环状态机定义，p165-166 跨页）按 R11 批 A 配方重建为规范样式表。补丁片已上线（b234c70fefa7：环满被误判空环致扩容漏检——deq 越过 enq 特例，与 4.9.2 卡贴码教学点直接咬合）——补丁版块在 4.9.2 卡内（R12 批 A-3，§6 逐节全配）。</p>
       <div class="ch46grid"><a class="ch46g" href="#s49-01"><span class="s46no">4.9.1</span>TRB 环基础与传输描述符<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s49-02"><span class="s46no">4.9.2</span>Transfer Ring Management 传输环管理<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s49-03"><span class="s46no">4.9.3</span>Command Ring Management 命令环管理（轻片）<span class="s46tag mech">机制</span></a><a class="ch46g" href="#s49-04"><span class="s46no">4.9.4</span>Event Ring Management 事件环管理<span class="s46tag mech">机制</span></a></div>
     </div>
     <div class="card s46card" id="s49-01">
@@ -7485,6 +7589,117 @@ beginning of a memory page. </blockquote><div class="qzh"><div class="qzh-body">
 注意：Cycle bit 的跳变发生在 Link TRB 与该 Link TRB 的 Ring Segment Pointer 所引用段的第一个 TRB 之间。
 
 注意：TR Dequeue Pointer 与 Link TRB 不要求指向内存页的起始处。</div><div class="qsrc">—— evidence/spec-49.txt L441-L452（p158）</div></div></div>
+      <div class="phead">上游 commit b234c70fefa7532d34ebee104de64cc16f1b21e4 · 2024-03-05 · Mathias Nyman（Intel） · drivers/usb/host/xhci-ring.c 1 文件 +7/-1 · hunk @@ -326,7（xhci_ring_expansion_needed）· Reported-by/Tested-by Chris Yokum（TotalPhase）· Fixes f5af638f0609 · Cc: stable # v6.5+</div>
+      <p class="ph">完整补丁 · git show 逐字</p>
+      <pre class="diffblock" data-ck="patch:b234c70fefa7532d34ebee104de64cc16f1b21e4">commit b234c70fefa7532d34ebee104de64cc16f1b21e4
+Author: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+Date:   Tue Mar 5 15:23:12 2024 +0200
+
+    xhci: Fix failure to detect ring expansion need.
+    
+    Ring expansion checker may incorrectly assume a completely full ring
+    is empty, missing the need for expansion.
+    
+    This is due to a special empty ring case where the dequeue ends up
+    ahead of the enqueue pointer. This is seen when enqueued TRBs fill up
+    exactly a segment, with enqueue then pointing to the end link TRB.
+    Once those TRBs are handled the dequeue pointer will follow the link
+    TRB and end up pointing to the first entry on the next segment, past
+    the enqueue.
+    
+    This same enqueue - dequeue condition can be true if a ring is full,
+    with enqueue ending on that last link TRB before the dequeue pointer
+    on the next segment.
+    
+    This can be seen when queuing several ~510 small URBs via usbfs in
+    one go before a single one is handled (i.e. dequeue not moved from first
+    entry in segment).
+    
+    Expand the ring already when enqueue reaches the link TRB before the
+    dequeue segment, instead of expanding it when enqueue moves into the
+    dequeue segment.
+    
+    Reported-by: Chris Yokum &lt;linux-usb@mail.totalphase.com&gt;
+    Closes: https://lore.kernel.org/all/949223224.833962.1709339266739.JavaMail.zimbra@totalphase.com
+    Tested-by: Chris Yokum &lt;linux-usb@mail.totalphase.com&gt;
+    Fixes: f5af638f0609 ("xhci: Fix transfer ring expansion size calculation")
+    Cc: stable@vger.kernel.org # v6.5+
+    Signed-off-by: Mathias Nyman &lt;mathias.nyman@linux.intel.com&gt;
+    Link: https://lore.kernel.org/r/20240305132312.955171-2-mathias.nyman@linux.intel.com
+    Signed-off-by: Greg Kroah-Hartman &lt;gregkh@linuxfoundation.org&gt;
+
+<span class="d-meta">diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">index f0d8a607ff21..4f64b814d4aa 100644</span>
+<span class="d-meta">--- a/drivers/usb/host/xhci-ring.c</span>
+<span class="d-meta">+++ b/drivers/usb/host/xhci-ring.c</span>
+<span class="d-hunk">@@ -326,7 +326,13 @@ static unsigned int xhci_ring_expansion_needed(struct xhci_hcd *xhci, struct xhc</span>
+<span class="d-ctx"> 	/* how many trbs will be queued past the enqueue segment? */</span>
+<span class="d-ctx"> 	trbs_past_seg = enq_used + num_trbs - (TRBS_PER_SEGMENT - 1);</span>
+<span class="d-ctx"> </span>
+<span class="d-del">-	if (trbs_past_seg &lt;= 0)</span>
+<span class="d-add">+	/*</span>
+<span class="d-add">+	 * Consider expanding the ring already if num_trbs fills the current</span>
+<span class="d-add">+	 * segment (i.e. trbs_past_seg == 0), not only when num_trbs goes into</span>
+<span class="d-add">+	 * the next segment. Avoids confusing full ring with special empty ring</span>
+<span class="d-add">+	 * case below</span>
+<span class="d-add">+	 */</span>
+<span class="d-add">+	if (trbs_past_seg &lt; 0)</span>
+<span class="d-ctx"> 		return 0;</span>
+<span class="d-ctx"> </span>
+<span class="d-ctx"> 	/* Empty ring special case, enqueue stuck on link trb while dequeue advanced */</span></pre>
+      <p class="ph">背景（何时 / 谁修 / 为什么是它）</p>
+      <p class="pbody">2024 年 3 月，TotalPhase 的 Chris Yokum 报告并实测。场景（message 原文）：usbfs 一次排入 ~510 个小 URB、一个还没被处理——环扩容检查器漏检扩容需求。对应 <a class="sr-ln" href="#s49-02">§4.9.2</a> 传输环管理：本卡贴码段 <code>xhci_ring_expansion()</code>（扩容执行方）调用下述检查器。</p>
+      <p class="ph">要解决的问题（症状 + 机制）</p>
+      <p class="pbody">症状：完全满环被当成空环、漏扩容。机制：TRBs 恰好填满一段时 enq 停在段尾 Link TRB；deq 处理完跟随 Link 跳到下一段首、越过 enq——「deq 在 enq 前面」这个形态，空环特例（enq 卡 Link TRB 而 deq 已前进）与完全满环同形；旧检查 <code>trbs_past_seg &lt;= 0</code> 在「恰好填满」（==0）时提前返回不用扩。</p>
+      <p class="ph">代码逻辑（补丁前 → 后行为对照）</p>
+      <p class="pbody">边界条件 &lt;= 0 → &lt; 0（+7 行注释）：恰好填满段（==0）即扩，不等 TRB 伸进下一段——满环不再走到空环特例去撞同形判定。规范对齐：<a class="sr-ln" href="#s49-02">§4.9.2</a> p156 "the ring is defined as 'full' if advancing the Enqueue Pointer will make it equal to the Dequeue Pointer. Software shall take Link TRBs into account when evaluating the full condition"——满判定必须计入 Link TRB，修复把边界提前到 enq 抵达 Link TRB 之时。对读注记：下方对读段（L386-L426）即检查器全文，基线即含此补丁；分帧走读见 xh0902p（scene=43）。</p>
+      <h3>补丁对读段 <span class="cmt">commit d9008e061539 · 修复后形态（基线即含此补丁）· 零摘录热行（判据=diff 原文+规范引文）</span></h3>
+            <div class="exhead2">drivers/usb/host/xhci-ring.c:386-426 · xhci_ring_expansion_needed·补丁对读段 · d9008e061539</div>
+      <pre class="codeseg" data-src="xhci-ring.c:386:426"><div class="cl" data-line="386"><span class="ln">386</span><span class="cd">static unsigned int xhci_ring_expansion_needed(struct xhci_hcd *xhci, struct xhci_ring *ring,</span></div>
+<div class="cl" data-line="387"><span class="ln">387</span><span class="cd">					       unsigned int num_trbs)</span></div>
+<div class="cl" data-line="388"><span class="ln">388</span><span class="cd">{</span></div>
+<div class="cl" data-line="389"><span class="ln">389</span><span class="cd">	struct xhci_segment *seg;</span></div>
+<div class="cl" data-line="390"><span class="ln">390</span><span class="cd">	int trbs_past_seg;</span></div>
+<div class="cl" data-line="391"><span class="ln">391</span><span class="cd">	int enq_used;</span></div>
+<div class="cl" data-line="392"><span class="ln">392</span><span class="cd">	int new_segs;</span></div>
+<div class="cl" data-line="393"><span class="ln">393</span><span class="cd"></span></div>
+<div class="cl" data-line="394"><span class="ln">394</span><span class="cd">	enq_used = ring-&gt;enqueue - ring-&gt;enq_seg-&gt;trbs;</span></div>
+<div class="cl" data-line="395"><span class="ln">395</span><span class="cd"></span></div>
+<div class="cl" data-line="396"><span class="ln">396</span><span class="cd">	/* how many trbs will be queued past the enqueue segment? */</span></div>
+<div class="cl" data-line="397"><span class="ln">397</span><span class="cd">	trbs_past_seg = enq_used + num_trbs - (TRBS_PER_SEGMENT - 1);</span></div>
+<div class="cl" data-line="398"><span class="ln">398</span><span class="cd"></span></div>
+<div class="cl" data-line="399"><span class="ln">399</span><span class="cd">	/*</span></div>
+<div class="cl" data-line="400"><span class="ln">400</span><span class="cd">	 * Consider expanding the ring already if num_trbs fills the current</span></div>
+<div class="cl" data-line="401"><span class="ln">401</span><span class="cd">	 * segment (i.e. trbs_past_seg == 0), not only when num_trbs goes into</span></div>
+<div class="cl" data-line="402"><span class="ln">402</span><span class="cd">	 * the next segment. Avoids confusing full ring with special empty ring</span></div>
+<div class="cl" data-line="403"><span class="ln">403</span><span class="cd">	 * case below</span></div>
+<div class="cl" data-line="404"><span class="ln">404</span><span class="cd">	 */</span></div>
+<div class="cl" data-line="405"><span class="ln">405</span><span class="cd">	if (trbs_past_seg &lt; 0)</span></div>
+<div class="cl" data-line="406"><span class="ln">406</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="407"><span class="ln">407</span><span class="cd"></span></div>
+<div class="cl" data-line="408"><span class="ln">408</span><span class="cd">	/* Empty ring special case, enqueue stuck on link trb while dequeue advanced */</span></div>
+<div class="cl" data-line="409"><span class="ln">409</span><span class="cd">	if (trb_is_link(ring-&gt;enqueue) &amp;&amp; ring-&gt;enq_seg-&gt;next-&gt;trbs == ring-&gt;dequeue)</span></div>
+<div class="cl" data-line="410"><span class="ln">410</span><span class="cd">		return 0;</span></div>
+<div class="cl" data-line="411"><span class="ln">411</span><span class="cd"></span></div>
+<div class="cl" data-line="412"><span class="ln">412</span><span class="cd">	new_segs = 1 + (trbs_past_seg / (TRBS_PER_SEGMENT - 1));</span></div>
+<div class="cl" data-line="413"><span class="ln">413</span><span class="cd">	seg = ring-&gt;enq_seg;</span></div>
+<div class="cl" data-line="414"><span class="ln">414</span><span class="cd"></span></div>
+<div class="cl" data-line="415"><span class="ln">415</span><span class="cd">	while (new_segs &gt; 0) {</span></div>
+<div class="cl" data-line="416"><span class="ln">416</span><span class="cd">		seg = seg-&gt;next;</span></div>
+<div class="cl" data-line="417"><span class="ln">417</span><span class="cd">		if (seg == ring-&gt;deq_seg) {</span></div>
+<div class="cl" data-line="418"><span class="ln">418</span><span class="cd">			xhci_dbg(xhci, "Adding %d trbs requires expanding ring by %d segments\n",</span></div>
+<div class="cl" data-line="419"><span class="ln">419</span><span class="cd">				 num_trbs, new_segs);</span></div>
+<div class="cl" data-line="420"><span class="ln">420</span><span class="cd">			return new_segs;</span></div>
+<div class="cl" data-line="421"><span class="ln">421</span><span class="cd">		}</span></div>
+<div class="cl" data-line="422"><span class="ln">422</span><span class="cd">		new_segs--;</span></div>
+<div class="cl" data-line="423"><span class="ln">423</span><span class="cd">	}</span></div>
+<div class="cl" data-line="424"><span class="ln">424</span><span class="cd"></span></div>
+<div class="cl" data-line="425"><span class="ln">425</span><span class="cd">	return 0;</span></div>
+<div class="cl" data-line="426"><span class="ln">426</span><span class="cd">}</span></div></pre>
+      <div class="act">
+        <a class="btn" href="player/index.html?scene=43">补丁分帧动画 · 三幕走读 →</a>
+        <span class="note">背景现场 → diff 逐行走读 → 规范收尾（对照 <a class="sr-ln" href="#s49-02">§4.9.2</a> p156 满判定须计 Link TRB）</span>
+      </div>
     </div>
 
     <div class="card s46card" id="s49-03">
