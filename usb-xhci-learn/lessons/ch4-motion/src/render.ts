@@ -64,6 +64,23 @@ import xh1001 from './scenes/xh1001?scene';
 import xh1002 from './scenes/xh1002?scene';
 import xh1003 from './scenes/xh1003?scene';
 import xh1004 from './scenes/xh1004?scene';
+// R12 批 C：4.11 前六支（xh1101 模板总则/xh1102a-e Transfer TRBs 五小节）插
+// xh1004 后=38..43——补丁组 49-60 已由 renumber 预顺移（波次 2 的 xh1103-07
+// 追加 44..48、xh1102dp/xh1102ep 追加 61/62，本批不写）
+import xh1101 from './scenes/xh1101?scene';
+import xh1102a from './scenes/xh1102a?scene';
+import xh1102b from './scenes/xh1102b?scene';
+import xh1102c from './scenes/xh1102c?scene';
+import xh1102d from './scenes/xh1102d?scene';
+import xh1102e from './scenes/xh1102e?scene';
+// R12 批 C TrackA-2：4.11 后五支（xh1103 Event/xh1104 Command 格式族轻片/
+// xh1105 Link+EventData/xh1106 Vendor/xh1107 TD Usage 巨头）插 xh1102e 后
+// =44..48——补丁组 49-60 已由波次 1 renumber 预顺移
+import xh1103 from './scenes/xh1103?scene';
+import xh1104 from './scenes/xh1104?scene';
+import xh1105 from './scenes/xh1105?scene';
+import xh1106 from './scenes/xh1106?scene';
+import xh1107 from './scenes/xh1107?scene';
 // R3 P4：补丁分帧场景接入探针链（TrackA；纯追加，供 render.html 与 P6 全门 probe）
 // R11 批 C：清单扩为卅三场景——主线在前（ch41..ch45=0..4、ch4601..ch4604=5..8、
 // ch4605/ch4606=9..10、ch4607..ch4610=11..14、ch4611=15、ch4612..ch4618=16..22、
@@ -88,6 +105,11 @@ import xh0902p from './scenes/xh0902p?scene';
 // R12 批 B：§4.10 补丁片（MSE bogus 指针，3d9eeb336131）尾插=49——补丁组字典序
 // xh0902p<xh1002p（player 正则 ^xh\d{4}[a-z]?p$ 已兼容，勿改）
 import xh1002p from './scenes/xh1002p?scene';
+// R12 批 C TrackA-2：§4.11 补丁片两支尾插=61/62（f18f8ed2 等时 TD Size 掩码/
+// add8469b3e0031a2e Frame ID 窗口径）——补丁组字典序 xh1002p<xh1102dp<
+// xh1102ep（'0'<'1'），player-only 无 mp4
+import xh1102dp from './scenes/xh1102dp?scene';
+import xh1102ep from './scenes/xh1102ep?scene';
 
 /* ---------- 全帧重叠探针 ---------- */
 function worldPos(n: any): {x: number; y: number} {
@@ -252,7 +274,7 @@ function probeFrame(root: any, frame: number): any[] {
   });
 }
 
-const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch4605, ch4606, ch4607, ch4608, ch4609, ch4610, ch4611, ch4612, ch4613, ch4614, ch4615, ch4616, ch4617, ch4618, wfdevcfg, wfhaltrst, wftransport, xh0700, xh0801, xh0802, xh0803, xh0901, xh0902, xh0903, xh0904, xh1001, xh1002, xh1003, xh1004, ch41p, ch42p, ch43p, ch44p, ch45p, ch4606p, ch4609p, ch4610p, xh0700p, xh0803p, xh0902p, xh1002p];
+const scenes = [ch41, ch42, ch43, ch44, ch45, ch4601, ch4602, ch4603, ch4604, ch4605, ch4606, ch4607, ch4608, ch4609, ch4610, ch4611, ch4612, ch4613, ch4614, ch4615, ch4616, ch4617, ch4618, wfdevcfg, wfhaltrst, wftransport, xh0700, xh0801, xh0802, xh0803, xh0901, xh0902, xh0903, xh0904, xh1001, xh1002, xh1003, xh1004, xh1101, xh1102a, xh1102b, xh1102c, xh1102d, xh1102e, xh1103, xh1104, xh1105, xh1106, xh1107, ch41p, ch42p, ch43p, ch44p, ch45p, ch4606p, ch4609p, ch4610p, xh0700p, xh0803p, xh0902p, xh1002p, xh1102dp, xh1102ep];
 
 const q = new URLSearchParams(location.search);
 const sceneIdx = Math.max(0, Math.min(scenes.length - 1, Number(q.get('scene') ?? 0)));

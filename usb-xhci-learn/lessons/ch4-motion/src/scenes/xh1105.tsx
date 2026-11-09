@@ -1,0 +1,431 @@
+// §4.11.5 Other TRBs + 4.11.5.1 Link TRB + 4.11.5.2 Event Data TRB
+// —— xHCI 1.2b p207-210（R12 批 C 中档支）
+// 判据（evidence/spec-411.txt，判据唯一事实源；行号=切片内行号）：
+//  - Link 用途（L926-928）："The Link TRB provides support for sizing and
+//    non-contiguous Transfer and Command Rings. A Link TRB indicates the end
+//    of a ring by providing a pointer to the beginning of the ring."
+//  - 非连续段（L929-932）："If contiguous Pages cannot be allocated by system
+//    software to form a large Transfer Ring, then Link TRBs may also be used
+//    to link together multiple memory Pages to form a single Transfer Ring.
+//    A non-contiguous TRB Ring is composed of Ring Segments."
+//  - 建环规则（L933-949）："Software shall invoke the following rules when
+//    constructing a TRB Ring: All Transfer Ring Segments shall be aligned to
+//    16-byte (TRB) boundaries. All Command Ring Segments shall be aligned to
+//    64-byte boundaries. All Transfer and Command Ring Segments are multiples
+//    of 16 bytes in size. A Link TRB shall be the last TRB of each Transfer
+//    or Command Ring Segment. The Ring Segment Pointer field of a Link TRB
+//    shall point to the next Segment of a multi-segment TRB Ring, or to first
+//    segment in a single Segment ring. The Link TRB of the last Ring Segment
+//    in a ring shall point to the beginning of the first segment of the ring."
+//  - Toggle Cycle（L956-957）："The Toggle Cycle flag should be set in at
+//    least one Link TRB of a ring."
+//  - Notes（L958-960）：Ring Segment Pointer 不必指向物理页首；Link TRB 可在
+//    传输/命令环
+//  - CH 跨段（L1003-1007）："In a Transfer Ring a Link TRB is always assumed
+//    to be linked to the first TRB of the next segment. If the Chain bit (CH)
+//    of the previous TRB is ‘1’, then the multi-TRB TD that it defines spans
+//    segments and shall continue with the first TRB of the next segment. In
+//    a Command Ring the Link TRB Chain bit (CH) is ignored by the xHC."
+//  - C 位=PCS（L1008-1009）："As software advances its Enqueue Pointer and
+//    advances over a Link TRB, the Cycle (C) bit shall be updated with the
+//    value of the PCS flag."
+//  - IOC 追踪 Deq（L1010-1013）："The Interrupt On Completion (IOC) flag of a
+//    Link TRB may be used by system software to generate an event indicating
+//    the Dequeue Pointer has reached the Link TRB. This feature provides
+//    software with the ability to track the Dequeue Pointer as a function of
+//    segment boundary crossings."
+//  - TD Fragment 不跨段 Note（L1014）："Note: A TD Fragment shall not span
+//    segments. Refer to section 4.11.7.1."
+//  - 传输环 IOC 事件字段（L1021-1026）："When the Link TRB resides on a
+//    Transfer Ring the Interrupt On Completion (IOC) flag of a Link TRB may
+//    be used by system software to generate a Transfer Event, where the
+//    Transfer Event Slot ID and Endpoint ID shall reflect the slot and
+//    endpoint that the Transfer Ring is associated with, the Length = ‘0’,
+//    the TRB Pointer field shall point to Link TRB, and the Completion Code
+//    = Success."
+//  - 命令环 IOC 事件（L1027-1031）："When the Link TRB resides on a Command
+//    Ring the Interrupt On Completion (IOC) flag of a Link TRB may be used
+//    by system software to generate a Command Completion Event, where the
+//    Command Completion Event Slot ID = ‘0’, VF ID = ‘0’, the Command TRB
+//    Pointer field shall point to Link TRB, and the Completion Code =
+//    Success."；Note（L1032）"The Primary Interrupter (‘0’) is the target of
+//    all Command Completion Events."；Interrupter Target 字段被忽略（L1033-1034）
+//  - IMPLEMENTATION NOTE（L1035-1040）："All TRBs between the Enqueue and
+//    Dequeue Pointers of a TRB Ring are owned by the xHC. No constraints are
+//    placed on how many TRBs an xHC implementation may fetch in a single DMA
+//    operation or the order that the xHC may fetch them in. System software
+//    shall not modify a TRB owed by the xHC."
+//  - Event Data 用途（L1043-1044）："The Event Data TRB allows system software
+//    to generate a software defined event, and fully specify the Parameter
+//    Component of a generated event."
+//  - 两特性（L1045-1047）："The Event Data TRB has the unique properties of
+//    inheriting the Completion Code of the previous (non-Event Data) TRB
+//    executed on a ring, and accumulating the transfer Lengths of preceding
+//    TRBs."
+//  - 典型用法（L1048-1054）："A typical use of the Event Data TRB would be to
+//    provide a 64-bit software defined identifier (or address) upon the
+//    completion of a TD. To accomplish this the Event Data TRB would be
+//    chained as the last TRB of the TD, and the IOC flag would be set only
+//    in the Event Data TRB. When the TD completes, an event is generated
+//    where the Completion Code is supplied by the previous TRB executed, and
+//    the Parameter Component of the event is loaded with the value supplied
+//    by the Event Data TRB."
+//  - ED 标志（L1055-1057）："The Event Data (ED) field of a Transfer Event
+//    indicates whether the event was generated by a Transfer TRB or an Event
+//    Data TRB. A Transfer Event with its ED flag equal ‘1’ is referred to as
+//    an Event Data Transfer Event."
+//  - EDTLA 规则（L1058-1085）："the xHC maintains an internal 24-bit Event
+//    Data Transfer Length Accumulator (EDTLA) for each endpoint. … The EDTLA
+//    shall be cleared to ‘0’ immediately prior to executing the first
+//    Transfer TRB of a TD or when a Set TR Dequeue Pointer Command is
+//    executed. When a Transfer TRB is completed, the number of bytes
+//    transferred by the TRB shall be added to the EDTLA. The EDTLA shall
+//    wrap, if the total number of bytes transferred is greater than
+//    16,777,215 (16MB-1). When an Event Data TRB is encountered an Event
+//    Data Transfer Event shall be generated, where the TRB Transfer Length
+//    field shall contain the value of the EDTLA. The EDTLA shall then be
+//    cleared to ‘0’ and begin accumulating again. If a Stopped Transfer
+//    Event is generated and the Condition Code = Stopped - Short Transfer,
+//    then the TRB Transfer Length field of the Transfer Event shall contain
+//    the value of the EDTLA."
+//  - 16MB 回卷（L1086-1091）："Note that for TDs greater than or equal to
+//    16MBytes the EDTLA will roll-over. It is system software’s
+//    responsibility to insert “Intermediate” Event Data TRBs periodically
+//    within a TD to report transfer lengths before the rollover condition
+//    occurs. Software is also responsible for accumulating the Length fields
+//    of Event Data Transfer Events to determine the total number of bytes
+//    transferred by a TD that declares multiple Event Data TRBs."
+//  - IOC 必设 Note（L1092-1095）："Software shall set the IOC flag in all
+//    Event Data TRBs. Because the IOC flag must be set in an Event Data TRB,
+//    the possible locations of an Event Data TRBs within a TD are constrained
+//    by the TD Fragment rules described in section 4.11.7.1."
+//  - 短包推进（L1096-1101）："If a Short Packet is detected during the
+//    execution of a multi-TRB TD, the xHC shall advance to the first TRB of
+//    the next TD or the Enqueue Pointer (that is, Cycle bit transition),
+//    whichever is encountered first. If the TD that incurred the Short
+//    Packet is terminated by an Event Data TRB (with its IOC flag is set),
+//    then the xHC shall generate an Event Data Transfer Event, where the
+//    Length field shall reflect the actual number of bytes transferred."
+//  - 事件规则（L1104-1119）："An event shall be generated by an Event Data
+//    TRB if its IOC flag is set to ‘1’. An event generated by an Event Data
+//    TRB (Event Data Transfer Event) shall utilize the format of the Transfer
+//    Event TRB. The Slot ID and Endpoint ID fields shall be set appropriately
+//    for the Transfer Ring that contained the Event Data TRB, and the Event
+//    Data (ED) flag shall be set to ‘1’. … shall report the Completion Code
+//    of the previously executed Transfer TRB of a TD, or Success if inserted
+//    as an Event Data TD … Intermediate Event Data TRBs shall report
+//    “Success”."；Parameter/Length（L1126-1133）："The Parameter Component of
+//    the Transfer Event generated by an Event Data TRB shall contain the
+//    value of the Event Data TRB Parameter Component. The Length field of an
+//    Event Data Transfer Event shall reflect the number of bytes transferred
+//    from the beginning of a TD or since the last Event TRB encountered in a
+//    TD."
+//  - Notes 群（L1138-1150）：IOC 不设则推进并清 EDTLA；只在传输环；不得紧跟
+//    另一支 Event Data TRB；独立 Event Data TD 禁上等时环（Event Data TRB
+//    可入等时 TD）
+import {makeScene2D, Txt} from '@motion-canvas/2d';
+import {createRef, Vector2, waitFor} from '@motion-canvas/core';
+import {C, FONT, TLx, TLy} from '../lib/theme';
+import {
+  buildStage,
+  lanesIn,
+  makeCard,
+  cardIn,
+  makeRing,
+  makeChip,
+  makeNote,
+  flash,
+  CardApi,
+  StageApi,
+  RingApi,
+} from '../lib/parts';
+
+export default makeScene2D(function* (view) {
+  view.fill(C.bg);
+
+  /* ===== 片头 ===== */
+  const t1 = createRef<Txt>();
+  const t2 = createRef<Txt>();
+  const t3 = createRef<Txt>();
+  view.add(
+    <>
+      <Txt ref={t1} text={'§4.11.5'} x={0} y={TLy(350)} fontFamily={FONT.mono}
+        fontSize={120} fontWeight={800} fill={C.hc} />
+      <Txt ref={t2} text={'Link & Event Data TRB'} x={0} y={TLy(490)}
+        fontFamily={FONT.sans} fontSize={70} fontWeight={800} fill={C.ink} />
+      <Txt ref={t3} text={'链接 TRB 与事件数据 TRB · xHCI 规范第 4 章 · p207–210'}
+        x={0} y={TLy(610)} fontFamily={FONT.sans} fontSize={34} fill={C.dim} />
+    </>,
+  );
+  t1().opacity(1);
+  t2().opacity(1);
+  yield* waitFor(0.35);
+  t3().opacity(1);
+  yield* waitFor(0.35);
+  yield* waitFor(0.6);
+  t1().opacity(0);
+  t2().opacity(0);
+  t3().opacity(0);
+  yield* waitFor(0.3);
+  t1().remove(); t2().remove(); t3().remove();
+
+  /* ===== 舞台 ===== */
+  const stage: StageApi = buildStage(view, {
+    section: '§4.11.5',
+    zh: 'Link / Event Data TRB',
+    en: '链接与事件数据 TRB · 规范第 4 章',
+    cite: 'xHCI 1.2b §4.11.5 p207–210',
+  });
+  yield* lanesIn(stage);
+
+  /* 双段环（Ring Segment 0/1，Link 跳转演示） */
+  const seg0: RingApi = makeRing(view, {
+    y: 470, zh: 'Ring Segment 0', en: '',
+    note: '尾=Link TRB', tint: C.driver, x0: 760, x1: 1450, n: 6,
+  });
+  const seg1: RingApi = makeRing(view, {
+    y: 655, zh: 'Ring Segment 1', en: '',
+    note: 'Link 目标段', tint: C.dev, x0: 760, x1: 1450, n: 6,
+  });
+  seg0.group().opacity(1);
+  seg1.group().opacity(1);
+  yield* waitFor(0.2);
+  seg0.fill(5, 'Link', C.hc);
+  yield* waitFor(0.25);
+
+  /* ===== ① Link TRB：成环与跨段 ===== */
+  const q1 = makeChip(
+    view,
+    '"The Link TRB provides support for sizing and non-contiguous Transfer and Command Rings. A Link TRB indicates the end of a ring by providing a pointer to the beginning of the ring. … If contiguous Pages cannot be allocated by system software to form a large Transfer Ring, then Link TRBs may also be used to link together multiple memory Pages to form a single Transfer Ring. A non-contiguous TRB Ring is composed of Ring Segments." — §4.11.5.1 p207',
+    {x: TLx(1090), y: TLy(265), w: 1300, tint: C.hc, size: 13},
+  );
+  yield* stage.say('Link TRB=段尾指回环首；非连续页串成单环。', '① / 10');
+  q1().opacity(0.95);
+  yield* seg0.enqTo(6);
+  yield* waitFor(0.3);
+  yield* waitFor(3.2);
+  q1().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== ② 建环六规则 ===== */
+  const n2 = makeNote(
+    view,
+    [
+      '六规则（L935-949）：传输环段 16 字节对齐 · 命令环段 64 字节对齐 ·',
+      '段长=16 字节整数倍 · Link TRB 恒居段尾 · Segment Pointer 指下段',
+      '（单段环指回首段）· 末段 Link 指回首段开头。',
+    ],
+    {x: TLx(1300), y: TLy(285), w: 1040, tint: C.driver},
+  );
+  yield* stage.say('建环六规则：对齐/段长/Link 位置与指向。', '② / 10');
+  n2().opacity(0.9);
+  yield* flash(seg0.group, 1);
+  yield* waitFor(0.3);
+  yield* waitFor(3.0);
+  n2().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== ③ Toggle Cycle 与两 Note ===== */
+  const q3 = makeChip(
+    view,
+    '"The Toggle Cycle flag should be set in at least one Link TRB of a ring." — §4.11.5.1 p207',
+    {x: TLx(1090), y: TLy(265), w: 1300, tint: C.warn, size: 16},
+  );
+  const n3 = makeNote(
+    view,
+    [
+      'Notes（L958-960）：Segment Pointer 不必指向物理页首；Link TRB 只',
+      '出现在传输环与命令环（事件环无 Link）。',
+    ],
+    {x: TLx(1300), y: TLy(285), w: 1040, tint: C.hc},
+  );
+  yield* stage.say('Toggle Cycle 至少设一枚；Link 只进传输/命令环。', '③ / 10');
+  q3().opacity(0.95);
+  yield* waitFor(0.3);
+  yield* waitFor(1.5);
+  q3().opacity(0);
+  yield* waitFor(0.2);
+  n3().opacity(0.9);
+  yield* waitFor(0.3);
+  yield* waitFor(1.7);
+  n3().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== ④ CH 跨段 + 命令环 CH 忽略 ===== */
+  const q4 = makeChip(
+    view,
+    '"In a Transfer Ring a Link TRB is always assumed to be linked to the first TRB of the next segment. If the Chain bit (CH) of the previous TRB is ‘1’, then the multi-TRB TD that it defines spans segments and shall continue with the first TRB of the next segment. In a Command Ring the Link TRB Chain bit (CH) is ignored by the xHC." — §4.11.5.1 p207',
+    {x: TLx(1090), y: TLy(265), w: 1300, tint: C.driver, size: 14},
+  );
+  yield* stage.say('CH=1 的 TD 跨段续行；命令环 CH 位被忽略。', '④ / 10');
+  q4().opacity(0.95);
+  yield* seg0.fill(4, 'TRB·CH', C.driver);
+  yield* seg1.fill(0, '续TD', C.dev);
+  yield* seg1.enqTo(1);
+  yield* waitFor(0.3);
+  yield* waitFor(2.4);
+  q4().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== ⑤ C 位=PCS + IOC 追踪 Deq + 双环事件 ===== */
+  const q5a = makeChip(
+    view,
+    '"As software advances its Enqueue Pointer and advances over a Link TRB, the Cycle (C) bit shall be updated with the value of the PCS flag. … The Interrupt On Completion (IOC) flag of a Link TRB may be used by system software to generate an event indicating the Dequeue Pointer has reached the Link TRB. This feature provides software with the ability to track the Dequeue Pointer as a function of segment boundary crossings." — §4.11.5.1 p207',
+    {x: TLx(1090), y: TLy(265), w: 1300, tint: C.evt, size: 13},
+  );
+  const n5 = makeNote(
+    view,
+    [
+      'Link IOC 事件字段（L1021-1031）：传输环→Transfer Event（Slot/EP',
+      'ID 对应所属环，Length=‘0’，指针指 Link，CC=Success）；命令环→',
+      'Command Completion Event（Slot ID=‘0’，VF ID=‘0’，CC=Success）。',
+      'Primary Interrupter 恒为命令完成目标，Target 字段被忽略（L1032-1034）。',
+    ],
+    {x: TLx(1300), y: TLy(285), w: 1040, tint: C.evt},
+  );
+  yield* stage.say('软件跨 Link 时 C 位刷 PCS；IOC 可追踪 Deq 过段。', '⑤ / 10');
+  q5a().opacity(0.95);
+  yield* waitFor(0.3);
+  yield* waitFor(1.7);
+  q5a().opacity(0);
+  yield* waitFor(0.2);
+  n5().opacity(0.9);
+  yield* waitFor(0.3);
+  yield* waitFor(2.1);
+  n5().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== 道具切换：传输环（Event Data 演示） ===== */
+  seg0.group().opacity(0);
+  seg1.group().opacity(0);
+  yield* waitFor(0.2);
+  const xfer: RingApi = makeRing(view, {
+    y: 655, zh: '传输环 Transfer Ring', en: '',
+    note: 'TD 末位挂 Event Data', tint: C.driver, x0: 760, x1: 1450, n: 10,
+  });
+  xfer.group().opacity(1);
+  yield* waitFor(0.25);
+
+  /* ===== ⑥ Event Data 用途与两特性 ===== */
+  const q6 = makeChip(
+    view,
+    '"The Event Data TRB allows system software to generate a software defined event, and fully specify the Parameter Component of a generated event. The Event Data TRB has the unique properties of inheriting the Completion Code of the previous (non-Event Data) TRB executed on a ring, and accumulating the transfer Lengths of preceding TRBs." — §4.11.5.2 p208',
+    {x: TLx(1090), y: TLy(265), w: 1300, tint: C.hc, size: 14},
+  );
+  yield* stage.say('Event Data：软件自定义事件，全权指定 Parameter。', '⑥ / 10');
+  q6().opacity(0.95);
+  yield* xfer.fill(0, 'TRB', C.driver);
+  yield* xfer.fill(1, 'EventData', C.evt);
+  yield* xfer.enqTo(2);
+  yield* waitFor(0.3);
+  yield* waitFor(3.2);
+  q6().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== ⑦ 典型用法：64 位标识收尾 ===== */
+  const q7 = makeChip(
+    view,
+    '"A typical use of the Event Data TRB would be to provide a 64-bit software defined identifier (or address) upon the completion of a TD. To accomplish this the Event Data TRB would be chained as the last TRB of the TD, and the IOC flag would be set only in the Event Data TRB. … The Event Data (ED) field of a Transfer Event indicates whether the event was generated by a Transfer TRB or an Event Data TRB. A Transfer Event with its ED flag equal ‘1’ is referred to as an Event Data Transfer Event." — §4.11.5.2 p208',
+    {x: TLx(1090), y: TLy(265), w: 1300, tint: C.driver, size: 12},
+  );
+  yield* stage.say('TD 尾链 Event Data 只设 IOC：事件带 64 位标识。', '⑦ / 10');
+  q7().opacity(0.95);
+  yield* waitFor(0.3);
+  yield* waitFor(3.6);
+  q7().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== ⑧ EDTLA 四规则 ===== */
+  const f8: CardApi = makeCard({
+    title: 'EDTLA 记账（24 位/端点）',
+    rows: [
+      {k: '清零', v: 'TD 首 TRB 执行前 / Set TR Deq Ptr 时'},
+      {k: '累加', v: '每支 Transfer TRB 完成加其实传字节'},
+      {k: '回卷', v: '累计超 16,777,215（16MB−1）即 wrap'},
+      {k: '报数', v: '遇 Event Data→事件 Length=EDTLA 后清零'},
+      {k: '停短包', v: 'Stopped−Short Transfer 事件 Length=EDTLA'},
+    ],
+    tint: C.evt,
+    w: 560,
+    rowSize: 17,
+  });
+  view.add(f8.node);
+  yield* stage.say('EDTLA：逐 TRB 累加，遇 Event Data 报数清零。', '⑧ / 10');
+  yield* cardIn(f8, new Vector2(TLx(740), TLy(295)));
+  yield* xfer.deqTo(0, 0.4);
+  yield* xfer.consume(0);
+  yield* waitFor(0.3);
+  yield* waitFor(2.7);
+  f8.ref().opacity(0);
+  yield* waitFor(0.2);
+  f8.ref().remove();
+
+  /* ===== ⑨ 16MB 回卷与 IOC 必设 ===== */
+  const n9 = makeNote(
+    view,
+    [
+      '16MB 回卷（L1086-1091）：TD ≥16MB 时 EDTLA 会翻转——软件负责',
+      '周期性插入 Intermediate Event Data TRB 提前报数，并自行累加多',
+      '枚事件 Length 得 TD 总量。Note（L1092-1095）：Event Data TRB 必',
+      '设 IOC，落点受 TD Fragment 规则约束（§4.11.7.1）。',
+    ],
+    {x: TLx(1300), y: TLy(285), w: 1040, tint: C.warn},
+  );
+  yield* stage.say('16MB 回卷靠软件插中间报数点；IOC 必设。', '⑨ / 10');
+  n9().opacity(0.9);
+  yield* waitFor(0.3);
+  yield* waitFor(3.3);
+  n9().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== ⑩ 事件规则 + 短包 + Notes 群 ===== */
+  const q10 = makeChip(
+    view,
+    '"An event generated by an Event Data TRB (Event Data Transfer Event) shall utilize the format of the Transfer Event TRB. The Slot ID and Endpoint ID fields shall be set appropriately for the Transfer Ring that contained the Event Data TRB, and the Event Data (ED) flag shall be set to ‘1’. … shall report the Completion Code of the previously executed Transfer TRB of a TD, or Success if inserted as an Event Data TD … Intermediate Event Data TRBs shall report “Success”." — §4.11.5.2 p209',
+    {x: TLx(1090), y: TLy(265), w: 1300, tint: C.evt, size: 13},
+  );
+  const n10 = makeNote(
+    view,
+    [
+      '短包（L1096-1101）：Event Data 收尾的 TD 遇短包→照报 Event Data',
+      'Transfer Event，Length=实际传输量。Notes 群（L1138-1150）：不设',
+      'IOC 则推进并清 EDTLA；仅传输环可用；不得紧跟另一支 Event Data；',
+      '独立 Event Data TD 禁上等时环（Event Data 可入等时 TD）。',
+    ],
+    {x: TLx(1300), y: TLy(285), w: 1040, tint: C.driver},
+  );
+  yield* stage.say('ED=1 走 Transfer Event 格式；CC 承前 TRB。', '⑩ / 10');
+  q10().opacity(0.95);
+  yield* waitFor(0.3);
+  yield* waitFor(1.8);
+  q10().opacity(0);
+  yield* waitFor(0.2);
+  n10().opacity(0.9);
+  yield* waitFor(0.3);
+  yield* waitFor(2.1);
+  n10().opacity(0);
+  yield* waitFor(0.25);
+
+  /* ===== 收口 ===== */
+  const sum: CardApi = makeCard({
+    title: '§4.11.5 Link / Event Data TRB',
+    rows: [
+      {k: 'Link', v: '段尾指回环首 · 建环六规则 · Toggle Cycle ≥1'},
+      {k: '跨段', v: 'CH=1 续下段 · C 位刷 PCS · IOC 追踪 Deq 过段'},
+      {k: 'EventData', v: '自定义事件 · 继承前 TRB CC · 链 TD 尾只设 IOC'},
+      {k: 'EDTLA', v: '24 位逐 TRB 累加 · 遇 ED 报数清零 · 16MB 软件防卷'},
+      {k: '下一支', v: '§4.11.6 Vendor Defined TRB Types'},
+    ],
+    tint: C.hc,
+    w: 980,
+    rowSize: 20,
+  });
+  view.add(sum.node);
+  xfer.group().opacity(0);
+  yield* stage.say('两型杂项 TRB 讲透——下一支：厂商自定义。', '完');
+  yield* cardIn(sum, new Vector2(TLx(960), TLy(840)));
+  yield* waitFor(3.0);
+  sum.ref().opacity(0);
+  stage.caption().opacity(0);
+  yield* waitFor(0.4);
+});

@@ -733,3 +733,676 @@ build_zh_quotes FILES/SEED +("spec-410.txt","4.10")；两步自举（--no-zh 落
 - html 级 e2e 断言本地预检 26 项 ALL PASS（~/.cache/zcode-tmp/r12b_e2e_html_probe.py）；player/interactive 行为断言待主会话渲染部署后线上跑（批 A 先例）。
 - 视觉快检：s410 大区顶/wf 全链卡/Table 4-5/两流程图 PNG 全过（局部截断为截图裁切非渲染缺陷）。
 - 遗留 pending（主会话）：① 5 枚 mp4 渲染部署（清 MP4_DEPLOY_PENDING 复跑）；② vite build+部署+learning commit+push+线上 e2e；③ fullwalk 逐拍全检。本批未跑 vite build、未 git commit、未动 dist/、未动 TrackA 面（src/scenes、src/render.ts、smoke_player.py、pace_audit.py、public/frames-*）。
+
+### R12 批 B · 主会话渲染部署与终验（2026-11-09）
+
+- **切片重产前置**：/tmp/spec-audit-txt/xhci-1.2b.txt 已被系统清理，重产=python3.9（自带 pymupdf 1.26.5；**.venv=py3.15 无 cp315 轮子，pip 官源停滞/清华镜像回退 88.9MB sdist——勿在 venv 装**）；595 页全量重出，4.10 边界行 9878/10805 与 R12-SPEC §0 零漂移，spec-410.txt=927 行页标 170-188。
+- **渲染链**：scripts/r12b_render_chain.sh（mp4×5+vite build，wftransport=25/xh1001-04=34-37），~14 分钟收官；xh1002p=player-only 无 mp4（r12a3 先例）。
+- **部署**：dist/*+5 mp4+src/drafts/evidence cp→learning 树；deploy_hygiene 清孤儿 2 枚（render-e1672d86.js/player-15858dba.js）；陈旧编译产物 src/project-24fc936d.js（tracked→git rm，R5 坑分治）；interactive/index.html 零改动轮跳过（cmp 同源）；**五 mp4+player/index.html+zh-quotes 逐件 cmp 同源 OK**。
+- **部署树 checker 复跑**（MP4_DEPLOY_PENDING 清空后）：**ALL PASS 零 WARN**（spec 372/patch 12/段 59/摘录 85/表 5/图 43/相位 30/30/ZH 372/链接自检）。
+- **本地 e2e**（E2E_BASE=http://127.0.0.1:8123 打 learning 树）：**207 ok / 0 FAIL**（181→+26：scene25/34-37/49 场景名重排回归+五 mp4 200+顺移回归+s410 锚族）；e2e banner 世系串补「+R12批B」。
+- **fullwalk 44→50**：A-3 遗留 44 片 11:45 ALL DONE overall=0（44×20 断言零 FAIL，caffeinate 后台跨会话存活）；批 B 后 50 片全量重跑（fullwalk_driver.sh 缺省范围扩 0-49），结果补账见后节。
+- **learning 3486515 已推**（路径限定提交，11-04 lessons 线遗留件隔离未卷入）。
+- **fullwalk 50 片补账（13:52）**：`bash scripts/fullwalk_driver.sh`（缺省范围已扩 0-49）50 片全部 rc=0 SMOKE PASS 20 项断言/片，**ALL DONE overall=0**（/tmp/fullwalk-master.log 50 行 done 零 FAIL；六新片 1499/1938/2795/1569/1177/950f 逐拍全过+顺移片 26-33/38-48 表内 scene 字段与 beats 回归全绿）。
+
+# R12 批 C · TrackA-1（§4.11 前六支场景源码+帧表迁移+三门 · 2026-11-09）
+
+> 内容判据全部出自 evidence/spec-411.txt（1707 行=规范 §4.11 全节，页标
+> [PAGE 188-218] 行内嵌；行号=切片内行号，引文窗不跨 PAGE 标）。场景文件头
+> 注释=逐条引文判据（EN 原文逐字+切片行号+页码）。上屏 EN 引文已机核
+> 37/37（空白折叠+直/弯引号字形归一+折行连字符归一后为切片子串，探针
+> ~/.cache/zcode-tmp/r12c_quote_check.py）。渲染/部署/smoke_player 归主会话。
+
+## ① xh1101 §4.11 导语+4.11.1 TRB Template+4.11.1.1/.1.2（1377f · beats=53 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt）：
+  - 本节定位（chip）："This section discusses the properties and uses of
+    TRBs that are outside of the scope of the general data structure
+    descriptions that are provided in section 6.4." ← **L2-4**（p188）
+  - 模板三组件（chip）："TRBs adhere to the generalized template
+    illustrated in Figure 4-13." + "A TRB consist of 3 basic components:
+    Parameter, Status, and Control." ← **L7, L27-28**（p188）
+  - Figure 4-13 语义重建卡（5 行 trb 卡：Parameter=Dword 0-1 字节
+    00-07H / Status=Dword 2 / Control=Dword 3 / TRB Type=bits 10-15 /
+    Cycle=bit 0）← 图标签面 **L9-26** + 4 Dwords **L55** + TRB Type
+    bits 10-15 **L37-39** + Cycle bit 0 **L48-49**
+  - 4.11.1.1 通则（chip）：producer=system software/consumer=xHC +
+    建环初始化 ‘0’ + xHC 只读 ← **L31-36**（p188）
+  - TRB Type 定格式+C 位定环序（chip）← **L37-39, L46-49**（p188-189）
+  - ENT 标志（note）：不预取时强制评估下一 TRB、不跨 TD、CH=‘1’ 才有效
+    ← **L50-54**（p189）
+  - 原子写 Note（chip）：4 Dwords 非原子写时 Parameter/Status 须先于
+    Control 初始化，违者未定义行为 ← **L55-58**（p189）
+  - 总线事务 IMPLEMENTATION NOTE（note）：单次原子事务读写、至少 16 字节
+    原子读、可 64B 取 4 支 ← **L63-70**（p189）
+  - 4.11.1.2 Event 族反转（chip）：xHC 生产/软件消费+初始化 ‘0’+软件只读+
+    TRB Type bits 10-15 ← **L73-81**（p189）
+  - 两族同构收束（note）：TRB Type 定格式+C 位定 Enqueue、事件环管理见
+    §4.11.3 ← **L37-39, L79-84, L85**（p189）
+- 档位：任务档 中 800-1400f，实绩 1377f 落档内。
+
+## ② xh1102a §4.11.2 导语+4.11.2.1 Normal TRB（1067f · beats=45 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt；Table 6-91/6-92 降密度全表归 landing）：
+  - TD 定义（chip）：工作项=TD（一至多支 Transfer TRB）+软件生产/xHC 消费
+    ← **L94-98**（p190）
+  - 完成事件条件（chip）："one of 4 conditions"（规范原文计数口径）+
+    三条枚举（IOC/短包+ISP/错误）+CC 指 Success 或因由 ← **L99-109**（p190）
+  - IOC 惯例（chip）：惯设 TD 末位最小化事件与中断 ← **L110-111**（p190）
+  - 环数（note）：MaxPStreams=‘0’ 一环/>‘0’ 多环+表 6-91/6-92 归 landing
+    ← **L112-115**（p190）
+  - 完成判定唯一通道（chip Note）：只认 Transfer Event、禁 Frame ID/
+    MFINDEX 推断 ← **L116-118**（p190）
+  - Normal TRB 用途与方向（chip）：Bulk/Interrupt 专用+散聚+Isoch/Data
+    stage 补位；方向随端点上下文或前序 Data Stage TRB（"depends on the
+    direction defined by"）← **L122-127**（p190-191）
+  - Chain 位（chip）：四型可置 ‘1’ 成多 TRB TD、散聚拼虚拟内存页/字节对齐
+    ← **L128-131**（p191）
+- 档位：任务档 小 450-1000f，实绩 1067f 超上限 67f（+6.7%，xh1001 +7.7%
+  先例记档不返工）——判据链（TD 定义/三条件/IOC/环数/唯一通道/用途/链位）
+  全覆盖不砍。
+
+## ③ xh1102b §4.11.2.2 控制三阶段 TRB（1860f · beats=72 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt；Figure 4-14 语义重建、Table 4-7 讲
+  两代表行全表归 landing）：
+  - 三阶段 1:1（chip）：setup/可选 data/终止 status 三阶段与三型 TRB
+    1:1 映射 ← **L143-147**（p192）
+  - SETUP 8 字节（chip+Figure 4-14 重建卡）：SETUP 包=8 字节结构、映射进
+    Setup Stage TRB Parameter；卡五字段 bmRequestType/bRequest/wValue/
+    wIndex/wLength ← **L152-155, L156-182**（p192）
+  - TD 构成五规则（chip）：环可含 Setup/Status TD 可选 Data；Setup TD=单
+    TRB；Data TD=Data Stage TRB 链 0..n Normal/Event Data；Status TD=单
+    TRB 可选链 Event Data；一切控制传输 Setup→Status、软件插 Data；
+    “No-data” 无 Data TD ← **L185-204**（p192）
+  - Setup TRB 三铁律（chip）：IDT=‘1’+Parameter=8 字节+Length=‘8’+软件
+    负责取值 ← **L211-220**（p192-193）
+  - DIR 一致性（chip）：Data/Status DIR 与 DTD/wLength 对 Table 4-7 一致；
+    一对 Setup/Status 间至多一个 Data TD ← **L222-228**（p192-193）
+  - Table 4-7 两代表行（卡 3 行）：H2D wLength>0→Data=OUT/Status=IN；
+    D2H wLength>0→Data=IN/Status=OUT；wLength=0→无 Data TD/Status=IN
+    ← **L239-256**（p193）；DIR Notes（note）：Status DIR=回执方向、Data
+    DIR 管全 TD、USB2 定 PID/USB3 走 Status TP ← **L257-267**
+  - Data TD 总长（chip）：不连续链 Normal；Length 之和=wLength；非合规
+    设备例外；xHC 严格按 TRB Length ← **L268-283**（p193-194）
+  - Status 事件三类（chip）：Success/Stall Error/其它错误+Success 语义+
+    Stall 语义+超时用 Stop Endpoint 中止 ← **L285-297**（p194）；Busy
+    Note（note）：设备忙回 Busy、xHC 无限期等待 ← **L298-301**
+  - 不查六条件（note a）：wLength=‘0’ 有 Data TD / 无 Status TD /
+    wLength>‘0’ 无 Data TD / 总量≠wLength / Data DIR 不符 / Status DIR
+    不符 + 脚注38 TRT 严格指示、wLength 应忽略 ← **L302-332**（p194）
+  - 不强查三条件（note b）：Status 不跟 Data、Setup Length≠8；真查则报
+    TRB Error ← **L326-346**（p194）
+  - SET_ADDRESS 陷阱（chip）：bRequest+bmRequestType 四条件命中→不发 USB、
+    报 TRB Error、唯一被拦标准请求、不 stall ← **L348-356**（p194）
+  - 中止+错误码+建议（chip+note）：Stop Endpoint 中止+善后；SS STALL TP
+    →Stall Error、USB2→USB Transaction Error ← **L358-372**（p194）；
+    IMPLEMENTATION NOTE：EHCI 泛化重试/NAK 计 CErr、USB3 NRDY 按
+    Transaction Error 重试 CErr 次+STALL halt ← **L375-386**
+- 档位：任务档 大 1200-1800f，实绩 1860f 超上限 60f（+3.3% 记档）——12 拍
+  判据链全覆盖；pace 两轮定向收紧 80.8s→62.0s（含合并两对紧邻拍）后仍
+  +3.3%，判据不砍。
+
+## ④ xh1102c §4.11.2.3 Isoch TRB（1487f · beats=62 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt）：
+  - TD 构成（chip）：Isoch TRB 链 0..n Normal、方向随端点上下文
+    ← **L395-400**（p195-196）
+  - 带宽契约（chip）：描述符四参=QoS 契约、每 Interval 至多 Max ESIT
+    Payload 字节、xHCI 通用化四字段+软件换算 ← **L401-416**（p196）
+  - 单 Interval+消费节奏（chip）：TD 只活一个 Interval、首 TRB 恒 Isoch、
+    >64K/不连续链 Normal、每 Interval 消费一个、IST 前挂环 ← **L417-425**
+    （p196）
+  - OUT/IN 空环双事件（chip）：OUT=不调度+Underrun；IN=数据丢+Overrun；
+    两态都保持 Running+移出 Pipe Schedule ← **L426-437**（p196）
+  - 门铃复启（note）：只报首个空环 Interval+下次敲门铃复启 ← **L438-439,
+    L448-449**（p196）
+  - MSE+三事件格式（chip）：赶不上期限报 MSE+三事件走 Transfer Event TRB
+    格式 ← **L450-455**（p196）
+  - Frame ID/SIA（chip）：SIA=‘0’ 帧号对 MFINDEX bits 13:3、值域 0-2047、
+    SIA=‘1’ 忽略帧号尽快调度 ← **L456-464**（p196）
+  - 服务间隔对齐（note）：Interval=‘1’ 2 微帧低位=0 起、‘2’ 4 微帧低两位=0
+    起 ← **L465-469**（p196）
+  - TBC/TLBPC（公式卡+note）：预告包数免读全 TD；TBC=ROUNDUP(TDPC/
+    (MaxBurst+1))−1；TLBPC 余 0→MaxBurst 否则余−1；ETC+ETE 上限 32 否则
+    3；LEC 缺席禁开 ETC、LEC=1 ETC=0 上限 64KB 超限作提示 ← **L470-502**
+    （p196-197）
+- 档位：任务档 中 800-1400f，实绩 1487f 超上限 87f（+6.2%，xh1003 +12.1%
+  先例内记档）——pace 两轮收紧 61.0s→49.6s（含合并 OUT/IN 空环一拍）。
+
+## ⑤ xh1102d §4.11.2.4 TD Size（1087f · beats=41 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt）：
+  - 定义（chip）：剩余待调度包数+xHC 免读全 TD 估规模 ← **L505-509**（p198）
+  - 包数公式+逐 TRB 记账（双 chip+note）：TDPC=ROUNDUP(总量/最大包)；PT(n)=
+    ROUNDDOWN(LengthSum(n)/MaxPacket)；Residue(n)=LengthSum(n)−(MaxPacket×
+    PT(n))；x/n 定义+Residue 恒小于最大包 ← **L511-528**（p198）
+  - 末位置 0+5 位封顶（双 chip）：TDSize(x)=‘0’ 显式收口；TDSize(n)=IF(
+    TDPC−PT(n)>31,31,TDPC−PT(n)) ← **L529-533, L539-546**（p198-199）
+  - 短包+ETE（note）：末位 Residue>0→收尾 Short Packet；ETE=‘1’ 时 Isoch
+    TRB 无此字段 ← **L547-551**（p199）
+  - 算例走读（卡）：MaxPacket=1024/总量 5120B/TDPC=5；TRB1 len2048→PT=2
+    TDSize=3；TRB2 len2048→PT=4 TDSize=1；TRB3 len1024→PT=5 TDSize=0 ←
+    公式 **L511-546** 的代入实例
+- 档位：任务档 小 450-1000f，实绩 1087f 超上限 87f（+8.7%，xh1004 +17.7%
+  先例内记档）——五公式+短包/ETE 注记+算例全覆盖，合并两对紧邻拍
+  （公式+记账、末位 0+封顶）后仍超。
+
+## ⑥ xh1102e §4.11.2.5 Frame ID+.5.1 ESIT Rules+.5.2 Resync（1480f · beats=51 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt）：
+  - 定义+上限（双 chip）：帧号定起始帧、SIA=‘0’ 才有效；End Frame ID=
+    (MFINDEX+895ms) MOD 2048、为 MSE 管理而设 ← **L555-562**（p199）
+  - 下限+取模（chip+note）：Start Frame ID=(MFINDEX+IST+1) MOD 2048、IST
+    微帧定义时向上取整到帧界、给足取数时间；模 2048=MFINDEX Frame Index
+    位宽 ← **L570-576, L583-584**（p199）
+  - 有效帧窗+CFC=1（note+chip）：MSE 丢 TD 后推进重同步、有效窗判跳过/
+    执行；CFC=‘1’ 逐 TD 对帧号、1.1/1.2 强制支持 ← **L563-569, L585-599**
+    （p199-200）
+  - CFC=1 快进+留窗（note）：可快于服务间隔推进；留空窗=帧号间隔、xHC
+    暂停直到匹配；软件宜全 TD 设帧号 ← **L589-597**（p200）
+  - CFC=0（note）：只认首 TD 帧号、MSE 不终止流→无法判定后续 TD 窗口；
+    只在首 TD 设帧号、后续全 SIA=‘1’；留窗须环空触发 Overrun/Underrun
+    再重启 ← **L600-616**（p200）
+  - ESIT≥1ms（chip）：帧号落 ESIT 边界（4ms→0/4/8/12）；TD 在帧号起的
+    ESIT 内任意时刻传（FID=4→Frames 4-7、不早于 4 不晚于 7）← **L617-625,
+    L632-637**（p200）
+  - ESIT<1ms+重同步（双 note）：同帧同号至多 8 连（250µs→四支一组
+    0,0,0,0/1,1,1,1）；帧号翻转处 TD 下一帧首 ESIT 起传+非帧首起流不支持；
+    失同步=MSE 后推进到恢复或环尽、跳过 TD 不搬数据但逐支报 MSE；期间
+    事件不丢（Link TRB IOC=1→Success、Event Data/Normal IOC=1→MSE）←
+    **L638-659, L660-674**（p200-201）
+- 档位：任务档裁定 中 800-1400f（R12-SPEC §3 原估巨头档系 TOC 误判
+  4.11.2 五型各一小节、实际 .2.2 三型合一——按实际小节边界落中档，偏差
+  记档如任务稿预告），实绩 1480f 超上限 80f（+5.7% 记档）——.5/.5.1/.5.2
+  三小节判据链全覆盖，合并两对紧邻拍（定义+上限、有效窗+CFC1）后仍超。
+
+## ⑦ 注册·迁移·门禁记录（TrackA-1）
+
+- **renumber 帧表迁移**：12 对倒序 `49=60 48=59 … 38=49` 全过 VERIFY-OK
+  （指纹自比对 total/beats/distinct sha256 不变；frames-60=xh1002p 950f/25
+  与批 B EVIDENCE 对位核验、frames-49=ch41p beats=38 与 BEATS_EXPECT 对位
+  核验）；空洞 38-43 由 scan 新产、44-48/61-62 留波次 2（xh1103-07/
+  xh1102dp/xh1102ep）。
+- **render.ts**：import 块+scenes 数组扩六支（注释「R12 批 C」，插 xh1004
+  之后），56 支与 player.ts orderedSceneKeys glob 序 node 模拟同构自证
+  match=true（38-43=xh1101..xh1102e、补丁组 44-55=ch41p..xh1002p）；**未写
+  xh1103-07/xh1102dp/xh1102ep**。
+- **scripts/pace_audit.py SCENES** 增六项；**scripts/smoke_player.py
+  BEATS_EXPECT** 增六键（帧表 distinct gap>=2 机核值：xh1101=53/xh1102a=45/
+  xh1102b=72/xh1102c=62/xh1102d=41/xh1102e=51）——BASE_SCENES/PATCH_SCENES
+  范围未动（主会话统一扩），BEATS 只登记不验证（smoke_player 未跑）。
+- **player.ts 零改动**（glob 自动发现+补丁正则 `^(ch\d+p|xh\d{4}[a-z]?p)\.tsx$`
+  对 xh1102a-e 主线名天然不匹配、波次 2 xh1102dp/ep 天然匹配）。
+- **引文机核**：上屏 EN 引文 37/37 为切片子串（归一=空白折叠+直/弯引号
+  字形归一+折行连字符归一；探针 ~/.cache/zcode-tmp/r12c_quote_check.py）。
+  修正三处后达标：xh1102a Normal TRB 方向句补 "the"（L125 原文
+  "depends on the direction defined by"）；九处跨 bullet/图题/两公式的拼接
+  点补 "…" 省略号分隔（xh1102b 五处/xh1102d 一处/xh1102e 两处/xh1102b
+  SETUP 句一处）；“No-data” 引号字形对齐 L200 弯双引号。
+- **三门数值表**（文本修正后四支 39/40/42/43 已重扫重探，total/distinct/
+  beats 与首轮逐位一致）：
+
+| 场景 | idx | total | distinct | beats | pace fast | probe viol | 档位对账 |
+|---|---|---|---|---|---|---|---|
+| xh1101 | 38 | 1377 | 138 | 53 | 0 | 0 | 中档 800-1400 落档 |
+| xh1102a | 39 | 1067 | 168 | 45 | 0 | 0 | 小档超 67f（+6.7% 记档） |
+| xh1102b | 40 | 1860 | 256 | 72 | 0 | 0 | 大档超 60f（+3.3% 记档） |
+| xh1102c | 41 | 1487 | 251 | 62 | 0 | 0 | 中档超 87f（+6.2% 记档） |
+| xh1102d | 42 | 1087 | 114 | 41 | 0 | 0 | 小档超 87f（+8.7% 记档） |
+| xh1102e | 43 | 1480 | 129 | 51 | 0 | 0 | 中档（TOC 误判降档）超 80f（+5.7% 记档） |
+
+- **超档记档口径**（ch4611/xh0803/xh1001/xh1004 先例：判据不砍+三门全绿
+  不返工）：超档主因=字幕拍阈值下限（加权字数/5.5+1.0s）对规则清单/公式
+  链类内容偏紧（b 六条件清单、d 五公式+算例、c 空环双事件）；已做两轮
+  定向收紧（xh1102b 80.8→62.0s、xh1102c 61.0→49.6s）+合并紧邻拍（b2 对/
+  c1 对/d2 对/e2 对）后再无低余量可缩空间（末轮 minslack 0.1-0.2 贴
+  0.05 容差线）。
+- **布局避让带**：全六支沿用批 B 验证参数（chip(1090,265,w1300)/note(1300,
+  285/310,w1040)≤4 行/表卡(740,295,w560)≤5 行/收口卡(960,840,w980)/
+  bell(1680,565)/双环带 470+655/Interval 标尺 CellStrip(760,560,n7)）——
+  probe 首轮即 viol=0×6（含修正后复探×4），零避让重排回合。
+- 未动 dist/、未跑 vite build、未 git commit、未动 output/ 既有 mp4、
+  未跑 smoke_player、未动 TrackB/TrackC 文件面（build_landing/
+  check_landing_code/online_e2e_r6/build_zh_quotes/flowcharts/zh-quotes/
+  interactive/smoke_interactive/EVIDENCE.md）。
+
+# R12 批 C · TrackB 交付草稿（landing s411 大区 11 卡+2 补丁版块+全配套产线 · 2026-11-09）
+
+> 独立交付文件（主会话统一合入 EVIDENCE.md）。配方权威=README 批 A/A-2/A-3/B 四节+EVIDENCE 批 B · TrackB 节+R12-SPEC §4/§9/§11.2-11.3；任务稿两处事实修正见 ③⑤（p193→p192、xhci_ring_prepare_transfer→xhci_get_isoc_start_frame，均现场机核更正）。
+
+## ① 贴码段 13 枚（EXPECTED_SEGMENTS 59→72）
+
+段界=函数闭括号/注释头，git show d9008e061539 机核（预检脚本 ~/.cache/zcode-tmp/r12c_plan.py：与既有 59 段零重叠、段内零摘录热行、十三段互相零重叠——相邻不交四对：sum_trb_lengths 2306-2317 vs finish_td 2263-2303；process_ctrl_td 2322-2412 vs process_isoc_td 2417 起；queue_trb 3246-3264 vs prepare_ring 3270 起；对读段 3501-3545 vs xhci_align_td 3548-3613）：
+
+| 卡 | 段 | 教学咬合 |
+|---|---|---|
+| xh1101 | xhci-ring.c L3246-3264 `queue_trb` | 4.11.1 TRB 模板四 Dword 通用写入——wmb() 屏障即「Parameter/Status 先于 Control 写入」Note（L55-58）的内核面 |
+| xh1102a | xhci-ring.c L3616-3771 `xhci_queue_bulk_tx` | 4.11.2.1 Normal TRB 排队（Bulk/Intr/Scatter-Gather 主路径） |
+| xh1102b | xhci-ring.c L2322-2412 `process_ctrl_td` | 4.11.2.2 控制三段 TD 事件处理（排队侧 xhci_queue_ctrl_tx 已归 s43 卡，事件侧为本卡独有面） |
+| xh1102c | xhci-ring.c L4095-4286 `xhci_queue_isoc_tx` | 4.11.2.3 Isoch TRB 排队（Frame ID/TBC/TLBPC/TD Size 全在此写入） |
+| xh1102d | xhci-ring.c L2306-2317 `sum_trb_lengths` | 4.11.2.4 算式构件「TRB Transfer Length Sum (n)」（L519-520）的内核面；TD Size 统一函数 xhci_td_remainder 留作本卡补丁对读段（避免同函数双段） |
+| xh1102e | xhci-ring.c L3985-3999 `xhci_isoc_td_uses_frame_id` | 4.11.2.5 SIA vs Frame ID 取舍（URB_ISO_ASAP→false/首 TD→true/CFC） |
+| xh1103 | xhci-ring.c L2590-2614 `handle_transferless_tx_event` | 4.11.3.1「TRB Pointer='0' 不可归因 TRB 事件族」（L717-719，Ring Overrun/Underrun 等）的消费面 |
+| xh1104 | xhci.h L1120-1138 命令族枚举 9-17 | 4.11.4 格式族轻片（R12-SPEC §0 重叠面处置）：「TRB 类型表（内核直译）」小节=R10 批 D 先例（seg_h3 卡级覆盖），驱动零调用链 |
+| xh1105 | xhci-ring.c L290-312 `inc_enq` | 4.11.5.1 软件侧越 Link TRB 推进（C bit=PCS/段切换=构造规则 L1003-1009 的消费面） |
+| xh1106 | xhci-ring.c L4420-4424 `xhci_queue_vendor_command` | 4.11.6 vendor 命令驱动侧唯一发行口（NEC 固件升级） |
+| xh1107 | xhci-ring.c L3548-3613 `xhci_align_td` | 4.11.7.1 TD Fragments 内核面（未对齐尾 TRB 拆包对齐=Figure 4-18「Non-aligned TD Fragment」实现形态） |
+| xh1102dp 对读段 | xhci-ring.c L3501-3545 `xhci_td_remainder` | f18f8ed2 修复函数基线现行统一形态（注释块逐字复述 §4.11.2.4 算式） |
+| xh1102ep 对读段 | xhci-ring.c L4015-4073 `xhci_get_isoc_start_frame` | add8469b 修复面基线现行形态（内含 "see xhci 4.11.2.5" 注释+xhci_frame_in_range 环绕窗判定） |
+
+行 div 3221→3948（+727）。xh1104 选段判定：4.11.4 公共口径无单一对口函数（queue_command 已归 s41 cmd 组）→ 枚举切片+seg_h3 覆盖（批 D 先例），存在性注记入 pbody/extra_note；xh1106 有真实使用函数（xhci_queue_vendor_command）不落缺省。
+
+## ② D1 流程图机核：零目标（EXPECTED_FLOWCHARTS 43 不变）
+
+- grep 切片 "shall perform the following operations"/"shall perform the following"/"following operations:" 全 0 命中（~/.cache/zcode-tmp/r12c_d1_d2.py）；裸编号行 111 处全为图位数字（Figure 4-13 bit 标注 31/16/15/10/9/1/0 类），非算法步骤。
+- 逐小节排除理由：4.11.1=组件定义 prose；4.11.2.2 控制环规则 L185-231/「xHC shall NOT check」清单 L303-325=规则 bullet 非算法（批 B「4.10.2.1 halt 两形态 prose 排除」同款）；4.11.2.3 TBC/TLBPC=公式两行（L482/L486-495）；4.11.2.4 TD Size=算式定义（公式非流程）；4.11.2.5/.5.1/.5.2=窗口规则/对齐规则/重同步 prose；4.11.3/.3.1=生成条件 bullet；4.11.4 十七小节=格式互链轻片；4.11.5.1 构造规则 bullet/4.11.5.2 EDTLA 四规则 bullet（L1069-1085）；4.11.6 未识别处置三 bullet；4.11.7 规则清单/4.11.7.1 Fragment 边界规则+图例走读（Figure 4-16/17/18 图体不复引，语义走引文+xhci_align_td 贴码）。
+- 结论：flowcharts.json 不加块、EXPECTED_FLOWCHARTS 四处零改动（43 维持）。
+
+## ③ D2 Table 4-7（EXPECTED_TABLES 5→6）
+
+- **页码修正**：任务稿记「p193 单页」——切片页标 L206=[PAGE 192]（表题 L229-表尾 L267 全落 p192=L206-274）与 PDF 页眉「192」双证：**Table 4-7 在印刷页 192**（pymupdf 全文定位，PDF 0-based 191 页；正文命中仅此一页，另一命中 PDF12=TOC）。
+- 列结构（/usr/local/bin/python3.9 pymupdf find_tables，只读）：**5 列 6 行**——两级表头（Row1: USB SETUP Data（跨 2 列）/Transfer Type flag (TRT)/Direction flag (DIR)（跨 2 列）；Row2: Data transfer direction (DTD)/wLength/Data Stage TRB/Status Stage TRB）+4 数据行，DTD 两值（Host-to-device/Device-to-host）各 rowspan 2。
+- 重建形态：render_spec_table 扩展 `head_rows`（两级表头原始行）；退役窗=(229,267)（caption+表体+两段 Note——Note 归 tabfoot）不上 data-ck；verify_spec_table 全量逐字核验 PASS（t47←L229-L267）；两 Note（Status Stage DIR/Data Stage DIR，USB2 PID 与 USB3 TP 说明）随表重建。
+- 挂载：xh1102b 卡 (227,228) main 窗后原位插入（XH_TABLE_AFTER）；TAB_ANCHOR "4-7"→#s411-03。
+
+## ④ 引文窗 122 条（EXPECTED_SPEC 372→494；全 main 窗）
+
+xh1101=13（含 4.11 导语 (2,4)）/xh1102a=6/xh1102b=17/xh1102c=17/xh1102d=7/xh1102e=12/xh1103=6/xh1104=7（轻片：公共口径 2+代表命令 5）/xh1105=15/xh1106=4/xh1107=18。全整行切片、区间不跨 PAGE 标（页标机核：189@L41/190@L87/…/218@L1697，逐窗 page_of(lo)==page_of(hi)==声明页）；唯一命中 count==1 逐窗断言（预检脚本全 PASS）；blockquote 372+122=494=双栏 494。
+
+- **D1 零目标 → 全 main 窗无 full 窗**（「规范算法全文收纳（算法流程图+折叠原文）」小节仅在 full 窗存在时渲染——零算法块卡不挂该头，诚实形态）。
+- **5 组跨页续窗按 §9 立法补齐不丢尾步**：(272,274)p192+(280,283)p193（Data Stage 总长=wLength 句）/ (326,328)p193+(340,342)p194（NOT required 检查句）/ (483,488)p196+(494,496)p197（TLBPC 公式 THEN/ELSE 尾）/ (529,533)p197+(540,541)p198（TD Size 5bit 截断尾）/ (1612,1615)p216+(1623,1632)p217（首 TRB 最后写句尾）。
+- **重复句不复引**：Figure 4-13/4-14/4-15/4-16/4-17/4-18 图体行（OCR 布局文字）零上屏——图语义走引文说明段与贴码；4.11.4.1-17 逐小节格式句高度重复（"The format of the X Command TRB is defined in section 6.4.3.N"）→ 轻片只引公共口径+5 代表窗，其余互链 4.6 卡不重引。
+- 窗位微修一处：xh1101 首窗原计划 (5,7)（含裸节号行）→ **(6,7)**：切片裸节号行在 mapper 号行行走中归属上一节（4.11），窗从号行起会错节 FAIL-ALIGN 实锤——改从标题行走（归 4.11.1，标题前缀回退通道接住），三面（build/checker/plan）同步。
+
+## ⑤ 两补丁版块（XH_PATCHES/XH_PATCH_SEGS 各 +2；EXPECTED_PATCHES 12→14）
+
+1. **xh1102dp 挂 s411-05 卡**（scene=61）：f18f8ed2a9adc41c2d9294b85b6af115829d2af1（Sarah Sharp 2013-01-11，xhci-ring.c 3+/2-，hunks @@-3108,7 xhci_v1_0_td_remainder + @@-3642,7 xhci_queue_isoc_tx，Cc stable 3.0+）。三段文案：背景=§4.11.2.4 TD Size 剩余包数语义（引文 L505-510 逐字）→ 问题=message 数字例逐字（2 additional service opportunities+1020B、3060B 跨 64KB 拆 1276+1784 两 TRB、正解 DIV_ROUND_UP(3060/1020)=3−1=2、旧算式 DIV_ROUND_UP(3060/5116)=1 与 "1 - (1276 / 5116) = 1"）→ 修复=GET_MAX_PACKET() 掩码两处。对读段=**xhci_td_remainder L3501-3545**（2013 名 xhci_v1_0_td_remainder 经 c840d6ce772d 重构为统一函数——照 xh1002p=find_td_by_dma 基线现行形态先例；hunk 头实证修复函数 2013 原名）。
+2. **xh1102ep 挂 s411-06 卡**（scene=62）：add8469b3e0031a2e0243dd0d18c555cac8b7eea（Mathias Nyman 2026-08-06，xhci-ring.c 182 行重构+xhci-mem.c 1+xhci.h 7，3 文件 +86/-104，cc: Dylan Robinson/MOTU）。三段文案：背景=Frame ID 窗口语义+mid-stream 提交（L555-576 逐字）→ 问题两支（message 逐字：微帧口径与规范不一致含 "better match how xhci specification section 4.11.2.5 does it"/越窗加 gap 切 SIA 伤设备含 "Some devices can't handle gaps in isochronous transfers"）→ 修复四件（按帧算窗/每 URB 一次校验/越窗只 debug 含 "Only print a debug message"（原文 winow 拼写保真）/首 URB 对齐整帧或 interval 起点）。对读段=**xhci_get_isoc_start_frame L4015-4073**——**任务稿记「xhci_ring_prepare_transfer 内」系误记**：该函数名基线不存在，add8469b 的 hunk 落在 @@-3956,80 帧窗口族+isoc 排队族，现场机核（任务指令「git show 现场机核」）实证基线现行 isoc 窗口校验挂点=xhci_get_isoc_start_frame（注释 "see xhci 4.11.2.5" 原文在场），照更正执行。
+
+## ⑥ s411 大区与导航
+
+- 大区=「§4.11 TRBs 传输请求块 · R12 批 C · 全章最大节 11 卡（4.11.2 五型拆分）+补丁片 xh1102dp/xh1102ep」，挂「环与传输（4.7-4.14）」簇（导航 §4.11 TRB 格式条目）；导语含 11 卡地图+D1 零目标口径+Table 4-7+两补丁口径。
+- 卡序=小节序（4.11.1→4.11.2 五拆→4.11.3→4.11.7）；4.11.2.2 卡 extra_note 互链 s43（排队函数 xhci_queue_ctrl_tx 所在）与 s410-01（完成评估）；xh1104 互链 s46-02/05/10 等（§4.6 重叠面 1:1）；deep 链就近既有台（#m1×8/#m6×2——m7 TRB 拼装台为 TrackC 面，待其上线后主会话可升级链）。
+
+## ⑦ sr-todo→sr-ln 翻转与 linkify 扩展（EXPECTED_SR (139,89,23)→(176,106,17)）
+
+- SEC_ANCHOR 增 4.11→#s411 + 4.11.1-4.11.7→#s411-01..11，并加子层精确路由（4.11.2.1-.5/4.11.3.1/4.11.5.1/.5.2/4.11.7.1→所属卡——免祖先回退落 4.11.2→s411-03 近似锚）；TAB_ANCHOR 增 4-7→#s411-03。
+- **FIG_ANCHOR 增 4-13..4-18**→所属卡锚（4-13→s411-01/4-14→s411-03/4-15→s411-09/4-16..4-18→s411-11）：六图定义位全在 4.11 切片，旧实现会把章内图误落 sr-out 出界注记。
+- **_ref_repl 增「章内未建图/表」分支**：Figure/Table 4-N 未入锚表且 N 为 4 系 → sr-todo（不再一律 sr-out）；Figure 4-21（MFINDEX 图，定义位在 4.14 未建）×2 走此通道。
+- 计数：sr-ln 139→176（4.11 族引用翻 ln，EN+ZH 双侧）、sr-out 89→106（新窗 5-8 章引用 section 6.4.x/Table 6-91/9-2/8-7 类）、sr-todo 23→17（批 B 计入的 4.11 未建引用 6 枚翻 ln；新 todo=Figure 4-21×2+4.12.3+4.14.2.1.4+ZH 侧 4.12/4.14）；负向残留扫描=0、嵌套 `<a>`=0（批 B 修二保持）。
+
+## ⑧ zh-quotes 增量（351→473 锚点）
+
+- build_zh_quotes FILES/SEED +("spec-411.txt","4.11")；两步自举（--no-zh 落 EN 页→mapper 消歧→全量重建）。翻译覆盖实证：shard-009 含 4.11/4.11.1/4.11.2、shard-010 含 4.11.3-4.11.7（sub-sub 经 resolve_v2_sec 上溯）。
+- **旧 351 锚点逐键 diff 零漂移**（dropped=0/value drift=0/新增 122 全为 spec-411）。
+- **mapper 增补一处（加法式）**：标题前缀回退前先剥裸节号行前缀（窗含 "4.11.1 \nTRB Template \n正文" 形态时）；批 B 窗无此形态故零影响（零漂移门实证）。
+- 新 122 窗状态：BLOCK 142/RUN 族 160/TRIM 120/TRIM-LOW 50/TITLE+BLOCK 1——TRIM-LOW 为度量保守标记（强 token 整词译出/ZH 段边界宽于 EN 页界窗，批 B ⑧ 同型），零实锤错窗不修；报告留档 ~/.cache/zcode-tmp/r12c_zh_report3.txt。
+
+## ⑨ 场景顺移与 checker/e2e 扩容
+
+- **场景 63 支**：主线 38-48=上表 11 支尾插；补丁组顺移 ch41p..ch45p=49-53、ch4606p/ch4609p/ch4610p=54/55/56、xh0700p/xh0803p/xh0902p=57/58/59、xh1002p=60，xh1102dp/xh1102ep=61/62 纯尾插。全页 scene= 链接同步：s41/s42/s43 补丁钮 38/39/40→49/50/51、s44/s45→52/53、s46 三卡→54/55/56、XH_PATCHES scene 字段+文案内 scene= 注记（57/58/59/60）。
+- checker：EXPECTED_SEGMENTS 72/EXPECTED_SPEC 494/EXPECTED_PATCHES 14/EXPECTED_TABLES 6/PLAYER_SCENES range(63)/LOCAL_TARGETS+11 mp4/**MP4_DEPLOY_PENDING=11 枚**（渲染部署后主会话清空复跑零 WARN）/EXPECTED_SR (176,106,17)。
+- online_e2e_r6.py 扩容：63 场景名回归（38-48+61/62 新键）+11 mp4+批 C 断言块（11 卡锚/两补丁锚+对读段/Table 4-7/4.11 todo 残留 0/50 场景陈旧口径负向）+计数更新（表 6/sr 176-106-17/qpair·qzh 494/链接区间 25-48 与 49-62）+banner 世系串。html 级本地预检（~/.cache/zcode-tmp/r12c_e2e_html_probe.py，照批 B probe 形态）**ALL PASS**（含 scene=38-48/61/62 各恰一次、顺移 49-60 各恰一次、零嵌套锚、无水印）。
+
+## ⑩ 门禁与遗留
+
+- build_landing **BUILD OK**（--no-zh 两步自举后全量重建）：段 72/行div 3948/hot 85/tipdoc 85/patch 14/blockquote 494/流程图 43=details 43/规范表 6/双栏 494——结构断言与实现一致（blockquote=spec 窗数=双栏数=494）。
+- 表格逐字核验 PASS（含 t47←L229-L267 全量单元格/两级表头/脚注）。
+- checker（部署树 learning/usb-xhci-learn/lessons/ch4-motion/）**ALL PASS**：spec 494+patch 14 逐字 · 段 72/72 · 摘录 85/85 · 表 6/6 · 流程图 43/43 · 相位 30/30 · ZH 494/494 · 链接自检——WARN 恰 11 枚=MP4_DEPLOY_PENDING 豁免；**--fix 复跑零回填**（页面字节 md5 不变）。
+- 段内容逐行复核 72/72 PASS（构建侧独立复核通道）。
+- 视觉快检 PNG 抽查全过（AI 视觉判读）：s411 大区顶（标题/导语/11 卡网格/双栏引文 qsrc）· Table 4-7（两级表头+DTD rowspan+两 Note+斑马纹边框完整）· f18f8ed2 补丁版块（phead 完整/git show 逐字/message 数字例在场/无破损）· xh1104 枚举轻片（TRB 类型表 h3+1120-1138 全 19 行对齐渲染）。
+- 未跑/未动（禁动面遵守）：未跑 vite build、未 git commit、未动 dist/ 与 output/、未动 TrackA 面（src/scenes、src/render.ts、smoke_player.py、pace_audit.py、public/frames-*）与 TrackC 面（interactive/、smoke_interactive.py）与 EVIDENCE.md；smoke_player/fullwalk 不跑（渲染部署后主会话）。
+
+### 遗留 pending（主会话）
+
+1. 11 枚 mp4 渲染部署（清 MP4_DEPLOY_PENDING 复跑零 WARN）；
+2. vite build+部署（cmp 同源）+learning commit+push+线上 e2e（r12c 断言面已就位）；
+3. fullwalk 逐拍全检（fullwalk_driver.sh 缺省范围需扩 0-62）+BEATS_EXPECT 11 新键登记；
+4. m7 TRB 拼装台上线后可升级 s411 各卡 deep 链（现为就近既有台 #m1/#m6）。
+
+### 沉淀候选（供主会话合入 EVIDENCE 时参考）
+
+- 切片裸节号行归属上一节（mapper 号行行走语义）——含号行的引文窗会错节 FAIL-ALIGN，窗一律从标题行/正文行起；
+- 章内未建图表（Figure 4-19+/Table 4-8+，定义位在 4.12+ 未建节）应落 sr-todo 而非 sr-out——批 D 起后续批次引窗含此类引用时沿用 _ref_repl 分支；
+- 交付批任务稿的页码/函数名记忆值与切片/PDF 冲突时以「现场机核」为准更正并记档（本批两例：p193→p192、xhci_ring_prepare_transfer→xhci_get_isoc_start_frame）。
+
+# R12 批 C · TrackA-2（§4.11 后五支主片+两支补丁片 · 2026-11-09）
+
+> 主片判据全部出自 evidence/spec-411.txt（1707 行=规范 §4.11 全节，页标
+> [PAGE 188-218] 行内嵌；行号=切片内行号）。补丁片判据全部现场
+> `git -C /Volumes/KernelSrc/linux show <hash>` 取原文（禁手抄；diff 行号
+> 由 r12c_hunk_lines.py 从 git show 机算，脚本=通用 hunk 行号对照器）。
+> 上屏 EN 引文机核 93/93 MISS=0（探针 ~/.cache/zcode-tmp/r12c_quote_check2.py
+> =波次 1 探针扩展版：主片 35 条对切片归一子串+补丁片 spec 1 条+message
+> 20 段对 git show 归一全文；波次 1 六支 37 条回归零漂移）。
+> 渲染/部署/smoke_player 归主会话。
+
+## ① xh1103 §4.11.3 Event TRBs+4.11.3.1 Transfer Event TRB（1560f · beats=58 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt）：
+  - ED 定义+生产消费反转（chip）："Event TRBs shall be found on an Event
+    Ring. A Work Item on an Event Ring is called an Event Descriptor (ED).
+    An ED shall be comprised of only one … TRB data structure. … The xHC is
+    the producer of all Event TRBs and system software is the consumer."
+    ← **L677-679+L685+L687-688**（p201，跨 PAGE 201 标拆 … 三段）
+  - 用途（chip）："Event TRBs are used to report events associated with the
+    Command Ring and Transfer Rings, as well as a variety of other host
+    controller related events (Port Status Change, Bandwidth Requests, etc.)"
+    ← **L689-691**（p201）
+  - 字段依赖（chip）："The field definitions of the Parameter, Length, and
+    the high word of the Control components of Event TRBs are all Event Type
+    Dependent. … The Event Type field shall define the contents of the Event
+    Type Dependent fields. The Event Type field shall indicate Event Ring
+    TRB Types as defined in Table 6-91." ← **L692-696**（p201）
+  - 主/副环准入（chip+note）："Any Event Type may be found on the Primary
+    Event Ring. Only Transfer, Bandwidth Request, and Device Notification
+    Events may be found on a secondary Event Ring."（副环三类+§4.9.4.3 引）
+    ← **L697-699**（p201）
+  - IMPLEMENTATION NOTE（chip）：Dword 3（C 位）最后翻转/可单次 DMA 原子/
+    离散更新则 C 位收尾 ← **L703-706**（p201）
+  - Transfer Event 三条件（chip，bullet 分段）："Transfer Event TRB
+    generation shall only occur under the following conditions: … If the
+    Interrupt On Completion (IOC) flag is set. … When a short transfer
+    occurs during the execution of a Transfer TRB and the Interrupt-on-Short
+    Packet (ISP) flag is set. … If an error occurs during the execution of
+    a Transfer TRB." ← **L709-716**（p201）
+  - 不可归因错误（chip）：Ring Overrun/Underrun 等→TRB Pointer=‘0’ 软件视为
+    无效 ← **L717-719**（p201）
+  - 推进逐 IOC（chip）："each Transfer TRB encountered with its IOC flag set
+    to ‘1’ shall generate a Transfer Event" ← **L720-724**（p201）
+  - CC/Length 继承（chip）："The Condition Code of the “current” Transfer
+    Event shall be set to the value of the Condition Code in the original
+    Transfer Event, and the TRB Transfer Length … should be set to value of
+    the TRB Transfer Length field in the original Transfer Event."
+    ← **L725-728**（p201-202）
+- 档位：任务档 中 800-1400f，实绩 1560f 超上限 160f（+11.4%，xh1004 +17.7%
+  先例内记档）——9 拍判据链（ED/用途/字段/环准入/实现注记/三条件/Ptr=0/
+  逐 IOC/继承）全覆盖不砍；pace 修平 +3.2s+富余收缩 -1.5s 后仍超。
+
+## ② xh1104 §4.11.4 Command TRBs 格式族轻片（1226f · beats=52 · pace fast=0 · probe viol=0 · scan ok）
+
+- 定位（R12-SPEC §0）：命令 TRB 布局已在 §4.6 十八小节各卡讲透——本片只讲
+  格式族公共口径，.4.1-.4.17 互链不重讲（收口卡「互链」行+分组表卡）。
+- 上屏论断↔切片行号（spec-411.txt）：
+  - 清零公共口径+Type 字段（chip）："The Parameter, Status and Length TRB
+    components shall be cleared to ‘0’ by system software unless otherwise
+    noted by a specific command. The TRB Type field of the Control
+    component shall indicate the Command Type. Table 6-91 defines the
+    available Command TRBs, that is, TRB Types allowed on a Command Ring."
+    ← **L737-741**（p202）
+  - 完成事件+Cycle=PCS（chip）："For every command, the xHC notifies system
+    software of its completion by placing a Command Completion Event TRB on
+    the Event ring. When a Command TRB is initialized on the Command ring,
+    the Cycle bit will be set to the value of the Command Ring’s Producer
+    Cycle State (PCS) flag." ← **L742-745**（p202）
+  - Endpoint/Stream Context（chip）："the combined contexts are referred to
+    as the “Endpoint/Stream” Context." ← **L746-749**（p202）；Input
+    Context Note（note）：Address/Configure/Evaluate 三命令 ← **L752-753**
+  - 十七命令分组表卡（槽位/端点/可选三族）+同格式事实（note）："The Enable
+    Slot Command utilizes the same format as the No Op Command TRB"
+    ← **L766-767**；逐命令互链 §4.6.2-4.6.18
+  - 代表命令三连（chip+note）：Enable Slot "causes the xHC to select an
+    available Device Slot and return the ID of the selected slot to the
+    host in a Command Completion Event" ← **L763-765**（p202）；Address
+    Device "transitions the selected Slot Context from the Default to the
+    Addressed state. It also causes the xHC to select an address for the
+    USB device and issue a SET_ADDRESS request" ← **L784-786**（p203）；
+    Disable Slot 带宽/资源释放+Slot State=Disabled ← **L771-773**；Stop
+    Endpoint 停包流+TD 所有权交软件 ← **L830-832**；Reset Endpoint 重启
+    Halted ← **L817-819**
+  - 可选族（chip+note）：BNC 能力位句 "If the BW Negotiation Capability
+    (BNC) bit in the HCCPARAMS1 register is ‘1’, then the xHC shall support
+    this command." ← **L866-867**（p205）+Optional Normative 标注口径
+    （.4.11/.12/.13/.14/.16/.17，切片标题行）
+- 档位：任务档 小 450-1000f，实绩 1226f 超上限 226f（+22.6%，xh0700
+  +42.5% 先例内记档）——轻片=格式公共面+代表三连+可选族注记六拍；pace
+  修平 +1.0s+富余收缩 -2.9s 后仍超（代表命令走读与可选族注记为 §9 口径
+  的 Optional 标注义务，不砍）。
+
+## ③ xh1105 §4.11.5 Other TRBs+.5.1 Link TRB+.5.2 Event Data TRB（1720f · beats=62 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt）：
+  - Link 用途（chip）："The Link TRB provides support for sizing and
+    non-contiguous Transfer and Command Rings. A Link TRB indicates the end
+    of a ring by providing a pointer to the beginning of the ring. … A
+    non-contiguous TRB Ring is composed of Ring Segments." ← **L926-932**
+    （p207）
+  - 建环六规则（note）：16B/64B 对齐/段长 16B 倍/Link 居段尾/Pointer 指下
+    段或首段/末段指回首段 ← **L935-949**（p207）
+  - Toggle Cycle+两 Note（chip+note）："The Toggle Cycle flag should be set
+    in at least one Link TRB of a ring." ← **L956-957**；Pointer 不必页首
+    +Link 只进传输/命令环 ← **L958-960**
+  - CH 跨段（chip）："If the Chain bit (CH) of the previous TRB is ‘1’,
+    then the multi-TRB TD that it defines spans segments and shall continue
+    with the first TRB of the next segment. In a Command Ring the Link TRB
+    Chain bit (CH) is ignored by the xHC." ← **L1003-1007**（p207）
+  - C 位=PCS+IOC 追踪 Deq（chip）："As software advances its Enqueue
+    Pointer and advances over a Link TRB, the Cycle (C) bit shall be
+    updated with the value of the PCS flag. … the ability to track the
+    Dequeue Pointer as a function of segment boundary crossings."
+    ← **L1008-1013**（p207）
+  - 双环 IOC 事件字段（note）：传输环→Transfer Event（Slot/EP ID 对应/
+    Length=‘0’/指针指 Link/CC=Success）← **L1021-1026**；命令环→Command
+    Completion Event（Slot ID=‘0’/VF ID=‘0’/CC=Success）+Primary
+    Interrupter+Target 忽略 ← **L1027-1034**（p207-208）
+  - Event Data 用途+两特性（chip）："software defined event … inheriting
+    the Completion Code of the previous (non-Event Data) TRB executed on a
+    ring, and accumulating the transfer Lengths of preceding TRBs"
+    ← **L1043-1047**（p208）
+  - 典型用法（chip）：64 位标识收尾+IOC 只设 Event Data+ED 标志='1' 名
+    Event Data Transfer Event ← **L1048-1057**（p208）
+  - EDTLA 四规则（公式卡）：24 位/端点；TD 首 TRB 前或 Set TR Deq Ptr 清
+    零/逐 TRB 累加/超 16,777,215 wrap/遇 Event Data 报数清零/
+    Stopped-Short Transfer 报 EDTLA ← **L1058-1085**（p208-209）
+  - 16MB 回卷+IOC 必设（note）：Intermediate Event Data TRB+软件自行累加
+    ← **L1086-1091**；IOC 必设+落点受 Fragment 约束 ← **L1092-1095**
+  - 事件规则+短包+Notes 群（chip+note）：走 Transfer Event 格式/ED=1/CC
+    承前 TRB/中间报 Success ← **L1104-1119**（p209）；Parameter 承载+
+    Length=TD 起累计 ← **L1126-1133**；短包推进照报 ← **L1096-1101**；
+    不设 IOC 推进清 EDTLA/仅传输环/不紧跟/独立 ED TD 禁上等时环
+    ← **L1138-1150**（p210）
+- 档位：任务档 中 800-1400f，实绩 1720f 超上限 320f（+22.9% 记档）——
+  双小节（Link+Event Data）合支 20 组判据全覆盖；pace 修平 +0.5s+富余
+  收缩 -4.1s 后仍超。
+
+## ④ xh1106 §4.11.6 Vendor Defined TRB Types（1117f · beats=41 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt）：
+  - 定义+三用途（chip）："xHC vendors may define proprietary TRB Types
+    using the Vendor Defined TRB Type codes identified in Table 6-91. The
+    Vendor Defined TRB Types may be used to define Command, Event, or
+    Transfer TRBs." ← **L1153-1155**（p211）
+  - 扩展能力枚举+多厂商重码（chip）："Multiple vendors may define the same
+    xHCI Extended Capability code or Vendor Defined TRB code to perform
+    different operations. … shall be qualified by system software with the
+    PCI Configuration Space Header Vendor ID and Subsystem Vendor ID."
+    ← **L1156-1158+L1191-1195**（p211-212）
+  - 未识别三态（chip，bullet 分段）：传输环 CH 评估跳过/命令环当 No Op/
+    事件环软件忽略 ← **L1161-1166+L1174-1178**（p211-212）
+  - 位对齐三 Note（note）：C 位/完成码/CH 位与标准 TRB 同位同管
+    ← **L1179-1187**（p212）
+  - 自定义命令族（chip）："xHC vendors may use the Vendor Defined TRB Type
+    codes to define proprietary xHCI commands. All vendor defined commands
+    shall utilize the Command Completion Event TRB to report completions."
+    ← **L1188-1190**（p212）
+  - 完成码两群（表卡）：Info 群≈Success/Error 群≈Undefined Error+命令
+    完成事件例 ← **L1196-1207**（p212）
+- 档位：任务档 小 450-1000f，实绩 1117f 超上限 117f（+11.7% 记档）——
+  六拍判据链全覆盖；pace 修平 +2.3s+富余收缩 -0.6s 后仍超。
+
+## ⑤ xh1107 §4.11.7 TD Usage Rules+.7.1 TD Fragments+三图+尾 Note（2989f · beats=97 · pace fast=0 · probe viol=0 · scan ok）
+
+- 上屏论断↔切片行号（spec-411.txt）：
+  - TD 构成+CH（chip）："A Transfer Descriptor (TD) may be composed of 1
+    or more TRBs. The TRB Chain flag is used identify the TRBs of a TD,
+    where the Chain flag is set in all the TRBs of a TD except the last. …
+    If a TD crosses a TRB Ring Segment boundary it may include one or more
+    Link TRBs." ← **L1210-1215**（p212）
+  - IOC+Transfer TRB Note（chip+note）："Setting the TRB Interrupt on
+    Completion (IOC) flag allows the completion of a TRB to generate an
+    event." ← **L1222-1224**；"Link and Event Data TRBs are not “Transfer
+    TRBs”" ← **L1225-1226**
+  - 选项 4（chip）：ISP 全设+末位 IOC+实传量=TRB Length 求和减事件 Length
+    ← **L1230-1239**（p212）
+  - 选项 5+互斥（chip）："Terminate the TD with an Event Data TRB that has
+    its IOC flag set … mutually exclusive." ← **L1240-1255**（p212）
+  - 杂项四连（note）：Event Data TD 附注 ← **L1256-1258**；IDT 单
+    Transfer TRB ← **L1259-1260**；Interrupter Target 全 TD 同值+虚拟化
+    隔离 ← **L1261-1265**；TD Size 恒有效 ← **L1266-1267**
+  - 禁忌清单（表卡+note）：No Op 禁入多 TRB TD/Link 禁首尾/禁连续 Link/
+    Link TD 可夹前后/违者未定义 ← **L1274-1284**（p213）
+  - 事件定期更新 Deq（note）：三用+逢 IOC 必出+大 TD 周期 IOC 回收 TRB
+    ← **L1285-1295**（p213）
+  - 中间事件 Success+错误覆盖+错误≠完成（双 note）← **L1296-1304**（p213）
+  - Fragment 动机（chip，bullet 分段）："Maximize burst opportunities …
+    Simplify Event generation by limiting the frequency and locations in a
+    TD where the IOC flag may be set." ← **L1307-1327**（p213-214）
+  - MBP+尺寸规则（chip+公式卡+note）："(Max Burst Size + 1) * Max Packet
+    Size bytes … only last TD Fragment shall define less than MBP data
+    (or the Residue) bytes … The first TRB of a TD Fragment is written
+    last" ← **L1328-1345**（p214）
+  - 结构规则（chip，bullet 分段）：首支恒 Transfer TRB/不跨段/Packet
+    Boundary 定义/首尾贴 Boundary ← **L1346-1365**（p214）
+  - IOC 单设规则（chip，bullet 分段）："The IOC flag may be set in only
+    one TRB of a TD Fragment" ← **L1366-1374**（p214）
+  - Figure 4-16 语义重建（双卡分时，L1381-1422 p215）：两 Fragment 各自
+    Boundary（TRB2|3、TRB4 末=整 MPS 倍；TRB5|6、TRB7 末=TD 终点）+IOC
+    候选（F1: TRB2/4/Link；F2: TRB5/7/EventData）+TRB1/3/6 不可（不紧邻
+    Boundary）+末 TRB 落 MPS 边界或 TD 终点
+  - Figure 4-17 语义重建（表卡+note，L1593-1614 p216-217）：31KB/3KB 偏移
+    /9 页同缓冲四例（Ex1 MBP16K+Residue15K；Ex2 单 Fragment 全 TD；Ex3
+    MBP8K×3+7K；Ex4 F2=2×MBP）+写序 2->3->1、5->6->7->8->4、10->11->9
+    +单页拆分 TRB5(3K)+TRB6(1K)（L1623-1628）
+  - Isoch 全成形（note）："Only fully formed TDs may be scheduled on
+    Isoch endpoints … write the first TRB of a multi-TRB TD last"
+    ← **L1629-1632**（p217）
+  - Figure 4-18+尾 Note（chip+note）："due to the initial offset (3.75KB),
+    page boundaries do not land on packet boundaries … the IOC flag only
+    may be set in TRBs 5 and 10 … the Link TRB does not land on a packet
+    boundary … In Figure 4-17 all TRBs define buffers that end on Packet
+    boundaries; hence an IOC flag may be set in any TRB of a TD Fragment,
+    but only once per TD." ← **L1677-1695**（p217）；尾 Note
+    "a partially formed TD shall not be posted to an Isoch endpoint"
+    ← **L1702-1707**（p218）
+- 档位：任务档 巨头 1800-2800f，实绩 2989f 超上限 189f（+6.75%，xh1001
+  +7.7% 先例同量级记档）——16 拍判据链+三图语义重建全覆盖；pace 修平
+  +3.4s+富余收缩 -4.5s 后净 -1.1s 仍超（内容体量=两大节+三图）。
+
+## ⑥ xh1102dp 补丁片 · f18f8ed2a9adc41 等时 TD Size 掩码（896f · beats=25 · pace fast=0 · probe viol=0 · scan ok）
+
+- 三幕走读同构 xh1002p（三幕+makeDiffPanel diff 行；判据全部现场
+  `git -C /Volumes/KernelSrc/linux show f18f8ed2a9adc41` 取原文，Sarah
+  Sharp 2013-01-11，xhci-ring.c 3+/2-，Cc stable 3.0+）：
+  - 幕① 背景（bgNote）：TD Size=处理后剩余包数（§4.11.2.4 同式，规范锚
+    spec-411 **L505-533** p198）+message 原文逐字 "The TD size calculation
+    did not mask off those bits before using the field."
+  - 幕② 问题（logicChip 单行+数字例 note，message 数字例逐字上屏）：
+    端点 2 additional service opportunites+最大包 1020B（原文拼写保留）；
+    帧缓冲 3060B 跨 64KB 拆 1276B+1784B；正解 DIV_ROUND_UP(3060/1020)=3、
+    3−(1276/1020)=2；旧算 DIV_ROUND_UP(3060/5116)=1、1−(1276/5116)=1
+    （5116=1020|额外机会位 bits 10-11，logicChip 注记 1020+2×2048=5116）
+  - 幕③ 修复（specChip+diff 走读）：两处除数套 GET_MAX_PACKET——
+    xhci_v1_0_td_remainder packets_transferred 除数（@@ -3108,7 +3108,7：
+    del 3111→add 3111）+xhci_queue_isoc_tx total_packet_count 除数
+    （@@ -3642,7 +3642,8：del 3645→add 3645-3646）；specChip 引 §4.11.2.4
+    "TD Packet count = ROUNDUP( TD Transfer Size / Max Packet Size )"
+    （机核对切片 L511-514 ✓）
+  - 片尾沿革注记（ch4610p 先例）：修复函数后经 c840d6ce772d 重构统一为
+    xhci_td_remainder——基线 d9008e061539 现行 xhci-ring.c **L3501-3545**
+    （对读段归 TrackB landing）
+- diff 行号=机算（r12c_hunk_lines.py 从 git show 逐行标号，禁手数）。
+- 档位：补丁片预算 ~650f，实绩 896f（xh1002p 950f/ch4606p 871f 同族记档）。
+
+## ⑦ xh1102ep 补丁片 · add8469b3e0031a2e Frame ID 窗口径（896f · beats=25 · pace fast=0 · probe viol=0 · scan ok）
+
+- 三幕走读同构 xh1002p（Mathias Nyman 2026-08-06，xhci-ring.c 182 行重构
+  +xhci-mem.c+xhci.h，86+/104-；基线 d9008e061539 已含修复后形态）：
+  - 幕① 背景（bgNote）：Frame ID 合法窗按帧（§4.11.2.5 p199，规范锚
+    spec-411 **L555-576**：End=(MFINDEX+895ms) MOD 2048/Start=(MFINDEX+
+    IST+1) MOD 2048；.5.1 有效窗判跳过/执行 **L563-569**）
+  - 幕② 问题（logicChip+message note）：旧码微帧口径算窗（roundup/
+    rounddown 到微帧 8 倍数再折帧）与规范帧口径不一致；越窗 -EINVAL 拒收
+    +xhci_warn "Ignore frame ID field, use SIA bit instead"（diff 旧行
+    4028 逐字）→中途切 SIA/留 frame id gap；message 原文逐字含 "winow"
+    原文拼写注记
+  - 幕③ 修复（specChip+diff 走读，182 行挑代表 hunk）：新
+    xhci_frame_in_range+xhci_get_isoc_start_frame 按帧算窗（MFINDEX_TO_FRAME
+    宏，win_start=(curr_frame+DIV_ROUND_UP_POW2(ist,8)+1)%MAX_FRAMES/
+    win_end=(curr_frame+895)%MAX_FRAMES）+每 URB 一次范围校验+越窗仅
+    xhci_dbg（"Ill-timed isoc URB"）+首 URB 对齐整帧；message 自引
+    "better match how xhci specification section 4.11.2.5 does it" 逐字
+  - 片尾注记：对读段=基线现行 xhci_get_isoc_start_frame（xhci-ring.c
+    **L4015-4073**，landing 已挂）
+- diff 代表行号=机算（r12c_hunk_lines.py：旧 3983/3984/3993/3994/4028，
+  新 4001-4003/4019/4023，xhci.h 294-296）。
+- 档位：同 xh1102dp（896f 同族记档）。
+
+## ⑧ 注册·登记·门禁记录（TrackA-2）
+
+- **render.ts**：import 块+scenes 数组扩七支（注释「R12 批 C TrackA-2」；
+  主片 xh1103-07 插 xh1102e 后=44-48，补丁片 xh1102dp/xh1102ep 尾插=61/62
+  ——**补丁片照既有补丁形态进 render.ts 显式清单**（ch41p..xh1002p 先例
+  全部显式 import+数组追加），63 支与 player.ts orderedSceneKeys glob 序
+  node 模拟同构自证 match=true（~/.cache/zcode-tmp/r12c_scene_order_check.js
+  ，比较器=player.ts isPatch 正则同构；44-48=xh1103..xh1107、61/62=
+  xh1102dp/xh1102ep、补丁组字典序 xh1002p<xh1102dp<xh1102ep）。
+- **帧表**：44-48/61/62 由 scan 新产（初扫+pace 修平后重扫 44-48 两轮；
+  61/62 未改动单轮）；0-43/49-60 既有表零触碰；63 张齐。61/62 total/
+  distinct 巧合相同（896/38）经 sha256+scene 字段核验非错位（两支三幕
+  同构节奏、内容不同）。
+- **scripts/pace_audit.py SCENES** 增七项（主片五支插 xh1102e 后+补丁两支
+  尾部）；**scripts/smoke_player.py BEATS_EXPECT** 增七键（帧表 distinct
+  gap>=2 机核值：xh1103=58/xh1104=52/xh1105=62/xh1106=41/xh1107=97/
+  xh1102dp=25/xh1102ep=25）——BASE_SCENES/PATCH_SCENES 范围未动（主会话
+  统一扩），BEATS 只登记不验证（smoke_player 未跑）。
+- **player.ts 零改动**（glob 自动发现+补丁正则 `^(ch\d+p|xh\d{4}[a-z]?p)
+  \.tsx$` 对 xh1102dp/xh1102ep 天然匹配）。.meta×7（随机 seed）。
+- **引文机核 93/93 MISS=0**（探针 r12c_quote_check2.py）：修正 6 处后达标
+  ——xh1103 三条件 bullet 分段、xh1106 未识别三态 bullet 分段+xHC vendors
+  抄写修正（原文 "xHC vendors" 非 "xHCI vendors"）、xh1107 动机/结构规则/
+  IOC 单设三处 bullet 分段；补丁片 message 20 段对 git show 归一全文逐段
+  核（含 "opportunites"/"winow" 原文拼写保留）。
+- **三门数值表**（pace 修平+收缩后终值）：
+
+| 场景 | idx | total | distinct | beats | pace fast | probe viol | 档位对账 |
+|---|---|---|---|---|---|---|---|
+| xh1103 | 44 | 1560 | 169 | 58 | 0 | 0 | 中档超 160f（+11.4% 记档） |
+| xh1104 | 45 | 1226 | 148 | 52 | 0 | 0 | 小档超 226f（+22.6% 记档） |
+| xh1105 | 46 | 1720 | 154 | 62 | 0 | 0 | 中档超 320f（+22.9% 记档） |
+| xh1106 | 47 | 1117 | 106 | 41 | 0 | 0 | 小档超 117f（+11.7% 记档） |
+| xh1107 | 48 | 2989 | 251 | 97 | 0 | 0 | 巨头档超 189f（+6.75% 记档） |
+| xh1102dp | 61 | 896 | 38 | 25 | 0 | 0 | 补丁 ~650f 预算同族记档 |
+| xh1102ep | 62 | 896 | 38 | 25 | 0 | 0 | 同上 |
+
+- **超档记档口径**（ch4611/xh0803/xh1001/xh1004/xh0700 先例：判据不砍+
+  三门全绿不返工）：超档主因=字幕拍阈值下限（加权字数/5.5+1.0s）对规则
+  清单/三条件枚举/公式链类内容偏紧（xh1103 三条件、xh1105 EDTLA 四规则、
+  xh1107 结构/IOC 双规则链）；已做一轮定向修平（fast 拍加 wait 至阈值
+  +0.2s：xh1103 六拍/xh1104 两拍/xh1105 两拍/xh1106 三拍/xh1107 四拍）
+  +富余拍收缩（xh1103 -1.5s/xh1104 -2.9s/xh1105 -4.1s/xh1106 -0.6s/
+  xh1107 -4.5s）后 pace fast=0 全绿；xh1104/xh1105 相对超档更多系轻片
+  定位（格式族公共面+代表三连/双小节合支）的内容义务（§9 全覆盖+Optional
+  标注）不可砍。
+- **布局避让带**：全七支沿用批 B/A 验证参数（chip(1090,265,w1300)/note
+  (1300,285,w1040)≤4 行/表卡(740,295,w560)≤5 行/收口卡(960,840-850)/
+  双环带 470+655/补丁片 logicChip 单行 y200+specChip ≤2 行 y850-872+
+  bgNote(700,265,w1100)≤4 行）——probe 两轮（初扫+重扫）均 viol=0×7，
+  零避让重排回合；xh1107 巨头片 f13a/f13b 双卡 TLx(370)→TLx(740) 提前
+  修正（左上槽卡占位带 x≤410 避让）。
+- 未动 dist/、未跑 vite build、未 git commit、未动 output/ 既有 mp4、
+  未动 public/frames- 既有 0-43/49-60、未跑 smoke_player（BEATS 只登记）、
+  未碰 TrackB/TrackC 文件面（build_landing/check_landing_code/
+  online_e2e_r6/flowcharts/zh-quotes.json/interactive/smoke_interactive/
+  EVIDENCE.md/drafts-r12c-tracka1.md）。
+
+## ⑨ 探针/工具沉淀（本波次产出，均 ~/.cache/zcode-tmp/）
+
+- r12c_quote_check2.py：波次 1 探针扩展（七支 SCENES+补丁片 message 引文
+  对 git show 归一全文核对）；
+- r12c_hunk_lines.py：git show 统一 diff 行号对照器（旧/新行号逐行标注，
+  补丁片 diff 面板行号禁手数的固化防线）；
+- r12c_scene_order_check.js：render.ts scenes 数组 vs player glob 序同构
+  自证（isPatch 正则同构）；
+- r12c_beats_calc.py：帧表 beats 机核（distinct gap>=2，与 smoke_player
+  公式同构）。

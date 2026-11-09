@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="data:,">
-<title>xHCI 第 4 章交互教学台 · 三环操作台 / 初始化台 / URB→TRB→TD / 代码解读 / 拔除与槽位管理 / 命令受理台</title>
+<title>xHCI 第 4 章交互教学台 · 三环操作台 / 初始化台 / URB→TRB→TD / 代码解读 / 拔除与槽位管理 / 命令受理台 / TRB 拼装台</title>
 <style>
   :root{
     --bg:#0b0f15; --panel:#111823; --panel-hi:#18222f; --edge:#2a3849; --edge-hi:#3b4d63;
@@ -422,6 +422,47 @@
   .m6mtx td.m6na{color:var(--faint); cursor:pointer}
   .m6mtx td.m6cur{outline:2px solid var(--driver); outline-offset:-2px}
 
+
+  /* ---------- 模块七：TRB 拼装台（§4.11） ---------- */
+  .m7zones{display:grid; grid-template-columns:1.05fr 1fr; gap:14px; margin-top:14px}
+  @media (max-width:1100px){ .m7zones{grid-template-columns:1fr} }
+  .m7fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); gap:10px; margin-top:8px}
+  .m7fld{border:1px solid var(--edge); border-radius:10px; padding:8px 10px; background:var(--chip)}
+  .m7fld label{display:block; font-family:var(--mono); font-size:12.5px; color:var(--dim); margin-bottom:3px}
+  .m7fld select{width:100%; font-size:14.5px; padding:4px 6px}
+  .m7fld .m7fhint{font-size:12.5px; margin-top:3px; line-height:1.5; color:var(--faint)}
+  .m7fld.ok{border-color:var(--ok)}
+  .m7fld.ok .m7fhint{color:var(--ok)}
+  .m7fld.bad{border-color:var(--warn)}
+  .m7fld.bad .m7fhint{color:var(--warn)}
+  .m7bytes{margin-top:10px; background:var(--chip); border:1px solid var(--edge); border-radius:10px; padding:10px 12px}
+  .m7dwrow{display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap}
+  .m7dwrow:first-child{margin-top:0}
+  .m7dwlab{font-family:var(--mono); font-size:13px; color:var(--dim); width:34px; flex:none}
+  .m7dwhex{font-family:var(--mono); font-size:15px; color:var(--ink); font-weight:700; flex:none}
+  .m7bits{display:flex; gap:2px; flex:none}
+  .m7b{
+    font-family:var(--mono); font-size:11.5px; width:15px; height:20px; border-radius:3px;
+    display:flex; align-items:center; justify-content:center; color:var(--faint);
+    background:var(--panel-hi); border:1px solid transparent;
+  }
+  .m7b.m7bf{color:var(--driver); border-color:rgba(124,159,240,.4)}
+  .m7b.m7on{color:#0b0f15; background:var(--driver); font-weight:700}
+  .m7dwuse{font-family:var(--mono); font-size:12px; color:var(--faint); flex:1; min-width:150px; line-height:1.5}
+  .m7tc{font-family:var(--mono); font-size:13px; color:var(--evt); margin-top:8px; line-height:1.7}
+  .m7ofw{margin-top:6px; color:var(--warn); font-size:13px; line-height:1.6}
+  .m7t47{border-collapse:collapse; font-size:13px; margin-top:8px}
+  .m7t47 th,.m7t47 td{border:1px solid var(--edge); padding:4px 8px; text-align:center}
+  .m7t47 th{color:var(--dim); background:var(--chip); font-weight:600}
+  .m7t47 td.m7cur{outline:2px solid var(--driver); outline-offset:-2px}
+  .m7verdict{margin-top:10px; border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.7}
+  .m7verdict.bad{border:1px solid var(--warn); color:var(--ink); background:rgba(224,122,95,.08)}
+  .m7verdict.ok{border:1px solid var(--ok); color:var(--ok); background:rgba(134,189,122,.08); font-weight:600}
+  .m7verdict .m7vq{
+    display:block; color:var(--dim); font-weight:400; font-size:13px; margin-top:4px;
+    border-left:3px solid var(--edge-hi); padding-left:8px; line-height:1.6;
+  }
+  .m7verdict.ok .m7vq{color:var(--dim)}
   footer{margin-top:26px; color:var(--faint); font-size:13.5px; line-height:1.7}
   footer .mono{font-family:var(--mono)}
 </style>
@@ -431,7 +472,7 @@
 
 <header class="hero">
   <h1>xHCI 第 4 章交互教学台</h1>
-  <p class="sub">TRB（传输请求块，Transfer Request Block）在三方之间流转：<code>xHCI 驱动</code> 写环敲门铃 → <code>xHC 控制器</code> 取指执行、产生事件 → 驱动读事件环收回执。六模块按小节分工：模块一（§4.1 三环操作台）· 模块二（§4.2 控制器初始化台）· 模块三（§4.3 URB→TRB→TD 组装）· 模块四（代码解读题组）· 模块五（§4.4 拔除剧本 + §4.5 DCI 计算器/槽位状态机）· 模块六（§4.6 命令受理台）。判据：xHCI 1.2b §4.1（p68）、§4.2（p69-70）、§4.3（p71-80）、§4.4/§4.5（p81-89）、§4.6（p90-142），字段值逐条对表 evidence/ 切片与 EVIDENCE.md。示例设备：FS 设备 · Slot ID=1（由 xHC 自选，§4.3.2 p75）。零依赖单文件，双击即开；<b>闪烁描边的控件=当前该点这里</b>。</p>
+  <p class="sub">TRB（传输请求块，Transfer Request Block）在三方之间流转：<code>xHCI 驱动</code> 写环敲门铃 → <code>xHC 控制器</code> 取指执行、产生事件 → 驱动读事件环收回执。七模块按小节分工：模块一（§4.1 三环操作台）· 模块二（§4.2 控制器初始化台）· 模块三（§4.3 URB→TRB→TD 组装）· 模块四（代码解读题组）· 模块五（§4.4 拔除剧本 + §4.5 DCI 计算器/槽位状态机）· 模块六（§4.6 命令受理台）· 模块七（§4.11 TRB 拼装台）。判据：xHCI 1.2b §4.1（p68）、§4.2（p69-70）、§4.3（p71-80）、§4.4/§4.5（p81-89）、§4.6（p90-142），字段值逐条对表 evidence/ 切片与 EVIDENCE.md。示例设备：FS 设备 · Slot ID=1（由 xHC 自选，§4.3.2 p75）。零依赖单文件，双击即开；<b>闪烁描边的控件=当前该点这里</b>。</p>
   <div class="legend">
     <span class="lg-drv"><b></b>xHCI 驱动（system software）</span>
     <span class="lg-hc"><b></b>xHC 控制器（host controller）</span>
@@ -447,6 +488,7 @@
   <button class="tab" data-tab="m4">模块四 · 代码解读（4.1-4.6）</button>
   <button class="tab" data-tab="m5">模块五 · 拔除与槽位管理台</button>
   <button class="tab" data-tab="m6">模块六 · 命令受理台（§4.6）</button>
+  <button class="tab" data-tab="m7">模块七 · TRB 拼装台（§4.11）</button>
 </nav>
 
 <!-- ================= 模块一 ================= -->
@@ -895,6 +937,57 @@
   </div>
 </section>
 
+<!-- ================= 模块七：TRB 拼装台（§4.11） ================= -->
+<section id="m7" class="hidden">
+
+  <!-- Zone A：TRB 型选择 + 判据引文 -->
+  <div class="panel">
+    <h2>TRB 拼装台：选型 → 置位字段 → 16 字节视图与类型编码 → 非法组合引原文拦截（§4.11）</h2>
+    <p class="quote" id="m7-quote">TRB（传输请求块）=16 字节：Parameter（DW0-DW1）+ Status（DW2）+ Control（DW3）。类型定内容——「The format/contents of all Command or Transfer TRB components shall be defined by the Control component TRB Type field. TRB Type field shall always reside in bits 10-15 of the Control component.」<em>（§4.11.1.1 · evidence/spec-411.txt L37-39）</em>生产/消费角色——「Command and Transfer TRB Components adhere to the following general rules, where the producer is system software, and the consumer is the xHC.」<em>（spec-411.txt L31-32）</em>初始化基线——「All components of all Command and Transfer TRBs shall be initialized to ‘0’ by the system software when the Command Ring or a Transfer Ring is created.」<em>（spec-411.txt L33-34）</em>原子写次序——「Note: If all 4 Dwords of a TRB are not written as an atomic memory operation, then it is required that the Parameter and Status components of a TRB shall be initialized prior to writing the Control Component. Violating this rule shall cause undefined xHC behavior.」<em>（spec-411.txt L55-58）</em>TRB Type 编码与字段位段=内核对照（drivers/usb/host/xhci.h @d9008e061539，TRB_TYPE 枚举 L1106-1154）；合法性判据=evidence/spec-411.txt 切片原文。</p>
+    <div class="ctl-row">
+      <label>TRB 型 <select id="m7-type">
+        <option value="normal">Normal TRB（编码 1 · 传输环）</option>
+        <option value="setup">Setup Stage TRB（编码 2 · 传输环/控制）</option>
+        <option value="data">Data Stage TRB（编码 3 · 传输环/控制）</option>
+        <option value="status">Status Stage TRB（编码 4 · 传输环/控制）</option>
+        <option value="isoch">Isoch TRB（编码 5 · 传输环/等时）</option>
+        <option value="link">Link TRB（编码 6 · 环段链接）</option>
+        <option value="eventdata">Event Data TRB（编码 7 · 传输环）</option>
+        <option value="transferEvent">Transfer Event TRB（编码 32 · 事件环）</option>
+      </select></label>
+      <span class="note">八型=§4.11 切片实义集合（Normal/Setup-Data-Status/Isoch L120-552 + Link/Event Data L922-1150 + Event 组件 L71-91 + Transfer Event L99-118/L707-716）</span>
+    </div>
+
+    <div class="m7zones">
+      <!-- Zone B：字段置位 + Zone D：校验 -->
+      <div>
+        <h3>Zone B · 字段置位面板（按型异构）</h3>
+        <p class="note" id="m7-intro"></p>
+        <div class="ctl-row" id="m7-ctxrow"></div>
+        <div class="selnote" id="m7-ctxnote"></div>
+        <div class="m7fields" id="m7-fields"></div>
+        <div class="ctl-row" style="margin-top:12px">
+          <button class="btn driver" data-m7act="m7-check">Zone D · 校验组合</button>
+          <button class="btn ghost" data-m7act="m7-reset">重置本型</button>
+        </div>
+        <div class="hint" id="m7-hint">从 Zone A 选 TRB 型开始：字段逐项置位（Zone C 实时编码），全部置位后点「校验组合」——非法组合引原文拦截，切片无禁令的组合不拦。</div>
+        <div id="m7-verdict" class="m7verdict hidden"></div>
+      </div>
+
+      <!-- Zone C：16 字节视图 + 类型编码 -->
+      <div>
+        <h3>Zone C · 16 字节视图（DW0-DW3）</h3>
+        <div class="m7bytes" id="m7-bytes"></div>
+        <div class="m7ofw hidden" id="m7-ofw"></div>
+        <div class="m7tc" id="m7-typecode"></div>
+        <p class="note">蓝=本型定义位段，亮底=置 ‘1’，暗=保留（RsvdZ）；悬停位格看字段归属。位段事实源=规范 §6.4 各型表（PDF p427-439）+内核 xhci.h @d9008e061539 对照；判据规则=evidence/spec-411.txt 切片（Zone D 拦截逐条带行号）。</p>
+        <h3 style="margin-top:14px" id="m7-t47head">Table 4-7 · SETUP Data → Data/Status Stage TRB 映射</h3>
+        <div id="m7-t47wrap"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- 模块五 · DCI 公式气泡浮层（页面级） -->
 <div id="m5-quote-pop" class="qpop hidden">
   <div class="qpop-card">
@@ -914,7 +1007,7 @@
 </div>
 
 <footer>
-  <p>本页全部位值/字段名对表判据文件：<span class="mono">evidence/spec-41.txt</span>（§4.1 p68 命令操作）、<span class="mono">evidence/spec-42.txt</span>（§4.2 p69-70 初始化顺序：CNR 就绪门 L18-20 / 顺序 Note L21-23 / 各寄存器 L25-117）、<span class="mono">evidence/spec-43.txt</span>（§4.3 p71-80，GET_DESCRIPTOR 三段 TRB 字段见 p73 ii/iv/vi）、<span class="mono">evidence/spec-44.txt</span>（§4.4 p81 拔除：CCS/CSC/PSCEG L2-5 / Disable Slot 义务 L5-8）、<span class="mono">evidence/spec-45.txt</span>（§4.5 p81-89 槽位管理：DCI 公式 L96-102 / Table 4-1 L207-276 / 状态机 L283-416 / Enabled 复用值 0 注记 L319-323）、<span class="mono">evidence/spec-46.txt</span>（§4.6 p90-142 命令接口：大区导语与 Note L1-39 / 命令环机制 4.6.1 L40-167 / No Op L168-213 / Enable Slot L214-299 / Disable Slot L306-397 / Address Device L398-650 / Configure Endpoint L657-1269 / Reset Endpoint L1434-1624）、<span class="mono">evidence/EVIDENCE.md</span>（已核断言表）。规范引文为 xHCI 1.2b 原文（字段气泡与初始化台引文=逐字切片，连行处并单空格，行内脚注编号为显示剥离）；示例值（Slot ID=1、FS 设备）为教学示例。「读事件环」即轮询式管理——「Interrupts are optional. The xHC may be managed by polling Event Rings.」（§4.2 p69 脚注 7）。</p>
+  <p>本页全部位值/字段名对表判据文件：<span class="mono">evidence/spec-41.txt</span>（§4.1 p68 命令操作）、<span class="mono">evidence/spec-42.txt</span>（§4.2 p69-70 初始化顺序：CNR 就绪门 L18-20 / 顺序 Note L21-23 / 各寄存器 L25-117）、<span class="mono">evidence/spec-43.txt</span>（§4.3 p71-80，GET_DESCRIPTOR 三段 TRB 字段见 p73 ii/iv/vi）、<span class="mono">evidence/spec-44.txt</span>（§4.4 p81 拔除：CCS/CSC/PSCEG L2-5 / Disable Slot 义务 L5-8）、<span class="mono">evidence/spec-45.txt</span>（§4.5 p81-89 槽位管理：DCI 公式 L96-102 / Table 4-1 L207-276 / 状态机 L283-416 / Enabled 复用值 0 注记 L319-323）、<span class="mono">evidence/spec-46.txt</span>（§4.6 p90-142 命令接口：大区导语与 Note L1-39 / 命令环机制 4.6.1 L40-167 / No Op L168-213 / Enable Slot L214-299 / Disable Slot L306-397 / Address Device L398-650 / Configure Endpoint L657-1269 / Reset Endpoint L1434-1624）、<span class="mono">evidence/spec-411.txt</span>（§4.11 p188-213 TRBs：组件规则 L29-91 / Normal L120-132 / Setup-Data-Status L139-392 含 Table 4-7 L229-268 / Isoch L393-502 / TD Size L503-552 / Frame ID L553-674 / Event L675-733 / Link+Event Data L922-1150 / TD 使用规则 L1208-1284）、<span class="mono">evidence/EVIDENCE.md</span>（已核断言表）。规范引文为 xHCI 1.2b 原文（字段气泡与初始化台引文=逐字切片，连行处并单空格，行内脚注编号为显示剥离）；示例值（Slot ID=1、FS 设备）为教学示例。「读事件环」即轮询式管理——「Interrupts are optional. The xHC may be managed by polling Event Rings.」（§4.2 p69 脚注 7）。</p>
 </footer>
 
 </div>
@@ -929,7 +1022,7 @@ const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
    参数化深链 #m4&grp=<题组> / #m6&cmd=<命令名>——第一段=模块 id，其余 &kv=参数，
    参数值经 decodeURIComponent 还原）。R4 坑：路由须 load+hashchange 双监听——
    首帧只切面板（模块常量尚未全量初始化），load 后再全量执行参数深链。 */
-const TAB_IDS = ['m1','m2','m3','m4','m5','m6'];
+const TAB_IDS = ['m1','m2','m3','m4','m5','m6','m7'];
 function activateTab(id){
   if (!TAB_IDS.includes(id)) return;
   $$('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === id));
@@ -950,6 +1043,7 @@ function routeHash(){
   activateTab(r.mid);
   if (r.mid === 'm4' && r.params.grp) m4GotoGroup(r.params.grp);
   if (r.mid === 'm6' && r.params.cmd) m6GotoCmd(r.params.cmd);
+  if (r.mid === 'm7' && r.params.trb) m7GotoTrb(r.params.trb);
 }
 $$('.tab').forEach(b => b.addEventListener('click', () => activateTab(b.dataset.tab)));
 activateTab(parseHash().mid);
@@ -3452,10 +3546,653 @@ function m6GotoCmd(raw){
   m6aHint('命令「' + name + '」无剧本，走自由拼——已落回默认剧本（Enable Slot）；可在「命令」下拉选「自由拼 TRB」任选拼装。', true);
 }
 
+/* ================= 模块七：TRB 拼装台（§4.11，R12 批 C） ================= */
+/* 判据=evidence/spec-411.txt 逐字切片（M7Q/M7Q_SRC 由提取器程序化生成）。
+   TRB Type 编码与字段位段=内核对照 drivers/usb/host/xhci.h @d9008e061539
+   （TRB_TYPE 枚举 L1106-1154；TRB_CYCLE L1047 / TRB_ENT L1052 / TRB_ISP L1054 /
+   TRB_CHAIN L1058 / TRB_IOC L1060 / TRB_IDT L1062 / TRB_DIR_IN L1070 /
+   TRB_SIA L1076 / TRB_FRAME_ID L1077 / TRB_TBC L1080 / TRB_TLBPC L1082 /
+   TRB_TC L1026 / TRB_LEN L1036 / TRB_TD_SIZE L1038 / TRB_INTR_TARGET L1043 /
+   TRB_TO_SLOT_ID L820 / TRB_TO_EP_ID L823 / EVENT_TRB_LEN L830 / COMP_CODE_MASK L833）；
+   Setup TRT 位段=规范 §6.4.1.2.1（PDF p431，17:16，值 0/1/2/3）。
+   Zone D 拦截规则逐条带切片引文+行号；切片无禁令的组合不拦（禁自造规则）。
+   选择器全部 m7 前缀（R9 坑①：.slot/[data-field]/[data-db]/.trbcard2 等全页
+   扫描零撞面）。 */
+/* m7 引文常量：由提取器程序化生成（~/.cache/zcode-tmp/m7_extract.py），
+   判据=evidence/spec-411.txt 逐字切片（归一化=行首 bullet 剥离+单空格连行，
+   区间禁跨 PAGE 标；smoke 内嵌同款归一化全量对表）。勿手改。 */
+const M7Q = {
+  atomicNote: 'Note: If all 4 Dwords of a TRB are not written as an atomic memory operation, then it is required that the Parameter and Status components of a TRB shall be initialized prior to writing the Control Component. Violating this rule shall cause undefined xHC behavior.',  // L55-58
+  chMay: 'The Chain bit (CH field in Figure 6-8) may be set to ‘1’ in Normal, Data Stage, Status Stage, and Isoch TRBs to form multi-TRB Transfer Descriptors. Chaining',  // L128-129
+  cmdInit0: 'All components of all Command and Transfer TRBs shall be initialized to ‘0’ by the system software when the Command Ring or a Transfer Ring is created.',  // L33-34
+  cmdProducer: 'Command and Transfer TRB Components adhere to the following general rules, where the producer is system software, and the consumer is the xHC.',  // L31-32
+  cmdRo: 'All components of all Command and Transfer TRBs shall be treated as read- only by the xHC.',  // L35-36
+  cycBit: 'The Enqueue Pointer of a ring is defined by the transition of the Control component Cycle (C) bit in the TRB Ring. Refer to section 4.9 for a detailed explanation of Cycle bit operation. Cycle bit shall always reside in bit 0 of the Control component.',  // L46-49
+  dataTd: 'A Data Stage TD shall consist of a Data Stage TRB chained to zero or more Normal TRBs, or Event Data TRBs.',  // L191-192
+  dirResp: 'System software is responsible for ensuring that the Direction (DIR) flag of the Data Stage and Status Stage TRBs are consistent with the USB SETUP Data defined bmRequestType:Data Transfer Direction (DTD) flag and wLength field. Refer to Table 4-7 for mapping.',  // L222-225
+  endFid: 'Software shall not schedule an Isoch TD with a Frame ID value that is greater than the End Frame ID, where: End Frame ID = (Frame Index of the current MFINDEX register value + 895 ms.) MOD 2048',  // L558-560
+  entCh: 'If the xHC does not pre-fetch TRBs the Evaluate Next TRB (ENT) flag forces the xHC to evaluate the next TRB of a TD before advancing to the next endpoint in the Pipe Schedule. The ENT flag does not span TDs, therefore the ENT flag is valid only if the Chain bit (CH) is ‘1’. Refer to section 4.12.3 for more information on the ENT flag.',  // L50-54
+  etcEte: 'If Extended TBC Capability (ETC) and Extended TBC Enable (ETE) = ‘1’ then TBC field supports the definition of Burst Counts up to 32 (and the TD Size field is deprecated in an Isoch TRB), otherwise the TBC field supports the definition of Burst Counts up to 3 (and the TD Size field is valid). Refer to section 6.4.1.3',  // L474-477
+  evtDataIoc: 'Note: Software shall set the IOC flag in all Event Data TRBs. Because the IOC flag must be set in an Event Data TRB, the possible locations of an Event Data TRBs within a TD are constrained by the TD Fragment rules described in section 4.11.7.1.',  // L1092-1095
+  evtDataOnly: 'Note: An Event Data TRB may only be found on a Transfer Ring.',  // L1142
+  evtDataPurpose: 'The Event Data TRB allows system software to generate a software defined event, and fully specify the Parameter Component of a generated event.',  // L1043-1044
+  evtDataTd: 'An event generated by an Event Data TRB (Event Data Transfer Event) shall utilize the format of the Transfer Event TRB. The Slot ID and Endpoint ID fields shall be set appropriately for the Transfer Ring that contained the Event Data TRB, and the Event Data (ED) flag shall be set to ‘1’.',  // L1108-1111
+  evtInit0: 'All components of all Event TRBs shall be initialized to ‘0’ by the system software when the Event Ring is created.',  // L75-76
+  evtProducer: 'Event TRB Components adhere to the following general rules, where the consumer is system software and the producer is the xHC.',  // L73-74
+  evtRo: 'After Event Ring initialization, all components of Event TRBs shall be treated as read-only by system software.',  // L77-78
+  evtTypeDef: 'The format/contents of all Event TRB components shall be defined by the Control component TRB Type field. TRB Type field shall always reside in bits 10-15 of the Control component.',  // L79-81
+  fiaRange: 'Refer to Figure 4-21. The range of possible values for the Frame ID field are 0 to 2047, with the constraints defined in section 4.11.2.5. If the Start Isoch',  // L461-462
+  fiaSia0: 'The Isoch TRB Frame ID field may be used to specify the Service Interval Boundary that an Isoch transfer may start on. If the Start Isoch ASAP (SIA) flag is cleared to ‘0’ in the Isoch TRB, the xHC shall schedule the Isoch TD within one Service Interval of the next match of the Frame ID field with the Frame Index portion (bits 13:3) of the Microframe Index (MFINDEX) register.',  // L456-460
+  fidValid: 'The Frame ID field of an Isoch TD identifies the target frame that the Interval associated with this Isochronous Transfer Descriptor will start on. The Frame ID is valid only if the Start Isoch ASAP (SIA) field of an Isoch TRB equals ‘0’.',  // L555-557
+  idtOnly: 'If the IDT flag is set in one TRB of a TD, then it shall be the only Transfer TRB of the TD. An Event Data TRB may be included in the TD.',  // L1259-1260
+  iocTypical: 'The IOC flag will typically only be set (‘1’) in the last TRB of Transaction Descriptor (TD) to minimize Event TRB generation and system interrupts.',  // L110-111
+  isochConsume: 'The xHC shall consume one Isoch TD each Interval on an Isoch Transfer Ring. To ensure streaming data, system software is required to place at least one Isoch TD on the Transfer Ring each Interval, prior to the Isochronous Scheduling Threshold (refer to IST, section 4.14.2.1).',  // L422-425
+  isochFirst: 'An Isoch TD defines an isochronous data transfer that will occur during a single Interval. An Isoch TD consists of one or more TRBs, where the first TRB of TD is always an Isoch TRB. If the data associated with an Isoch TD is not',  // L417-419
+  isochTd: 'An Isoch Transfer Descriptor (TD) shall consist of an Isoch TRB chained to zero or more Normal TRBs.',  // L395-396
+  linkChIgnored: 'TRB of the next segment. In a Command Ring the Link TRB Chain bit (CH) is ignored by the xHC.',  // L1006-1007
+  linkEnd: 'A Link TRB shall be the last TRB of each Transfer or Command Ring Segment',  // L941-942
+  linkEvt: 'When the Link TRB resides on a Transfer Ring the Interrupt On Completion (IOC) flag of a Link TRB may be used by system software to generate a Transfer Event, where the Transfer Event Slot ID and Endpoint ID shall reflect the slot and endpoint that the Transfer Ring is associated with, the Length = ‘0’, the TRB Pointer field shall point to Link TRB, and the Completion Code = Success.',  // L1021-1026
+  linkPurpose: 'The Link TRB provides support for sizing and non-contiguous Transfer and Command Rings. A Link TRB indicates the end of a ring by providing a pointer to the beginning of the ring.',  // L926-928
+  linkTc: 'The Toggle Cycle flag should be set in at least one Link TRB of a ring.',  // L957
+  noChkData0: 'If a Data Stage TD follows a Setup Stage TD, where wLength = ‘0’.',  // L311-312
+  noChkDirData: 'If the Data Stage TRB Direction (DIR) flag does not correspond to the definition in Table 4-7.',  // L321-322
+  noChkDirStatus: 'If the Status Stage TRB Direction (DIR) flag does not correspond to the definition in Table 4-7.',  // L324-325
+  normalDir: 'The direction of a data transfer associated with a Normal TRB depends on the direction defined by the Endpoint Context that it is associated with, or the preceding Data Stage TRB in the TRB Ring associated with a Control endpoint.',  // L125-127
+  normalUse: 'A Normal TRB is used in several ways; exclusively on Bulk and Interrupt Transfer Rings for normal and Scatter/Gather operations, to define additional data buffers for Scatter/Gather operations in Isoch and for Data stage TDs.',  // L122-124
+  oneToOne: 'stage. The xHCI defines the Setup Stage TRB, Data Stage TRB, and Status Stage TRB to provide a 1:1 mapping to the respective USB Control transfer stages. Refer to section 3.2.9 for an overview of xHCI Control transfer support.',  // L145-147
+  setupIdt: 'A Setup Stage TRB shall contain immediate data (IDT flag = ‘1’), its Parameter fields shall contain the 8-byte USB SETUP Data, which defines the request and the request’s parameters that will be sent to the device in the USB Setup stage transaction, and its Length field shall be set to ‘8’.',  // L212-215
+  setupSingle: 'Each Setup Stage TD shall contain a single Setup Stage TRB.',  // L189-190
+  siaIgn: 'ASAP (SIA) flag is set to ‘1’ in the Isoch TRB, the Frame ID field is ignored and the Isoch TD is scheduled as soon as possible.',  // L463-464
+  stallEvt: 'The Transfer Event generated by a Status Stage TRB shall report a Success, Stall Error, or other error Completion Code.',  // L285-286
+  startFid: 'Software should not schedule an Isoch TD with a Frame ID value that is less than the Start Frame ID, where: Start Frame ID = (Frame Index of the current MFINDEX register value + IST + 1) MOD 2048',  // L570-572
+  statusTd: 'A Status Stage TD shall contain of a single Status Stage TRB, optionally chained to an Event Data TRB.',  // L194-195
+  t47r1: 'Host-to-device 0 No Data Stage No Data Stage TD defined IN',  // L239-243
+  t47r2: '>0 OUT Data Stage OUT IN',  // L244-247
+  t47r3: 'Device-to-host 0 No Data Stage No Data Stage TD defined IN',  // L248-252
+  t47r4: '>0 IN Data Stage IN OUT',  // L253-256
+  tbcTlbpc: 'The Isoch TRB Transfer Burst Count (TBC) and Transfer Last Burst Packet Count (TLBPC) fields may be used by the xHC to identify the exact number of packets that will comprise an Isoch TD without having to read in the complete TD. The xHC may use this information to better manage its periodic schedules.',  // L470-473
+  tds31: 'Intel Confidential field is only 5 bits, its value shall be forced to 31 if the number of packets to be scheduled is greater than 31.',  // L539-541
+  tdsDef: 'The TD Size field of a TRB defines a number of packets that remain to be transferred for a TD after processing all Max Packet Sized packets in the current TRB and all previous TRBs. This field may be used by the xHC to',  // L505-507
+  tdsLast0: 'TD Size (n), For all Transfer TRBs except the last in a TD, TD Size identifies the number of packets that still need to be scheduled to complete this TD after sending TRB Residue (n) + the data for TRBs n+1 through x. The value of the TD Size in the last Transfer TRB of a TD (TD Size (x)) shall be cleared to \'0\' to explicitly indicate that it is the last Transfer TRB of the TD. Since the TD Size',  // L529-533
+  tdsValid: 'The Transfer TRB TD Size field shall be valid in all Transfer TRBs that define it. Refer to section 4.11.2.4.',  // L1266-1267
+  teCond: 'Transfer Event TRB generation shall only occur under the following conditions: If the Interrupt On Completion (IOC) flag is set. When a short transfer occurs during the execution of a Transfer TRB and the Interrupt-on-Short Packet (ISP) flag is set. If an error occurs during the execution of a Transfer TRB.',  // L709-716
+  teNote: 'Note: Software shall only utilize Transfer Events to determine TRB completions. Software shall not infer TRB completions based on Frame ID, MFINDEX, or other information.',  // L116-118
+  typeDef: 'The format/contents of all Command or Transfer TRB components shall be defined by the Control component TRB Type field. TRB Type field shall always reside in bits 10-15 of the Control component.',  // L37-39
+  xhcNotCheck: 'The xHC shall NOT check for the following Control transfer error conditions.',  // L303-304
+  xhcNotReq: 'The xHC is NOT required to check for the following Control transfer error conditions. If system software is properly designed these error conditions will',  // L326-328
+  xhcTrbErr: 'never occur. However if the xHC does check for these conditions it shall generate a Transfer Event for the TRB that the error was detected on with the Completion Code set to TRB Error.',  // L340-342
+};
+
+const M7Q_SRC = {
+  atomicNote: 'L55-58',
+  chMay: 'L128-129',
+  cmdInit0: 'L33-34',
+  cmdProducer: 'L31-32',
+  cmdRo: 'L35-36',
+  cycBit: 'L46-49',
+  dataTd: 'L191-192',
+  dirResp: 'L222-225',
+  endFid: 'L558-560',
+  entCh: 'L50-54',
+  etcEte: 'L474-477',
+  evtDataIoc: 'L1092-1095',
+  evtDataOnly: 'L1142',
+  evtDataPurpose: 'L1043-1044',
+  evtDataTd: 'L1108-1111',
+  evtInit0: 'L75-76',
+  evtProducer: 'L73-74',
+  evtRo: 'L77-78',
+  evtTypeDef: 'L79-81',
+  fiaRange: 'L461-462',
+  fiaSia0: 'L456-460',
+  fidValid: 'L555-557',
+  idtOnly: 'L1259-1260',
+  iocTypical: 'L110-111',
+  isochConsume: 'L422-425',
+  isochFirst: 'L417-419',
+  isochTd: 'L395-396',
+  linkChIgnored: 'L1006-1007',
+  linkEnd: 'L941-942',
+  linkEvt: 'L1021-1026',
+  linkPurpose: 'L926-928',
+  linkTc: 'L957',
+  noChkData0: 'L311-312',
+  noChkDirData: 'L321-322',
+  noChkDirStatus: 'L324-325',
+  normalDir: 'L125-127',
+  normalUse: 'L122-124',
+  oneToOne: 'L145-147',
+  setupIdt: 'L212-215',
+  setupSingle: 'L189-190',
+  siaIgn: 'L463-464',
+  stallEvt: 'L285-286',
+  startFid: 'L570-572',
+  statusTd: 'L194-195',
+  t47r1: 'L239-243',
+  t47r2: 'L244-247',
+  t47r3: 'L248-252',
+  t47r4: 'L253-256',
+  tbcTlbpc: 'L470-473',
+  tds31: 'L539-541',
+  tdsDef: 'L505-507',
+  tdsLast0: 'L529-533',
+  tdsValid: 'L1266-1267',
+  teCond: 'L709-716',
+  teNote: 'L116-118',
+  typeDef: 'L37-39',
+  xhcNotCheck: 'L303-304',
+  xhcNotReq: 'L326-328',
+  xhcTrbErr: 'L340-342',
+};
+
+/* ---- Zone A：TRB 型定义（八型=切片实义集合） ---- */
+const M7_O = {
+  bit:   [['0','‘0’'],['1','‘1’']],
+  dir:   [['0','‘0’ = OUT（写数据）'],['1','‘1’ = IN（读数据）']],
+  trt:   [['0','0 = No Data Stage'],['1','1 = Reserved'],['2','2 = OUT Data Stage'],['3','3 = IN Data Stage']],
+  lenS:  [['8','8'],['0','0'],['16','16']],
+  len:   [['0','0'],['8','8'],['512','512']],
+  tdsz:  [['0','0'],['1','1'],['5','5'],['31','31']],
+  itr:   [['0','0（Primary Interrupter）'],['1','1（次级 · 示例）']],
+  tbc:   [['0','0'],['1','1'],['2','2'],['3','3']],
+  tlbpc: [['0','0'],['3','3'],['15','15']],
+  fid:   [['0','0'],['4','4'],['1023','1023'],['2047','2047'],['2048','2048（超域探针）']],
+};
+
+function m7N(id, label, dw, lo, hi, opts, note){
+  return { id, label, dw, lo, hi, opts, note };
+}
+
+const M7_TYPES = {
+  normal: {
+    name:'Normal TRB', code:1, kern:'TRB_NORMAL=1（xhci.h L1106）',
+    intro:'Bulk/Interrupt 常规与 Scatter/Gather——「'+M7Q.normalUse+'」（§4.11.2.1 · spec-411.txt '+M7Q_SRC.normalUse+'）；方向随端点上下文——「'+M7Q.normalDir+'」（'+M7Q_SRC.normalDir+'）',
+    use:['Parameter · Data Buffer Pointer（64 位 · 示例 0）','Parameter · 指针高半（示例 0）','Status · Length(16:0) / TD Size(21:17) / Interrupter Target(31:22)','Control · C/ENT/ISP/CH/IOC/IDT + TRB Type(15:10)'],
+    hint:'置位字段（ENT/CH、IDT/CH、CH/TD Size 组合有切片禁令），全部置位后点「Zone D · 校验组合」。',
+    fields:[
+      m7N('c','Cycle (C)',3,0,0,M7_O.bit,'「'+M7Q.cycBit+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.cycBit+'）'),
+      m7N('ent','ENT · Evaluate Next TRB',3,1,1,M7_O.bit,'「'+M7Q.entCh+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.entCh+'）'),
+      m7N('isp','ISP · Interrupt-on Short Packet',3,2,2,M7_O.bit,'位段=内核 xhci.h L1054（TRB_ISP）；触发条件——「'+M7Q.teCond+'」（§4.11.3.1 · spec-411.txt '+M7Q_SRC.teCond+'）'),
+      m7N('ch','CH · Chain bit',3,4,4,M7_O.bit,'「'+M7Q.chMay+'」（§4.11.2.1 · spec-411.txt '+M7Q_SRC.chMay+'）'),
+      m7N('ioc','IOC · Interrupt On Completion',3,5,5,M7_O.bit,'「'+M7Q.iocTypical+'」（§4.11.2 · spec-411.txt '+M7Q_SRC.iocTypical+'）'),
+      m7N('idt','IDT · Immediate Data',3,6,6,M7_O.bit,'「'+M7Q.idtOnly+'」（§4.11.7 · spec-411.txt '+M7Q_SRC.idtOnly+'）'),
+      m7N('len','TRB Transfer Length',2,0,16,M7_O.len,'位段=DW2 bits 16:0（内核 xhci.h L1036 TRB_LEN · 规范 §6.4.1.1 Table 6-21）'),
+      m7N('tdsz','TD Size',2,17,21,M7_O.tdsz,'单 TRB TD（CH=‘0’）即末位——TD Size 须清 ‘0’：「'+M7Q.tdsLast0+'」（§4.11.2.4 · spec-411.txt '+M7Q_SRC.tdsLast0+'）'),
+      m7N('itr','Interrupter Target',2,22,31,M7_O.itr,'位段=DW2 bits 31:22（内核 xhci.h L1043 TRB_INTR_TARGET）；同 TD 内须一致（§4.11.7 · spec-411.txt L1261-1262）'),
+    ],
+    sum:{ text:'Bulk/Interrupt 常规与 Scatter/Gather 承载（CH=‘1’ 可链成多 TRB TD）', q:['normalUse','chMay'] },
+  },
+  setup: {
+    name:'Setup Stage TRB', code:2, kern:'TRB_SETUP=2（xhci.h L1108）',
+    intro:'USB Setup 包 1:1 映射——「'+M7Q.oneToOne+'」（§4.11.2.2 · spec-411.txt '+M7Q_SRC.oneToOne+'）；单 TRB TD——「'+M7Q.setupSingle+'」（'+M7Q_SRC.setupSingle+'）',
+    use:['Parameter · 8 字节 SETUP Data（80 06 00 01 = bmRequestType/bRequest/wValue 示例）','Parameter · SETUP Data（00 00 08 00 = wIndex/wLength 示例 · spec-43.txt L123-135）','Status · Length(16:0) / Interrupter Target(31:22)','Control · C/IOC/IDT/TRT(17:16) + TRB Type(15:10)'],
+    presetDw:[0x01000680, 0x00080000],
+    hint:'IDT 必须 ‘1’、Length 必须 ‘8’、CH 不可 ‘1’——逐项置位后点「Zone D · 校验组合」。',
+    fields:[
+      m7N('c','Cycle (C)',3,0,0,M7_O.bit,'「'+M7Q.cycBit+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.cycBit+'）'),
+      m7N('idt','IDT · Immediate Data',3,6,6,M7_O.bit,'「'+M7Q.setupIdt+'」（§4.11.2.2 · spec-411.txt '+M7Q_SRC.setupIdt+'）'),
+      m7N('ioc','IOC · Interrupt On Completion',3,5,5,M7_O.bit,'「'+M7Q.iocTypical+'」（§4.11.2 · spec-411.txt '+M7Q_SRC.iocTypical+'）'),
+      m7N('ch','CH · Chain bit（本型=RsvdZ）',3,4,4,M7_O.bit,'「'+M7Q.setupSingle+'」（§4.11.2.2 · spec-411.txt '+M7Q_SRC.setupSingle+'）；CH 允许位清单不含 Setup——「'+M7Q.chMay+'」（§4.11.2.1 · '+M7Q_SRC.chMay+'）'),
+      m7N('trt','TRT · Transfer Type',3,16,17,M7_O.trt,'TRT=bits 17:16（规范 §6.4.1.2.1 · PDF p431）：0=No Data Stage/1=Reserved/2=OUT Data Stage/3=IN Data Stage；实例「Transfer Type (TRT) = IN Data Stage (3)」（spec-43.txt L123）'),
+      m7N('len','TRB Transfer Length',2,0,16,M7_O.lenS,'「'+M7Q.setupIdt+'」（§4.11.2.2 · spec-411.txt '+M7Q_SRC.setupIdt+'）'),
+      m7N('itr','Interrupter Target',2,22,31,M7_O.itr,'位段=DW2 bits 31:22（内核 xhci.h L1043 TRB_INTR_TARGET）'),
+    ],
+    sum:{ text:'Setup 包 1:1 映射：IDT=‘1’ + SETUP Data 内联 + Length=‘8’ + TRT 指明数据段方向', q:['oneToOne','setupIdt','setupSingle'] },
+  },
+  data: {
+    name:'Data Stage TRB', code:3, kern:'TRB_DATA=3（xhci.h L1110）',
+    intro:'「'+M7Q.dataTd+'」（§4.11.2.2 · spec-411.txt '+M7Q_SRC.dataTd+'）——DIR 由 Table 4-7 上下文判定（本型带上下文选择器）',
+    use:['Parameter · Data Buffer Pointer（示例 0）','Parameter · 指针高半（示例 0）','Status · Length / TD Size / Interrupter Target','Control · C/ENT/ISP/CH/IOC/IDT/DIR(bit 16) + TRB Type(15:10)'],
+    ctx:[
+      { id:'dtd', label:'SETUP DTD（bmRequestType 方向）', opts:[['h2d','Host-to-device'],['d2h','Device-to-host']] },
+      { id:'wlen', label:'wLength', opts:[['0','wLength = 0'],['gt0','wLength > 0']] },
+    ],
+    hint:'先定上下文（DTD/wLength），DIR 按 Table 4-7 对齐；wLength=0 时本型不该存在（切片口径）。',
+    fields:[
+      m7N('c','Cycle (C)',3,0,0,M7_O.bit,'「'+M7Q.cycBit+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.cycBit+'）'),
+      m7N('ent','ENT · Evaluate Next TRB',3,1,1,M7_O.bit,'「'+M7Q.entCh+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.entCh+'）'),
+      m7N('isp','ISP · Interrupt-on Short Packet',3,2,2,M7_O.bit,'位段=内核 xhci.h L1054（TRB_ISP）；触发条件——「'+M7Q.teCond+'」（§4.11.3.1 · spec-411.txt '+M7Q_SRC.teCond+'）'),
+      m7N('ch','CH · Chain bit',3,4,4,M7_O.bit,'「'+M7Q.chMay+'」（§4.11.2.1 · spec-411.txt '+M7Q_SRC.chMay+'）'),
+      m7N('ioc','IOC · Interrupt On Completion',3,5,5,M7_O.bit,'「'+M7Q.iocTypical+'」（§4.11.2 · spec-411.txt '+M7Q_SRC.iocTypical+'）'),
+      m7N('idt','IDT · Immediate Data',3,6,6,M7_O.bit,'「'+M7Q.idtOnly+'」（§4.11.7 · spec-411.txt '+M7Q_SRC.idtOnly+'）'),
+      m7N('dir','DIR · Direction',3,16,16,M7_O.dir,'「'+M7Q.dirResp+'」（§4.11.2.2 · spec-411.txt '+M7Q_SRC.dirResp+'）'),
+      m7N('len','TRB Transfer Length',2,0,16,M7_O.len,'位段=DW2 bits 16:0（内核 xhci.h L1036 TRB_LEN）'),
+      m7N('tdsz','TD Size',2,17,21,M7_O.tdsz,'单 TRB TD（CH=‘0’）即末位——TD Size 须清 ‘0’：「'+M7Q.tdsLast0+'」（§4.11.2.4 · spec-411.txt '+M7Q_SRC.tdsLast0+'）'),
+      m7N('itr','Interrupter Target',2,22,31,M7_O.itr,'位段=DW2 bits 31:22（内核 xhci.h L1043 TRB_INTR_TARGET）'),
+    ],
+    sum:{ text:'Data Stage TD 头 TRB——DIR 对齐 Table 4-7（后续可链 Normal/Event Data TRB）', q:['dataTd','dirResp'] },
+  },
+  status: {
+    name:'Status Stage TRB', code:4, kern:'TRB_STATUS=4（xhci.h L1112）',
+    intro:'「'+M7Q.statusTd+'」（§4.11.2.2 · spec-411.txt '+M7Q_SRC.statusTd+'）——完成事件报 Success/Stall Error 等：「'+M7Q.stallEvt+'」（'+M7Q_SRC.stallEvt+'）',
+    use:['Parameter · RsvdZ（0）','Parameter · RsvdZ（0）','Status · RsvdZ(21:0) + Interrupter Target(31:22)','Control · C/ENT/CH/IOC/DIR(bit 16) + TRB Type（bit 6 该型=RsvdZ）'],
+    ctx:[
+      { id:'dtd', label:'SETUP DTD（bmRequestType 方向）', opts:[['h2d','Host-to-device'],['d2h','Device-to-host']] },
+      { id:'wlen', label:'wLength', opts:[['0','wLength = 0'],['gt0','wLength > 0']] },
+    ],
+    hint:'先定上下文（DTD/wLength），DIR 按 Table 4-7 对齐（仅 Device-to-host 且 wLength>0 时 DIR=OUT）；本型无 Length/TD Size 字段。',
+    fields:[
+      m7N('c','Cycle (C)',3,0,0,M7_O.bit,'「'+M7Q.cycBit+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.cycBit+'）'),
+      m7N('ent','ENT · Evaluate Next TRB',3,1,1,M7_O.bit,'「'+M7Q.entCh+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.entCh+'）'),
+      m7N('ch','CH · Chain bit',3,4,4,M7_O.bit,'「'+M7Q.chMay+'」（§4.11.2.1 · spec-411.txt '+M7Q_SRC.chMay+'）；链向=至多 1 个 Event Data TRB——「'+M7Q.statusTd+'」（§4.11.2.2 · '+M7Q_SRC.statusTd+'）'),
+      m7N('ioc','IOC · Interrupt On Completion',3,5,5,M7_O.bit,'「'+M7Q.iocTypical+'」（§4.11.2 · spec-411.txt '+M7Q_SRC.iocTypical+'）'),
+      m7N('idt','IDT · Immediate Data（本型=RsvdZ）',3,6,6,M7_O.bit,'本型该位=保留零位（规范 §6.4.1.2.3 Table 6-31 bits 9:6，PDF p434）——软件应写 ‘0’；§4.11 切片对该组合无禁令文本（合法完成时 Zone D 注记、不拦截）。'),
+      m7N('dir','DIR · Direction',3,16,16,M7_O.dir,'「'+M7Q.dirResp+'」（§4.11.2.2 · spec-411.txt '+M7Q_SRC.dirResp+'）'),
+      m7N('itr','Interrupter Target',2,22,31,M7_O.itr,'位段=DW2 bits 31:22（内核 xhci.h L1043 TRB_INTR_TARGET）；本型 DW2 其余位=RsvdZ（§6.4.1.2.3）'),
+    ],
+    sum:{ text:'控制传输收尾 TD（可选链 1 个 Event Data TRB）——完成事件报 Success/Stall Error', q:['statusTd','stallEvt'] },
+  },
+  isoch: {
+    name:'Isoch TRB', code:5, kern:'TRB_ISOC=5（xhci.h L1114）',
+    intro:'「'+M7Q.isochFirst+'」（§4.11.2.3 · spec-411.txt '+M7Q_SRC.isochFirst+'）；「'+M7Q.isochConsume+'」（'+M7Q_SRC.isochConsume+'）',
+    use:['Parameter · Data Buffer Pointer（示例 0）','Parameter · 指针高半（示例 0）','Status · Length / TD Size(=TBC 扩展) / Interrupter Target','Control · C/ENT/ISP/CH/IOC/TBC(8:7)/TLBPC(19:16)/TRB Type/Frame ID(30:20)/SIA(31)'],
+    ctx:[
+      { id:'mfindex', label:'MFINDEX Frame Index（模拟）', opts:[['0','0（模拟）'],['1024','1024（模拟）']] },
+    ],
+    hint:'SIA/Frame ID 定调度；Frame ID 域 0-2047 且（SIA=‘0’ 时）不得大于 End Frame ID（上下文模拟 MFINDEX）。',
+    fields:[
+      m7N('c','Cycle (C)',3,0,0,M7_O.bit,'「'+M7Q.cycBit+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.cycBit+'）'),
+      m7N('ent','ENT · Evaluate Next TRB',3,1,1,M7_O.bit,'「'+M7Q.entCh+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.entCh+'）'),
+      m7N('isp','ISP · Interrupt-on Short Packet',3,2,2,M7_O.bit,'位段=内核 xhci.h L1054（TRB_ISP）'),
+      m7N('ch','CH · Chain bit',3,4,4,M7_O.bit,'「'+M7Q.chMay+'」（§4.11.2.1 · spec-411.txt '+M7Q_SRC.chMay+'）；可链 Normal TRB 成多 TRB Isoch TD——「'+M7Q.isochTd+'」（§4.11.2.3 · '+M7Q_SRC.isochTd+'）'),
+      m7N('ioc','IOC · Interrupt On Completion',3,5,5,M7_O.bit,'「'+M7Q.iocTypical+'」（§4.11.2 · spec-411.txt '+M7Q_SRC.iocTypical+'）'),
+      m7N('tbc','TBC · Transfer Burst Count',3,7,8,M7_O.tbc,'「'+M7Q.tbcTlbpc+'」（§4.11.2.3 · spec-411.txt '+M7Q_SRC.tbcTlbpc+'）'),
+      m7N('tlbpc','TLBPC · Tr Last Burst Pkt Count',3,16,19,M7_O.tlbpc,'「'+M7Q.tbcTlbpc+'」（§4.11.2.3 · spec-411.txt '+M7Q_SRC.tbcTlbpc+'）'),
+      m7N('fid','Frame ID',3,20,30,M7_O.fid,'「'+M7Q.fidValid+'」（§4.11.2.5 · spec-411.txt '+M7Q_SRC.fidValid+'）；取值域——「'+M7Q.fiaRange+'」（'+M7Q_SRC.fiaRange+'）'),
+      m7N('sia','SIA · Start Isoch ASAP',3,31,31,M7_O.bit,'SIA=‘0’ 走 Frame ID 匹配——「'+M7Q.fiaSia0+'」（§4.11.2.3 · spec-411.txt '+M7Q_SRC.fiaSia0+'）'),
+      m7N('len','TRB Transfer Length',2,0,16,M7_O.len,'位段=DW2 bits 16:0（内核 xhci.h L1036 TRB_LEN）'),
+      m7N('tdsz','TD Size（ETE=‘0’ 语境）',2,17,21,M7_O.tdsz,'ETE=‘1’ 时弃用、ETE=‘0’ 时有效——「'+M7Q.etcEte+'」（§4.11.2.3 · spec-411.txt '+M7Q_SRC.etcEte+'）'),
+      m7N('itr','Interrupter Target',2,22,31,M7_O.itr,'位段=DW2 bits 31:22（内核 xhci.h L1043 TRB_INTR_TARGET）'),
+    ],
+    sum:{ text:'单 Interval 一次 Isoch TD——SIA/Frame ID 定调度起点', q:['isochFirst','isochConsume','fidValid'] },
+  },
+  link: {
+    name:'Link TRB', code:6, kern:'TRB_LINK=6（xhci.h L1116）',
+    intro:'「'+M7Q.linkPurpose+'」（§4.11.5.1 · spec-411.txt '+M7Q_SRC.linkPurpose+'）；「'+M7Q.linkEnd+'」（'+M7Q_SRC.linkEnd+'）',
+    use:['Parameter · Ring Segment Pointer（示例 0）','Parameter · 指针高半（示例 0）','Status · Interrupter Target(31:22)','Control · C/TC(1)/CH(4)/IOC(5) + TRB Type(15:10)'],
+    hint:'环段收尾位——TC（should：至少一环一处）、CH、IOC 置位后校验（命令环上 CH 被忽略、Interrupter Target 被忽略）。',
+    fields:[
+      m7N('c','Cycle (C)',3,0,0,M7_O.bit,'「'+M7Q.cycBit+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.cycBit+'）'),
+      m7N('tc','TC · Toggle Cycle',3,1,1,M7_O.bit,'「'+M7Q.linkTc+'」（§4.11.5.1 · spec-411.txt '+M7Q_SRC.linkTc+'）'),
+      m7N('ch','CH · Chain bit',3,4,4,M7_O.bit,'「'+M7Q.linkChIgnored+'」（§4.11.5.1 · spec-411.txt '+M7Q_SRC.linkChIgnored+'）'),
+      m7N('ioc','IOC · Interrupt On Completion',3,5,5,M7_O.bit,'「'+M7Q.linkEvt+'」（§4.11.5.1 · spec-411.txt '+M7Q_SRC.linkEvt+'）'),
+      m7N('itr','Interrupter Target',2,22,31,M7_O.itr,'位段=DW2 bits 31:22（内核 xhci.h L1043）；命令环上被 xHC 忽略——「'+M7Q.linkChIgnored+'」同段 L1033-1034 指路'),
+    ],
+    sum:{ text:'环段收尾与回卷（Segment 尾 TRB · 指回环首）', q:['linkPurpose','linkEnd'] },
+  },
+  eventdata: {
+    name:'Event Data TRB', code:7, kern:'TRB_EVENT_DATA=7（xhci.h L1117）',
+    intro:'「'+M7Q.evtDataPurpose+'」（§4.11.5.2 · spec-411.txt '+M7Q_SRC.evtDataPurpose+'）；「'+M7Q.evtDataOnly+'」（'+M7Q_SRC.evtDataOnly+'）',
+    use:['Parameter · 软件自定义 64 位事件载荷（示例 0）','Parameter · 载荷高半（示例 0）','Status · Interrupter Target(31:22)','Control · C/CH/IOC + TRB Type(15:10)'],
+    hint:'IOC 必须 ‘1’——事件由它触发；CH=‘1’ 表示作为 TD 尾链入。',
+    fields:[
+      m7N('c','Cycle (C)',3,0,0,M7_O.bit,'「'+M7Q.cycBit+'」（§4.11.1.1 · spec-411.txt '+M7Q_SRC.cycBit+'）'),
+      m7N('ch','CH · Chain bit',3,4,4,M7_O.bit,'TD 尾链入——「'+M7Q.evtDataTd+'」（§4.11.5.2 · spec-411.txt '+M7Q_SRC.evtDataTd+'）'),
+      m7N('ioc','IOC · Interrupt On Completion',3,5,5,M7_O.bit,'「'+M7Q.evtDataIoc+'」（§4.11.5.2 · spec-411.txt '+M7Q_SRC.evtDataIoc+'）'),
+      m7N('itr','Interrupter Target',2,22,31,M7_O.itr,'位段=DW2 bits 31:22（内核 xhci.h L1043 TRB_INTR_TARGET）'),
+    ],
+    sum:{ text:'软件自定义事件载荷——IOC 必须 ‘1’，事件走 Transfer Event 格式', q:['evtDataPurpose','evtDataIoc','evtDataTd'] },
+  },
+  transferEvent: {
+    name:'Transfer Event TRB', code:32, kern:'TRB_TRANSFER=32（xhci.h L1154）', evt:true, readonly:true,
+    intro:'xHC 生产、软件消费——「'+M7Q.evtProducer+'」（§4.11.1.2 · spec-411.txt '+M7Q_SRC.evtProducer+'）；生成条件——「'+M7Q.teCond+'」（§4.11.3.1 · '+M7Q_SRC.teCond+'）',
+    use:['Parameter · TRB Pointer（示例 0）','Parameter · 指针高半（示例 0）','Status · Transfer Length(23:0) / Completion Code(31:24)','Control · C/ED(2)/TRB Type(15:10)/Endpoint ID(20:16)/Slot ID(31:24)'],
+    hint:'这是 xHC 产生的事件（事件环）——字段对软件只读；试试改写任一字段，会被拦截回滚并引原文。',
+    fields:[
+      m7N('c','Cycle (C)',3,0,0,[['1','‘1’（xHC 已置 · 事件有效）'],['0','‘0’（尝试改写）']],'「'+M7Q.evtRo+'」（§4.11.1.2 · spec-411.txt '+M7Q_SRC.evtRo+'）'),
+      m7N('ed','ED · Event Data 标志',3,2,2,[['0','‘0’（TRB Pointer 指向源 TRB）'],['1','‘1’（尝试改写）']],'位段=规范 §6.4.2.1 Table 6-39（PDF p439）；Event Data 事件时置 ‘1’——「'+M7Q.evtDataTd+'」（§4.11.5.2 · spec-411.txt '+M7Q_SRC.evtDataTd+'）'),
+      m7N('epid','Endpoint ID',3,16,20,[['1','1（EP0 示例）'],['2','2（尝试改写）']],'DW3 bits 20:16（内核 xhci.h L823 TRB_TO_EP_ID · 规范 §6.4.2.1）——示例 EP0'),
+      m7N('slotid','Slot ID',3,24,31,[['1','1（示例设备）'],['0','0（尝试改写）']],'DW3 bits 31:24（内核 xhci.h L820 TRB_TO_SLOT_ID · 规范 §6.4.2.1）——示例设备 Slot ID=1（xHC 自选，§4.3.2）'),
+      m7N('len','TRB Transfer Length',2,0,23,[['0','0'],['8','8（尝试改写）']],'DW2 bits 23:0（内核 xhci.h L830 EVENT_TRB_LEN · 规范 §6.4.2.1）'),
+      m7N('cc','Completion Code',2,24,31,[['0','0（编码见 Table 6-90 · 本台不编值）'],['1','1（尝试改写）']],'DW2 bits 31:24（内核 xhci.h L833 COMP_CODE_MASK）——编码在 Table 6-90（§6.4.5），§4.11 切片不含：本台不编值（位值示 0）'),
+    ],
+    fixedVals:{ c:'1', ed:'0', epid:'1', slotid:'1', len:'0', cc:'0' },
+    sum:{ text:'xHC 产生的完成事件——软件只读，只以它判定 TRB 完成', q:['evtRo','teNote'] },
+  },
+};
+
+/* ---- Table 4-7（spec-411.txt L229-268 切片行值） ---- */
+const M7_T47 = [
+  { dtd:'h2d', dtdName:'Host-to-device', wlen:'0',   trt:'No Data Stage (0)',  dataDir:null, stDir:'1', rowQ:'t47r1' },
+  { dtd:'h2d', dtdName:'Host-to-device', wlen:'gt0', trt:'OUT Data Stage (2)', dataDir:'0',  stDir:'1', rowQ:'t47r2' },
+  { dtd:'d2h', dtdName:'Device-to-host', wlen:'0',   trt:'No Data Stage (0)',  dataDir:null, stDir:'1', rowQ:'t47r3' },
+  { dtd:'d2h', dtdName:'Device-to-host', wlen:'gt0', trt:'IN Data Stage (3)',  dataDir:'1',  stDir:'0', rowQ:'t47r4' },
+];
+
+/* ---- Zone D：拦截规则（逐条切片引文+行号；切片无禁令不拦）。
+   守卫铁律：涉及字段未置位（S()=null）不判——部分拼装期只报已置位字段的真实禁令，
+   其余走 pending（不误报）。 ---- */
+function m7S(id){ const v = m7.vals[id]; return (v === undefined || v === '') ? null : v; }
+const M7_RULES = [
+  { id:'ent-ch', types:['normal','data','status','isoch'],
+    title:'ENT=‘1’ 但 CH=‘0’——ENT 仅链式有效',
+    when:()=> m7S('ent')==='1' && m7S('ch')==='0', q:['entCh'] },
+  { id:'setup-idt', types:['setup'],
+    title:'Setup Stage TRB 必须 IDT=‘1’',
+    when:()=> m7S('idt')==='0', q:['setupIdt'] },
+  { id:'setup-len8', types:['setup'],
+    title:'Setup Stage TRB 的 Length 必须=‘8’',
+    when:()=> m7S('len')!==null && m7S('len')!=='8', q:['setupIdt'] },
+  { id:'setup-ch', types:['setup'],
+    title:'Setup Stage TRB 无链式（Setup Stage TD=单 TRB，CH 该型=RsvdZ）',
+    when:()=> m7S('ch')==='1', q:['setupSingle','chMay'] },
+  { id:'tds-last', types:['normal','data'],
+    title:'CH=‘0’（单 TRB TD 即末位 TRB）但 TD Size≠‘0’——末位 TD Size 须清 ‘0’',
+    when:()=> m7S('ch')==='0' && m7S('tdsz')!==null && m7S('tdsz')!=='0', q:['tdsLast0','tdsValid'] },
+  { id:'idt-only', types:['normal','data'],
+    title:'IDT=‘1’ 且 CH=‘1’——IDT TRB 所在 TD 只能含一个 Transfer TRB，不可再链',
+    when:()=> m7S('idt')==='1' && m7S('ch')==='1', q:['idtOnly'] },
+  { id:'fid-range', types:['isoch'],
+    title:'Frame ID 超出取值域 0-2047（11 位字段）',
+    when:()=> m7S('fid')!==null && Number(m7.vals.fid)>2047, q:['fiaRange'] },
+  { id:'fid-end', types:['isoch'],
+    title:()=> 'SIA=‘0’ 时 Frame ID（'+m7.vals.fid+'）大于 End Frame ID（'+((Number(m7.ctx.mfindex||0)+895)%2048)+' = MFINDEX Frame Index '+m7.ctx.mfindex+' + 895 MOD 2048）',
+    when:()=> m7S('sia')==='0' && m7S('fid')!==null && Number(m7.vals.fid)>((Number(m7.ctx.mfindex||0)+895)%2048), q:['endFid'] },
+  { id:'data-dir', types:['data'],
+    title:()=>{ const r=m7T47Row(); return r.dataDir===null
+      ? 'wLength=‘0’ → Table 4-7 = No Data Stage（No Data Stage TD defined）——本上下文不该有 Data Stage TRB'
+      : 'DIR 与 Table 4-7 不符（'+r.dtdName+' · wLength '+(r.wlen==='gt0'?'>0':'=0')+' → Data Stage DIR 应=‘'+r.dataDir+'’（'+(r.dataDir==='0'?'OUT':'IN')+'），实选 ‘'+m7.vals.dir+'’）'; },
+    explain:'软件一致性义务——xHC 对该错配不查/不要求查（若查则回 TRB Error）。',
+    when:()=>{ const d = m7S('dir'); if (d===null) return false; const r=m7T47Row(); return r.dataDir===null || d!==r.dataDir; },
+    q:()=> m7T47Row().dataDir===null ? ['dirResp','noChkData0','xhcNotReq'] : ['dirResp','noChkDirData','xhcNotReq','xhcTrbErr'] },
+  { id:'status-dir', types:['status'],
+    title:()=>{ const r=m7T47Row(); return 'DIR 与 Table 4-7 不符（'+r.dtdName+' · wLength '+(r.wlen==='gt0'?'>0':'=0')+' → Status Stage DIR 应=‘'+r.stDir+'’（'+(r.stDir==='0'?'OUT':'IN')+'），实选 ‘'+m7.vals.dir+'’）'; },
+    explain:'软件一致性义务——xHC 对该错配不查/不要求查（若查则回 TRB Error）。',
+    when:()=>{ const d = m7S('dir'); return d!==null && d!==m7T47Row().stDir; },
+    q:()=> ['dirResp','noChkDirStatus','xhcNotReq','xhcTrbErr'] },
+  { id:'evdata-ioc', types:['eventdata'],
+    title:'Event Data TRB 必须 IOC=‘1’',
+    when:()=> m7S('ioc')!==null && m7S('ioc')!=='1', q:['evtDataIoc'] },
+];
+
+const m7 = { type:'normal', vals:{}, ctx:{}, verdict:null, intercepts:0, reverts:0, done:0, checks:0 };
+
+function m7T47Row(){ return M7_T47.find(r => r.dtd===m7.ctx.dtd && r.wlen===m7.ctx.wlen); }
+
+function m7Hint(text, warn){
+  const h = $('#m7-hint');
+  h.textContent = text;
+  h.classList.toggle('warn', !!warn);
+}
+
+/* ---- Zone B：字段卡 ---- */
+function buildM7Fields(){
+  const T = M7_TYPES[m7.type];
+  const box = $('#m7-fields');
+  box.innerHTML = '';
+  m7.vals = {};
+  if (T.readonly){ m7.vals = Object.assign({}, T.fixedVals); }
+  T.fields.forEach(f => {
+    const d = document.createElement('div');
+    d.className = 'm7fld';
+    d.dataset.m7fld = f.id;
+    const lab = document.createElement('label');
+    lab.textContent = f.label + '（DW'+f.dw+' '+(f.hi>f.lo ? 'bits '+f.hi+':'+f.lo : 'bit '+f.lo)+'）';
+    const sel = document.createElement('select');
+    sel.dataset.m7field = f.id;
+    if (!T.readonly){
+      const ph = document.createElement('option');
+      ph.value = ''; ph.textContent = '—— 选值 ——';
+      sel.appendChild(ph);
+    }
+    f.opts.forEach(op => {
+      const o = document.createElement('option');
+      o.value = op[0]; o.textContent = op[1];
+      sel.appendChild(o);
+    });
+    sel.value = T.readonly ? T.fixedVals[f.id] : '';
+    sel.addEventListener('change', () => onM7Field(f, sel.value));
+    const hintEl = document.createElement('div');
+    hintEl.className = 'm7fhint';
+    hintEl.textContent = f.note;
+    d.append(lab, sel, hintEl);
+    box.appendChild(d);
+  });
+}
+
+function onM7Field(f, v){
+  const T = M7_TYPES[m7.type];
+  if (T.readonly){
+    /* Event TRB：组件对软件只读——改写即拦截回滚（§4.11.1.2 引文） */
+    m7.reverts++;
+    m7.intercepts++;
+    const sel = $('[data-m7field="'+f.id+'"]');
+    sel.value = T.fixedVals[f.id];
+    m7Hint('拦截——Event TRB 组件对系统软件只读，改写已回滚：「' + M7Q.evtRo + '」（§4.11.1.2 · spec-411.txt ' + M7Q_SRC.evtRo + '）；生产者=xHC、消费者=软件：「' + M7Q.evtProducer + '」（' + M7Q_SRC.evtProducer + '）', true);
+    return;
+  }
+  m7.vals[f.id] = v;
+  const card = $('#m7 [data-m7fld="' + f.id + '"]');
+  const hintEl = card.querySelector('.m7fhint');
+  card.classList.toggle('ok', v !== '');
+  card.classList.remove('bad');
+  if (f.id === 'fid' && Number(v) > 2047){
+    card.classList.add('bad');
+    card.classList.remove('ok');
+    hintEl.textContent = '✗ 超出 11 位字段取值域（0-2047）——「' + M7Q.fiaRange + '」（spec-411.txt ' + M7Q_SRC.fiaRange + '）';
+  } else {
+    hintEl.textContent = f.note;
+  }
+  renderM7C();
+}
+
+/* ---- 上下文选择器（Table 4-7 / MFINDEX 模拟） ---- */
+function buildM7Ctx(){
+  const T = M7_TYPES[m7.type];
+  const row = $('#m7-ctxrow');
+  row.innerHTML = '';
+  m7.ctx = { dtd:'d2h', wlen:'gt0', mfindex:'1024' };
+  if (T.ctx){
+    T.ctx.forEach(c => {
+      const lab = document.createElement('label');
+      lab.textContent = c.label;
+      const sel = document.createElement('select');
+      sel.dataset.m7ctx = c.id;
+      c.opts.forEach(op => {
+        const o = document.createElement('option');
+        o.value = op[0]; o.textContent = op[1];
+        sel.appendChild(o);
+      });
+      sel.value = m7.ctx[c.id];
+      sel.addEventListener('change', () => { m7.ctx[c.id] = sel.value; renderM7Ctx(); });
+      row.append(lab, sel);
+    });
+  }
+  renderM7Ctx();
+}
+
+function renderM7Ctx(){
+  const note = $('#m7-ctxnote');
+  if (m7.type === 'data' || m7.type === 'status'){
+    const r = m7T47Row();
+    note.innerHTML = '<b>控制传输上下文</b>（Table 4-7 · spec-411.txt L229-268）：当前行 = ' + r.dtdName + ' · wLength ' + (r.wlen==='gt0'?'>0':'= 0')
+      + ' → ' + (m7.type==='data'
+        ? ('Data Stage DIR 应=' + (r.dataDir===null ? '—（No Data Stage）' : '‘' + r.dataDir + '’（' + (r.dataDir==='0'?'OUT':'IN') + '）'))
+        : ('Status Stage DIR 应=‘' + r.stDir + '’（' + (r.stDir==='0'?'OUT':'IN') + '）'));
+  } else if (m7.type === 'isoch'){
+    note.innerHTML = '<b>调度上下文</b>：模拟 MFINDEX Frame Index = ' + m7.ctx.mfindex + ' → End Frame ID = (' + m7.ctx.mfindex + ' + 895) MOD 2048 = '
+      + ((Number(m7.ctx.mfindex)+895)%2048) + '——「' + M7Q.endFid + '」（§4.11.2.5 · spec-411.txt ' + M7Q_SRC.endFid + '）';
+  } else {
+    note.innerHTML = '';
+  }
+  renderM7T47();
+}
+
+function renderM7T47(){
+  const wrap = $('#m7-t47wrap');
+  const head = $('#m7-t47head');
+  if (!(m7.type === 'data' || m7.type === 'status')){
+    wrap.innerHTML = '';
+    head.classList.add('hidden');
+    return;
+  }
+  head.classList.remove('hidden');
+  let h = '<table class="m7t47"><tr><th>DTD</th><th>wLength</th><th>TRT</th><th>Data Stage DIR</th><th>Status Stage DIR</th></tr>';
+  M7_T47.forEach(r => {
+    const cur = (r.dtd===m7.ctx.dtd && r.wlen===m7.ctx.wlen) ? ' class="m7cur"' : '';
+    h += '<tr' + cur + '><td>' + r.dtdName + '</td><td>' + (r.wlen==='gt0'?'> 0':'= 0') + '</td><td>' + r.trt + '</td>'
+      + '<td>' + (r.dataDir===null ? '—（No Data Stage TD defined）' : '‘' + r.dataDir + '’ = ' + (r.dataDir==='0'?'OUT':'IN')) + '</td>'
+      + '<td>‘' + r.stDir + '’ = ' + (r.stDir==='0'?'OUT':'IN') + '</td></tr>';
+  });
+  h += '</table>';
+  wrap.innerHTML = h + '<p class="note">行值=Table 4-7 切片（spec-411.txt L239-256）；DIR 义务——「' + M7Q.dirResp + '」（L222-225）。</p>';
+}
+
+/* ---- Zone C：16 字节视图 ---- */
+function m7Dws(){
+  const T = M7_TYPES[m7.type];
+  const dws = [0, 0, 0, 0];
+  const overflow = [];
+  if (T.presetDw){ dws[0] = T.presetDw[0]; dws[1] = T.presetDw[1]; }
+  dws[3] |= (T.code << 10);
+  T.fields.forEach(f => {
+    const raw = m7.vals[f.id];
+    if (raw === undefined || raw === '') return;
+    let n = Number(raw);
+    const width = f.hi - f.lo + 1;
+    const max = (1 << width) - 1;
+    if (n > max){ overflow.push(f); n = n & max; }
+    dws[f.dw] |= (n << f.lo);
+  });
+  return { dws, overflow };
+}
+
+function m7BitField(T, dw, b){
+  if (dw === 3 && b >= 10 && b <= 15) return 'TYPE';
+  return T.fields.find(f => f.dw === dw && b >= f.lo && b <= f.hi) || null;
+}
+
+function renderM7C(){
+  const T = M7_TYPES[m7.type];
+  const r = m7Dws();
+  const box = $('#m7-bytes');
+  let h = '';
+  for (let dw = 0; dw < 4; dw++){
+    h += '<div class="m7dwrow"><span class="m7dwlab">DW' + dw + '</span>'
+      + '<span class="m7dwhex">0x' + (r.dws[dw] >>> 0).toString(16).toUpperCase().padStart(8, '0') + '</span>'
+      + '<div class="m7bits">';
+    for (let b = 31; b >= 0; b--){
+      const cov = m7BitField(T, dw, b);
+      const on = (r.dws[dw] >>> b) & 1;
+      const cls = 'm7b' + (cov ? ' m7bf' : '') + (on ? ' m7on' : '');
+      const ti = cov === 'TYPE' ? ('TRB Type（编码 ' + T.code + '）· DW3 bits 15:10')
+        : cov ? (cov.label + ' · DW' + dw + ' ' + (cov.hi > cov.lo ? 'bits ' + cov.hi + ':' + cov.lo : 'bit ' + cov.lo))
+        : '保留（RsvdZ）';
+      h += '<i class="' + cls + '" data-m7bit="' + dw + ':' + b + '" title="' + ti + '">' + on + '</i>';
+    }
+    h += '</div><span class="m7dwuse">' + T.use[dw] + '</span></div>';
+  }
+  box.innerHTML = h;
+  const ofw = $('#m7-ofw');
+  ofw.classList.toggle('hidden', !r.overflow.length);
+  if (r.overflow.length){
+    ofw.textContent = '⚠ 溢出：' + r.overflow.map(f => f.label.split('·')[0].trim() + '=' + m7.vals[f.id] + ' 超出 ' + (f.hi - f.lo + 1) + ' 位宽（0-' + ((1 << (f.hi - f.lo + 1)) - 1) + '）——16 字节视图按截断值编码，Zone D 校验将拦截。');
+  }
+  $('#m7-typecode').innerHTML = 'TRB Type = ' + T.name + ' → 编码 ' + T.code + '（DW3 bits 10-15 = '
+    + T.code.toString(2).padStart(6, '0') + 'b = 0x' + T.code.toString(16).toUpperCase() + '）· 内核对照 ' + T.kern
+    + '<br>「' + (T.evt ? M7Q.evtTypeDef : M7Q.typeDef) + '」（§4.11.1.' + (T.evt ? '2' : '1') + ' · spec-411.txt ' + (T.evt ? M7Q_SRC.evtTypeDef : M7Q_SRC.typeDef) + '）';
+}
+
+/* ---- Zone D：校验（非法引原文拦截 / 合法总结+锚） ---- */
+function m7Notes(){
+  const n = [];
+  if (m7.type === 'status' && m7.vals.idt === '1')
+    n.push('IDT 位在 Status Stage TRB 为保留零位（RsvdZ · 规范 §6.4.1.2.3 Table 6-31 bits 9:6，PDF p434）——软件应写 ‘0’；§4.11 切片对该组合无禁令文本，本台按位段表注记、不拦截。');
+  if (m7.type === 'isoch' && m7.vals.sia === '1' && m7.vals.fid !== '0')
+    n.push('「' + M7Q.siaIgn + '」（spec-411.txt ' + M7Q_SRC.siaIgn + '）——SIA=‘1’ 时 Frame ID 被忽略（合法但无效位）。');
+  if (m7.type === 'isoch' && m7.vals.sia === '0')
+    n.push('下限口径（should）：「' + M7Q.startFid + '」（spec-411.txt ' + M7Q_SRC.startFid + '）——Start Frame ID 含 IST（§4.14.2.1），本台不模拟。');
+  if (m7.type === 'isoch' && m7.vals.tdsz !== '0')
+    n.push('「' + M7Q.etcEte + '」（spec-411.txt ' + M7Q_SRC.etcEte + '）——本台按 ETE=‘0’ 语境显示 TD Size 位段。');
+  if (m7.type === 'link' && m7.vals.tc === '0')
+    n.push('「' + M7Q.linkTc + '」（spec-411.txt ' + M7Q_SRC.linkTc + '）——should 级建议（非拦截）。');
+  return n;
+}
+
+function m7Check(){
+  const T = M7_TYPES[m7.type];
+  m7.checks++;
+  const box = $('#m7-verdict');
+  const hits = M7_RULES.filter(r => r.types.includes(m7.type) && r.when());
+  box.classList.remove('hidden');
+  if (hits.length){
+    m7.intercepts++;
+    m7.verdict = 'bad';
+    let h = '';
+    hits.forEach(r => {
+      const qs = typeof r.q === 'function' ? r.q() : r.q;
+      h += '<div>✗ 拦截：' + (typeof r.title === 'function' ? r.title() : r.title) + '</div>';
+      if (r.explain) h += '<span class="m7vq">' + r.explain + '</span>';
+      qs.forEach(k => { h += '<span class="m7vq">「' + M7Q[k] + '」（spec-411.txt ' + M7Q_SRC[k] + '）</span>'; });
+    });
+    box.className = 'm7verdict bad';
+    box.innerHTML = h;
+    m7Hint('拦截——' + hits.length + ' 条切片禁令命中（引文与行号见 Zone D 判定框，保持展开）。', true);
+    return;
+  }
+  const unset = T.readonly ? [] : T.fields.filter(f => m7.vals[f.id] === undefined || m7.vals[f.id] === '');
+  if (unset.length){
+    m7.verdict = 'pending';
+    box.className = 'm7verdict';
+    box.innerHTML = '<div>…还有 ' + unset.length + ' 个字段未置位：' + unset.map(f => f.label.split('·')[0].trim()).join('、') + '（当前无拦截）。</div>';
+    m7Hint('字段未置全——Zone D 判定等待中（当前无拦截）。');
+    return;
+  }
+  m7.verdict = 'ok';
+  m7.done++;
+  let h = '<div>✓ 合法：' + T.name + ' 拼装完成——' + T.sum.text + '</div>';
+  T.sum.q.forEach(k => { h += '<span class="m7vq">「' + M7Q[k] + '」（spec-411.txt ' + M7Q_SRC[k] + '）</span>'; });
+  m7Notes().forEach(t => { h += '<span class="m7vq">注：' + t + '</span>'; });
+  box.className = 'm7verdict ok';
+  box.innerHTML = h;
+  m7Hint('合法完成——' + T.name + ' 一句总结与规范锚见 Zone D（可切换 TRB 型继续练）。');
+}
+
+function buildM7(){
+  const T = M7_TYPES[m7.type];
+  m7.verdict = null;
+  $('#m7-intro').innerHTML = T.intro;
+  buildM7Ctx();
+  buildM7Fields();
+  const box = $('#m7-verdict');
+  box.className = 'm7verdict hidden';
+  box.innerHTML = '';
+  m7Hint(T.hint);
+  renderM7C();
+}
+
+/* ---- 深链 #m7&trb=<型名>：复用既有全链路（select 改值 + buildM7 与 change 同路） ---- */
+function m7GotoTrb(raw){
+  const name = String(raw || '').trim();
+  if (!name) return;
+  const norm = s => String(s).toLowerCase().replace(/\s*[（(][^）)]*[）)]\s*$/, '').replace(/\s+/g, ' ').trim();
+  const hit = Object.keys(M7_TYPES).find(k =>
+    norm(k) === norm(name) || norm(M7_TYPES[k].name) === norm(name)
+    || norm(M7_TYPES[k].name.replace(' TRB', '')) === norm(name));
+  if (hit){
+    m7.type = hit;
+    $('#m7-type').value = hit;
+    buildM7();
+    m7Hint('已按深链预选「' + M7_TYPES[hit].name + '」（编码 ' + M7_TYPES[hit].code + '）——置位字段后点「Zone D · 校验组合」。');
+    return;
+  }
+  m7.type = 'normal';
+  $('#m7-type').value = 'normal';
+  buildM7();
+  m7Hint('TRB 型「' + name + '」未收录——已落回 Normal TRB（八型清单见 Zone A 选择器）。', true);
+}
+
+/* ---- 模块七控件绑定 ---- */
+$('#m7-type').addEventListener('change', () => { m7.type = $('#m7-type').value; buildM7(); });
+$('[data-m7act="m7-check"]').addEventListener('click', m7Check);
+$('[data-m7act="m7-reset"]').addEventListener('click', () => buildM7());
+buildM7();
+
 window.__ts = {
   m1, RINGS, m2init, m2InitDefs: INIT_DEFS, m3, m3Defs: M3DEFS, m4,
   m5a, m5b, m5c, m5cLegal: M5C_LEGAL, M5Q,
   m6a, m6b, M6Q, M6Q_SRC, m6Fields: M6A_CMDS, m6bMatrix: M6B,
+  m7, M7Q, M7Q_SRC, m7Types: M7_TYPES, m7Rules: M7_RULES,
   snapshot(){
     const rr = {};
     for (const k of ['cmd','ep0','evt']){
@@ -3513,6 +4250,14 @@ window.__ts = {
         },
         b: { state: m6b.state, cmd: m6b.cmd, ok: m6b.ok, bad: m6b.bad, na: m6b.na, last: m6b.last },
       },
+      m7: {
+        type: m7.type, code: M7_TYPES[m7.type].code,
+        vals: Object.assign({}, m7.vals), ctx: Object.assign({}, m7.ctx),
+        setN: Object.keys(m7.vals).filter(k => m7.vals[k] !== '' && m7.vals[k] !== undefined).length,
+        total: M7_TYPES[m7.type].fields.length,
+        verdict: m7.verdict, intercepts: m7.intercepts, reverts: m7.reverts,
+        done: m7.done, checks: m7.checks,
+      },
     };
   },
 };
@@ -3525,6 +4270,7 @@ buildM2Init();
 buildM3();
 renderAll();
 initM4();
+buildM7();
 </script>
 </body>
 </html>

@@ -1,0 +1,1707 @@
+4.11 TRBs 
+This section discusses the properties and uses of TRBs that are outside of the 
+scope of the general data structure descriptions that are provided in section 
+6.4. 
+4.11.1 
+TRB Template 
+TRBs adhere to the generalized template illustrated in Figure 4-13. 
+Figure 4-13: TRB Template 
+Control
+ENT C
+Status
+Parameter
+31
+16
+15
+10
+9
+1
+0
+03-00H
+07-04H
+0B-08H
+0F-0CH
+TRB Type
+2
+ 
+A TRB consist of 3 basic components: Parameter, Status, and Control. The 
+following sub-sections identify the properties of each component. 
+4.11.1.1 
+Command and Transfer TRB Components 
+Command and Transfer TRB Components adhere to the following general rules, 
+where the producer is system software, and the consumer is the xHC. 
+All components of all Command and Transfer TRBs shall be initialized to ‘0’ by 
+the system software when the Command Ring or a Transfer Ring is created. 
+All components of all Command and Transfer TRBs shall be treated as read-
+only by the xHC. 
+The format/contents of all Command or Transfer TRB components shall be 
+defined by the Control component TRB Type field. TRB Type field shall always 
+reside in bits 10-15 of the Control component. 
+
+===== [PAGE 189] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+189 
+The Enqueue Pointer of a ring is defined by the transition of the Control 
+component Cycle (C) bit in the TRB Ring. Refer to section 4.9 for a detailed 
+explanation of Cycle bit operation. Cycle bit shall always reside in bit 0 of the 
+Control component. 
+If the xHC does not pre-fetch TRBs the Evaluate Next TRB (ENT) flag forces the 
+xHC to evaluate the next TRB of a TD before advancing to the next endpoint in 
+the Pipe Schedule. The ENT flag does not span TDs, therefore the ENT flag is 
+valid only if the Chain bit (CH) is ‘1’. Refer to section 4.12.3 for more 
+information on the ENT flag. 
+Note: If all 4 Dwords of a TRB are not written as an atomic memory operation, then 
+it is required that the Parameter and Status components of a TRB shall be 
+initialized prior to writing the Control Component. Violating this rule shall 
+cause undefined xHC behavior. 
+How a Transfer Ring is managed is described in section 4.11.2. How a 
+Command Ring is managed is described in section 4.11.4. 
+ IMPLEMENTATION NOTE 
+xHC Bus Mastering 
+The xHCI specification is designed around the assumption that hardware will issue a single, 
+atomic system bus transaction when reading and writing TRBs and other data structures. For 
+example, at least a 16 byte read transaction would be issued as an atomic operation to fetch 
+a TRB from memory. Larger read or write transactions may be used to minimize the system 
+bus overhead associated with moving data structures to or from memory, for example, an 
+xHC implementation could fetch 4 TRBs with a single 64B atomic operation, or use the system 
+bus’s maximum transaction size. Failure to read or write TRBs as atomic operations may result 
+in undefined behavior. 
+4.11.1.2 
+Event TRB Components 
+Event TRB Components adhere to the following general rules, where the 
+consumer is system software and the producer is the xHC. 
+All components of all Event TRBs shall be initialized to ‘0’ by the system 
+software when the Event Ring is created. 
+After Event Ring initialization, all components of Event TRBs shall be treated as 
+read-only by system software. 
+The format/contents of all Event TRB components shall be defined by the 
+Control component TRB Type field. TRB Type field shall always reside in bits 
+10-15 of the Control component. 
+The Enqueue Pointer of a ring is defined by the transition of the Control 
+component Cycle (C) bit in the Event TRB Ring. Refer to section 4.9 for a 
+detailed explanation of Cycle bit operation. 
+How an Event Ring is managed is described in section 4.11.3. 
+
+===== [PAGE 190] =====
+ 
+190 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.11.2 
+Transfer TRBs 
+Transfer TRBs shall be found on a Transfer Ring. A Work Item on a Transfer 
+Ring is called a Transfer Descriptor (TD) and is comprised of one or more 
+Transfer TRB data structures. This section describes the transfer related TRBs. 
+System software is the producer of all Transfer TRBs and the xHC is the 
+consumer. 
+Upon completion of a Transfer TRB one of 4 conditions shall cause an 
+associated Transfer Event to be generated on the Event Ring: 
+1. 
+The Interrupt On Completion (IOC) flag is set. 
+2. 
+A Short Packet has been received and the Interrupt-on Short Packet (ISP) 
+flag is set. 
+3. 
+An error occurred while executing a Transfer TRB. 
+In each case, the Completion code will indicate either Success or the cause of 
+the Transfer Event generation. 
+The IOC flag will typically only be set (‘1’) in the last TRB of Transaction 
+Descriptor (TD) to minimize Event TRB generation and system interrupts. 
+Each Endpoint Context defines one Transfer Ring if the MaxPStreams field = '0' 
+or multiple Transfer Rings if the MaxPStreams field > '0'. 
+Table 6-91 defines the TRB Types found on a Transfer Ring. Table 6-92 defines 
+the allowable Transfer Ring TRB Types as function of endpoint type. 
+Note: Software shall only utilize Transfer Events to determine TRB completions. 
+Software shall not infer TRB completions based on Frame ID, MFINDEX, or 
+other information. 
+Refer to section 4.11.7 for more information on TRB requirements. 
+4.11.2.1 
+Normal TRB 
+A Normal TRB is used in several ways; exclusively on Bulk and Interrupt 
+Transfer Rings for normal and Scatter/Gather operations, to define additional 
+data buffers for Scatter/Gather operations in Isoch and for Data stage TDs. 
+The direction of a data transfer associated with a Normal TRB depends on the 
+direction defined by the Endpoint Context that it is associated with, or the 
+preceding Data Stage TRB in the TRB Ring associated with a Control endpoint. 
+The Chain bit (CH field in Figure 6-8) may be set to ‘1’ in Normal, Data Stage, 
+Status Stage, and Isoch TRBs to form multi-TRB Transfer Descriptors. Chaining 
+allows scatter/gather operations. Chaining can be used by system software to 
+concatenate Pages of virtual memory, or to concatenate byte aligned data. 
+Refer to section 6.4.1.1 for the definition of a Normal TRB. 
+
+===== [PAGE 191] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+191 
+4.11.2.2 
+Setup Stage, Data Stage, and Status Stage TRBs 
+All USB devices respond to requests from the host on the device’s Default 
+Control Pipe. These requests are made using Control Transfers. At the USB 
+packet level, a Control Transfer consists of multiple transactions partitioned 
+into stages: a setup stage, an optional data stage, and a terminating status 
+stage. The xHCI defines the Setup Stage TRB, Data Stage TRB, and Status 
+Stage TRB to provide a 1:1 mapping to the respective USB Control transfer 
+stages. Refer to section 3.2.9 for an overview of xHCI Control transfer support. 
+Refer to sections 6.4.1.2.1, 6.4.1.2.2, and 6.4.1.2.3 for detailed definitions of a 
+Setup Stage TRB, Data Stage TRB, and Status Stage TRB, respectively. Also 
+see section 8.5.3 in the USB2 spec. or section 8.12.2 in the USB3 spec. for a 
+description of “Control Transfers”. 
+Table 9-2 of the USB2 or USB3 specification defines the format of the USB 
+SETUP Data. The host is responsible for establishing the values passed in the 
+USB SETUP Data fields. Every USB Setup packet is comprised of an eight byte 
+USB SETUP Data structure. 
+Figure 4-14: SETUP Data, the Parameter Component of Setup Stage TRB 
+wLength
+wIndex
+bmRequestType
+bRequest
+wValue
+31
+16
+15
+8
+7
+0
+00H
+04H
+DTD
+Type
+Recipient
+7
+6
+5
+4
+0
+bmRequestType
+ 
+Figure 4-14 illustrates the mapping of the USB SETUP Data defined in section 
+9.3 (Table 9-2) of the USB2 or USB3 spec. to the Setup Stage TRB Parameter 
+component. 
+The Transfer Ring associated with a Control Endpoint adheres to the following 
+rules: 
+• 
+The Control Transfer Ring may contain Setup Stage and Status Stage TDs, 
+and optionally Data Stage TDs. 
+• 
+Each Setup Stage TD shall contain a single Setup Stage TRB. 
+• 
+A Data Stage TD shall consist of a Data Stage TRB chained to zero or more 
+Normal TRBs, or Event Data TRBs. 
+• 
+A Status Stage TD shall contain of a single Status Stage TRB, optionally 
+chained to an Event Data TRB. 
+• 
+All Control transfers require a Setup Stage TD followed by a Status Stage 
+TD. If a data stage is required for the transfer, then system software is 
+responsible for ensuring that a Data Stage TD is inserted between the 
+Setup Stage TD and the Status Stage TD. “No-data” Control transfers do 
+not require a Data Stage TD. 
+• 
+A No-data Control transfer is generated by software if a Data Stage TD 
+does not exist between the Setup Stage and Status Stage TDs. 
+
+===== [PAGE 192] =====
+ 
+192 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+A Setup Stage TRB shall contain immediate data (IDT flag = ‘1’), its 
+Parameter fields shall contain the 8-byte USB SETUP Data, which defines 
+the request and the request’s parameters that will be sent to the device in 
+the USB Setup stage transaction, and its Length field shall be set to ‘8’. 
+• 
+System software is responsible for setting the values passed in the USB 
+SETUP Data fields as function of the desired USB Control Endpoint request. 
+Refer to section 9.3 in the USB2 spec or section 9.3 in the USB3 spec. for 
+the format of the USB Setup Data. 
+• 
+System software is responsible for ensuring that the Direction (DIR) flag of 
+the Data Stage and Status Stage TRBs are consistent with the USB SETUP 
+Data defined bmRequestType:Data Transfer Direction (DTD) flag and 
+wLength field. Refer to Table 4-7 for mapping. 
+• 
+No more than one Data Stage TD may be defined between a pair of Setup 
+and Status Stage TDs. 
+Table 4-7: USB SETUP Data to Data Stage TRB and Status Stage TRB mapping 
+ 
+USB SETUP Data 
+Transfer Type flag (TRT) 
+Status Stage TRB 
+Direction flag (DIR) 
+Data transfer direction (DTD) 
+wLength 
+Data Stage TRB 
+Status Stage TRB 
+Host-to-device 
+0 
+No Data Stage 
+No Data Stage TD defined 
+IN 
+>0 
+OUT Data Stage 
+OUT 
+IN 
+Device-to-host 
+0 
+No Data Stage 
+No Data Stage TD defined 
+IN 
+>0 
+IN Data Stage 
+IN 
+OUT 
+Note: The Direction (DIR) flag in the Status Stage TRB indicates the direction of the 
+control transfer acknowledgement. For USB2 devices, DIR directly determines 
+the PID that shall be used for the associated USB2 transaction. For USB3 
+devices, a Status TP is defined which is used for the status stage of all 
+Enhanced SuperSpeed  control transfers. Refer to section 8.5 of the USB3 
+spec for the definition of the SS Status TP Direction flag. 
+Note: The Direction (DIR) flag in the Data Stage TRB defines the transfer direction 
+for all TRBs in the Data Stage TD. For USB2 devices, DIR directly determines 
+the PID that shall be used for the Data Stage transaction. For USB3 devices, if 
+DIR = OUT a DP is generated with write data, if DIR = IN an ACK TP is 
+generated to request read data from the device. 
+• 
+If the data associated with a Data Stage TD is not contiguous, then 
+additional Normal TRBs shall be chained in a Data Stage TD. 
+• 
+System software is responsible for ensuring that the total data length 
+defined by a Data Stage TD (that is, the sum of the Length fields of the 
+
+===== [PAGE 193] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+193 
+Data Stage TRB and all Normal TRBs) is equal to wLength. Note that 
+communicating with some non-compliant devices may require violating this 
+rule. The transfer lengths managed by the xHC depend strictly on the TRB 
+Length fields. 
+• 
+The Transfer Event generated by a Status Stage TRB shall report a 
+Success, Stall Error, or other error Completion Code. 
+• 
+Success indicates that the USB device has completed the command and is 
+ready to accept a new command. Refer to “Function completes” row in 
+Table 8-7 of the USB2 spec. Refer to “Request completes” row in Table 8-
+27 of the USB3 spec. 
+• 
+Stall Error indicates that the USB device has an error that prevents it from 
+completing the command. Refer to “Function has an error” row in Table 8-7 
+of the USB2 spec. Refer to “Request has an error” row in Table 8-27 of the 
+USB3 spec. Software shall provide a timeout for all control operations and 
+abort them using a Stop Endpoint Command if the operation times out. 
+Note: If a USB device is still processing the command when the Status Stage TD is 
+executed, the device will return a Busy37 response. The xHC shall wait 
+indefinitely for a Success, Stall Error or other error response from device for 
+the Status stage. 
+• 
+The xHC shall NOT check for the following Control transfer error 
+conditions. 
+ 
+Note: Some (non-compliant) USB devices use the SETUP Data wLength field as a 
+custom parameter for non-data control transfers. xHCI implementations 
+should not tie a non-zero wLength value to the existence of a Data Stage TD 
+in a control transfer to ensure compatibility with those devices. 
+• 
+If a Data Stage TD follows a Setup Stage TD, where wLength = ‘0’. 
+• 
+If a Status Stage TD does not follow a Setup Stage TD, where wLength = 
+‘0’. 
+• 
+If a Data Stage TD does not follow a Setup Stage TD, where wLength > 
+‘0’38. 
+• 
+If the total size of the Data Stage TD is not equal to wLength. 
+• 
+If the Data Stage TRB Direction (DIR) flag does not correspond to the 
+definition in Table 4-7. 
+• 
+If the Status Stage TRB Direction (DIR) flag does not correspond to the 
+definition in Table 4-7. 
+The xHC is NOT required to check for the following Control transfer error 
+conditions. If system software is properly designed these error conditions will 
+ 
+37Refer to “Function is busy” row in Table 8-7 of the USB2 spec. Refer to “Device is busy” row in Table 8-27 of the USB3 spec. 
+38This condition violates the definition of a USB Control Transfer, however this condition should be ignored by the xHC to ensure legacy 
+device compatibility. The Setup Stage Transfer Type (TRT) field strictly indicates the presence and the Direction of the Data Stage TD, 
+and determines the direction of the Status Stage TD so the wLength field should be ignored by the xHC. 
+ 
+
+===== [PAGE 194] =====
+ 
+194 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+never occur. However if the xHC does check for these conditions it shall 
+generate a Transfer Event for the TRB that the error was detected on with the 
+Completion Code set to TRB Error.  
+• 
+If a Status Stage TD does not follow a Data Stage TD. 
+• 
+If the Setup Stage TRB defines a Length not = 8. 
+• 
+The xHC shall inspect the bRequest field in Setup Stage TRBs for a 
+SET_ADDRESS request code and the bmRequestType field for Data 
+Transfer Direction (DTD) = Host-to-device, Type = Standard, and Recipient 
+= Device. If these values are detected for bRequest and bmRequestType, 
+no Control transfer shall be issued to the USB, and the Transfer Event 
+associated with the Setup Stage TRB shall return a TRB Error Completion 
+Code. The SET_ADDRESS request is the ONLY Standard Device Request 
+trapped by the xHC. This error shall not generate a stall condition on the 
+Default Control Endpoint. 
+• 
+On a SS endpoint, if a STALL TP is received for a Setup, Data, or Status 
+Stage TD, the xHC shall generate a Transfer Event pointing to the TRB that 
+the error occurred on, with the Completion Code set to Stall Error. 
+• 
+On a USB2 endpoint, if an error is detected on a Setup, Data or Status 
+Stage TD, the xHC shall generate a Transfer Event pointing to the TRB that 
+the error occurred on, with the Completion Code set to USB Transaction 
+Error. 
+• 
+All Control transfers begin with a Setup Stage TD and end with a Status 
+Stage TD. A Control transfer may be aborted prior to executing its Data 
+Stage or Status Stage TDs using a Stop Endpoint Command. Software is 
+responsible for cleaning up the Transfer Ring after issuing a Stop Endpoint 
+Command. And this is the only case where the xHC may expect to see a 
+Setup Stage TD not follow a Status Stage TD. 
+Note: Undefined behavior may occur if software does not schedule a Status Stage 
+TD to terminate a control transfer. 
+ IMPLEMENTATION NOTE 
+Control Endpoint Recommendations 
+The USB2 specification section 8.5.3 is silent about what to do if a STALL is returned for a 
+Setup Transaction handshake. The EHCI spec (for example, section 4.12.1) treats a STALL 
+generically, retrying the transaction indefinitely. Receiving a STALL for any Transaction 
+handshake (including a Setup) halts the endpoint. The EHCI treats a NAK to a Setup 
+Transaction as a USB Transaction Error (that is, decrements CErr). It is recommended that 
+xHCI provides the same response. 
+The USB3 specification section 8.12.2 is silent about what to do if an NRDY or STALL is 
+returned for a Setup TP. xHCI implementations should treat these NRDYs like a USB 
+Transaction Error, retrying the transaction CErr times (refer to section 4.10.2.3), and if a 
+STALL is received for a Setup TP the xHC should halt the endpoint (refer to section 4.10.2.3). 
+
+===== [PAGE 195] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+195 
+4.11.2.3 
+Isoch TRB 
+An Isoch Transfer Descriptor (TD) shall consist of an Isoch TRB chained to zero 
+or more Normal TRBs.  
+The direction of a data transfer associated with an Isoch Transfer Ring (and the 
+Isoch TD that it defines) depends on the direction defined by the Endpoint 
+Context that it is associated with. Refer to the EP Type field definition in Table 
+6-9 for the direction encoding. 
+The USB Endpoint Descriptor bInterval and wMaxPacketSize, and USB 
+SuperSpeed Endpoint Companion Descriptor bMaxBurst and 
+bmAttributes:Mult parameters define the bandwidth requirements of an 
+isochronous pipe. These parameters specify a Quality of Service contract 
+between the device and the host. This contract ensures that during an Interval, 
+up to Max ESIT Payload bytes may be transferred between the host and the 
+device. Another way of looking at it is; the USB Descriptor fields; bInterval, 
+wMaxPacketSize, bMaxBurst, Mult, define a bandwidth that is guaranteed to be 
+available on the USB for moving the data associated with this endpoint. The 
+xHCI defines more generic versions of these parameters in the Endpoint 
+Context; Interval, Max Packet Size, Max Burst Size, and Mult fields. 
+System software is responsible for converting the endpoint type and speed 
+dependent values defined in the USB Endpoint and SuperSpeed Endpoint 
+Companion Descriptors to the generic values utilized by the xHCI. Refer to 
+section 6.2.3 for more information on the Endpoint Context fields and their 
+relationship to the USB Descriptor fields. 
+An Isoch TD defines an isochronous data transfer that will occur during a single 
+Interval. An Isoch TD consists of one or more TRBs, where the first TRB of TD 
+is always an Isoch TRB. If the data associated with an Isoch TD is not 
+contiguous or larger than 64K bytes, then additional Normal TRBs may be 
+chained to the initial Isoch TRB, forming a multi-TRB Isoch TD. 
+The xHC shall consume one Isoch TD each Interval on an Isoch Transfer Ring. 
+To ensure streaming data, system software is required to place at least one 
+Isoch TD on the Transfer Ring each Interval, prior to the Isochronous 
+Scheduling Threshold (refer to IST, section 4.14.2.1). 
+For Isoch OUT endpoints, if the associated Transfer Ring is empty, then no 
+Isoch transfers shall be scheduled over the USB during the intervening 
+Intervals, the endpoint shall be removed from the xHC’s Pipe Schedule, and a 
+Ring Underrun Event shall be generated for the EPs’ Transfer Ring to flag the 
+condition. 
+For Isoch IN endpoints, if the Transfer Ring is empty, then any Isoch data that 
+may have been transferred during the intervening Interval(s) shall be lost, the 
+endpoint shall be removed from the xHC’s Pipe Schedule, and a Ring Overrun 
+Event shall be generated for the EPs’ Transfer Ring. In either case, the 
+endpoint shall remain in the Running state. The xHC shall remove the endpoint 
+from the Isoch Pipe Schedule and restart the Isochronous transfers the next 
+time the endpoint’s doorbell is rung. 
+Note: A Ring Underrun or Ring Overrun Event is only generated the first Interval 
+that an empty Transfer Ring is detected. 
+
+===== [PAGE 196] =====
+ 
+196 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Note: Refer to section 4.10.3.1 for a description of Ring Underrun or Ring Overrun 
+Transfer Events. 
+An Isoch Transfer Ring will be reinstated on the xHC’s Pipe Schedule the next 
+time its doorbell is rung. 
+If the xHC is unable meet an Isochronous deadline, a Missed Service Error 
+Event shall be generated for the endpoint. 
+Note: The xHC may not generate a Missed Service Error for each Isochronous 
+deadline missed, for example, if the Event Ring is full. 
+The Ring Underrun, Ring Overrun, and Missed Service Error Events shall utilize 
+a Transfer Event TRB format. 
+The Isoch TRB Frame ID field may be used to specify the Service Interval 
+Boundary that an Isoch transfer may start on. If the Start Isoch ASAP (SIA) 
+flag is cleared to ‘0’ in the Isoch TRB, the xHC shall schedule the Isoch TD 
+within one Service Interval of the next match of the Frame ID field with the 
+Frame Index portion (bits 13:3) of the Microframe Index (MFINDEX) register. 
+Refer to Figure 4-21. The range of possible values for the Frame ID field are 0 
+to 2047, with the constraints defined in section 4.11.2.5. If the Start Isoch 
+ASAP (SIA) flag is set to ‘1’ in the Isoch TRB, the Frame ID field is ignored and 
+the Isoch TD is scheduled as soon as possible. 
+Service Interval Boundaries are aligned. That is, if Interval = ‘1’, then the 
+Service Interval is 2 microframes long and begins when the low order bit of the 
+MFINDEX register = 0. If Interval = ‘2’, then the Service Interval is 4 
+microframes long and begins when the low order two bits of the MFINDEX 
+register = 0, and so on. 
+The Isoch TRB Transfer Burst Count (TBC) and Transfer Last Burst Packet 
+Count (TLBPC) fields may be used by the xHC to identify the exact number of 
+packets that will comprise an Isoch TD without having to read in the complete 
+TD. The xHC may use this information to better manage its periodic schedules. 
+If Extended TBC Capability (ETC) and Extended TBC Enable (ETE) = ‘1’ then 
+TBC field supports the definition of Burst Counts up to 32 (and the TD Size field 
+is deprecated in an Isoch TRB), otherwise the TBC field supports the definition 
+of Burst Counts up to 3 (and the TD Size field is valid). Refer to section 6.4.1.3 
+for more information. 
+The TBC field (Table 6-34) shall be initialized by software. The following 
+method shall be used to compute TBC, where TDPC is the Transfer Descriptor 
+Packet Count described in section 4.14.1. 
+TBC = ROUNDUP ( TDPC / ( Max Burst Size + 1 ) ) - 1 
+The TLBPC field (Table 6-34) shall be initialized by software. The following 
+method shall be used to compute TLBPC, where TDPC is the Transfer Descriptor 
+Packet Count described in section 4.14.1. 
+IsochBurstResiduePackets = TDPC MODULUS ( Max Burst Size + 1 ) 
+TLBPC = IF ( IsochBurstResiduePackets == 0 ) 
+
+===== [PAGE 197] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+197 
+THEN Max Burst Size 
+ELSE IsochBurstResiduePackets - 1  
+Refer to section 6.4.1.3 for the detailed definition of an Isoch TRB. 
+Note: The ETC shall not be enabled by an xHC implementation if the Large ESIT 
+Payload Capability (LEC = ‘1’) is not supported. 
+Note: If LEC = ‘1’ and ETC = ‘0’, then the largest Isoch Transfer that the TBC and 
+TLBPC fields can describe is 64 KB. If the Max ESIT Payload indicates a value 
+greater than 64 KB, then the TBC and TLBPC fields shall be used as a hint, 
+rather than to compute an explicit Isoch TD packet count. 
+4.11.2.4 
+TD Size 
+The TD Size field of a TRB defines a number of packets that remain to be 
+transferred for a TD after processing all Max Packet Sized packets in the 
+current TRB and all previous TRBs. This field may be used by the xHC to 
+estimate the size of a TD without requiring it to read ahead TRBs to the end of 
+the TD. The TD Size field shall be initialized by software in Transfer TRBs, with 
+a value calculated for a TRB using the following method: 
+TD Packet Count defines the number of packets that must be transferred to 
+complete a TD. 
+TD Packet count = ROUNDUP( TD Transfer Size / Max Packet Size ) 
+where, ROUNDUP (x) rounds fractional x up, away from 0 (zero), to the 
+nearest integer value. 
+x is the number of Transfer TRBs in a TD. 
+n is the index of a Transfer TRB in a TD, where n = 1 for the first Transfer TRB 
+of a TD. 
+TRB Transfer Length Sum (n) is the sum of the TRB Transfer Length fields in 
+TRBs 1 through n. 
+Packets Transferred (n) defines the number of Max Packet Sized packets 
+that have been transferred for the TD, up to and including the data described 
+by TRB (n). 
+Packets Transferred (n) = ROUNDDOWN( TRB Transfer Length Sum (n) / Max Packet Size ) 
+TRB Residue (n) defines the number of bytes remaining in TRB (n)'s buffer 
+after processing all Max Packet Sized packets in the current TRB and all 
+previous TRBs of a TD. 
+TRB Residue (n) = TRB Transfer Length Sum (n) - (Max Packet Size * Packets Transferred (n) ) 
+TD Size (n), For all Transfer TRBs except the last in a TD, TD Size identifies 
+the number of packets that still need to be scheduled to complete this TD after 
+sending TRB Residue (n) + the data for TRBs n+1 through x. The value of the 
+TD Size in the last Transfer TRB of a TD (TD Size (x)) shall be cleared to '0' to 
+explicitly indicate that it is the last Transfer TRB of the TD. Since the TD Size 
+
+===== [PAGE 198] =====
+ 
+198 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+field is only 5 bits, its value shall be forced to 31 if the number of packets to be 
+scheduled is greater than 31. 
+For all Transfer TRBs of a TD except the last (n = 1 through x-1):  
+TD Size (n) = IF ( TD Packet Count - Packets Transferred (n) > 31, then 31, 
+else TD Packet Count - Packets Transferred (n) ) 
+For the last Transfer TRB of a TD: 
+TD Size (x) = 0. 
+Note: If the TRB Residue for the last Transfer TRB (TRB Residue (x)) is greater than 
+0, then a terminating Short Packet shall be generated for the TD. Also note 
+that the TRB Residue value is always less than Max Packet Size. 
+Note: If ETE = ‘1’, then the TD Size is not available in Isoch TRBs. Refer to section 
+6.4.1.3. 
+Refer to section 6.4.1 for more information on the TD Size field. 
+4.11.2.5 
+Frame ID 
+The Frame ID field of an Isoch TD identifies the target frame that the Interval 
+associated with this Isochronous Transfer Descriptor will start on. The Frame ID 
+is valid only if the Start Isoch ASAP (SIA) field of an Isoch TRB equals ‘0’. 
+Software shall not schedule an Isoch TD with a Frame ID value that is greater 
+than the End Frame ID, where: 
+End Frame ID = (Frame Index of the current MFINDEX register value + 895 ms.) MOD 2048 
+The End Frame ID limitation allows the xHC to properly manage Isoch TDs 
+when a Missed Service Error occurs. 
+Note: When a Missed Service Error occurs, the Isoch TD that was supposed to be 
+transferred during the missed service interval is dropped, and the xHC is 
+expected resynchronize the Isoch pipe by advancing to the next Isoch TD for 
+the next Interval. If the Frame ID of an Isoch TD is used to identify the 
+specific Frame associated with a TRB of an Isoch TD, then the scheduling limit 
+on the Frame ID (that is, the Valid Frame Window) allows the xHC to 
+unambiguously determine if an Isoch TD should be skipped or executed. 
+Software should not schedule an Isoch TD with a Frame ID value that is less 
+than the Start Frame ID, where: 
+Start Frame ID = (Frame Index of the current MFINDEX register value + IST + 1) MOD 2048  
+where IST shall be rounded up to the nearest frame boundary if it is defined in microframes 
+The Start Frame ID limitation allows the xHC sufficient time to fetch and 
+schedule Isoch TDs. For more information on the Isochronous Scheduling 
+Threshold (IST), refer to section 4.14.2.1.4. 
+
+===== [PAGE 199] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+199 
+Note: The Frame ID value is calculated as the modulus of 2048, that is, the size of 
+the Frame Index portion of the MFINDEX register (refer to Figure 4-21). 
+If the Contiguous Frame ID Capability is supported (CFC = '1'), then the xHC 
+shall match the Frame ID in every Isoch TD with SIA = ‘0’ against the Frame 
+Index of the MFINDEX register. This rule ensures resynchronization of Isoch 
+TDs even if some are dropped due to Missed Service Errors or Stopping the 
+endpoint. Note that the xHC may advance through Isoch TDs faster than the 
+Service Interval rate to resynchronize the Isoch data flow. Refer to section 
+4.11.2.5.2 for more information. 
+Note: If the Contiguous Frame ID Capability is supported (CFC = '1') by the xHC, 
+then software should set the Frame IDs (that is, SIA = '0') in all Isoch TDs. 
+To induce a gap in the data stream of a Running Isoch endpoint, software 
+simply specifies a gap in the Frame IDs assigned to the TDs of the data 
+stream, and the xHC will pause the data stream until the Frame ID matches 
+the Frame Index of the MFINDEX register. 
+Contiguous Frame ID Capability support (CFC = '1') is mandatory for all xHCI 
+1.1 and xHCI 1.2 compliant xHCI implementations. 
+A Valid Frame Window is defined by a Start Frame ID and an End Frame ID. 
+If the Contiguous Frame ID Capability is not supported (CFC = '0'), then the 
+xHC may start the Isoch data flow when the MFINDEX Frame Index matches 
+the Frame ID value specified in the first Isoch TD and ignore the Frame ID 
+fields in subsequent Isoch TDs until the data flow is terminated, for example, 
+due to an Overrun or Underrun condition. A Missed Service Error does not 
+terminate an Isoch data flow, therefore if a Missed Service Error occurs (that 
+is, one or more Isoch TDs are dropped), the xHCI will not be able to determine 
+whether the subsequent Isoch TDs are within a Valid Frame Window and 
+properly resynchronize the Isoch data flow. 
+Note: If the Contiguous Frame ID Capability is not supported (CFC = '0') by the 
+xHC, then software may set the Frame ID (that is, SIA = '0') only in the first 
+Isoch TD of an Isoch data flow, and shall set SIA = '1' in all subsequent Isoch 
+TDs of the data flow. To induce a gap in the data flow of a Running Isoch 
+endpoint, software must force a Ring Overrun or Ring Underrun condition (by 
+letting the Transfer Ring go empty), then specify the starting Frame ID in the 
+first Isoch TD of the next data flow, and ring the doorbell. 
+4.11.2.5.1 Frame ID ESIT Rules 
+The ESIT of an endpoint may be smaller, equal to, or larger than the 1 ms. 
+Frame period that may be specified by the Frame ID field of an Isoch TD. This 
+section defines how to defined Frame ID values as a function of the ESIT value. 
+For endpoints with an ESIT greater than or equal to 1 ms. 
+• 
+Software shall specify a Frame ID value that begins on an ESIT Boundary. 
+For example, if the Interval of an endpoint is 4 ms. (32 microframes) the 
+valid Frame ID values for the endpoint are 0, 4, 8, 12, and so on. 
+
+===== [PAGE 200] =====
+ 
+200 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+The xHC shall transfer an Isoch TD during the ESIT that starts on Frame 
+boundary specified by the Frame ID. For example, the TD in the example 
+above with the Frame ID value of 4, may be transferred over the USB any 
+time during Frames 4, 5, 6, or 7, where the xHC ensures that the data 
+transfer will not take place before Frame 4 begins or after Frame 7 ends. 
+For endpoints with an ESIT less than 1 ms.:  
+• 
+All Isoch TDs transferred within the same Frame (1 ms.) period shall have 
+the same Frame ID value. So, depending upon the value of the Interval 
+field, up to 8 consecutive Isoch TDs may have the same Frame ID value. 
+For example, if the ESIT of an endpoint is 250 µs. (2 microframes) then 
+groups of 4 consecutive Isoch TD shall have the same Frame ID value 0, 0, 
+0, 0, 1, 1, 1, 1, 2, 2, 2, 2, and so on. 
+• 
+To ensure proper Microframe Alignment of Isoch TDs for ESITs less than 1 
+ms., the xHC shall assume that the Frame ID of the first TD posted to a 
+Transfer Ring shall begin transferring during the first ESIT of a Frame (1 
+ms.) period. The xHC shall also assume that when a transition in Frame ID 
+values is detected (for example, between the 4th and 5th TDs in the 
+example above), the TD where the transition occurred (that is, the 5th TD) 
+should be transferred during the first ESIT of the next Frame period. For 
+example, in the above example, 4 Isoch TDs are transmitted each Frame 
+period, where the first TD is transmitted during Frame 0/microframe 0 or 
+1, the second TD is transmitted during Frame 0/microframe 2 or 3, the 
+third TD is transmitted during Frame 0/microframe 4 or 5, etc. 
+Note: Starting an IN or OUT Isoch data transfer at an ESIT that is not the first ESIT 
+of a Frame period is currently not supported by this specification. 
+4.11.2.5.2 Resynchronization 
+An Isoch Transfer Ring is “synchronized” when the xHC is able to successfully 
+transfer the data associated with an Isoch TD during the correct ESIT. If the 
+Frame ID value of an Isoch TD is not valid for a target ESIT, then 
+synchronization is lost. The rules defining the valid Frame ID values for a 
+specific ESIT are identified in section 4.11.2.5.1. 
+If a Missed Service Error occurs then the xHC is required to advance through a 
+Transfer Ring until it is “resynchronized” or the ring is exhausted. The data 
+associated with Isoch TDs that are skipped over while attempting to 
+resynchronize a pipe is not moved, however a Missed Service Error should be 
+generated for every skipped Isoch TD. 
+The xHC shall not drop Events associated with TRBs as it attempts to 
+resynchronize an Isoch pipe, for example, if IOC = ‘1’ in a Link TRB then it 
+returns Success, if IOC = ‘1’ in an Event Data or Normal TRB then it returns 
+Missed Service Error, etc. 
+4.11.3 
+Event TRBs 
+Event TRBs shall be found on an Event Ring. A Work Item on an Event Ring is 
+called an Event Descriptor (ED). An ED shall be comprised of only one Event 
+
+===== [PAGE 201] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+201 
+TRB data structure. This section describes the operational characteristics of the 
+event related TRBs. 
+The xHC is the producer of all Event TRBs and system software is the 
+consumer. 
+Event TRBs are used to report events associated with the Command Ring and 
+Transfer Rings, as well as a variety of other host controller related events (Port 
+Status Change, Bandwidth Requests, etc.). 
+The field definitions of the Parameter, Length, and the high word of the Control 
+components of Event TRBs are all Event Type Dependent. Refer to the specific 
+Event definitions below for more information on these definitions. The Event 
+Type field shall define the contents of the Event Type Dependent fields. 
+The Event Type field shall indicate Event Ring TRB Types as defined in Table 
+6-91. Any Event Type may be found on the Primary Event Ring. Only Transfer, 
+Bandwidth Request, and Device Notification Events may be found on a 
+secondary Event Ring. Refer to section 4.9.4.3 for a discussion of Primary and 
+Secondary Event Rings. 
+ IMPLEMENTATION NOTE 
+Event TRB Updating 
+The xHC shall ensure that all Dwords in an Event TRB are updated before it toggles the Cycle 
+(C) bit in Dword 3. An xHC implementation may update all 4 Dwords of the Event TRB as an 
+atomic (single DMA) operation, or if it updates the Event TRB Dwords as discrete operations, 
+then it shall update Dword 3 (toggling the Cycle bit) last. 
+4.11.3.1 
+Transfer Event TRB 
+Transfer Event TRB generation shall only occur under the following conditions: 
+• 
+If the Interrupt On Completion (IOC) flag is set. 
+• 
+When a short transfer occurs during the execution of a Transfer TRB and 
+the Interrupt-on-Short Packet (ISP) flag is set. 
+• 
+If an error occurs during the execution of a Transfer TRB. 
+Several transfer related errors may be detected that cannot be attributed to a 
+specific TRB, for example, Ring Overrun, Ring Underrun, etc. In these cases, 
+the xHC shall set the TRB Pointer to ‘0’ and software shall treat it as invalid. 
+When the data transfer associated with a Transfer TRB completes, a Transfer 
+Event shall be generated by the xHC if the TRB IOC or ISP flags are set to ‘1’, 
+or if an error occurs on the transfer associated with the TRB. And while 
+advancing to the end the current TD after generating this event, each Transfer 
+TRB encountered with its IOC flag set to ‘1’ shall generate a Transfer Event. 
+The Condition Code of the “current” Transfer Event shall be set to the value of 
+the Condition Code in the original Transfer Event, and the TRB Transfer Length 
+of the current Transfer Event should be set to value of the TRB Transfer Length 
+field in the original Transfer Event. 
+
+===== [PAGE 202] =====
+ 
+202 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.11.4 
+Command TRBs 
+The Parameter, Status and Length TRB components shall be cleared to ‘0’ by 
+system software unless otherwise noted by a specific command. 
+The TRB Type field of the Control component shall indicate the Command Type. 
+Table 6-91 defines the available Command TRBs, that is, TRB Types allowed on 
+a Command Ring. 
+For every command, the xHC notifies system software of its completion by 
+placing a Command Completion Event TRB on the Event ring. 
+When a Command TRB is initialized on the Command ring, the Cycle bit will be 
+set to the value of the Command Ring’s Producer Cycle State (PCS) flag. 
+If an endpoint defines Streams, then commands that affect Endpoint Contexts 
+may also affect the associated Stream Contexts. In cases where both contexts 
+may be affected, the combined contexts are referred to as the 
+“Endpoint/Stream” Context. 
+The remaining fields shall be managed by system software as a function of the 
+command type, and are described below. 
+Note: The Address Device, Configure Endpoint, and Evaluate Context Commands 
+utilize an Input Context data structure. 
+4.11.4.1 
+No Op Command TRB 
+The No Op Command TRB provides a simple means for verifying the operation 
+of the basic TRB Ring mechanisms offered by the xHC, or to report the current 
+value of the Command Ring Dequeue Pointer. 
+The format of the No Op Command TRB is defined in section 6.4.3.1. 
+Refer to section 4.6.2 for more information on the No Op Command. 
+4.11.4.2 
+Enable Slot Command TRB 
+The Enable Slot Command TRB causes the xHC to select an available Device 
+Slot and return the ID of the selected slot to the host in a Command 
+Completion Event. 
+The Enable Slot Command utilizes the same format as the No Op Command 
+TRB, described in section 6.4.3.1. 
+Refer to section 4.6.3 for more information on the Enable Slot Command. 
+4.11.4.3 
+Disable Slot Command TRB 
+The Disable Slot Command TRB releases any bandwidth assigned to the 
+disabled slot, frees any internal xHC resources assigned to the slot, and sets 
+the Slot State field of the associated Slot Context to Disabled. 
+
+===== [PAGE 203] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+203 
+The format of the Disable Slot Command TRB is defined in section 6.4.3.3. 
+Refer to section 4.6.4 for more information on the Disable Slot command. 
+4.11.4.4 
+Address Device Command TRB 
+The Address Device Command TRB transitions the selected Slot Context from 
+the Default to the Addressed state. It also causes the xHC to select an address 
+for the USB device and issue a SET_ADDRESS request to the USB device. 
+The format of the Address Device Command TRB is defined in section 6.4.3.4. 
+Refer to section 3.3.4 for more information on the Address Device Command. 
+4.11.4.5 
+Configure Endpoint Command TRB 
+The Configure Endpoint Command TRB is used to enabled and/or disable 
+selected endpoints of a Device Slot. When enabling endpoints the xHC 
+evaluates the host controller resource and USB bandwidth requirements 
+identified by the selected Endpoint Contexts in the command. If the 
+requirements can be met, then the endpoints are enabled. 
+The format of the Configure Endpoint Command TRB is defined in section 
+6.4.3.5. 
+Refer to section 3.3.5 for more information on the Configure Endpoint 
+Command. 
+4.11.4.6 
+Evaluate Context Command TRB 
+The Evaluate Context Command TRB is used by system software to notify the 
+xHC that parameters associated with selected contexts have been modified. 
+The current state of a context is not changed by the execution of an Evaluate 
+Context Command. Refer to section 4.3 for more information on the use of this 
+command. 
+Note: Refer to the Slot and Endpoint Context data structure descriptions (sections 
+6.2.2 and 6.2.3, respectively) for information on the specific Context fields 
+that are evaluated by this command. A typical use of this command is 
+immediately after an Address Device Command to inform that xHC that 
+software has updated the Max Packet Size field of the Control endpoint. Refer 
+to section 4.3 for more information on this usage. 
+The format of the Evaluate Context Command TRB is defined in section 6.4.3.6. 
+Refer to section 4.6.6 for more information on the Evaluate Context Command. 
+4.11.4.7 
+Reset Endpoint Command TRB 
+The Reset Endpoint Command TRB command is used by system software to 
+reset an individual endpoint. This command may be used to restart a Halted 
+endpoint. 
+
+===== [PAGE 204] =====
+ 
+204 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+The format of the Reset Endpoint Command TRB is defined in section 6.4.3.7. 
+Refer to section 4.6.8 for more information on the Reset Endpoint Command. 
+4.11.4.8 
+Stop Endpoint Command TRB 
+The Stop Endpoint Command TRB command is used by system software to stop 
+the packet stream of an individual endpoint and transfer ownership of all the 
+TDs on the associated Transfer Ring to software. 
+The format of the Stop Endpoint Command TRB is defined in section 6.4.3.8. 
+Refer to section 4.6.9 for more information on the Stop Endpoint Command. 
+4.11.4.9 
+Set TR Dequeue Pointer Command TRB 
+The Set TR Dequeue Pointer Command TRB command is used by system 
+software to set the TR Dequeue Pointer field of an individual endpoint to a new 
+value. 
+The format of the Set TR Dequeue Pointer Command TRB is defined in section 
+6.4.3.9. 
+Refer to section 4.6.10 for more information on the Set TR Dequeue Pointer 
+Command. 
+4.11.4.10 Reset Device Command TRB 
+The Reset Device Command TRB command is used by system software to 
+inform the xHC that it has reset a USB Device. 
+The format of the Reset Device Command TRB is defined in section 6.4.3.10. 
+Refer to section 4.6.11 for more information on the Reset Device Command. 
+4.11.4.11 Force Event Command TRB (Optional Normative) 
+The Force Event Command TRB allows a VMM to inject an Event TRB on the 
+Event Ring of a selected Virtual Function. VMMs utilize this command when 
+emulating a USB device to a VM. Refer to section 8 for more information on 
+virtualization. 
+The format of the Force Event Command TRB is defined in section 6.4.3.11. 
+Refer to section 4.6.12 for more information on the Force Event Command. 
+4.11.4.12 Negotiate Bandwidth Command TRB (Optional Normative) 
+The Negotiate Bandwidth Command TRB is used by system software to initiate 
+Bandwidth Request Events for periodic endpoints. This command may be used 
+to recover unused USB bandwidth from the system. 
+
+===== [PAGE 205] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+205 
+If the BW Negotiation Capability (BNC) bit in the HCCPARAMS1 register is ‘1’, 
+then the xHC shall support this command. 
+The format of the Negotiate Bandwidth Command TRB is defined in section 
+6.4.3.12. 
+Refer to section 4.16 for more information on Bandwidth Negotiation. 
+Refer to section 4.6.13 for more information on the Negotiate Bandwidth 
+Command. 
+4.11.4.13 Set Latency Tolerance Value Command TRB (Optional 
+Normative) 
+The Set Latency Tolerance Value Command TRB is used by system software to 
+provide a Best Effort Latency Tolerance (BELT) value to the xHC. This 
+command is optional normative, however it shall be supported if the xHC also 
+supports a corresponding host interconnect LTM mechanism. 
+If the Latency Tolerance Messaging Capability (LTC) bit in the HCCPARAMS1 
+register is ‘1’, then the xHC shall support this command. 
+The format of the Set Latency Tolerance Value Command TRB is defined in 
+section 6.4.3.13. 
+Refer to section 4.6.14 for more information on the Set Latency Tolerance 
+Value Command. 
+4.11.4.14 Get Port Bandwidth Command TRB (Optional Normative) 
+The Get Port Bandwidth Command TRB is issued by software to retrieve the 
+percentage of periodic bandwidth available on each Root Hub Port of the xHC. 
+This information can be used by system software to recommend topology 
+changes to the user if they were unable to enumerate a device due to a 
+Bandwidth Error or a Secondary Bandwidth Error. 
+The format of the Get Port Bandwidth Command TRB is defined in section 
+6.4.3.14. 
+Refer to section 4.6.15 for more information on the Get Port Bandwidth 
+Command. 
+4.11.4.15 Force Header Command TRB 
+The Force Header Command TRB is issued by software to send a Link 
+Management or Transaction Packet to a USB device. For instance, it may be 
+used to send a Vendor Device Test LMP. 
+The format of the Force Header Command TRB is defined in section 6.4.3.15. 
+Refer to section 4.6.16 for more information on the Force Header Command. 
+
+===== [PAGE 206] =====
+ 
+206 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+4.11.4.16 Get Extended Property Command TRB (Optional Normative) 
+The Get Extended Property Command is used by system software to discover 
+specific Extended Capabilities supported by the xHC, and to enumerate and 
+read specific attributes of those Extended Capabilities. 
+The format of the Get Extended Property Command TRB is defined in section 
+6.4.3.16. 
+Refer to section 4.6.17 for more information on the Get Extended Property 
+Command. 
+4.11.4.17 Set Extended Property Command TRB (Optional Normative) 
+The Set Extended Property Command is used by System Software to control 
+attributes of specific Extended Capabilities supported by the xHC. 
+The format of the Set Extended Property Command TRB is defined in section 
+6.4.3.17. 
+Refer to section 4.6.18 for more information on the et Extended Property 
+Command. 
+4.11.5 
+Other TRBs 
+4.11.5.1 
+Link TRB 
+The Link TRB provides support for sizing and non-contiguous Transfer and 
+Command Rings. A Link TRB indicates the end of a ring by providing a pointer 
+to the beginning of the ring. 
+If contiguous Pages cannot be allocated by system software to form a large 
+Transfer Ring, then Link TRBs may also be used to link together multiple 
+memory Pages to form a single Transfer Ring. 
+A non-contiguous TRB Ring is composed of Ring Segments. 
+Software shall invoke the following rules when constructing a TRB Ring: 
+• 
+All Transfer Ring Segments shall be aligned to 16-byte (TRB) boundaries. 
+• 
+All Command Ring Segments shall be aligned to 64-byte boundaries. 
+• 
+All Transfer and Command Ring Segments are multiples of 16 bytes in size. 
+• 
+A Link TRB shall be the last TRB of each Transfer or Command Ring 
+Segment 
+• 
+The Ring Segment Pointer field of a Link TRB shall point to the next 
+Segment of a multi-segment TRB Ring, or to first segment in a single 
+Segment ring. 
+• 
+The Link TRB of the last Ring Segment in a ring shall point to the beginning 
+of the first segment of the ring. 
+
+===== [PAGE 207] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+207 
+• 
+The Toggle Cycle flag should be set in at least one Link TRB of a ring. 
+Note: The Ring Segment Pointer field in a Link TRB is not required to point to the 
+beginning of a physical memory page. 
+Note: A Link TRB may be found on Transfer or Command Rings. 
+Refer to Figure 4-15 for an illustration of TRB Ring Segments and Link TRBs. 
+Figure 4-15: Link TRB Example 
+TRB
+TRB
+Transfer Ring
+Segment 0
+Transfer Ring
+Segment 1
+Dequeue Pointer
+Enqueue Pointer
+Execution
+256 
+TRBs
+244 
+TRBs
+Empty TRB
+Pending TRB
+Endpoint Context
+Ring Base Address
+TD
+Link TRB
+EP State
+TRB
+TRB
+TRB
+...
+TRB
+TRB
+TRB
+TRB
+...
+TRB
+TRB
+Link TRB
+Link TRB
+Unused
+Ring Size = 500
+Legend
+0
+ 
+Transfer Descriptors (Chained TRBs) may cross Segment boundaries. 
+Refer to section 4.11.7 for how the Chain (CH) flag shall be set in a Link TRB. 
+In a Transfer Ring a Link TRB is always assumed to be linked to the first TRB of 
+the next segment. If the Chain bit (CH) of the previous TRB is ‘1’, then the 
+multi-TRB TD that it defines spans segments and shall continue with the first 
+TRB of the next segment. In a Command Ring the Link TRB Chain bit (CH) is 
+ignored by the xHC. 
+As software advances its Enqueue Pointer and advances over a Link TRB, the 
+Cycle (C) bit shall be updated with the value of the PCS flag. 
+The Interrupt On Completion (IOC) flag of a Link TRB may be used by system 
+software to generate an event indicating the Dequeue Pointer has reached the 
+Link TRB. This feature provides software with the ability to track the Dequeue 
+Pointer as a function of segment boundary crossings. 
+Note: A TD Fragment shall not span segments. Refer to section 4.11.7.1. 
+
+===== [PAGE 208] =====
+ 
+208 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+When the Link TRB resides on a Transfer Ring the Interrupt On Completion 
+(IOC) flag of a Link TRB may be used by system software to generate a 
+Transfer Event, where the Transfer Event Slot ID and Endpoint ID shall reflect 
+the slot and endpoint that the Transfer Ring is associated with, the Length = 
+‘0’, the TRB Pointer field shall point to Link TRB, and the Completion Code = 
+Success. 
+When the Link TRB resides on a Command Ring the Interrupt On Completion 
+(IOC) flag of a Link TRB may be used by system software to generate a 
+Command Completion Event, where the Command Completion Event Slot ID = 
+‘0’, VF ID = ‘0’, the Command TRB Pointer field shall point to Link TRB, and the 
+Completion Code = Success. 
+Note: The Primary Interrupter (‘0’) is the target of all Command Completion Events. 
+The Interrupter Target field shall be ignored by the xHC in Link TRBs found on 
+the Command Ring. 
+ IMPLEMENTATION NOTE 
+xHC TRB Fetching 
+All TRBs between the Enqueue and Dequeue Pointers of a TRB Ring are owned by the xHC. 
+No constraints are placed on how many TRBs an xHC implementation may fetch in a single 
+DMA operation or the order that the xHC may fetch them in. System software shall not modify 
+a TRB owed by the xHC. 
+4.11.5.2 
+Event Data TRB 
+The Event Data TRB allows system software to generate a software defined 
+event, and fully specify the Parameter Component of a generated event. 
+The Event Data TRB has the unique properties of inheriting the Completion 
+Code of the previous (non-Event Data) TRB executed on a ring, and 
+accumulating the transfer Lengths of preceding TRBs. 
+A typical use of the Event Data TRB would be to provide a 64-bit software 
+defined identifier (or address) upon the completion of a TD. To accomplish this 
+the Event Data TRB would be chained as the last TRB of the TD, and the IOC 
+flag would be set only in the Event Data TRB. When the TD completes, an 
+event is generated where the Completion Code is supplied by the previous TRB 
+executed, and the Parameter Component of the event is loaded with the value 
+supplied by the Event Data TRB. 
+The Event Data (ED) field of a Transfer Event indicates whether the event was 
+generated by a Transfer TRB or an Event Data TRB. A Transfer Event with its 
+ED flag equal ‘1’ is referred to as an Event Data Transfer Event. 
+A key feature of an Event Data Transfer Event is its ability to report the 
+number of bytes transferred by a TD, rather than that of an individual TRB. To 
+accomplish this the xHC maintains an internal 24-bit Event Data Transfer 
+Length Accumulator (EDTLA) for each endpoint. The rules for EDTLA 
+management are: 
+
+===== [PAGE 209] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+209 
+• 
+The EDTLA shall be cleared to ‘0’ immediately prior to executing the first 
+Transfer TRB of a TD or when a Set TR Dequeue Pointer Command is 
+executed. 
+• 
+When a Transfer TRB is completed, the number of bytes transferred by the 
+TRB shall be added to the EDTLA. The EDTLA shall wrap, if the total 
+number of bytes transferred is greater than 16,777,215 (16MB-1). 
+• 
+When an Event Data TRB is encountered an Event Data Transfer Event 
+shall be generated, where the TRB Transfer Length field shall contain the 
+value of the EDTLA. The EDTLA shall then be cleared to ‘0’ and begin 
+accumulating again. 
+• 
+If a Stopped Transfer Event is generated and the Condition Code = 
+Stopped - Short Transfer, then the TRB Transfer Length field of the 
+Transfer Event shall contain the value of the EDTLA. 
+Note that for TDs greater than or equal to 16MBytes the EDTLA will roll-over. It 
+is system software’s responsibility to insert “Intermediate” Event Data TRBs 
+periodically within a TD to report transfer lengths before the rollover condition 
+occurs. Software is also responsible for accumulating the Length fields of Event 
+Data Transfer Events to determine the total number of bytes transferred by a 
+TD that declares multiple Event Data TRBs. 
+Note: Software shall set the IOC flag in all Event Data TRBs. Because the IOC flag 
+must be set in an Event Data TRB, the possible locations of an Event Data 
+TRBs within a TD are constrained by the TD Fragment rules described in 
+section 4.11.7.1. 
+If a Short Packet is detected during the execution of a multi-TRB TD, the xHC 
+shall advance to the first TRB of the next TD or the Enqueue Pointer (that is, 
+Cycle bit transition), whichever is encountered first. If the TD that incurred the 
+Short Packet is terminated by an Event Data TRB (with its IOC flag is set), then 
+the xHC shall generate an Event Data Transfer Event, where the Length field 
+shall reflect the actual number of bytes transferred. 
+The following rules apply to Event Data TRBs on a Transfer Ring unless 
+otherwise stated: 
+• 
+An event shall be generated by an Event Data TRB if its IOC flag is set to 
+‘1’. 
+• 
+An event generated by an Event Data TRB (Event Data Transfer Event) 
+shall utilize the format of the Transfer Event TRB. The Slot ID and Endpoint 
+ID fields shall be set appropriately for the Transfer Ring that contained the 
+Event Data TRB, and the Event Data (ED) flag shall be set to ‘1’. 
+• 
+The event generated when the IOC flag of an Event Data TRB is set to ‘1’ 
+shall report the Completion Code of the previously executed Transfer TRB 
+of a TD, or Success if inserted as an Event Data TD (that is, a TD that 
+consists of just one Event Data TRB) on a ring. The “previously executed 
+Transfer TRB” is either the last Transfer TRB of the TD or the Transfer TRB 
+that generated an error which forced a premature completion of the TD. 
+Intermediate Event Data TRBs shall report “Success”. 
+
+===== [PAGE 210] =====
+ 
+210 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+The Parameter Component of the Transfer Event generated by an Event 
+Data TRB shall contain the value of the Event Data TRB Parameter 
+Component. 
+• 
+The Length field of an Event Data Transfer Event shall reflect the number 
+of bytes transferred from the beginning of a TD or since the last Event TRB 
+encountered in a TD. 
+Note: The above rules also apply to Intermediate Event Data Transfer Event TRBs. 
+Note: The Event Data (ED) flag in the Transfer Event TRB indicates to system 
+software whether the Parameter Component of the respective event should be 
+interpreted as pointer to system memory or software defined data. 
+Note: The IOC flag is treated generically by the xHC. If it is set in a TRB, then the 
+xHC shall generate an Event for that TRB. If the IOC flag is not set in an 
+Event Data TRB, the xHC will advance past it, clearing the EDTLA in the 
+process. 
+Note: An Event Data TRB may only be found on a Transfer Ring. 
+Note: An Event Data TRB shall not immediately follow another Event Data TRB. 
+Note: Refer to section 4.12.3 for information on how the Evaluate Next TRB (ENT) 
+flag should be used to manage Event Data TRBs. 
+Note: Refer to section 4.10.1.1 for more information on the handling of Event Data 
+TRBs if a Short Packet condition occurs while executing a TD. 
+Note: Software shall not define a “stand-alone” Event Data TD (that is, a TD that 
+only contains a single Event Data TRB) on an Isoch Transfer Ring, however 
+Event Data TRBs may be included in Isoch TDs. 
+4.11.6 
+Vendor Defined TRB Types 
+xHC vendors may define proprietary TRB Types using the Vendor Defined TRB 
+Type codes identified in Table 6-91. The Vendor Defined TRB Types may be 
+used to define Command, Event, or Transfer TRBs. 
+A vendor shall define proprietary xHCI Extended Capability structures using the 
+xHCI Extended Capability Codes identified in Table 7-3 to enumerate any 
+vendor defined TRB types or xHC capabilities. 
+If an unrecognized Vendor Defined TRB is encountered by the xHC: 
+• 
+On a Transfer Ring, if a Vendor Defined TRB is preceded by a Transfer TRB 
+and the Chain bit (CH) of the Transfer TRB is set (‘1’), then the Vendor 
+Defined TRB is also required to support a valid Chain bit, which the xHC 
+shall evaluate to determine if the end of the TD has been reached. 
+Otherwise, the xHC shall advance past an unrecognized Vendor Defined 
+TRB on a Transfer Ring and shall ignore it. 
+
+===== [PAGE 211] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+211 
+• 
+The xHC shall treat Vendor Defined TRBs encountered on a Command Ring 
+like a No Op Command TRB. 
+• 
+Software shall advance past and ignore Vendor Defined TRBs encountered 
+on an Event Ring. 
+Note: All vendor defined TRBs shall define a Cycle (C) bit at the same bit position as 
+defined in all xHCI TRBs and manage it as defined in section 4.9 for the 
+respective ring type. 
+Note: All vendor defined Event TRBs shall define a Completion Code field at the 
+same bit position as defined in all xHCI Event TRBs and manage it as defined 
+in section 4.9.4. 
+Note: Any vendor defined Transfer TRBs that may be included in a multi-TRB TD, 
+shall define a Chain bit (CH) field at the same bit position as defined in a 
+Normal TRB and manage it as defined in section 4.9.1. 
+xHC vendors may use the Vendor Defined TRB Type codes to define proprietary 
+xHCI commands. All vendor defined commands shall utilize the Command 
+Completion Event TRB to report completions. 
+Multiple vendors may define the same xHCI Extended Capability code or 
+Vendor Defined TRB code to perform different operations. All vendor defined 
+xHCI Extended Capability codes and TRB Types shall be qualified by system 
+software with the PCI Configuration Space Header Vendor ID and Subsystem 
+Vendor ID. 
+Vendors may also define Completion Codes. The Vendor Defined Completion 
+Codes are separated into two groups: error and information. This partitioning 
+allows software to infer the purpose of a Vendor Defined Completion Code even 
+if it does not have vendor specific knowledge. Refer to Table 6-90. 
+If software does not have vendor specific knowledge, Completion Codes in the 
+range defined by Vendor Defined Info codes shall be interpreted identically to a 
+Success Completion Code. 
+If software does not have vendor specific knowledge, Completion Codes in the 
+range defined by Vendor Defined Error codes shall be interpreted as an 
+Undefined Error Completion Code, for example, if a Vendor Defined Error code 
+is reported in a Command Completion Event software shall assume that the 
+associated command did not complete successfully. 
+4.11.7 
+TD Usage Rules 
+A Transfer Descriptor (TD) may be composed of 1 or more TRBs. The TRB 
+Chain flag is used identify the TRBs of a TD, where the Chain flag is set in all 
+the TRBs of a TD except the last. In the simplest case, a TD consists of a single 
+TRB. Larger transfers may require TDs that are comprised of many TRBs.  
+If a TD crosses a TRB Ring Segment boundary it may include one or more  
+Link TRBs. 
+
+===== [PAGE 212] =====
+ 
+212 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Setting the TRB Interrupt on Completion (IOC) flag allows the completion of a 
+TRB to generate an event. An IOC flag may be set in the TRBs of a TD 
+identified in section 4.11.7.1. 
+Note: A “Transfer TRB” is any TRB defined in section 6.4.1. Link and Event Data 
+TRBs are not “Transfer TRBs”. 
+On an IN endpoint, if the device class allows a device to supply less data than 
+the host has provided buffer space for, software has two options in forming a 
+TD. 
+4. 
+Set the Interrupt-on Short Packet (ISP) flag in all TRBs of a TD, and set 
+the IOC flag in the last TRB. This action shall cause the xHC to generate a 
+Transfer Event if a Short Packet condition is detected while executing any TRB 
+in the TD, or generate a Transfer Event if the device completely fills the buffer. 
+ 
+To determine the number of bytes actually transferred, software shall add the 
+TRB Transfer Length fields of all TRBs up to and including the TRB that 
+generated the Transfer Event, and subtract the Transfer Event TRB Transfer 
+Length field. 
+5. 
+Terminate the TD with an Event Data TRB that has its IOC flag set, and 
+not set the ISP or IOC flag in any Transfer TRB of the TD. This action shall 
+cause the xHC to generate an Event Data Transfer Event if a Short Packet 
+condition is detected while executing any TRB in the TD or if the device 
+completely fills the buffer. 
+ 
+The TRB Transfer Length field of the Event Data Transfer Event identifies the 
+number of bytes actually transferred, from the beginning of the TD or since the 
+last Event Data Transfer Event. The TRB Transfer Length field of the Event Data 
+Transfer Event may define up to a 16,777,215 byte transfer. 
+More than one Event Data TRB may be defined within a TD. 
+If Event Data TRBs are defined within a TD, then the IOC or ISP flags shall not 
+be set in any Transfer TRB of a TD. that is, the use of Event Data Transfer 
+Events and normal Transfer Events to report a TD completion are mutually 
+exclusive. 
+Note: Software may insert an Event Data TD immediately following a TD to provide 
+additional information related to the previous TD. An Event Data TD is a TD 
+that consists of just one Event Data TRB. 
+If the IDT flag is set in one TRB of a TD, then it shall be the only Transfer TRB 
+of the TD. An Event Data TRB may be included in the TD. 
+Software shall specify the same Interrupter Target value in all TRBs of a TD. If 
+an invalid Interrupter Target value is defined in a TRB, the behavior of the xHC 
+is undefined if the TRB generates a Transfer Event. If virtualization is 
+supported, an xHC implementation shall ensure that this “undefined behavior” 
+does not affect another function (PF0 or VFx). 
+The Transfer TRB TD Size field shall be valid in all Transfer TRBs that define it. 
+Refer to section 4.11.2.4. 
+
+===== [PAGE 213] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+213 
+Software shall not define a No Op Transfer TRB within a multi-TRB TD, that is, 
+software shall never set the Chain bit of a No Op TRB to '1' and a No Op TRB 
+shall always be preceded by a TRB whose Chain bit is also set to '0'. 
+Software shall not define a Link TRB as the first TRB of a multi-TRB TD. 
+Software shall not define a Link TRB as the last TRB of a multi-TRB TD. 
+One or more Link TDs may precede or follow a TD. A Link TD is a TD that 
+consists of just one Link TRB. 
+Software shall not define consecutive Link TRBs within a TD, that is, software 
+shall not set the Chain bit of consecutive Link TRBs to '1'. 
+Undefined xHC behavior may occur if the requirements defined in this section 
+are not met. 
+Note: Besides reporting an error or the completion of a TD, Events may also be 
+used by software to periodically update the current value of the Dequeue 
+Pointer, to indicate the crossing of a Transfer Ring Segment boundary so it 
+can add or remove a segment, etc., so the xHC shall generate an Event every 
+time it encounters an IOC flag equal to ‘1’, irrespective of any error events 
+that may be forced for earlier TRBs in a TD that did not have their IOC flag 
+set. 
+ 
+For example, software may periodically set IOC flags in TRBs of a large TD so 
+that it may update its Dequeue Pointer and reuse the TRBs that have been 
+consumed by the xHC (rather than having to expand the Transfer Ring). 
+Unless an error is encountered, all the intermediate events shall report 
+Success. If any event generated by a TD reports an error, then that 
+Completion Code overrides any Successful Completion Codes that other TRBs 
+associated with the TD may have asserted, whether they come before or after 
+the error Event. 
+Note: Software shall not interpret an error Event as indicating that the TD that it is 
+associated with is “complete” (that is, ownership of all the TRBs of the TD 
+have been relinquished by the xHC), unless the TRB Pointer field of the error 
+Transfer Event references the last TRB of the TD. 
+4.11.7.1 
+TD Fragments 
+The xHCI architecture allows TRBs to reference buffers of any length; however 
+hardware works most efficiently when it is dealing with regularly sized buffers, 
+for example, Max Packet Size or Max Burst Size. Also the event generation 
+mechanisms defined for Transfer Rings are extremely flexible, however 
+constraints must be imposed to ensure that the hardware gate count and 
+validation requirements are minimized for xHC implementations. TD Fragments 
+require software to organize the TRBs of a TD in manner that allows the xHC 
+hardware to optimize its internal buffer management and operation. 
+TD Fragments are designed to: 
+• 
+Maximize burst opportunities for the xHC by ensuring that when software 
+adds TRBs to a Transfer Ring, it does so in burst friendly units. 
+
+===== [PAGE 214] =====
+ 
+214 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+• 
+Simplify Event generation by limiting the frequency and locations in a TD 
+where the IOC flag may be set. 
+The Max Burst Payload (MBP) is the number of bytes moved by a maximum 
+sized burst, that is, (Max Burst Size + 1) * Max Packet Size bytes. 
+A TD is comprised of one or more TD Fragments. If the TD Transfer Size is an 
+even multiple of the MBP then all TD Fragments shall define exact multiples of 
+MBP data bytes. If not, then the only last TD Fragment shall define less than 
+MBP data (or the Residue) bytes. 
+Each TD Fragment is comprised of one or more TRBs. The first TRB of a TD 
+Fragment is written last, ensuring that all the other TRBs of the TD Fragment 
+are complete and reference valid buffers in host memory. 
+TD Fragments require software to construct TDs as sequential groups of TRBs. 
+If the TD Transfer Size is greater than MBP, then the TD consists of 1 or more 
+TD Fragments. 
+A TD Fragment may reference more than MBP bytes; if it is the last or only TD 
+Fragment of a TD, or if it references an integral multiple of MBP bytes. 
+A TD Fragment may reference less than MBP bytes, if it is the last or only TD 
+Fragment of a TD. 
+Software is allowed to construct a single TD Fragment that is an integral 
+multiple of MPB bytes, or that defines a complete TD. 
+• 
+The first TRB of a TD Fragment shall always be a Transfer TRB. 
+• 
+A TD Fragment should not span Transfer Ring Segments. 
+• 
+Link TRB placement in a TD shall follow the rules described in this section 
+and section 4.11.7. 
+• 
+Event Data TRB placement in a TD Fragment shall follow the rules 
+described in this section and sections 4.11.5.2 and 4.11.7. 
+• 
+A TRB Packet Boundary in a TD immediately precedes a Transfer TRB in 
+which the first byte of the buffer referenced by a Transfer TRB is the also 
+the first byte of a USB packet. 
+• 
+The first TRB of a TD Fragment shall be the first TRB of a TD or 
+immediately follow a TRB Packet Boundary. 
+• 
+The last TRB of a TD Fragment immediately precedes a TRB Packet 
+Boundary or is the last TRB of a TD. 
+The IOC flag may be set in only one TRB of a TD Fragment, with the following 
+conditions: 
+• 
+The IOC flag may be set in a Transfer TRB that immediately precedes a 
+TRB Packet Boundary or the last Transfer TRB of a TD Fragment. 
+• 
+The IOC flag may be set in a non-Transfer TRB (for example, a Link TRB, 
+Event Data TRB, etc.) that resides between two Transfer TRBs that form a 
+TRB Packet Boundary, or follow the last Transfer TRB of a TD. 
+
+===== [PAGE 215] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+215 
+Figure 4-16: TRB Packet Boundary Example 
+Event Data TRB
+Link TRB
+Payload 7
+Payload 6
+Payload 2
+Packet 1
+Payload 1
+Packet 2 Packet 3 Packet 4 Packet 5
+Payload 3
+P 4
+Packet 6 Packet 7 Packet 8
+Payload 5
+Transfer TRB 1
+Transfer TRB 2
+Transfer TRB 3
+Transfer TRB 4
+Transfer TRB 5
+Transfer TRB 6
+TD Fragment 1
+TD Fragment 2
+Packet 9 Packet 10 Pkt 11
+Transfer TRB 7
+TRB Packet Boundaries
+TD Fragment Boundaries
+Transfer
+Descriptor
+ 
+The example of Figure 4-16 illustrates a TD that consists of two TD Fragments. 
+TD Fragment 1 ends on boundary that is also a multiple of Max Packet Size 
+bytes, while TD Fragment 2 ends at the end of the TD. Both TD Fragments end 
+on a TRB Packet Boundary (red lines). An additional TRB Packet Boundary is 
+defined in each TD Fragment, that is, between TRBs 2 and 3 in TD Fragment 1 
+and between TRBs 5 and 6 in TD Fragment 2. Following the rules described 
+above, the IOC flag may be set only once in a TD Fragment, that is, in Transfer 
+TRB 2, Transfer TRB 4, or the Link TRB of TD Fragment 1, and in Transfer TRB 
+5, Transfer TRB 7, or the Event Data TRB of TD Fragment 2. The IOC flag 
+cannot be set in Transfer TRBs 1, 3 or 6 because they do not immediately 
+precede a TRB Packet Boundary. 
+The TD Fragment rules above also ensure that the last Transfer TRB of a TD 
+Fragment shall describe a data buffer that ends on a Max Packet Size boundary 
+(Transfer TRB 4) or terminates the TD (Transfer TRB 7). 
+
+===== [PAGE 216] =====
+ 
+216 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Figure 4-17: TD Fragment Examples 
+31K 
+Virtual 
+Buffer
+4K 
+Pages
+TRB 1K
+TRB 4K
+TRB 4K
+TRB 4K
+TRB 3K
+TRB 1K
+TRB 4K
+TRB 4K
+TD Fragment 1 
+MBP bytes
+TD Fragment 2 
+Residue bytes
+TRB 4K
+TRB 2K
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+TD
+Virtual 
+Memory
+Offset = 3KB
+2KB
+31K 
+Virtual 
+Buffer
+4K 
+Pages
+TRB 1K
+TRB 4K
+TRB 4K
+TRB 4K
+TRB 4K
+TRB 4K
+TRB 4K
+TD Fragment 1 
+TD Size
+TRB 4K
+TRB 2K
+1
+2
+3
+4
+5
+6
+7
+8
+9
+TD
+Virtual 
+Memory
+Offset = 3KB
+2KB
+31K 
+Virtual 
+Buffer
+4K 
+Pages
+TRB 1K
+TRB 4K
+TRB 3K
+TRB 1K
+TRB 4K
+TRB 3K
+TRB 1K
+TRB 4K
+TD Fragment 1 
+MBP bytes
+TD Fragment 4 
+Residue bytes
+TRB 3K
+TRB 1K
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+TD
+Virtual 
+Memory
+Offset = 3KB
+2KB
+TRB 4K
+TRB 2K
+11
+12
+TD Fragment 2 
+MBP bytes
+TD Fragment 3 
+MBP bytes
+Example 1
+Max Burst Size = 16KB
+Example 2
+Max Burst Size = 16KB or 8KB
+Example 3
+Max Burst Size = 8KB
+31K 
+Virtual 
+Buffer
+4K 
+Pages
+TRB 1K
+TRB 4K
+TRB 3K
+TRB 1K
+TRB 4K
+TRB 4K
+TRB 4K
+TD Fragment 1 
+MBP bytes
+TD Fragment 4 
+Residue bytes
+TRB 3K
+TRB 1K
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+TD
+Virtual 
+Memory
+Offset = 3KB
+2KB
+TRB 4K
+TRB 2K
+11
+TD Fragment 2 
+MBPx2 bytes
+Example 4
+Max Burst Size = 8KB
+16KB
+15KB
+31KB
+8KB
+7KB
+16KB
+8KB
+7KB
+8KB
+8KB
+ 
+In Figure 4-17 the TDs in all the examples describe the same Virtual Buffer, 
+which is 31KB in size, begins at a 3KB offset into the first physical Page, and 
+spans 9 Pages. 
+Example 1 illustrates the TD Fragments that would be generated for an 
+endpoint with a Max Packet Size = 1KB and a Max Burst Size of 16 packets. 
+The first TD Fragment describes MBP (16K) bytes of buffer space. The second 
+TD Fragment describes the TD Fragment Residue of the TD, or 15K bytes of 
+buffer space. Note that two TRBs (5 and 6) are used to split 5th physical 
+memory Page on a MBP boundary. 
+Example 2 illustrates a case where the single TD Fragment fully describes the 
+TD, or 31K bytes of buffer space. In this case the TD is fully formed when TRB 
+1 is written, and the xHC will generate the Max Burst Size transactions as 
+appropriate for the endpoint. 
+Examples 3 and 4 illustrates TD Fragments that may be generated for an 
+endpoint with a Max Packet Size = 1KB and a Max Burst Size of 8 packets. 
+Each of the first three TD Fragments in Example 3 describe MBP (8K) bytes of 
+buffer space, and the last TD Fragment describes the Residue of the TD, or 7K 
+bytes of buffer space. In Example 4 software has decided to use TD Fragment 2 
+to describe 2 x MBP bytes of buffer space. 
+In every case, software shall write the first TRB of a respective TD Fragment 
+last. For instance the write order in Example 4 would be TRBs: 2->3->1, 5->6-
+>7->8->4, and 10->11->9. And so on. Note that it really doesn’t matter what 
+
+===== [PAGE 217] =====
+ 
+Document Number: 625472, Revision: 1.2b 
+ 
+217 
+order the TRBs of a TD Fragment are written in, as long as its first TRB is 
+written last. 
+Note that in each example of Figure 4-17, the data associated with a single 
+page is split between two TRBs to enforce a TD Fragment boundary, for 
+example, in example 1, the 4KB page on the boundary between TD Fragment 1 
+and 2 is defined by TRB 5 (3 KB) and TRB 6 (1KB), where TRB 5 defines the 
+last 3KB of the 16 KB TD Fragment 1 and TRB 6 defines the first 1 KB of TD 
+Fragment 2. 
+Note: Only fully formed TDs may be scheduled on Isoch endpoints, for example, 
+write the first TRB of a multi-TRB TD last, irrespective of the number of TD 
+Fragments that comprise it, and the TD Fragment rules for the assertion of 
+IOC in TRBs described above apply. 
+Figure 4-18: Non-aligned TD Fragment Example 
+TRB 256B
+TRB 4K
+TRB 4K
+30.5K 
+Virtual 
+Buffer
+4K 
+Pages
+TRB 4K
+TRB 3840B
+TRB 256B
+TRB 4K
+TRB 4K
+TD Fragment 1 
+MBP bytes
+TD Fragment 2 
+Residue bytes
+TRB 4K
+TRB 2304B
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+TD
+Virtual 
+Memory
+Offset =
+3.75KB
+Max Packet Size 
+Boundary
+Max Burst Size = 16KB
+Max Packet Size = 1KB
+Initial Offset = 3.75KB
+2.25KB
+16KB
+14.5KB
+ 
+In Figure 4-18 the example defines a TD that transfers 30.5 KB of data, where 
+the packet size (Max Packet Size) = 1 KB, the Burst Size = 16 KB, and the 
+initial offset of the data in the first 4 KB page is 3.75KB (3840B). An important 
+aspect of this example is that due to the initial offset (3.75KB), page 
+boundaries do not land on packet boundaries (as they do in Figure 4-17). 
+Given the rules defined above for where an IOC flag may be set in a TD 
+Fragment: 
+• 
+In Figure 4-18 the IOC flag only may be set in TRBs 5 and 10. In TRB 5 
+because TRBs 5 and 6 split the data in the page that they reference to 
+force a break on a Burst Size boundary, hence the buffer described by TRB 
+5 ends on a packet, boundary. The IOC flag may be set in TRB 10 because 
+it is the last packet of a TD, which forces a packet boundary. Note that the 
+Link TRB does not land on a packet boundary relative to the start of TD 
+Fragment 1, so its IOC flag may not be set. 
+• 
+In Figure 4-17 all TRBs define buffers that end on Packet boundaries; 
+hence an IOC flag may be set in any TRB of a TD Fragment, but only once 
+per TD. 
+
+===== [PAGE 218] =====
+ 
+218 
+ Document Number: 625472, Revision: 1.2b 
+Intel Confidential 
+Note:  
+The TD Fragment rules, that define which TRBs of a TD that an IOC 
+flag may be set in, apply to Isoch TDs, however a partially formed TD shall 
+not be posted to an Isoch endpoint. Only fully formed TDs may be posted to 
+Isoch endpoints, for example, software shall write the first TRB of a multi-TRB 
+TD last, irrespective of its size. 
