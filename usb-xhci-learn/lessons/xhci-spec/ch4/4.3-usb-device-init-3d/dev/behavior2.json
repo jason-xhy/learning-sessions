@@ -1,0 +1,15 @@
+[
+  ["wait", 2200],
+  ["eval", "window.__x43.setPreset('usb3'); window.__x43.goto(1,{instant:true}); 'usb3'"],
+  ["wait", 500],
+  ["shot", "/Users/jason/ZCodeProject/usb-xhci-study/lessons/xhci-spec/ch4/4.3-usb-device-init-3d/shots/r6-usb3-f1.png", "body", 1],
+  ["eval", "window.__x43.setPreset('bsr1'); window.__x43.goto(6,{instant:true}); 'bsr1'"],
+  ["wait", 500],
+  ["shot", "/Users/jason/ZCodeProject/usb-xhci-study/lessons/xhci-spec/ch4/4.3-usb-device-init-3d/shots/r6-bsr1-f6.png", "body", 1],
+  ["eval", "window.__x43.setPreset('hs'); window.__x43.goto(6,{instant:true}); 'hs'"],
+  ["wait", 400],
+  ["shot", "/Users/jason/ZCodeProject/usb-xhci-study/lessons/xhci-spec/ch4/4.3-usb-device-init-3d/shots/r6-hs-f6.png", "body", 1],
+  ["eval", "window.__x43.setPreset('fs'); window.__x43.goto(5,{instant:true}); document.getElementById('x43Quiz').querySelectorAll('.x43-qp')[2].click(); document.getElementById('xFoldQuiz').open=true; 'quiz'"],
+  ["wait", 400],
+  ["shot", "/Users/jason/ZCodeProject/usb-xhci-study/lessons/xhci-spec/ch4/4.3-usb-device-init-3d/shots/r6-quiz.png", ".x43-panel", 1]
+]
