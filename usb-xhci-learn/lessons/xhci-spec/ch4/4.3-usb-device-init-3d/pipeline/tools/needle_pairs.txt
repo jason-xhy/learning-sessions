@@ -1,0 +1,31 @@
+# needle_pairs.txt —— V3 页码 needle 对（S4 引用面；配套 scripts/xhci_spec_pagecheck.py）
+# 格式：<页>\t<needle>（needle 取短词防 PDF 断行假阴性——教训见 EVIDENCE §7.2）
+# 引用面=V3 UI 可见页码锚：六条引文(QUOTES)/字段卡(FIELD_CARDS)/runtime/panel 卡 s1 锚/labels 牌注/试错文案。
+# 每行一对；复跑（S7 实测修正：原 xargs -n2 会被 needle 内空格拆碎、macOS xargs 无 -d——按 tab 展开后 -0 传对，24/24 实测）：
+#   grep -v "^#" pipeline/tools/needle_pairs.txt | tr '\t' '\n' | tr '\n' '\0' | xargs -0 -n2 /usr/local/bin/python3.9 scripts/xhci_spec_pagecheck.py
+# （在 study 仓根执行；本文件由 S4 维护，S5 精修引文后随更。）
+# —— S5 引文定稿扩充（六条 QUOTES 逐字核验后增补；全 24 对=18 原有+6 引文面）——
+71	detects a device attach
+72	completion of the port reset
+72	obtain a Device Slot
+75	selected by the host controller
+72	only packet sizes allowed
+74	successful completion of both operations
+71	Current Connect Status (CCS)
+72	preparing it for a
+73	wValue = 0100h
+74	from Address to Configured
+75	4.3.2 Device Slot Assignment
+76	cleared to
+77	Enabled to the Addressed
+82	Doorbell
+83	Host Controller Command
+85	Slot State
+86	Disable Slot
+87	Enabled
+97	Address Device
+98	Block Set Address Request
+100	Parameter Error
+292	Port Status Change Event Generation (PSCEG)
+68	Command Ring
+69	polling

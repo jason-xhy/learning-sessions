@@ -1,0 +1,529 @@
+{
+ "textures": {
+  "tex01": {
+   "albedo": {
+    "file": "tex01_albedo.png",
+    "w": 1024,
+    "h": 1024,
+    "tileable": true,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex01_rough.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": false
+   },
+   "normal": {
+    "file": "tex01_normal.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": false
+   },
+   "ao": {
+    "file": "tex01_ao.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": false
+   }
+  },
+  "tex02": {
+   "albedo": {
+    "file": "tex02_albedo.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex02_rough.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": false
+   }
+  },
+  "tex04": {
+   "albedo": {
+    "file": "tex04_albedo.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex04_rough.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": false
+   },
+   "normal": {
+    "file": "tex04_normal.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": false
+   }
+  },
+  "tex05": {
+   "albedo": {
+    "file": "tex05_albedo.png",
+    "w": 256,
+    "h": 256,
+    "tileable": true,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex05_rough.png",
+    "w": 256,
+    "h": 256,
+    "tileable": true,
+    "srgb": false
+   }
+  },
+  "tex06": {
+   "albedo": {
+    "file": "tex06_albedo.png",
+    "w": 256,
+    "h": 256,
+    "tileable": false,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex06_rough.png",
+    "w": 256,
+    "h": 256,
+    "tileable": false,
+    "srgb": false
+   }
+  },
+  "tex07": {
+   "albedo": {
+    "file": "tex07_albedo.png",
+    "w": 1024,
+    "h": 512,
+    "tileable": false,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex07_rough.png",
+    "w": 1024,
+    "h": 512,
+    "tileable": false,
+    "srgb": false
+   },
+   "ao": {
+    "file": "tex07_ao.png",
+    "w": 1024,
+    "h": 512,
+    "tileable": false,
+    "srgb": false
+   }
+  },
+  "tex08": {
+   "albedo": {
+    "file": "tex08_albedo.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex08_rough.png",
+    "w": 512,
+    "h": 512,
+    "tileable": true,
+    "srgb": false
+   }
+  },
+  "tex09": {
+   "albedo": {
+    "file": "tex09_albedo.png",
+    "w": 256,
+    "h": 256,
+    "tileable": false,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex09_rough.png",
+    "w": 256,
+    "h": 256,
+    "tileable": false,
+    "srgb": false
+   },
+   "normal": {
+    "file": "tex09_normal.png",
+    "w": 256,
+    "h": 256,
+    "tileable": false,
+    "srgb": false
+   }
+  },
+  "tex10": {
+   "albedo": {
+    "file": "tex10_albedo.png",
+    "w": 256,
+    "h": 256,
+    "tileable": true,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex10_rough.png",
+    "w": 256,
+    "h": 256,
+    "tileable": true,
+    "srgb": false
+   }
+  },
+  "tex11": {
+   "albedo": {
+    "file": "tex11_albedo.png",
+    "w": 256,
+    "h": 256,
+    "tileable": true,
+    "srgb": true
+   },
+   "emissive": {
+    "file": "tex11_emissive.png",
+    "w": 256,
+    "h": 256,
+    "tileable": false,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex11_rough.png",
+    "w": 128,
+    "h": 128,
+    "tileable": true,
+    "srgb": false
+   }
+  },
+  "tex12": {
+   "albedo": {
+    "file": "tex12_albedo.png",
+    "w": 128,
+    "h": 128,
+    "tileable": true,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex12_rough.png",
+    "w": 128,
+    "h": 128,
+    "tileable": true,
+    "srgb": false
+   }
+  },
+  "tex03": {
+   "albedo": {
+    "file": "tex03_albedo.png",
+    "w": 1024,
+    "h": 512,
+    "tileable": true,
+    "srgb": true
+   },
+   "rough": {
+    "file": "tex03_rough.png",
+    "w": 512,
+    "h": 256,
+    "tileable": true,
+    "srgb": false
+   },
+   "normal": {
+    "file": "tex03_normal.png",
+    "w": 512,
+    "h": 256,
+    "tileable": true,
+    "srgb": false
+   }
+  }
+ },
+ "env": {
+  "file": "env_equirect.png",
+  "w": 1024,
+  "h": 512,
+  "tileable": false,
+  "srgb": true
+ },
+ "meta": {
+  "blender": "4.5.16 LTS",
+  "srgb_const": true,
+  "rough_table": {
+   "tex01": [
+    0.38,
+    0.5
+   ],
+   "tex02": [
+    0.25,
+    0.35
+   ],
+   "tex03": [
+    0.5,
+    0.65
+   ],
+   "tex04": [
+    0.35,
+    0.45
+   ],
+   "tex05": [
+    0.6,
+    0.75
+   ],
+   "tex06": [
+    0.2,
+    0.3
+   ],
+   "tex07": [
+    0.34,
+    0.5
+   ],
+   "tex08": [
+    0.7,
+    0.85
+   ],
+   "tex09": [
+    0.3,
+    0.4
+   ],
+   "tex10": [
+    0.45,
+    0.6
+   ],
+   "tex11": [
+    0.28,
+    0.32
+   ],
+   "tex12": [
+    0.1,
+    0.22
+   ]
+  },
+  "budget": {
+   "total_b64": 634420,
+   "budget_b64": 1450000,
+   "degrade_steps": 0
+  }
+ },
+ "web": {
+  "tex01": {
+   "albedo": {
+    "file": "web/tex01_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 14426,
+    "b64": 19236
+   },
+   "rough": {
+    "file": "web/tex01_rough.webp",
+    "mime": "image/webp",
+    "bytes": 3128,
+    "b64": 4172
+   },
+   "normal": {
+    "file": "web/tex01_normal.webp",
+    "mime": "image/webp",
+    "bytes": 4822,
+    "b64": 6432
+   },
+   "ao": {
+    "file": "web/tex01_ao.webp",
+    "mime": "image/webp",
+    "bytes": 3664,
+    "b64": 4888
+   }
+  },
+  "tex02": {
+   "albedo": {
+    "file": "web/tex02_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 3306,
+    "b64": 4408
+   },
+   "rough": {
+    "file": "web/tex02_rough.webp",
+    "mime": "image/webp",
+    "bytes": 2654,
+    "b64": 3540
+   }
+  },
+  "tex04": {
+   "albedo": {
+    "file": "web/tex04_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 3344,
+    "b64": 4460
+   },
+   "rough": {
+    "file": "web/tex04_rough.webp",
+    "mime": "image/webp",
+    "bytes": 6768,
+    "b64": 9024
+   },
+   "normal": {
+    "file": "web/tex04_normal.webp",
+    "mime": "image/webp",
+    "bytes": 309912,
+    "b64": 413216
+   }
+  },
+  "tex05": {
+   "albedo": {
+    "file": "web/tex05_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 278,
+    "b64": 372
+   },
+   "rough": {
+    "file": "web/tex05_rough.webp",
+    "mime": "image/webp",
+    "bytes": 3568,
+    "b64": 4760
+   }
+  },
+  "tex06": {
+   "albedo": {
+    "file": "web/tex06_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 332,
+    "b64": 444
+   },
+   "rough": {
+    "file": "web/tex06_rough.webp",
+    "mime": "image/webp",
+    "bytes": 538,
+    "b64": 720
+   }
+  },
+  "tex07": {
+   "albedo": {
+    "file": "web/tex07_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 7452,
+    "b64": 9936
+   },
+   "rough": {
+    "file": "web/tex07_rough.webp",
+    "mime": "image/webp",
+    "bytes": 2314,
+    "b64": 3088
+   },
+   "ao": {
+    "file": "web/tex07_ao.webp",
+    "mime": "image/webp",
+    "bytes": 1744,
+    "b64": 2328
+   }
+  },
+  "tex08": {
+   "albedo": {
+    "file": "web/tex08_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 1102,
+    "b64": 1472
+   },
+   "rough": {
+    "file": "web/tex08_rough.webp",
+    "mime": "image/webp",
+    "bytes": 12228,
+    "b64": 16304
+   }
+  },
+  "tex09": {
+   "albedo": {
+    "file": "web/tex09_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 602,
+    "b64": 804
+   },
+   "rough": {
+    "file": "web/tex09_rough.webp",
+    "mime": "image/webp",
+    "bytes": 1064,
+    "b64": 1420
+   },
+   "normal": {
+    "file": "web/tex09_normal.webp",
+    "mime": "image/webp",
+    "bytes": 318,
+    "b64": 424
+   }
+  },
+  "tex10": {
+   "albedo": {
+    "file": "web/tex10_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 618,
+    "b64": 824
+   },
+   "rough": {
+    "file": "web/tex10_rough.webp",
+    "mime": "image/webp",
+    "bytes": 3252,
+    "b64": 4336
+   }
+  },
+  "tex11": {
+   "albedo": {
+    "file": "web/tex11_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 182,
+    "b64": 244
+   },
+   "emissive": {
+    "file": "web/tex11_emissive.webp",
+    "mime": "image/webp",
+    "bytes": 676,
+    "b64": 904
+   },
+   "rough": {
+    "file": "web/tex11_rough.webp",
+    "mime": "image/webp",
+    "bytes": 88,
+    "b64": 120
+   }
+  },
+  "tex12": {
+   "albedo": {
+    "file": "web/tex12_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 120,
+    "b64": 160
+   },
+   "rough": {
+    "file": "web/tex12_rough.webp",
+    "mime": "image/webp",
+    "bytes": 774,
+    "b64": 1032
+   }
+  },
+  "tex03": {
+   "albedo": {
+    "file": "web/tex03_albedo.webp",
+    "mime": "image/webp",
+    "bytes": 28912,
+    "b64": 38552
+   },
+   "rough": {
+    "file": "web/tex03_rough.webp",
+    "mime": "image/webp",
+    "bytes": 4108,
+    "b64": 5480
+   },
+   "normal": {
+    "file": "web/tex03_normal.webp",
+    "mime": "image/webp",
+    "bytes": 40462,
+    "b64": 53952
+   }
+  },
+  "env": {
+   "file": "web/env_equirect.jpg",
+   "mime": "image/jpeg",
+   "bytes": 13024,
+   "b64": 17368
+  }
+ }
+}

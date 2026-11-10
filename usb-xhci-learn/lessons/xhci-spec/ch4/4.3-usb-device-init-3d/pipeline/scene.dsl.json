@@ -1,0 +1,1175 @@
+{
+  "meta": {
+    "dsl": {
+      "version": "1.0.0",
+      "stage": "S3",
+      "date": "2026-11-10",
+      "lesson": "4.3-usb-device-init-3d",
+      "consumers": {
+        "S4": "Three.js 引擎：sceneGraph/rings/cable/corridor/cameras/timeline/interactions/panel + materials.flat + meta",
+        "S6": "Blender 材质工厂：materials.pbr + textureRequests + meta"
+      },
+      "sources": {
+        "design": "pipeline/S2-scene-design-设计.md",
+        "facts": "pipeline/S1-spec-code-解读.md",
+        "fieldDoc": "pipeline/S3-dsl-说明.md"
+      }
+    },
+    "units": {
+      "length": "wu",
+      "time": "s",
+      "speed": "wu/s",
+      "angle": "deg",
+      "color": "sRGB #rrggbb"
+    },
+    "coords": {
+      "hand": "right",
+      "up": "+Y",
+      "east": "+X",
+      "south": "+Z",
+      "s2": "§A.1"
+    },
+    "sceneBbox": {
+      "x": [-19.5, 22.5],
+      "y": [0, 17],
+      "z": [-5.5, 16],
+      "s2": "§A.1"
+    },
+    "render": {
+      "fov": 45,
+      "fovNarrow": 64,
+      "narrowBreakpointPx": 480,
+      "panoramaViewportPx": 1024,
+      "windowWidthPx": 1440,
+      "panelWidthPx": 404,
+      "fog": { "type": "exp2", "color": "#10151c", "density": 0.012, "s2": "§A.3" },
+      "background": ["#0b0f14", "#10151c"],
+      "s2": "§A.1/§A.3/§A.5"
+    },
+    "speedModel": {
+      "k": [0.5, 1, 2],
+      "kDefault": 0.5,
+      "rule": "观看层全部 t = t_base / k（相机/步序/卡片/光束/方波/试错定时）；方波游动速率 ×k；UI 过渡固定 0.25s 不随 k；巡览层（拖转/缩放/平移/tab/动手台点选）固定墙钟；动手台等待 /k 折算封顶 6s",
+      "uiFixed": 0.25,
+      "labWaitCap": 6.0,
+      "s2": "§J.1"
+    },
+    "camAdapt": {
+      "panorama": {
+        "when": "dist(pos,tgt) >= 30",
+        "k": "max(1.5, 68/d)",
+        "targetWestShift": 7
+      },
+      "closeup": { "k": 1.16 },
+      "note": "桌面东延至 x=-9.6 后「目标西移 7」经验值需 S4 实测复核（S2-输出 §5.2）",
+      "s2": "§A.1〔承 V2〕"
+    },
+    "ui": {
+      "flowCardCanvasPx": [540, 224],
+      "flowCardTitlePx": 36,
+      "flowCardSubPx": 28,
+      "flowCardSubFormat": "起 ▸ … ｜ 终 ▸ …",
+      "labelStyle": { "bg": "#ffffff", "text": "#1c2530", "leftBar": "derived:d28" },
+      "mainFontPx": 11,
+      "detailFontPx": 7,
+      "zoomToReadDetail": 3.2,
+      "detailLayer": ["F4 命令环卡", "EP0 环卡面字段", "格架格号", "缆插头丝印"],
+      "detailLayerNote": "细节层清单登记=EVIDENCE 义务",
+      "s2": "§D 总则/§I.1 条3/条4/§E.3"
+    },
+    "derived": [
+      {
+        "id": "d01",
+        "value": "slotPos(i) = [0.5 + 4.6·cos(30°·i), 层高y, −4.6·sin(30°·i)]",
+        "formula": "俯视自 +X 轴逆时针每槽 30°（12 槽均分圆周）；slot0=东端 x=5.1、slot6=西端 x=-4.1",
+        "basis": "S2 §A.4（圆心 (0.5,y,0)/R=4.6/12 槽/slot0 东/slot6 西/逆时针递增）"
+      },
+      {
+        "id": "d02",
+        "value": { "knob0Pos": [-4.18, 1.7, 2.4], "knob0R": 0.42, "smallR": 0.28, "spacing": 0.823, "centers1234567": [-3.35, -2.53, -1.70, -0.88, -0.06, 0.77, 1.59] },
+        "formula": "knob0 中心=行西端 -4.8+边距0.2+r0.42=-4.18，y=行 y[1.2,2.2] 中点 1.7，z=柜面 2.4；小旋钮 r=0.42×2/3≈0.28；剩余跨度 [-3.76,2.0] 七等分，center_i = -3.76 + 0.823·(i−0.5)",
+        "basis": "S2 §A.2（门铃排 x[-4.8,2.0] y[1.2,2.2]，0 号 r0.42，1..7 号小旋钮尺寸未给）；边距 0.2 为缺省档"
+      },
+      {
+        "id": "d03",
+        "value": { "plateA": [-4.18, 2.6, 2.6], "plateB": [-3.35, 2.6, 2.6] },
+        "formula": "各自旋钮 x、门铃排顶 y2.2+0.4、柜面浮签层 z=2.6（与 lbl-bells 同面）",
+        "basis": "S2 §B.2/§B.4 分刻牌文案原文；几何为缺省档"
+      },
+      {
+        "id": "d04",
+        "value": 0.4,
+        "formula": "BSR 旋钮半径 r=0.4",
+        "basis": "S2-输出 §7.1 bbox 自检组 B（BSR 旋钮 y 1.8–2.6 → 半径 0.4）"
+      },
+      {
+        "id": "d05",
+        "value": { "r": 0.3, "y": 8.4, "z": 2.4, "centersX": [-2.08, -1.04, 0, 1.04, 2.08], "order": ["Disabled/Enabled 双色灯", "Default", "Addressed", "Configured"] },
+        "formula": "灯排 x[-2.6,2.6] 五等分格心（格宽 1.04），y=区间中点 8.4；order 末四位的槽态灯复用 E.4 语义色",
+        "basis": "S2 §A.2（5 位灯）＋S1 §6.2 建模提示⑥ 五灯顺序；灯径为缺省档"
+      },
+      {
+        "id": "d06",
+        "value": { "colW": 0.95, "rowH": 1.2, "numbering": "上行 0..3 西→东、下行 4..7", "cellCenter": "col j: x=-4.8+0.95·(j+0.5)；row k: y=5.2+1.2·(k+0.5)", "cell1": "琥珀高亮（§A.2 原值）", "platePos": [-2.9, 8.0, 2.6] },
+        "formula": "格架 x[-4.8,-1.0]（宽 3.8）四等分→列宽 0.95；y[5.2,7.6]（高 2.4）两等分→行高 1.2；牌位=lbl-dcbaa 锚点",
+        "basis": "S2 §A.2（2 行×4 列编号 0..7）；编号走向为阅读序缺省档"
+      },
+      {
+        "id": "d07",
+        "value": { "r": 0.24, "y": 3.9, "z": 1.5, "centersX": [14.05, 14.95, 15.85, 16.75], "order": ["Powered", "Default", "Addressed", "Configured"] },
+        "formula": "壳正面 x[13.6,17.2]（宽 3.6）四等分格心（格宽 0.9）",
+        "basis": "S2 §A.2（四态灯排 正面顶排 y≈3.9）＋§E.4 顺序；灯径为缺省档"
+      },
+      {
+        "id": "d08",
+        "value": { "deskZ": [-2.2, 2.2], "printerY": [3.0, 4.6], "cardHolderY": [3.0, 3.8], "tray8Y": [3.0, 3.3], "inboxY": [3.0, 4.0], "eventBoxY": [3.0, 4.2], "propsZ": [-1.2, 0.6] },
+        "formula": "S2 修复轮 bbox 自检用值（桌面体与桌面五件的 y/z 区间），x 区间见 §A.2 修复后终态",
+        "basis": "S2-输出 §7.1（s2_bbox_check.py 组 A/C，修复轮终态口径）"
+      },
+      {
+        "id": "d09",
+        "value": { "postSection": [0.3, 0.3], "postTopY": 13.8, "beamsPerLayer": 2, "beamX": [-4.45, 5.45], "beamZ": [[-4.15, -3.85], [3.85, 4.15]] },
+        "formula": "立柱截面 0.3×0.3（柱心 x=±4.3/5.3、z=±4.0），柱顶至事件环管上缘 13.8；每层南北两根横梁连接东西立柱",
+        "basis": "S2 §A.4（立柱/横梁层高）＋S2-输出 §7.1 bbox 组 C（截面与柱高）"
+      },
+      {
+        "id": "d10",
+        "value": { "pendantR": 0.6, "topLampR": 0.6, "domeR": 0.4 },
+        "formula": "吊灯/顶灯球径 1.2（r0.6）、设备顶灯罩 0.8（r0.4）",
+        "basis": "S2-输出 §7.1 bbox 组 C（吊灯/机柜顶灯/设备顶灯罩外廓）"
+      },
+      {
+        "id": "d11",
+        "value": [24.5, 9.0, 23.4],
+        "formula": "devRim 位置=设备中心 (15.4,2.5,0) + 26·(0.35,0.25,0.90)，即东南上方 rim 位，模长恰 26 wu",
+        "basis": "S2 §A.3（devRim 强 18 距 26，方向未给——rim 形态缺省取东南上方）"
+      },
+      {
+        "id": "d12",
+        "value": 0.3,
+        "formula": "复位按钮半径 r=0.3",
+        "basis": "S2-输出 §7.1 bbox 组 B（复位按钮 x 1.5–2.1）"
+      },
+      {
+        "id": "d13",
+        "value": { "x": [-5.3, -4.9], "y": [4.0, 5.0], "z": [-0.8, 0.8] },
+        "formula": "柜内西端抽屉贴面近似（x/y 取自检值），z 取柜内纵深缺省",
+        "basis": "S2 §A.2（卡库 柜内西端 y≈4.5）＋S2-输出 §7.1 bbox 组 B"
+      },
+      {
+        "id": "d14",
+        "value": 0.5,
+        "formula": "微动作缺省档=0.5s＝J.2「打勾 0.4s」与「复位按钮 0.6s」的算术中值；用于：MPS 翻新高亮、事件匣开匣、Link 弧 cycle 片翻色",
+        "basis": "S2-评分⑤ P2-1（三项 S2 未收表）；推导式=J.2 既有微动作档中值"
+      },
+      {
+        "id": "d15",
+        "value": [-10.5, 4.2, -0.3],
+        "formula": "走廊落点=事件匣顶面中心（修复轮匣 x[-11.2,-9.8] 中点 -10.5、y 顶 4.2、z[-1.2,0.6] 中点 -0.3）；§I.4 末点 (-11.5,4.1,0.8) 为悬浮点，落地动画 0.5s 内补此位移",
+        "basis": "S2 §I.4（末点=事件匣顶上方）＋S2-输出 §7.1（修复轮匣坐标）；失配备案见 S3-输出 遗留"
+      },
+      {
+        "id": "d16",
+        "value": { "x": [-19.6, -16.4], "y": [4.2, 5.4], "zCenter": -2.0 },
+        "formula": "状态窗板：中心 x=-18（§A.2 后墙板 x≈-18）、y[4.2,5.4] 原值、板宽 3.2 与厚 0.08 为缺省档，z=-2.0 桌后",
+        "basis": "S2 §A.2（后墙板 x≈-18，y 4.2–5.4）＋§I.2 F2（自发光 0.35）"
+      },
+      {
+        "id": "d17",
+        "value": [-16.6, 5.2, -1.9],
+        "formula": "中断闪线终点=状态窗板东上部前方 0.1 wu（板面朝南 +Z）",
+        "basis": "S2 §B.3（事件环 slot 6 → 文书台状态窗 的细闪线）；终点几何为缺省档"
+      },
+      {
+        "id": "d18",
+        "value": 0.08,
+        "formula": "贴面板件厚度缺省档 0.08 wu（PORTSC 屏/状态窗/铭牌/格架面板）",
+        "basis": "S2 未给板厚——与 TRB 卡厚 0.06（§B.1）同量级的缺省档"
+      },
+      {
+        "id": "d19",
+        "value": { "protrudeX": 0.35, "yHalf": 0.2 },
+        "formula": "端口块：自机柜东面 x=7.5 凸出 0.35，y 向半高 0.2（中心 y=1.8/3.0/4.2/5.4），z[0.4,0.9] 为原值",
+        "basis": "S2 §A.3（4 块端口块 y=1.8/3.0/4.2/5.4，z 0.4..0.9）；凸出量为缺省档"
+      },
+      {
+        "id": "d20",
+        "value": { "deviceDiskR": 1.9, "deskDiskR": 1.6, "deviceDiskPos": [15.4, 0.02, 0], "deskDiskPos": [-14.5, 3.02, -0.3] },
+        "formula": "AO 接触阴影盘半径=主体水平包围对角半径×0.8（设备壳 3.6×3.0→r≈1.9；桌面道具群外廓→r≈1.6），贴支承面 +0.02",
+        "basis": "S2 §I.2 近景×2（AO 接触阴影盘〔承 V2〕）；半径公式为缺省档"
+      },
+      {
+        "id": "d21",
+        "value": { "bandSw": { "x": [-20.5, -8.6], "z": [-6, 8] }, "bandHc": { "x": [-6.5, 8.5], "z": [-6, 8] }, "bandDev": { "x": [12.6, 18.2], "z": [-6, 8] } },
+        "formula": "地板三区色带=各区 bbox x 外扩 1.0，z 统一取前场带 [-6,8]（覆盖门架与试验盒）",
+        "basis": "S2 §E.2 地面区带（暗档）三色；带范围为缺省档"
+      },
+      {
+        "id": "d22",
+        "value": { "legCenters": [[-19.1, 1.35, -1.8], [-19.1, 1.35, 1.8], [-10.0, 1.35, -1.8], [-10.0, 1.35, 1.8]], "legSection": [0.3, 0.3] },
+        "formula": "四桌腿=桌面四角内缩 0.4，截面 0.3×0.3，y[0,2.7]",
+        "basis": "S2 §A.2（桌体+4 桌腿）；内缩量/截面为缺省档"
+      },
+      {
+        "id": "d23",
+        "value": { "from": [22, 0.7, 0], "to": [13.6, 0.7, 0], "axis": "-X 直线，姿态不变" },
+        "formula": "设备滑入路径=自画外 x=22 沿 -X 直线至壳位 x=13.6（y/z 保持）",
+        "basis": "S2 §A.2（F0 画外 x=22）＋§D F1（三段滑入 2.4s）；直线路径为缺省档"
+      },
+      {
+        "id": "d24",
+        "value": 0.4,
+        "formula": "插头弧线推入弧顶抬升 0.4 wu（直线插路线中点上方）",
+        "basis": "S2 §C.1（F1 插入时插头对准端口推入，弧线 0.9s〔承 V2〕）；弧高为缺省档"
+      },
+      {
+        "id": "d25",
+        "value": {
+          "f4Cmd": { "from": [-16.8, 3.8, -0.3], "to": [-3.48, 10.0, 2.3] },
+          "f7Write": { "from": [-16.8, 3.8, -0.3], "to": [-3.48, 11.8, -2.3] },
+          "f7Reply": { "from": [-15.15, 3.3, -0.3], "to": [-3.48, 11.8, -2.3] }
+        },
+        "formula": "DMA 光束端点：起=钢卡座/8 字节托盘顶面中心，终=对应环槽位卡位（d01 slotPos(7) 命令环 / slotPos(5) EP0 环）",
+        "basis": "S2 §B.5 三处用点（F4 命令单写入/F7 三 TRB 写环/F7 回包落托盘）；端点几何由 d01/修复轮坐标推导"
+      },
+      {
+        "id": "d26",
+        "value": { "pos": [-2.6, 11.8, -3.2], "size": [1.6, 1.6, 0.3] },
+        "formula": "FS 支线闸口门架拱口：立于 EP0 环西段外侧，锚点 lbl-fs-gate 下方 0.6",
+        "basis": "S2 §B.4（西段旁立门架拱口+牌原文）＋§I.3（lbl-fs-gate 锚点）；几何为缺省档"
+      },
+      {
+        "id": "d27",
+        "value": { "namePlate": [2.4, 0.5, 0.06], "deviceScreen": [1.8, 0.9, 0.08], "topCoverY": [4.3, 4.4] },
+        "formula": "铭牌宽 2.4×高 0.5；收件屏 1.8×0.9；半透明顶盖=壳顶 y[4.3,4.4]",
+        "basis": "S2 §A.2（铭牌 y≈4.15/收件屏 y≈2.6/半透明顶盖〔承 V1〕）；尺寸为缺省档"
+      },
+      {
+        "id": "d28",
+        "value": { "zone": "#d9a860", "part": "#6b7684", "anchor": "#86bd7a" },
+        "formula": "HTML 白底浮签左色条三档：琥珀=区标（E.2 原值）/绿=教学锚（E.2 原值）/灰=部件——部件灰复用 E.4 熄灭系灰档 #6b7684；分类：zone-* 三枚=区标，lbl-dma/lbl-irq/lbl-fs-gate/lbl-link/lbl-erdp=教学锚（规范概念牌），其余=部件",
+        "basis": "S2 §E.3（左色条分级：琥珀=区标/灰=部件/绿=教学锚〔承 V1〕）；部件灰取值为复用缺省档"
+      },
+      {
+        "id": "d29",
+        "value": { "pathLenApprox": 5.9, "fullRunAt1x": "~1.3s" },
+        "formula": "缆曲线长度≈5.9 wu（5 控制点折线加曲率修正）；信号全程时长=曲线长度/游动速率，运行时按 CatmullRom 实长计算，不以近似值排程",
+        "basis": "S2 §C.2（游动速率 4.5 wu/s@1×，全程 ~1.3s）"
+      },
+      {
+        "id": "d30",
+        "value": "linkArcApex = [0.5 + 5.5·cos15°, 层高y+0.9, −5.5·sin15°] ≈ [5.81, y+0.9, −1.42]",
+        "formula": "Link 回绕弧取 slot11(330°)与 slot0(0°)中分角 15°、半径 R+0.9=5.5、拱顶抬升 0.9；弧经 slot11→拱顶→slot0 三点 CatmullRom",
+        "basis": "S2 §B.1（slot 11→slot 0 走外侧回绕弧，半径 R+0.9 上拱）"
+      },
+      {
+        "id": "d31",
+        "value": "stageDuration = Σ moves 时长 + flow 卡 corridor/hold/fade 链时长",
+        "formula": "工段总时长不写死，由 S4 播放器按动作序列与参数表排程",
+        "basis": "S2 §D/§J（只给逐动作参数，未给工段总时长）"
+      },
+      {
+        "id": "d32",
+        "value": { "printer": "mDevicePlastic", "cardHolder": "mCabinetSteel", "tray8": "mDevicePlastic+devGreen 边", "inbox": "mDevicePlastic+cardBg 内衬", "eventBox": "mDevicePlastic+cardBg 内衬", "statusWindowBoard": "mScreenGlass", "cornice": "mCabinetSteel", "deskLegs": "mDeskWood" },
+        "formula": "材质归属缺省表：S2 未指定实体的材质按 §E.7 材质族就近归属（塑料/钢板/木/玻璃），S6/S4 可在族内微调",
+        "basis": "S2 §E.7 十族 PBR 材质；归属为缺省档"
+      },
+      {
+        "id": "d33",
+        "value": { "f0Gate": false, "quizEntry": "free" },
+        "formula": "行为默认：F0 不设通过门（零交互入门级）；quiz 自由进入、不要求 L3 徽章",
+        "basis": "S2-评分⑧ remark（建议显式声明，防 S4/S5 猜测）；S2 主件未给，S3 按 scorer 建议显式化"
+      },
+      {
+        "id": "d34",
+        "value": { "knobPlateY": 2.6, "labelFloatZ": 2.6, "labelOffset": "锚点=标签世界坐标（§I.3 原值），浮签绘制于锚点正对相机侧" },
+        "formula": "柜面浮签层统一 z=2.6（柜面 2.4+0.2 浮高）",
+        "basis": "S2 §I.3 各柜面标签锚点 z=2.6 一致；浮高为缺省档"
+      }
+    ]
+  },
+  "materials": {
+    "pbr": [
+      { "id": "mCabinetSteel", "name": "机柜面板钢板", "basecolor": "#3a4250", "metalness": 0.85, "roughness": [0.38, 0.5], "roughnessNote": "贴图调制", "textureRequest": "tex01", "s2": "§E.7" },
+      { "id": "mRailSteel", "name": "轨道/门架钢", "basecolor": "#8fa3b8", "metalness": 0.9, "roughness": [0.25, 0.35], "textureRequest": "tex02", "s2": "§E.7" },
+      { "id": "mDeskWood", "name": "桌面木", "basecolor": ["#6b4a2f", "#7d583a"], "metalness": 0.0, "roughness": [0.5, 0.65], "textureRequest": "tex03", "s2": "§E.7" },
+      { "id": "mDevicePlastic", "name": "设备外壳塑料", "basecolor": "#2e3844", "metalness": 0.05, "roughness": [0.35, 0.45], "textureRequest": "tex04", "s2": "§E.7" },
+      { "id": "mCableRubber", "name": "缆皮橡胶", "basecolor": "#232a33", "metalness": 0.0, "roughness": [0.6, 0.75], "textureRequest": "tex05", "s2": "§E.7" },
+      { "id": "mPlugMetal", "name": "插头金属", "basecolor": "#c7ccd4", "metalness": 1.0, "roughness": [0.2, 0.3], "textureRequest": "tex06", "s2": "§E.7" },
+      { "id": "mKnobAlu", "name": "旋钮铝", "basecolor": "#9aa6b4", "metalness": 0.9, "roughness": [0.3, 0.4], "textureRequest": "tex09", "s2": "§E.7" },
+      { "id": "mCardPaper", "name": "卡纸面", "basecolor": "#1e2836", "basecolorNote": "tint 变体（四款）", "metalness": 0.0, "roughness": [0.7, 0.85], "textureRequest": "tex08", "s2": "§E.7" },
+      { "id": "mFloorEpoxy", "name": "地板环氧", "basecolor": "#1a212b", "metalness": 0.5, "roughness": [0.34, 0.5], "roughnessNote": "低强度反射感，0.34/0.5 基准〔承 V2〕", "textureRequest": "tex07", "s2": "§E.7" },
+      { "id": "mLampshade", "name": "灯罩", "basecolor": "#d8dce2", "emissive": true, "metalness": 0.0, "roughness": [0.3, 0.3], "textureRequest": "tex11", "s2": "§E.7" },
+      { "id": "mGridPlastic", "name": "格架塑料", "basecolor": null, "metalness": null, "roughness": null, "note": "S2 §F#10 未给 PBR 区间——S6 裁定（贴图驱动为主）", "textureRequest": "tex10", "s2": "§F#10" },
+      { "id": "mScreenGlass", "name": "屏面玻璃", "basecolor": "#0d1319", "basecolorNote": "E.1 屏内底", "metalness": null, "roughness": null, "note": "PBR 区间 S2 未给——S6 裁定（§F#12 抗反射微纹理）", "textureRequest": "tex12", "s2": "§F#12" }
+    ],
+    "flat": [
+      { "id": "pageBg", "hex": "#0b0f14", "use": "页面/夜空基调（deep-dark）", "s2": "§E.1" },
+      { "id": "sceneDeep", "hex": "#10151c", "use": "雾色、渐变终点、cycle 片深字", "s2": "§E.1" },
+      { "id": "panelBg", "hex": "#121821", "use": "右侧知识面板底", "s2": "§E.1" },
+      { "id": "panelCardBg", "hex": "#10161d", "use": "面板内嵌卡", "s2": "§E.1" },
+      { "id": "floorBase", "hex": "#161d26", "use": "地板 albedo 基色", "s2": "§E.1" },
+      { "id": "gridLine", "hex": "#2a3646", "use": "地板网格线", "s2": "§E.1" },
+      { "id": "screenBg", "hex": "#0d1319", "use": "读数屏/收件屏/状态窗屏内底", "s2": "§E.1" },
+      { "id": "driveBlue", "hex": "#7c9ff0", "use": "文书台区标、命令单/事件卡边、事件环 accent、Addressed 灯", "s2": "§E.2" },
+      { "id": "hcAmber", "hex": "#d9a860", "use": "机柜区标、命令环 accent、cycle=0 片、Link 槽、东行方波系", "s2": "§E.2" },
+      { "id": "devGreen", "hex": "#86bd7a", "use": "设备区标、EP0 环 accent、cycle=1 片、Configured 灯、西行方波", "s2": "§E.2" },
+      { "id": "signalEast", "hex": "#e8b562", "use": "请求方向方波/箭头（琥珀系亮档）", "s2": "§E.2" },
+      { "id": "dmaBlue", "hex": "#5f86e8", "use": "DMA 光束本体+铭牌底（V2 修复值）", "s2": "§E.2" },
+      { "id": "irqLine", "hex": "#9fb6ff", "use": "中断闪线/轮询滑车", "s2": "§E.2" },
+      { "id": "slotSteel", "hex": "#5d6875", "use": "卡槽/轨道辅件（V2 可辨性修复值）", "s2": "§E.2" },
+      { "id": "railSteel", "hex": "#8fa3b8", "use": "轨道管/门架横梁", "s2": "§E.2" },
+      { "id": "bandSw", "hex": "#1d2b44", "use": "地板驱动区带（暗档）", "s2": "§E.2" },
+      { "id": "bandHc", "hex": "#3a2d1a", "use": "地板 xHC 区带（暗档）", "s2": "§E.2" },
+      { "id": "bandDev", "hex": "#233426", "use": "地板设备区带（暗档）", "s2": "§E.2" },
+      { "id": "cardBg", "hex": "#1e2836", "use": "场景内深底卡", "s2": "§E.3" },
+      { "id": "cardEdge", "hex": "#33445c", "use": "卡描边", "s2": "§E.3" },
+      { "id": "cardTitle", "hex": "#e8eef7", "use": "卡标题", "s2": "§E.3" },
+      { "id": "cardNote", "hex": "#a9b7c9", "use": "次级说明", "s2": "§E.3" },
+      { "id": "monoValue", "hex": "#e2edff", "use": "字段值（V2 提亮值）", "s2": "§E.3" },
+      { "id": "labelBg", "hex": "#ffffff", "use": "HTML 白底浮签底", "s2": "§E.3" },
+      { "id": "labelText", "hex": "#1c2530", "use": "浮签深字", "s2": "§E.3" },
+      { "id": "lampPowered", "hex": "#ecc25c", "use": "设备 Powered 灯点亮（暖白档）", "s2": "§E.4" },
+      { "id": "lampOff", "hex": "#2a333f", "use": "状态灯熄灭底", "s2": "§E.4" },
+      { "id": "slotLampDisabled", "hex": "#6b7684", "use": "槽 Disabled 双色灯第一芯（灰）", "s2": "§E.4" },
+      { "id": "alarmRed", "hex": "#e5484d", "use": "告警标题/试错回执红牌边", "s2": "§E.5" },
+      { "id": "alarmCardBg", "hex": "#38151b", "use": "红卡底", "s2": "§E.5" },
+      { "id": "alarmCardText", "hex": "#ffd9dd", "use": "红卡正文", "s2": "§E.5" },
+      { "id": "textMain", "hex": "#e8eef7", "use": "全局正文", "s2": "§E.5" },
+      { "id": "textSub", "hex": "#a9b7c9", "use": "次级文字", "s2": "§E.5" },
+      { "id": "textDim", "hex": "#7f8fa3", "use": "页脚/角标", "s2": "§E.5" },
+      { "id": "idleGlow", "hex": "#3d4c61", "use": "缆方波空闲微光", "s2": "§E.5" },
+      { "id": "lampOutline", "hex": "#46566a", "use": "熄灭灯描边（V2 值）", "s2": "§E.5" }
+    ],
+    "lampSemantics": [
+      { "lamp": "设备 Powered（已上电）", "on": "#ecc25c", "off": "#2a333f", "note": "暖白档", "s2": "§E.4" },
+      { "lamp": "设备 Default（默认态）", "on": "#e8eef7", "off": "#2a333f", "note": "白档", "s2": "§E.4" },
+      { "lamp": "设备 Addressed（已编址）", "on": "#7c9ff0", "off": "#2a333f", "note": "蓝档", "s2": "§E.4" },
+      { "lamp": "设备 Configured（已配置）", "on": "#86bd7a", "off": "#2a333f", "note": "绿档", "s2": "§E.4" },
+      { "lamp": "槽 Disabled", "on": "#6b7684", "off": "#2a333f", "note": "双色灯第一芯（灰）", "s2": "§E.4" },
+      { "lamp": "槽 Enabled（已使能）", "on": "#d9a860", "off": "#2a333f", "note": "同一盏双色灯第二芯（S1 §6.2 编码复用 '0'，p87）+DCBAA 有效性小窗联动", "s2": "§E.4" },
+      { "lamp": "槽 Default（默认态）", "on": "#e8eef7", "off": "#2a333f", "note": "", "s2": "§E.4" },
+      { "lamp": "槽 Addressed（已编址）", "on": "#7c9ff0", "off": "#2a333f", "note": "", "s2": "§E.4" },
+      { "lamp": "槽 Configured（已配置）", "on": "#86bd7a", "off": "#2a333f", "note": "", "s2": "§E.4" }
+    ],
+    "lampRowPlate": { "text": "Enabled 与 Disabled 共用编码 '0'——看 DCBAA 指针是否有效分辨（p87）", "s1": "§6.2", "s2": "§E.4" },
+    "contrastPairs": { "count": 22, "allPass": "≥4.5:1（WCAG 实测）", "forbidden": "白字 on 光束蓝 #5f86e8 仅 3.46:1——光束铭牌一律深字 #10151c 禁白字", "s2": "§E.6" }
+  },
+  "sceneGraph": {
+    "zones": [
+      { "id": "zone-sw", "name": "左区 · 文书台（xHCI 驱动）", "bbox": { "x": [-19.5, -9.6], "y": [0, 3.0], "z": [-2.4, 2.4] }, "accent": "#7c9ff0", "s2": "§A.2" },
+      { "id": "zone-hc", "name": "中区 · xHC 总控台", "bbox": { "x": [-5.5, 7.5], "y": [0, 9.4], "z": [-2.4, 2.4] }, "accent": "#d9a860", "s2": "§A.2" },
+      { "id": "zone-dev", "name": "右区 · 设备试验盒", "bbox": { "x": [13.6, 17.2], "y": [0, 4.6], "z": [-1.5, 1.5] }, "accent": "#86bd7a", "s2": "§A.2" }
+    ],
+    "entities": [
+      { "id": "floor", "zone": "env", "kind": "primitive", "shape": "box", "bbox": { "x": [-26, 30], "y": [0, 0.05], "z": [-12, 16] }, "material": "mFloorEpoxy", "notes": "albedo 网格线间距 1.2 wu；三处灯池 UV 圆域（顶主灯/吊灯/设备射灯投影）；roughness 灯池亮斑", "s2": "§A.3/§F#7" },
+      { "id": "bandSwPlane", "zone": "env", "kind": "primitive", "shape": "plane", "bbox": "derived:d21.bandSw", "material": "bandSw", "notes": "地板区带贴面 y=0.06，derived:d21", "s2": "§E.2" },
+      { "id": "bandHcPlane", "zone": "env", "kind": "primitive", "shape": "plane", "bbox": "derived:d21.bandHc", "material": "bandHc", "notes": "同上", "s2": "§E.2" },
+      { "id": "bandDevPlane", "zone": "env", "kind": "primitive", "shape": "plane", "bbox": "derived:d21.bandDev", "material": "bandDev", "notes": "同上", "s2": "§E.2" },
+      { "id": "desk", "zone": "sw", "kind": "composite", "shape": "group", "children": ["deskTop", "deskLegs"], "notes": "桌面五件沿 x 全错开、相邻间隙 0.4/0.4/0.4/1.6、两缘余量 0.2（修复轮终态）", "s2": "§A.2/§S2-输出 §7.1" },
+      { "id": "deskTop", "zone": "sw", "kind": "primitive", "shape": "box", "bbox": { "x": [-19.5, -9.6], "y": [2.7, 3.0], "z": "derived:d08.deskZ" }, "material": "mDeskWood", "s2": "§A.2+d08" },
+      { "id": "deskLegs", "zone": "sw", "kind": "composite", "shape": "group", "layout": "derived:d22", "material": "mDeskWood", "s2": "§A.2+d22" },
+      { "id": "printer", "zone": "sw", "kind": "primitive", "shape": "box", "bbox": { "x": [-19.3, -17.9], "y": "derived:d08.printerY", "z": "derived:d08.propsZ" }, "material": "derived:d32.printer", "notes": "命令单打印机：F4/F6/F8 命令单出口", "s2": "§A.2" },
+      { "id": "cardHolder", "zone": "sw", "kind": "primitive", "shape": "box", "bbox": { "x": [-17.5, -16.1], "y": "derived:d08.cardHolderY", "z": "derived:d08.propsZ" }, "material": "derived:d32.cardHolder", "notes": "表格卡钢卡座：承载输入/输出上下文表格卡（F5 主道具）", "s2": "§A.2" },
+      { "id": "tray8", "zone": "sw", "kind": "primitive", "shape": "box", "bbox": { "x": [-15.7, -14.6], "y": "derived:d08.tray8Y", "z": "derived:d08.propsZ" }, "material": "derived:d32.tray8", "notes": "8 字节接收缓冲托盘，绿边（devGreen）；F7 回包落点+托盘弹起", "s2": "§A.2" },
+      { "id": "inbox", "zone": "sw", "kind": "primitive", "shape": "box", "bbox": { "x": [-14.2, -12.8], "y": "derived:d08.inboxY", "z": "derived:d08.propsZ" }, "material": "derived:d32.inbox", "notes": "描述符收件匣：F9 叠卡翻摞", "s2": "§A.2" },
+      { "id": "eventBox", "zone": "sw", "kind": "primitive", "shape": "box", "bbox": { "x": [-11.2, -9.8], "y": "derived:d08.eventBoxY", "z": "derived:d08.propsZ" }, "material": "derived:d32.eventBox", "notes": "事件匣：走廊落点(d15)+开匣动画(d14)+ERDP 小旗步进触发", "s2": "§A.2/§B.3" },
+      { "id": "statusWindow", "zone": "sw", "kind": "primitive", "shape": "box", "bbox": "derived:d16", "material": "mScreenGlass", "emissive": 0.35, "texts": ["R/S=1", "MaxSlotsEn 已配置", "DCBAAP→DCBAA"], "textsNote": "只显这三行，不写其他数值（〔承 V1〕§4.2 域不越界）", "s2": "§A.2/§I.2 F2" },
+      { "id": "pendantLamp", "zone": "sw", "kind": "light", "shape": "sphere", "pos": [-15, 13.5, 0], "radius": "derived:d10.pendantR", "color": null, "colorNote": "暖光定性，S2 未给数值——S4 取暖白档", "lightRole": "文书台吊灯（灯池之一）", "s2": "§A.2/§A.3" },
+      { "id": "cabinet", "zone": "hc", "kind": "primitive", "shape": "box", "bbox": { "x": [-5.5, 7.5], "y": [0, 9.0], "z": [-2.4, 2.4] }, "material": "mCabinetSteel", "s2": "§A.2" },
+      { "id": "cornice", "zone": "hc", "kind": "primitive", "shape": "box", "bbox": { "x": [-5.5, 7.5], "y": [9.0, 9.4], "z": [-2.4, 2.4] }, "material": "derived:d32.cornice", "notes": "顶檐", "s2": "§A.2" },
+      { "id": "dcbaaGrid", "zone": "hc", "kind": "composite", "shape": "panel", "bbox": { "x": [-4.8, -1.0], "y": [5.2, 7.6], "z": [2.36, 2.44] }, "material": "mGridPlastic", "cells": "derived:d06（2 行×4 列编号 0..7）", "cell1Highlight": "#d9a860", "validWindow": "联动软件装载动画（F4）亮起", "plates": [{ "text": "表项由软件装载（xHC 只读）", "s1": "§5.1 步 7" }], "s2": "§A.2/§S2-评分④ remark" },
+      { "id": "slotLampRow", "zone": "hc", "kind": "composite", "shape": "lampRow", "layout": "derived:d05", "z": 2.4, "semantics": "materials.lampSemantics 槽五行", "plate": "materials.lampRowPlate", "s2": "§A.2/§E.4" },
+      { "id": "portscScreens", "zone": "hc", "kind": "composite", "shape": "panel", "children": [
+        { "id": "portscUsb2", "bbox": { "x": [0.6, 3.0], "y": [5.6, 8.0], "z": [2.36, 2.44] }, "note": "USB2 端口 1 屏" },
+        { "id": "portscUsb3", "bbox": { "x": [3.4, 5.8], "y": [5.6, 8.0], "z": [2.36, 2.44] }, "note": "USB3 端口 2 屏" }
+      ], "material": "mScreenGlass", "fontNote": "屏内值字号 ≥12px 等效（zoom 档，§I.2 F3）", "s2": "§A.2" },
+      { "id": "resetButton", "zone": "hc", "kind": "primitive", "shape": "cyl", "pos": [1.8, 5.0, 2.4], "radius": "derived:d12", "material": "mKnobAlu", "notes": "USB2 屏下复位按钮；写 PR=1 时下压回弹（阻尼，RESET_PRESS）", "s2": "§A.2/§D F2" },
+      { "id": "doorbellRow", "zone": "hc", "kind": "composite", "shape": "group", "layout": "derived:d02", "z": 2.4, "children": ["bell0", "bell1", "bell2", "bell3", "bell4", "bell5", "bell6", "bell7"], "bell0": { "r": 0.42, "role": "命令门铃 DB Target=0" }, "bell1": { "r": 0.28, "role": "EP0 门铃 DB Target=1（DCI=1）" }, "material": "mKnobAlu", "plates": [
+        { "at": "derived:d03.plateA", "text": "0 号 · DB Target=0 · 命令", "s1": "§4.2(p83)" },
+        { "at": "derived:d03.plateB", "text": "1 号 · DB Target=1 · EP0（DCI=1）", "s1": "§4.2(p82)" }
+      ], "s2": "§A.2/§B.2/§B.4" },
+      { "id": "bsrKnob", "zone": "hc", "kind": "primitive", "shape": "cyl", "pos": [6.7, 2.2, 2.4], "radius": "derived:d04", "material": "mKnobAlu", "positions": ["0", "1"], "plates": [{ "text": "0=直通（xHC 代发 SET_ADDRESS）｜1=旁路（先通信）", "s1": "§6.1" }], "s2": "§A.2/§B.7" },
+      { "id": "cardDrawer", "zone": "hc", "kind": "primitive", "shape": "box", "bbox": "derived:d13", "material": "mCabinetSteel", "notes": "卡库：空白槽卡抽屉；F4 滑车抽卡（DRAWER_PICK）", "s2": "§A.2" },
+      { "id": "ports", "zone": "hc", "kind": "composite", "shape": "group", "children": [
+        { "id": "port1", "pos": [7.5, 1.8, 0.65], "bbox": { "x": [7.5, 7.85], "y": [1.6, 2.0], "z": [0.4, 0.9] }, "family": "USB2", "plate": "根端口 1", "note": "演示样例 FS 设备插端口 1〔场景约定·承 V1〕" },
+        { "id": "port2", "pos": [7.5, 3.0, 0.65], "bbox": { "x": [7.5, 7.85], "y": [2.8, 3.2], "z": [0.4, 0.9] }, "family": "USB3", "plate": "根端口 2", "note": "端口分配〔场景约定·承 V1〕（S2-评分 P2-5 口径）" },
+        { "id": "port3", "pos": [7.5, 4.2, 0.65], "bbox": { "x": [7.5, 7.85], "y": [4.0, 4.4], "z": [0.4, 0.9] }, "family": null, "plate": "根端口 3" },
+        { "id": "port4", "pos": [7.5, 5.4, 0.65], "bbox": { "x": [7.5, 7.85], "y": [5.2, 5.6], "z": [0.4, 0.9] }, "family": null, "plate": "根端口 4" }
+      ], "material": "mCabinetSteel", "layout": "derived:d19", "notes": "机柜东侧面 x=7.5 出头；port1 承载缆插头", "s2": "§A.3" },
+      { "id": "gantry", "zone": "hc", "kind": "composite", "shape": "group", "posts": { "xs": [-4.3, 5.3], "zs": [-4.0, 4.0], "y": [0, "derived:d09.postTopY"], "section": "derived:d09.postSection" }, "beams": { "layerYs": [10.0, 11.8, 13.6], "x": "derived:d09.beamX", "zs": "derived:d09.beamZ", "section": "derived:d09.postSection" }, "material": "mRailSteel", "s2": "§A.4" },
+      { "id": "topLamp", "zone": "hc", "kind": "light", "shape": "sphere", "pos": [1, 17, 0], "radius": "derived:d10.topLampR", "color": null, "colorNote": "暖光定性，S2 未给数值——S4 取暖白档", "lightRole": "机柜顶主灯（灯池之一）", "s2": "§A.2/§A.3" },
+      { "id": "deviceShell", "zone": "dev", "kind": "primitive", "shape": "box", "bbox": { "x": [13.6, 17.2], "y": [0.7, 4.4], "z": [-1.5, 1.5] }, "material": "mDevicePlastic", "f0OffstageX": 22, "slideIn": "derived:d23", "s2": "§A.2/§D F1" },
+      { "id": "deviceLampRow", "zone": "dev", "kind": "composite", "shape": "lampRow", "layout": "derived:d07", "z": 1.5, "semantics": "materials.lampSemantics 设备四行", "notes": "正面顶排 y≈3.9", "s2": "§A.2/§E.4" },
+      { "id": "deviceScreen", "zone": "dev", "kind": "primitive", "shape": "box", "pos": [15.4, 2.6, 1.5], "size": "derived:d27.deviceScreen", "material": "mScreenGlass", "notes": "收件屏：正面中央", "s2": "§A.2" },
+      { "id": "namePlate", "zone": "dev", "kind": "primitive", "shape": "box", "pos": [15.4, 4.15, 1.5], "size": "derived:d27.namePlate", "material": "mCardPaper", "flip": { "axis": "Y", "deg": 180, "param": "PLATE_FLIP", "holdAfter": "FLIP_HOLD" }, "front": "USB 设备", "back": "USB 设备 · 地址 1（示例）", "subtitle": "只见 USB 请求与总线事件——槽/环/上下文对设备不可见", "subtitleNote": "〔承 V1〕场景约定；仅正面贴字+翻牌后停留 ≥0.5s 再淡出（§I.2 F6）", "s2": "§A.2/§D F6/§I.2" },
+      { "id": "domeLamp", "zone": "dev", "kind": "light", "shape": "sphere", "pos": [15.4, 4.6, 0], "radius": "derived:d10.domeR", "material": "mLampshade", "emissiveSwap": { "param": "DOME_COLOR", "f6Emissive": 1.9 }, "s2": "§A.2/§D F6" },
+      { "id": "topCover", "zone": "dev", "kind": "primitive", "shape": "box", "bbox": { "x": [13.6, 17.2], "y": "derived:d27.topCoverY", "z": [-1.5, 1.5] }, "material": "mDevicePlastic", "translucent": true, "notes": "外壳半透明顶盖〔承 V1〕", "s2": "§A.2" },
+      { "id": "irqFlashLine", "zone": "fx", "kind": "primitive", "shape": "line", "from": [-4.1, 13.6, 0], "to": "derived:d17", "color": "#9fb6ff", "param": "IRQ_FLASH", "flashes": 3, "notes": "事件环 slot 6 → 状态窗 细闪线；双形态：闪线旁挂轮询探针小滑车（pollTrolley）沿同线滑行读取；F0 卡+铭牌双处声明「中断可选，可轮询事件环运行」", "s2": "§B.3/§I.2" },
+      { "id": "pollTrolley", "zone": "fx", "kind": "primitive", "shape": "trolley", "path": "irqFlashLine 同线", "param": "POLL_TROLLEY", "color": "#9fb6ff", "s2": "§B.3" },
+      { "id": "dmaBeam", "zone": "fx", "kind": "primitive", "shape": "beam", "color": "#5f86e8", "radius": 0.07, "param": "DMA_BEAM", "pulseBall": "往返", "plate": { "text": "DMA 直写", "bg": "#5f86e8", "textColor": "#10151c", "note": "光束铭牌深字禁白字（§E.6）" }, "usePoints": "derived:d25", "notes": "铭牌文案 S1 §4.6：上下文与环皆 DMA 内存，写不经人手", "s2": "§B.5/§E.6" },
+      { "id": "erdpFlags", "zone": "fx", "kind": "composite", "shape": "flag", "per": ["ringCmd", "ringEvt", "ringEp0"], "param": "STEP", "notes": "每环一支 dequeue 小旗沿卡槽步进；事件环旗=ERDP 推进（事件匣开匣动画时步进一格）", "s2": "§B.1/§B.3" },
+      { "id": "aoShadows", "zone": "fx", "kind": "composite", "shape": "disk", "layout": "derived:d20", "notes": "近景×2 悬浮感修复：AO 接触阴影盘〔承 V2〕", "s2": "§I.2" },
+      { "id": "fsGate", "zone": "rings", "kind": "primitive", "shape": "portal", "bbox": "derived:d26", "material": "mRailSteel", "plate": { "text": "FS 才需先读 8 字节（p72）；LS/HS/SS：8/64/512 直接绕行", "s1": "§3.1" }, "notes": "EP0 环西段旁门架拱口；F7 亮起", "s2": "§B.4" }
+    ],
+    "lights": [
+      { "id": "lightPendant", "host": "pendantLamp", "s2": "§A.3" },
+      { "id": "lightTopMain", "host": "topLamp", "s2": "§A.3" },
+      { "id": "lightDeviceSpot", "pos": [17, 11, 6], "s2": "§A.3" },
+      { "id": "lightDeskRim", "color": "#aebfd8", "intensity": 26, "pos": [-19, 7.5, -3], "s2": "§A.3（V1 修复轮值）" },
+      { "id": "lightDevRim", "color": "#b9d8ae", "intensity": 18, "pos": "derived:d11", "s2": "§A.3（强 18 距 26）+d11" }
+    ],
+    "labels": [
+      { "id": "zone-sw", "text": "文书台 · xHCI 驱动", "anchor": [-15.0, 6.2, 0], "host": "desk", "barClass": "zone", "neighbors": ["pendantLamp", "statusWindow"], "s2": "§I.3" },
+      { "id": "zone-hc", "text": "xHC 总控台", "anchor": [1.0, 10.2, 2.6], "host": "cabinet", "barClass": "zone", "neighbors": ["gantry 西柱", "ringCmd 轨道（下层西段）"], "s2": "§I.3" },
+      { "id": "zone-dev", "text": "设备试验盒", "anchor": [15.4, 5.2, 0], "host": "deviceShell", "barClass": "zone", "neighbors": ["domeLamp", "namePlate 顶缘"], "s2": "§I.3" },
+      { "id": "lbl-rings-cmd", "text": "命令环 · 唯一", "anchor": [0.5, 10.9, -4.8], "host": "ringCmd", "barClass": "part", "neighbors": ["ringCmd 轨道北段", "zone-hc"], "s2": "§I.3/§B.2" },
+      { "id": "lbl-rings-ep0", "text": "EP0 传输环 · 1 号槽", "anchor": [0.5, 12.7, -4.8], "host": "ringEp0", "barClass": "part", "neighbors": ["ringEp0 轨道北段", "lbl-rings-cmd"], "s2": "§I.3/§B.4" },
+      { "id": "lbl-rings-evt", "text": "事件环 · 回执", "anchor": [0.5, 14.5, -4.8], "host": "ringEvt", "barClass": "part", "neighbors": ["ringEvt 轨道北段", "lbl-rings-ep0"], "s2": "§I.3/§B.3" },
+      { "id": "lbl-link", "text": "Link TRB · cycle 翻转", "anchor": [5.6, 13.9, 1.2], "host": "ringEvt", "barClass": "anchor", "neighbors": ["事件环东段", "slot 0 槽位"], "s2": "§I.3/§B.1" },
+      { "id": "lbl-bells", "text": "门铃排", "anchor": [-1.4, 2.6, 2.6], "host": "doorbellRow", "barClass": "part", "neighbors": ["柜面凸台", "bell0"], "s2": "§I.3" },
+      { "id": "lbl-dcbaa", "text": "DCBAA 格架 · 软件装载", "anchor": [-2.9, 8.0, 2.6], "host": "dcbaaGrid", "barClass": "part", "neighbors": ["dcbaaGrid 顶", "slotLampRow 西端"], "s2": "§I.3" },
+      { "id": "lbl-portsc", "text": "PORTSC 读数屏", "anchor": [3.2, 8.4, 2.6], "host": "portscScreens", "barClass": "part", "neighbors": ["双屏顶", "slotLampRow 东端"], "s2": "§I.3" },
+      { "id": "lbl-bsr", "text": "BSR 旋钮", "anchor": [6.7, 3.0, 2.6], "host": "bsrKnob", "barClass": "part", "neighbors": ["柜体东棱", "ports 西端"], "s2": "§I.3" },
+      { "id": "lbl-fs-gate", "text": "FS 支线闸口", "anchor": [-2.2, 12.4, -3.4], "host": "fsGate", "barClass": "anchor", "neighbors": ["ringEp0 西段轨道", "gantry 南柱"], "s2": "§I.3/§B.4" },
+      { "id": "lbl-dma", "text": "DMA 直写", "anchor": [-8.8, 8.6, 0.6], "host": "dmaBeam", "barClass": "anchor", "neighbors": ["dmaBeam 路径", "lbl-rings-cmd"], "s2": "§I.3/§B.5" },
+      { "id": "lbl-irq", "text": "中断（可选）", "anchor": [-7.2, 15.2, 0.4], "host": "irqFlashLine", "barClass": "anchor", "neighbors": ["corridor 前段", "lbl-rings-evt"], "s2": "§I.3/§B.3" },
+      { "id": "lbl-erdp", "text": "读指针小旗", "anchor": "dynamic（随旗）", "host": "erdpFlags", "barClass": "anchor", "neighbors": ["所在槽位卡"], "s2": "§I.3/§B.1" },
+      { "id": "lbl-tray", "text": "8 字节接收缓冲托盘", "anchor": [-15.2, 3.8, 0], "host": "tray8", "barClass": "part", "neighbors": ["inbox 西壁（x -14.2）", "cardHolder 东壁（x -16.1）"], "s2": "§I.3（修复轮终态锚点）" },
+      { "id": "lbl-cable", "text": "USB 总线缆", "anchor": [10.8, 1.9, 1.2], "host": "cable", "barClass": "part", "neighbors": ["缆弧顶", "ports"], "s2": "§I.3" },
+      { "id": "plate", "text": "设备铭牌", "anchor": [15.4, 4.5, 0], "host": "namePlate", "barClass": "part", "neighbors": ["deviceLampRow", "zone-dev"], "s2": "§I.3" },
+      { "id": "lbl-lamp-slot", "text": "槽态灯排", "anchor": [0, 9.2, 2.6], "host": "slotLampRow", "barClass": "part", "neighbors": ["dcbaaGrid 顶", "lbl-portsc"], "s2": "§I.3" }
+    ]
+  },
+  "rings": {
+    "common": {
+      "center": [0.5, 0],
+      "radius": 4.6,
+      "tubeRadius": 0.14,
+      "slots": 12,
+      "slotArcGap": "2πR/12 ≈ 2.41 wu",
+      "slotFormula": "derived:d01",
+      "slotWorked": {
+        "slot0": [5.1, "y", 0],
+        "slot1": [4.48, "y", -2.3],
+        "slot5": [-3.48, "y", -2.3],
+        "slot6": [-4.1, "y", 0],
+        "slot7": [-3.48, "y", 2.3]
+      },
+      "cardSize": [1.24, 0.56, 0.06],
+      "cardBillboard": { "rule": "每帧 lookAt 相机，仅 +z 面贴字", "assert": "fwd·toCam ≈ 1.00" },
+      "linkSlot": 0,
+      "linkSlotBase": "#d9a860",
+      "linkArc": { "radius": 5.5, "apexFormula": "derived:d30", "path": "slot11 (4.48,y,2.30) → 拱顶 → slot0 (5.1,y,0)，三点 CatmullRom", "cycleFlipOnArc": true, "flipDuration": "derived:d14", "flipNote": "卡过弧时卡角 cycle 片翻色（PCS=1 绿 ↔ 0 琥珀）" },
+      "cycleColors": { "pcs1": "#86bd7a", "pcs0": "#d9a860", "pcsInit": 1, "s1": "§4.3 环初值 PCS=1（xhci-mem.c:314–329）" },
+      "plateLink": { "text": "Link TRB · 环回绕，生产者循环态翻转", "s1": "§4.3" },
+      "deckColor": "#5d6875",
+      "railColor": "#8fa3b8",
+      "flag": { "name": "读指针小旗", "stepParam": "STEP", "evtRingNote": "事件环旗=ERDP 推进，写点=事件匣开匣动画时步进一格", "s1": "§4 建模提示②/§4.4 条 6（xhci-ring.c:3046–3073）" },
+      "clearance": { "layerGapY": 1.8, "note": "环间垂直净空 1.8 wu，全景仰角下三层投影互不粘叠；事件环置顶为走廊净空让位", "s2": "§A.4" },
+      "s2": "§A.4/§B.1"
+    },
+    "rings": [
+      {
+        "id": "ringCmd",
+        "name": "命令环",
+        "layerY": 10.0,
+        "accent": "#d9a860",
+        "nameplate": "命令环 · 唯一",
+        "label": "lbl-rings-cmd",
+        "unique": true,
+        "s1": "§4.1（p68 原句+xhci.h:1544）——全规范仅一条，禁止出现第二条",
+        "entry": { "slot": 7, "dir": "西南，文书台方向", "source": "printer", "param": "CMD_FLY", "note": "命令单（蓝边卡）从文书台打印机飞至 slot 7 入环" },
+        "consumer": "消费点小旗步进；xHC 按入环顺序执行",
+        "s1Order": "§4.1（p60）",
+        "noReceiptOnRing": "命令完成事件不走命令环——一律入事件环回文书台",
+        "s1Receipt": "§4.4 条 4＋DESIGN §2 避雷",
+        "bell": { "target": 0, "plate": "0 号 · DB Target=0 · 命令", "pressAfter": "命令单落位后", "s1": "§4.2（p83+xhci-ring.c:429–441）" },
+        "cards": ["Enable Slot", "Address Device（BSR 位与 Slot ID 同在第四字 word3）", "Evaluate Context", "Configure Endpoint"],
+        "s1Cards": "§7.2 条 12（xhci.h:821/974）",
+        "linked": [["printer", "命令单打印机"], ["bell0", "门铃 0 号旋钮"], ["bsrKnob", "Address Device 卡面 BSR 位联动"], ["cardDrawer", "Enable Slot 抽卡联动"], ["linkArc", "回绕弧"]]
+      },
+      {
+        "id": "ringEvt",
+        "name": "事件环",
+        "layerY": 13.6,
+        "accent": "#7c9ff0",
+        "nameplate": "事件环 · 回执",
+        "label": "lbl-rings-evt",
+        "entry": { "slot": 1, "dir": "东北，xHC 内部" },
+        "steps": "入环后逆时针步进 5 格至 slot 6",
+        "exit": { "slot": 6, "dir": "西端脱离", "route": "corridor → 事件匣顶降落 → hold → fade" },
+        "irq": {
+          "plate": "中断（可选）",
+          "flashLine": "slot6 → 状态窗，闪 3 次/事件",
+          "pollTrolley": true,
+          "dualForm": "闪线旁挂轮询探针小滑车沿同线滑行读取；F0 卡+铭牌双处声明「中断可选，可轮询事件环运行」",
+          "s1": "§4.5（p69 脚注 7）——不得画成中断唯一"
+        },
+        "erdp": "事件卡被「驱动读取」时（事件匣开匣动画）小旗沿环步进一格",
+        "s1Erdp": "§4.4 条 6（xhci-ring.c:3046–3073）",
+        "cards": ["Port Status Change Event", "Command Completion Event", "Transfer Event"],
+        "ccWhitelist": ["Success（S1 §3.2 收尾，p74）", "Parameter Error（S1 §7.2 条 10，p100）"],
+        "linked": [["eventBox", "事件匣"], ["irqFlashLine+pollTrolley", "中断闪线/轮询滑车"], ["erdpFlags", "ERDP 小旗"], ["linkArc", "回绕弧"]]
+      },
+      {
+        "id": "ringEp0",
+        "name": "EP0 传输环（1 号槽）",
+        "layerY": 11.8,
+        "accent": "#86bd7a",
+        "nameplate": "EP0 传输环 · 1 号槽",
+        "label": "lbl-rings-ep0",
+        "perSlot": true,
+        "demoNote": "每设备槽各一条，演示只画当前槽",
+        "s1PerSlot": "§4 建模提示②；环分配 xhci-mem.c:1010（2 段 TYPE_CTRL）",
+        "write": { "slots": [5, 6, 7], "dir": "西段，面向文书台", "via": "DMA 光束", "param": "TRB_PLACE", "cycle": "从 PCS=1 起", "s1": "§4.3" },
+        "exec": { "slot": 1, "dir": "东北，xHC 执行" },
+        "bell": { "target": 1, "plate": "1 号 · DB Target=1 · EP0（DCI=1）", "pressAfter": "TD 落位后", "s1": "§4.2（p82；DCI=(端点号×2)+1；xhci.h:313–314）" },
+        "fsGate": "fsGate 实体（§B.4）",
+        "dcbaaBeam": "DCBAA 1 号格 → EP0 环 slot 5 细光束（TR Dequeue Pointer=环首段地址|DCS）",
+        "s1Beam": "§5.1 表（xhci-mem.c:1197–1198）",
+        "tickets": ["Setup 票据东行", "8 字节回包西行入 8 字节托盘", "Status 段 Transfer Event（IOC=1）入事件环"],
+        "linked": [["bell1", "门铃 1 号旋钮"], ["tray8", "8 字节托盘（DMA 光束端点）"], ["fsGate", "FS 支线闸口"], ["dcbaaGrid", "指针光束"], ["cable", "票据接力"], ["linkArc", "回绕弧"]]
+      }
+    ],
+    "connectionMatrix": [
+      { "ring": "ringCmd", "in": "slot 7（西南，文书台方向）", "out": "消费点小旗", "elements": "打印机、门铃 0 号、BSR 旋钮、卡库（Enable Slot 抽卡联动）", "s2": "§B.6" },
+      { "ring": "ringEvt", "in": "slot 1（东北，xHC 内部）", "out": "slot 6 → 走廊 → 事件匣", "elements": "事件匣、中断闪线/轮询滑车、ERDP 小旗", "s2": "§B.6" },
+      { "ring": "ringEp0", "in": "slot 5/6/7（西段，DMA 写入）", "out": "slot 1（东北，xHC 执行）", "elements": "门铃 1 号、托盘、FS 闸口、格架指针光束、缆", "s2": "§B.6" }
+    ]
+  },
+  "cable": {
+    "curve": {
+      "type": "CatmullRomCurve3",
+      "geometry": "TubeGeometry",
+      "tubeRadius": 0.13,
+      "points": [[13.7, 1.2, 0.55], [12.2, 0.7, 1.1], [10.4, 0.75, 1.15], [9.0, 1.2, 0.95], [8.15, 1.8, 0.65]],
+      "endpoints": { "firstEast": "设备西面", "lastWest": "端口 1 块面" },
+      "material": "mCableRubber",
+      "s2": "§C.1"
+    },
+    "plugs": {
+      "port": { "at": [8.15, 1.8, 0.65], "into": "port1", "note": "嵌进端口 1 块" },
+      "device": { "at": [13.7, 1.2, 0.55], "flange": true, "terminals": 2, "note": "设备侧插头+法兰固定+端子两枚（材质 mPlugMetal）" },
+      "s2": "§C.1"
+    },
+    "signal": {
+      "segment": { "length": 2.2, "halfPeriod": 0.28, "teethPerSegment": 8, "amplitude": 0.16, "tubeRadius": 0.055 },
+      "speed": { "base": 4.5, "rule": "×k", "param": "WAVE_SPEED", "fullRun": "derived:d29" },
+      "colors": { "east": "#e8b562", "west": "#86bd7a", "idle": "#3d4c61" },
+      "colorNotes": { "east": "东行（请求）", "west": "西行（回包/数据）", "idle": "空闲微光（低亮度常驻，表「总线活着」）" },
+      "arrows": { "count": 2, "coneRadius": 0.12, "coneLength": 0.3, "semantics": "信号传播方向，与段同色" },
+      "semantics": [
+        { "name": "SET_ADDRESS", "dir": "east", "note": "xHC→设备，地址=1 示例", "s1": "§6.1（p97/p98 Note「代发」）" },
+        { "name": "GET_DESCRIPTOR 请求", "dir": "east", "s1": "§3.2" },
+        { "name": "8 字节回包", "dir": "west", "s1": "§3.1/§3.2" },
+        { "name": "SET_CONFIGURATION", "dir": "east", "s1": "§1.1 步 10" }
+      ],
+      "forbidden": "软件从不直接向设备发 SET_ADDRESS（p98 Note 红线）——卡面/注记严禁出现该画法",
+      "s1Forbidden": "§7.2 条 5",
+      "disclaimer": "方波为教学示意（USB 实际信号形态不展开），F0 卡注一句〔场景约定〕",
+      "tickets": "缆上票据（SET_ADDRESS/请求/回包卡）与方波段同相行进：卡=语义（可读），方波=物理感"
+    }
+  },
+  "corridor": {
+    "curve": {
+      "type": "CatmullRomCurve3",
+      "points": [[-4.1, 13.6, 0], [-7.5, 14.4, 0.3], [-10.5, 11.0, 0.6], [-12.4, 6.4, 0.8], [-11.5, 4.1, 0.8]],
+      "s2": "§I.4"
+    },
+    "start": "事件环 slot 6 卡位（首控制点）",
+    "endHover": "末点=事件匣顶上方悬浮点",
+    "landingTarget": "derived:d15",
+    "landingParam": "CORRIDOR_LAND",
+    "then": "hold(HOLD) → fade(FADE)",
+    "assertions": {
+      "startSeg": { "scope": "自起点（slot 6 卡位）至净距首次达到 1.2 wu 之处的爬升段", "exempt": "净距下限豁免（卡停槽内距轨道 0 属常态）", "require": ["y 单调上升"] },
+      "cruiseSeg": { "scope": "自净距首次 ≥1.2 wu 之点起至落地", "require": "采样点与三环轨道管表面最近距离 ≥1.2 wu" },
+      "global": ["全程 y ≥4.0", "西行段 x ≤−7.5 时方允许降高（不低于格架顶 7.6 以西空域）"]
+    },
+    "s2": "§I.1 条 5/§I.4 原口径（弧长 <1.0 wu 分段）；主会话裁定 2026-11-10 改为分段点=净距首次 ≥1.2 wu、起步段只查 y 单调升——本补丁为该裁定的 DSL 落点，S4 页内 corridorCheck 随后同步单口径",
+    "proofCamera": "corridorProof 机位：卡入走廊中段再拍〔承 V2 轮询法〕"
+  },
+  "cameras": {
+    "defaults": { "fov": "meta.render.fov", "flyParam": "FLY", "nearFlyBase": 0.9 },
+    "camAdapt": "meta.camAdapt",
+    "list": [
+      { "id": "F0", "stage": "F0", "pos": [6.8, 12, 39], "tgt": [6.8, 3, 0], "tol": 0.5, "adapt": "panorama", "s2": "§A.5〔承 V2 终值〕" },
+      { "id": "F1", "stage": "F1", "pos": [11.5, 6.0, 14.5], "tgt": [11.0, 2.4, 0.6], "posRange": { "x": [11, 12.5], "y": [5.5, 6.5], "z": [13.5, 15.5] }, "adapt": "closeup", "s2": "§D F1" },
+      { "id": "F2", "stage": "F2", "pos": [-7.0, 6.5, 20.0], "tgt": [-7.0, 5.0, 0], "posRange": { "x": [-7.5, -6.5], "y": [6, 7], "z": [19, 21] }, "adapt": "closeup", "derived": "S4 评分⑥修复补丁（主会话授权 2026-11-10）：状态窗 x≈-18 与 USB2 屏 x≈1.8 横跨 20 wu，仅 z≈20 远机位可同视野（fov45/aspect≥1.33 视场核算）；判据=§I.2 F2 必在画" },
+      { "id": "F3", "stage": "F3", "pos": [4.8, 5.8, 14.5], "tgt": [3.6, 4.4, 0.2], "posRange": { "x": [4.3, 5.5], "y": [5.5, 6.5], "z": [13.5, 15.5] }, "adapt": "closeup", "derived": "S4 评分⑥修复补丁（2026-11-10）：拉远 12→14.5＋tgt y 3.4→4.4 对准屏带，四信号读数离上缘留头部空间（裁定意图=留头部空间；纯 tgt 下移会使屏相对画面更贴上缘，故取拉远＋tgt 上移）" },
+      { "id": "F4", "stage": "F4", "pos": [2.6, 9.8, 15.0], "tgt": [0.8, 8.2, 0], "posRange": { "x": [2, 3.5], "y": [9.4, 10.4], "z": [14, 16] }, "adapt": "closeup", "note": "仰角看命令环+门铃排", "s2": "§D F4" },
+      { "id": "F5", "stage": "F5", "pos": [-8.6, 7.2, 11.8], "tgt": [-16.3, 3.6, 0], "posRange": { "x": [-9.2, -8.2], "y": [6.8, 7.8], "z": [11, 12.8] }, "adapt": "closeup", "note": "桌面俯视对准卡座区（修复轮 tgt 终态）", "s2": "§D F5/§S2-输出 §7.1" },
+      { "id": "F6", "stage": "F6", "pos": [11.5, 5.0, 15.5], "tgt": [10.5, 3.6, 0.5], "posRange": { "x": [10.8, 12.3], "y": [4.6, 5.6], "z": [14.5, 16.5] }, "adapt": "closeup", "derived": "S4 评分⑥修复补丁（2026-11-10）：tgt 东移对准 BSR→设备带，翻牌铭牌/顶灯换色入画；东南上斜视角下视线过柜东棱（x=7.5）时 z≈4.8>2.4，BSR 牌免柜棱自遮挡（核算在案）；判据=§I.2 F6 必在画" },
+      { "id": "F7", "stage": "F7", "pos": [-3.6, 9.6, 13.2], "tgt": [0.6, 10.6, 0], "posRange": { "x": [-4.2, -3.2], "y": [9.2, 10.2], "z": [12.5, 14] }, "adapt": "closeup", "note": "看 EP0 中层环", "s2": "§D F7" },
+      { "id": "F8", "stage": "F8", "pos": [-8.8, 6.6, 12.0], "tgt": [-16.0, 3.8, 0], "adapt": "closeup", "note": "桌面 EP0 卡+命令单同视野（修复轮 tgt 终态）", "s2": "§D F8/§S2-输出 §7.1" },
+      { "id": "F9", "stage": "F9", "pos": [-9.5, 9.0, 15.0], "tgt": [-8.5, 7.5, -0.5], "posRange": { "x": [-10.2, -8.8], "y": [8.6, 9.6], "z": [14, 16] }, "adapt": "closeup", "derived": "S4 评分⑥修复补丁（2026-11-10）：tgt 西移下移使 EP0 环西段与收件匣（x≈-13.5）同视野；承 §I.2 F9 西移方向〔V2 P2-③〕；判据=§I.2 F9 必在画" },
+      { "id": "F10", "stage": "F10", "pos": [8.0, 7.0, 20.0], "tgt": [7.2, 3.8, 0.5], "posRange": { "x": [7.2, 8.8], "y": [6.5, 7.5], "z": [19, 21] }, "adapt": "closeup", "note": "机柜正面+设备同视野", "derived": "S4 评分⑥修复补丁（2026-11-10）：拉远至 z20＋tgt 东移中点，槽态灯排（x≈0）与设备灯排/顶灯（x≈15.4）横跨 15 wu 同视野；判据=§I.2 F10 双灯同步翻转必在画" },
+      { "id": "F11", "stage": "F11", "pos": [6.8, 12, 39], "tgt": [6.8, 3, 0], "tol": 0.5, "adapt": "panorama", "note": "同 F0 基线，账面全景收尾", "s2": "§D F11" },
+      { "id": "rings", "stage": "三环专属", "pos": [0.5, 12.8, 17.5], "tgt": [0.5, 11.6, 0], "adapt": "closeup", "note": "三层轨道+Link 弧+cycle 片取证", "s2": "§I.2" },
+      { "id": "corridorProof", "stage": "走廊取证", "pos": [-8.5, 11.5, 13.0], "tgt": [-8.5, 9.5, 0.6], "adapt": "closeup", "note": "流转卡正面+小标行；「卡入走廊中段再拍」轮询法", "s2": "§I.2" },
+      { "id": "labL1", "stage": "动手台 L1", "pos": [0.5, 3.2, 7.5], "tgt": [-1.2, 1.7, 1.6], "adapt": "closeup", "note": "门铃排特写〔设计参数〕", "s2": "§G L1" },
+      { "id": "deviceCloseup", "stage": "近景（设备）", "pos": [15.4, 3.4, 7.0], "tgt": [15.4, 2.5, 0], "adapt": "closeup", "derived": "近景取证机位缺省档（正南压近）", "s2": "§I.2 近景×2" },
+      { "id": "deskCloseup", "stage": "近景（桌面）", "pos": [-14.5, 5.2, 6.5], "tgt": [-14.5, 3.2, 0], "adapt": "closeup", "derived": "近景取证机位缺省档（正南压近）", "s2": "§I.2 近景×2" }
+    ],
+    "narrow390": "390px 窄屏另拍 1 张验三区+三环入画（camAdapt）",
+    "f0Check": {
+      "viewport": "有效视宽≈1024px（1440 窗 − 面板 ~404 − 边距）",
+      "mustInclude": ["三区各一块区标", "机柜正面五要素（格架/槽态灯排/双读数屏/门铃排/BSR 旋钮）", "三层三环+门架", "端口排", "试验盒+四态灯+铭牌", "USB 缆全程", "地板灯池"],
+      "rightMargin": "右缘余量 ≥1.0 wu（铭牌右缘 16.6 wu 校验——2026-11-10 主会话追认，S4 改值 16.1→16.6；16.6=d27 铭牌宽 2.4 中心 15.4 的几何右缘，S2 §A.5 原 16.1 与之不自洽）",
+      "protocol": "全景截图后裁右缘 1/3 另存人验（sips -c 900 480 --cropOffset 0 960 形态）；F0 时设备在画外 x=22 属预期",
+      "responsibility": "S3 出 DSL 附机位核算→S4 施工后 shots 门复拍→scorer 独立验证",
+      "s2": "§A.5"
+    }
+  },
+  "timeline": {
+    "params": [
+      { "id": "FLY", "name": "相机飞行", "base": 1.2, "at05": 2.4, "at2": 0.6, "rule": "/k", "note": "近景机位 0.9s〔设计参数〕", "use": ["工段切换相机飞行"] },
+      { "id": "STAGE_GAP", "name": "工段尾停", "base": 1.0, "at05": 2.0, "at2": 0.5, "rule": "/k", "use": ["自动巡游/全线联动"] },
+      { "id": "STEP", "name": "环步进", "base": 1.15, "at05": 2.3, "at2": 0.58, "rule": "/k", "note": "每格", "use": ["环卡步进/ERDP 小旗"] },
+      { "id": "FLY_WALK", "name": "走廊飞行", "base": 2.2, "at05": 4.4, "at2": 1.1, "rule": "/k", "use": ["corridor 全程"] },
+      { "id": "CORRIDOR_LAND", "name": "走廊落地", "base": 0.5, "at05": 1.0, "at2": 0.25, "rule": "/k", "use": ["末点降落，落地后进 HOLD"] },
+      { "id": "HOLD", "name": "流转卡停留", "base": 2.0, "at05": 4.0, "at2": 1.2, "rule": "max(1.2, HOLD_SET/k)", "note": "HOLD_SET 滑杆 1.5–4.0s 默认 2.0；V3 修正（V2 公式 0.5× 退化常数）", "use": ["流转卡停留"] },
+      { "id": "FADE", "name": "淡出", "base": 0.7, "at05": 1.4, "at2": 0.35, "rule": "/k", "use": ["流转卡淡出"] },
+      { "id": "DEV_SLIDE_IN", "name": "设备滑入", "base": 2.4, "at05": 4.8, "at2": 1.2, "rule": "/k", "use": ["F1"] },
+      { "id": "PLUG_PUSH", "name": "插头推入", "base": 0.9, "at05": 1.8, "at2": 0.45, "rule": "/k", "use": ["F1"] },
+      { "id": "PORT_LIGHT", "name": "端口灯亮", "base": 0.5, "at05": 1.0, "at2": 0.25, "rule": "/k", "use": ["F1"] },
+      { "id": "BREATHE_3CYC", "name": "呼吸灯 3 周期", "base": 2.7, "at05": 5.4, "at2": 1.35, "rule": "/k", "note": "正弦包络〔承 V2〕", "use": ["F3 端口呼吸灯"] },
+      { "id": "SIG_INTERVAL", "name": "四信号连亮间隔", "base": 0.35, "at05": 0.7, "at2": 0.175, "rule": "/k", "use": ["F3"] },
+      { "id": "PLATE_FLIP", "name": "铭牌翻牌", "base": 0.8, "at05": 1.6, "at2": 0.4, "rule": "/k", "use": ["F6"] },
+      { "id": "FLIP_HOLD", "name": "翻牌完成停留", "base": 0.5, "at05": 1.0, "at2": 0.25, "rule": "/k", "use": ["F6（停留后再淡出，防背面镜像）"] },
+      { "id": "BSR_TURN", "name": "BSR 旋钮拧动", "base": 0.7, "at05": 1.4, "at2": 0.35, "rule": "/k", "use": ["F6（两位旋钮 0/1 档切换）"] },
+      { "id": "DOME_COLOR", "name": "顶灯换色", "base": 0.6, "at05": 1.2, "at2": 0.3, "rule": "/k", "use": ["F6"] },
+      { "id": "DMA_BEAM", "name": "DMA 光束单程", "base": 1.5, "at05": 3.0, "at2": 0.75, "rule": "/k", "note": "半径 0.07、色 #5f86e8〔承 V2 修复值〕", "use": ["F4/F7"] },
+      { "id": "WAVE_SPEED", "name": "方波游动速率", "base": 4.5, "at05": 2.25, "at2": 9.0, "rule": "×k", "unit": "wu/s", "use": ["信号段全程"] },
+      { "id": "CMD_FLY", "name": "命令单飞行（打印机→环）", "base": 1.6, "at05": 3.2, "at2": 0.8, "rule": "/k", "use": ["F4/F6/F8"] },
+      { "id": "BELL_PRESS", "name": "门铃旋钮按压+回弹", "base": 0.3, "at05": 0.6, "at2": 0.15, "rule": "/k", "note": "观看层（受 k）——F4/F7 门铃联动与 L1 同一参数", "use": ["F4/F7/L1"] },
+      { "id": "DRAWER_PICK", "name": "卡库抽卡", "base": 0.8, "at05": 1.6, "at2": 0.4, "rule": "/k", "use": ["F4"] },
+      { "id": "GRID_HANG", "name": "格架挂卡", "base": 1.0, "at05": 2.0, "at2": 0.5, "rule": "/k", "use": ["F4"] },
+      { "id": "TICK_CHECK", "name": "打勾", "base": 0.4, "at05": 0.8, "at2": 0.2, "rule": "/k", "use": ["F5 A0/A1"] },
+      { "id": "CELL_FILL", "name": "逐格填表", "base": 0.25, "at05": 0.5, "at2": 0.125, "rule": "/k", "note": "每格", "use": ["F5（九格+三格）"] },
+      { "id": "RING_MOUNT", "name": "EP0 环上架", "base": 1.2, "at05": 2.4, "at2": 0.6, "rule": "/k", "use": ["F5"] },
+      { "id": "TRB_PLACE", "name": "TRB 落位节奏", "base": 0.6, "at05": 1.2, "at2": 0.3, "rule": "/k", "note": "每卡", "use": ["F7"] },
+      { "id": "TRAY_POP", "name": "托盘弹起", "base": 0.4, "at05": 0.8, "at2": 0.2, "rule": "/k", "use": ["F7"] },
+      { "id": "LINE_FLASH", "name": "读线/写线闪", "base": 0.5, "at05": 1.0, "at2": 0.25, "rule": "/k", "use": ["F2"] },
+      { "id": "RESET_PRESS", "name": "复位按钮按压+回弹", "base": 0.6, "at05": 1.2, "at2": 0.3, "rule": "/k", "note": "阻尼下压", "use": ["F2"] },
+      { "id": "TRIGGER_PULL", "name": "扳机拉线", "base": 0.6, "at05": 1.2, "at2": 0.3, "rule": "/k", "use": ["F1"] },
+      { "id": "IRQ_FLASH", "name": "中断闪线", "base": 0.25, "at05": "×2 时长", "at2": "×0.5", "rule": "/k", "count": 3, "note": "0.25s×3 次/事件", "use": ["ringEvt"] },
+      { "id": "POLL_TROLLEY", "name": "轮询滑车单趟", "base": 1.8, "at05": 3.6, "at2": 0.9, "rule": "/k", "use": ["irqFlashLine 同线"] },
+      { "id": "DUAL_FLY", "name": "双票据并行飞行", "base": 1.8, "at05": 3.6, "at2": 0.9, "rule": "/k", "note": "航线 z 分层 +0.8/+1.2", "use": ["F10"] },
+      { "id": "INBOX_STACK", "name": "收件匣叠卡", "base": 0.8, "at05": 1.6, "at2": 0.4, "rule": "/k", "use": ["F9"] },
+      { "id": "IDLE_STEP", "name": "空闲巡航步进", "base": 3.5, "at05": 7.0, "at2": 1.75, "rule": "/k", "note": "每格", "use": ["F0/F11 三环慢速巡航"] },
+      { "id": "LAMP_BREATH", "name": "灯池呼吸周期", "base": 6.0, "at05": 12.0, "at2": 3.0, "rule": "/k", "note": "±8% 光强正弦", "use": ["F0/F11 全场灯池"] }
+    ],
+    "stages": [
+      {
+        "id": "F0",
+        "step": "0",
+        "title": "全景 · 车间初见",
+        "camera": "F0",
+        "moves": [
+          { "do": "lampBreath", "param": "LAMP_BREATH", "target": "lights 三灯池", "amp": "±8%" },
+          { "do": "ringIdleCruise", "param": "IDLE_STEP", "rings": ["ringCmd", "ringEvt", "ringEp0"] },
+          { "do": "waveIdle", "note": "方波空闲微光 #3d4c61" },
+          { "do": "dmaBeamIdle", "note": "DMA 光束微光待机" }
+        ],
+        "state": [
+          { "set": "ports: Disconnected、PP='1'", "s1": "§1.0（p71）" },
+          { "set": "deviceShell offstage x=22" }
+        ],
+        "flow": [],
+        "flowNote": "无（DMA 光束微光待机）",
+        "panel": "任务导览卡+全景元素清单+「中断可选/可轮询」注记+方波示意声明",
+        "physical": "灯池呼吸（±8% 正弦 6s 周期）",
+        "s2": "§D F0"
+      },
+      {
+        "id": "F1",
+        "step": "1–2",
+        "title": "插入检测",
+        "page": "p71",
+        "camera": "F1",
+        "moves": [
+          { "do": "deviceSlideIn", "param": "DEV_SLIDE_IN", "path": "derived:d23" },
+          { "do": "plugPush", "param": "PLUG_PUSH", "arc": "derived:d24" },
+          { "do": "portLight", "param": "PORT_LIGHT", "target": "port1" },
+          { "do": "triggerPull", "param": "TRIGGER_PULL", "note": "PSCEG 拉线扳机拉动 0→1" }
+        ],
+        "state": [
+          { "set": "port1(USB2) → Disabled 态、CCS=1、CSC=1", "s1": "§1.1 步 1（p71）/§2.1" },
+          { "set": "PSCEG 0→1 跳变 → 事件卡生成", "s1": "§2.3（p71/p292——跳变才发，卡面注明）" }
+        ],
+        "flow": [
+          { "from": "PORTSC · PSCEG 0→1 跳变（p71）", "to": "事件环 → 驱动读取 · Port Status Change Event", "route": "ringEvt.slot1→step(5)→slot6→corridor→eventBox" }
+        ],
+        "notes": ["三方注记：「设备只感到上电」〔承 V1〕"],
+        "panel": "步 1–2 要点；事件 Port ID 字段定位端口",
+        "s1Panel": "§1.1 步 2",
+        "physical": "滑入+推入+灯亮+扳机拉线",
+        "variants": { "usb3": { "noDisabledFrame": true, "auto": "Polling→Enabled（PED=1/PR=0/PLS=0）", "s1": "§2.1" } },
+        "s2": "§D F1"
+      },
+      {
+        "id": "F2",
+        "step": "3",
+        "title": "查端口",
+        "page": "p71–72",
+        "camera": "F2",
+        "moves": [
+          { "do": "lineFlash", "param": "LINE_FLASH", "from": "statusWindow", "to": "portscUsb2", "note": "读线闪，显 CCS=1 灯亮" },
+          { "do": "buttonPress", "param": "RESET_PRESS", "target": "resetButton", "note": "写 PR=1，下压回弹（阻尼）" }
+        ],
+        "state": [
+          { "set": "portscUsb2: CCS=1 确认插入" },
+          { "set": "PR=1（软件写）" },
+          { "set": "portscUsb2.PLS = 「复位」文字（规范未给，不造数）", "s1": "§2.2 口径" }
+        ],
+        "flow": [
+          { "from": "驱动读 PORTSC", "to": "CCS=1 确认插入" },
+          { "from": "软件写 PR=1", "to": "端口复位开始（p75 §4.3.1 步 1）" }
+        ],
+        "panel": "步 3 要点；同步性警告注记——「读 PORTSC 见变化位 ≠ 事件已入环」",
+        "s1Panel": "§7.2 条 8（p292 Note）",
+        "physical": "按钮阻尼下压",
+        "s2": "§D F2"
+      },
+      {
+        "id": "F3",
+        "step": "3b",
+        "title": "复位完成",
+        "page": "p72",
+        "camera": "F3",
+        "moves": [
+          { "do": "signalQuad", "param": "SIG_INTERVAL", "order": ["PRC=1", "PED=1", "PR=0", "PLS=U0"], "note": "四信号顺序点亮，一个不能少" },
+          { "do": "breathe", "param": "BREATHE_3CYC", "target": "port1 呼吸灯", "cycles": 3 },
+          { "do": "corridorFly", "param": "FLY_WALK" },
+          { "do": "corridorLand", "param": "CORRIDOR_LAND" },
+          { "do": "hold", "param": "HOLD" },
+          { "do": "fade", "param": "FADE" }
+        ],
+        "state": [
+          { "set": "Port Speed=FS", "s1": "§2.2 Note（p75）" },
+          { "set": "deviceLampRow: Powered→Default", "s1": "§2.2（p72 原句语义：复位把设备送入 Default 态，备好收 SET_ADDRESS）" },
+          { "do": "eventCard", "type": "Port Status Change Event（PRC）", "route": "corridor→eventBox" }
+        ],
+        "flow": [
+          { "from": "复位完成 · PSCEG 0→1", "to": "事件环 → 驱动读取 · PRC=1", "route": "ringEvt.slot1→step(5)→slot6→corridor→eventBox" }
+        ],
+        "panel": "四信号表+Port Speed 注（p75 Note）；USB2/USB3 Disabled 双义注记",
+        "s1Panel": "§2.1（p71 Note）",
+        "physical": "呼吸灯+四灯连亮",
+        "s2": "§D F3"
+      },
+      {
+        "id": "F4",
+        "step": "4",
+        "title": "取槽",
+        "page": "p72/p75",
+        "camera": "F4",
+        "moves": [
+          { "do": "cmdFly", "param": "CMD_FLY", "from": "printer", "to": "ringCmd.slot7", "card": "Enable Slot 命令单" },
+          { "do": "bellPress", "param": "BELL_PRESS", "target": "bell0" },
+          { "do": "drawerPick", "param": "DRAWER_PICK", "from": "cardDrawer", "note": "滑车动作" },
+          { "do": "corridorFly+land+hold+fade", "params": ["FLY_WALK", "CORRIDOR_LAND", "HOLD", "FADE"], "note": "Slot ID=1 事件卡走走廊" },
+          { "do": "gridHang", "param": "GRID_HANG", "from": "cardHolder", "to": "dcbaaGrid.cell1", "note": "输出上下文卡飞挂 DCBAA 1 号格" },
+          { "do": "lampSwitch", "target": "slotLampRow: Disabled→Enabled（双色灯切芯）" },
+          { "do": "dcbaaWindowOn", "bind": "软件装载动画", "note": "有效性小窗亮=软件装载动画绑定" }
+        ],
+        "state": [
+          { "do": "receipt", "value": "Slot ID=1（示例，xHC 自选）", "s1": "§1.1 步 4（p75）" },
+          { "set": "slotLamp Disabled→Enabled", "s1": "§6.2（p86–87）" }
+        ],
+        "flow": [
+          { "from": "文书台 · Enable Slot 命令单", "to": "命令环 slot 7 入环 → 按 DB Target=0", "route": "printer→ringCmd.slot7→bell0" },
+          { "from": "xHC · 自选 Slot ID=1（p75）", "to": "事件环 → 驱动读取", "route": "ringEvt→corridor→eventBox" }
+        ],
+        "panel": "步 4 要点；「须等本槽命令完成事件才可发后续命令」",
+        "s1Panel": "§1 支撑面（p75）",
+        "physical": "旋钮按压+滑车抽卡+格架挂卡",
+        "occlusion": { "detailLayer": ["ringCmd 卡面字段"], "keyValueFloat": ["Slot ID=1"], "billboard": true, "s2": "§I.2 F4/§I.1 条 3/4" },
+        "s2": "§D F4"
+      },
+      {
+        "id": "F5",
+        "step": "5",
+        "title": "槽初始化",
+        "page": "p75–76",
+        "camera": "F5",
+        "moves": [
+          { "do": "tickCheck", "param": "TICK_CHECK", "target": "inputCtx.A0/A1", "note": "Input Context 两页表格卡" },
+          { "do": "cellFill", "param": "CELL_FILL", "target": "slotCard", "cells": ["端口号 1", "Route String=0", "Context Entries=1"], "s1": "§5.1 步 2–3+脚注 8（Route String 不含端口号小字）" },
+          { "do": "cellFill", "param": "CELL_FILL", "target": "ep0Card", "cells": ["EP Type=Control", "MPS=按端口速度默认〔样例 FS=8〕", "Max Burst=0", "TR Deq=环首段", "DCS=1", "Interval=0", "MaxPStreams=0", "Mult=0", "CErr=3"], "s1": "§5.1 表（p76）" },
+          { "do": "ringMount", "param": "RING_MOUNT", "target": "ringEp0", "note": "中层横梁旋出+卡槽点亮" },
+          { "do": "dcbaaNote", "note": "DCBAA 挂卡完成注记" }
+        ],
+        "flow": [
+          { "from": "软件填表（DMA 可见写）", "to": "EP0 传输环上架（xhci-mem.c:1010）" }
+        ],
+        "panel": "步 5 要点；「MPS 三口径」注记卡（规范规则/样例值 8/驱动初猜 64——三者不互冒）；试错入口「不填上下文直接编址」",
+        "s1Panel": "§3.4",
+        "physical": "打勾+逐格点亮+环上架",
+        "tryError": { "action": "空输入上下文抢发 Address Device", "result": "Parameter Error 红牌+输出上下文卡不动", "s1": "§7.2 条 10（p100）" },
+        "s2": "§D F5"
+      },
+      {
+        "id": "F6",
+        "step": "6",
+        "title": "编址",
+        "page": "p72/p76–77/p97",
+        "camera": "F6",
+        "moves": [
+          { "do": "bsrTurn", "param": "BSR_TURN", "to": "0", "note": "拧至 0 位特写" },
+          { "do": "cmdFly", "param": "CMD_FLY", "from": "printer", "to": "ringCmd.slot7", "card": "Address Device（BSR=0 位亮+Slot ID 同在 word3）" },
+          { "do": "bellPress", "param": "BELL_PRESS", "target": "bell0" },
+          { "do": "ticketEast", "note": "xHC 代发 SET_ADDRESS：请求票据东行+方波琥珀", "param": "WAVE_SPEED" },
+          { "do": "domeColor", "param": "DOME_COLOR", "emissive": 1.9 },
+          { "do": "plateFlip", "param": "PLATE_FLIP", "deg": 180, "target": "namePlate" },
+          { "do": "flipHold", "param": "FLIP_HOLD" },
+          { "do": "lampSwitch", "target": "deviceLampRow: Default→Address（已编址）" },
+          { "do": "lampSwitch", "target": "slotLampRow: Enabled→Addressed" }
+        ],
+        "state": [
+          { "set": "BSR=0 → 槽 Enabled→Addressed", "s1": "§6.1 表（p77）" },
+          { "set": "设备 Default→Address", "s1": "§6.1/§1.1 步 6" },
+          { "do": "cmdCompletion", "cc": "Success", "s1": "§3.2 收尾（p74）" }
+        ],
+        "teachingAnchor": "「第一个 USB 请求来自 xHC，不是驱动」（〔承 V1〕+S1 §7.2 条 5）",
+        "flow": [
+          { "from": "Address Device · BSR=0", "to": "SET_ADDRESS(1) 东行 · 设备 Address", "route": "printer→ringCmd.slot7→bell0→cable east" },
+          { "from": "命令完成事件 · Success（p74）", "to": "事件环 → 驱动读取", "route": "ringEvt→corridor→eventBox" }
+        ],
+        "panel": "步 6 要点；SET_ADDRESS 参数注（USB2 发往地址 0/USB3 用 Route String）；角标「规范建议路径」",
+        "s1Panel": "§6.1（p97）",
+        "physical": "旋钮拧动+顶灯换色+翻牌+方波首秀",
+        "variants": {
+          "bsr1": { "bsrTo": "1", "noTicket": true, "slotLamp": "Enabled→Default", "s1": "§6.1（p76–77）" },
+          "linux": { "like": "bsr1", "noteCard": "linux-path" }
+        },
+        "s2": "§D F6"
+      },
+      {
+        "id": "F7",
+        "step": "7/7a",
+        "title": "问尺寸〔FS 主线〕",
+        "page": "p72–74",
+        "camera": "F7",
+        "moves": [
+          { "do": "gateLight", "target": "fsGate", "note": "FS 支线闸口亮起" },
+          { "do": "dmaBeam", "param": "DMA_BEAM", "count": 3, "note": "GET_DESCRIPTOR 三 TRB 依次写 EP0 环" },
+          { "do": "trbPlace", "param": "TRB_PLACE", "target": "ringEp0.slot5/6/7", "cards": ["Setup「TRT=3 · IDT=1 · IOC=0」", "Data「DIR=1 · Len=8」", "Status「DIR=0 · IOC=1」"], "s1": "§3.2（p73 逐值）" },
+          { "do": "bellPress", "param": "BELL_PRESS", "target": "bell1", "note": "DB Target=1" },
+          { "do": "ticketEast", "note": "Setup 票据东行（琥珀方波）", "param": "WAVE_SPEED" },
+          { "do": "ticketWest", "note": "8 字节回包西行（绿方波）", "param": "WAVE_SPEED" },
+          { "do": "dmaFlash", "target": "tray8", "note": "落托盘（DMA 光束闪）" },
+          { "do": "trayPop", "param": "TRAY_POP", "note": "bMaxPacketSize0=8 读出" },
+          { "do": "corridorFly+land+hold+fade", "params": ["FLY_WALK", "CORRIDOR_LAND", "HOLD", "FADE"], "note": "Status 段 Transfer Event 入事件环走走廊" }
+        ],
+        "state": [
+          { "do": "readout", "value": "bMaxPacketSize0=8", "s1": "§3.1/§3.2" }
+        ],
+        "flow": [
+          { "from": "EP0 环 · Setup TRB（TRT=3，IDT=1）", "to": "按 DB Target=1（EP0，DCI=1）", "route": "dma×3→ringEp0.slot5/6/7→bell1" },
+          { "from": "设备 · 8 字节（bMaxPacketSize0=8）", "to": "事件环 → 驱动读取 · Status 段（IOC=1）", "route": "cable west→tray8→ringEvt→corridor→eventBox" }
+        ],
+        "panel": "三 TRB 字段组全表（字段与引文 tab）；「LS/HS/SS 8/64/512 可跳过」注（p72）；「Linux 实路径」对照注记卡（三点差异）；MPS 更新预告（步 ix——p74）",
+        "physical": "三卡落位节奏+旋钮按压+托盘弹起",
+        "variants": { "hs": { "greyOut": true }, "ss": { "greyOut": true }, "linux": { "play": "照演（Default 态通信）" } },
+        "s2": "§D F7"
+      },
+      {
+        "id": "F8",
+        "step": "7 收尾（ix/x）",
+        "title": "更新上下文〔规范建议路径〕",
+        "page": "p74",
+        "camera": "F8",
+        "moves": [
+          { "do": "cmdFly", "param": "CMD_FLY", "from": "printer", "to": "ringCmd.slot7", "card": "Evaluate Context（A1=1 位亮）" },
+          { "do": "bellPress", "param": "BELL_PRESS", "target": "bell0" },
+          { "do": "mpsFlash", "param": "derived:d14", "target": "ep0Card.MPS 格", "note": "翻新高亮（8）" },
+          { "do": "corridorFly+land+hold+fade", "params": ["FLY_WALK", "CORRIDOR_LAND", "HOLD", "FADE"], "note": "完成事件走走廊" }
+        ],
+        "state": [
+          { "set": "EP0 MPS 更新生效=8", "s1": "§3.2 收尾（p74 步 ix/x）" }
+        ],
+        "flow": [
+          { "from": "Evaluate Context · A1=1", "to": "EP0 MPS 更新生效 → 事件环回执", "route": "printer→ringCmd.slot7→bell0→ringEvt→corridor→eventBox" }
+        ],
+        "panel": "步 ix/x 要点（p74）；Linux 预设本帧变体=BSR=0 补编址（槽 Default→Addressed，注记「驱动不重写 MPS」）；角标「规范建议路径」+「Linux 实路径」对照注记卡（驱动不走此步）",
+        "s1Panel": "§6.3",
+        "physical": "MPS 格翻牌高亮",
+        "variants": { "hs": { "greyOut": true }, "linux": { "play": "BSR=0 补编址变体", "slotLamp": "Default→Addressed", "note": "注记「驱动不重写 MPS」" } },
+        "s2": "§D F8"
+      },
+      {
+        "id": "F9",
+        "step": "8",
+        "title": "读档案",
+        "page": "p74",
+        "camera": "F9",
+        "moves": [
+          { "do": "tdFast", "note": "完整 Device/Configuration 描述符 GET_DESCRIPTOR：三段 TD 快速版沿 EP0 环", "constraint": "不写描述符字节数（S1 未给，不造数）" },
+          { "do": "ticketWest", "note": "回包西行", "param": "WAVE_SPEED" },
+          { "do": "inboxStack", "param": "INBOX_STACK", "target": "inbox", "note": "描述符卡叠入收件匣（叠卡翻摞）" }
+        ],
+        "state": [
+          { "do": "note", "text": "交给 Class Driver 注记" }
+        ],
+        "flow": [
+          { "from": "GET_DESCRIPTOR · 完整描述符", "to": "收件匣 · 交 Class Driver", "route": "ringEp0→cable west→inbox" }
+        ],
+        "panel": "步 8 要点",
+        "physical": "收件匣叠卡翻摞",
+        "s2": "§D F9"
+      },
+      {
+        "id": "F10",
+        "step": "10",
+        "title": "配置",
+        "page": "p74/p77–78",
+        "camera": "F10",
+        "moves": [
+          { "do": "dualFly", "param": "DUAL_FLY", "lanes": [
+            { "card": "Configure Endpoint 命令单（DC=0）", "route": "printer→ringCmd.slot7", "zOffset": 0.8 },
+            { "card": "SET_CONFIGURATION 请求票据", "route": "cable east", "zOffset": 1.2 }
+          ], "note": "双操作同成，航线 z 分层防叠" },
+          { "do": "lampSwitch", "target": "deviceLampRow: Address→Configured（绿）" },
+          { "do": "lampSwitch", "target": "slotLampRow: Addressed→Configured", "sync": true },
+          { "do": "epSlotsAllLit", "target": "ringEp0", "note": "EP 环全槽点亮可调度" }
+        ],
+        "state": [
+          { "set": "双成功后设备 Configured+槽 Configured 同步翻转", "s1": "§1.1 步 10（p74，引文 from Address to Configured）" }
+        ],
+        "plate": { "text": "双操作同成才升级，缺一不可（p74）", "note": "〔承 V1〕" },
+        "flow": [
+          { "from": "Configure Endpoint（DC=0）+SET_CONFIGURATION", "to": "设备 Configured · 槽 Configured", "route": "dualFly 双通道" }
+        ],
+        "panel": "步 10 要点；失败语义注（命令不成功不迁槽态/失败仍发 SET_CONFIGURATION=未定义）；hub/TT 逐层初始化注记卡（p74 Note）",
+        "s1Panel": "§1 支撑面（p78/p85）",
+        "physical": "双票据并行+双灯同步翻转",
+        "s2": "§D F10"
+      },
+      {
+        "id": "F11",
+        "step": "12（完工）",
+        "title": "完工",
+        "page": "p74",
+        "camera": "F11",
+        "moves": [
+          { "do": "ringFlow", "note": "EP0 环持续流动（演示性流转）" },
+          { "do": "waveIdle", "note": "缆方波空闲微光" },
+          { "do": "ringIdleCruise", "param": "IDLE_STEP", "rings": ["ringCmd", "ringEvt", "ringEp0"] },
+          { "do": "lampBreath", "param": "LAMP_BREATH", "note": "全场灯池呼吸" }
+        ],
+        "state": [
+          { "set": "四态灯 Configured 绿亮" },
+          { "set": "铭牌地址 1" }
+        ],
+        "flow": [],
+        "flowNote": "无新增（EP0 环演示性流转）",
+        "panel": "完工要点+自测题（3–5 题 A/B/C+解析+重做，题面全部出自 S1 已核值）",
+        "quiz": { "count": [3, 5], "options": "A/B/C", "pass": "≥4/5", "redo": true, "topics": ["门铃分刻", "BSR 结局", "8 字节仅 FS", "双操作同成", "PSCEG 跳变", "Linux 实路径差异"] },
+        "physical": "全场灯池呼吸+慢巡航",
+        "s2": "§D F11/§K"
+      }
+    ],
+    "tour": {
+      "id": "F12",
+      "note": "自动巡游模式巡回回 F0（票据与灯保留一拍再清，〔承 V1〕），不占底栏工段位",
+      "camera": "F0",
+      "s2": "§D F11 补充"
+    },
+    "branches": {
+      "chips": [
+        { "id": "fullspeed", "label": "全速", "tag": "默认·规范建议路径" },
+        { "id": "hs", "label": "高速" },
+        { "id": "usb3", "label": "USB3" },
+        { "id": "bsr1", "label": "BSR=1 legacy" },
+        { "id": "linux", "label": "Linux 实路径" }
+      ],
+      "overrides": {
+        "fullspeed": { "f6": { "bsr": "0", "badge": "规范建议路径" }, "f7": "play", "f8": "play", "contrastCardAt": ["F7", "F8"] },
+        "hs": { "f7": "greyOut", "f8": "greyOut" },
+        "usb3": { "f1": { "noDisabledFrame": true, "auto": "PED=1/PR=0/PLS=0" } },
+        "bsr1": { "f6": { "bsr": "1", "noTicket": true, "slotLamp": "Enabled→Default" }, "note": "只演单分支结局（槽 Default、禁止 SET_ADDRESS），不冒充 Linux 完整路径" },
+        "linux": {
+          "f4": "不变",
+          "f6": { "bsr": "1", "like": "bsr1", "noteCard": "linux-path" },
+          "f7": { "play": "Default 态通信" },
+          "f8": { "play": "BSR=0 补编址变体", "slotLamp": "Default→Addressed", "noteCard": "linux-f8" }
+        }
+      },
+      "contrastCards": {
+        "fullspeed.f7.f8": { "title": "「Linux 实路径」对照注记卡", "points": ["BSR=1 先通信", "BSR=0 后编址", "不重写 MPS"], "s1": "§6.3" },
+        "linux.f8": { "text": "驱动不重写 EP0 MPS（初值按速度一次写入；FS 初猜 64——xhci-mem.c:1125–1128）；Evaluate Context 不在枚举链（S1 §6.3）", "s1": "§6.3/§7.2 条 4" },
+        "linux.f6.f7": { "title": "「规范建议路径」回看卡", "rule": "对称挂卡" }
+      },
+      "noMixRule": "同一预设内场景动画只演本路径；差异只出现在注记卡文字层；两卡永不合成一张",
+      "s2": "§B.7"
+    }
+  },
+  "interactions": {
+    "decouple": {
+      "stateMachine": "独立状态机（〔承 V2〕X43Lab 形态：纯状态机+setRender 钩子）",
+      "mainLine": "主线播放在动手台打开时照常可用",
+      "score": "判分不写回主线状态",
+      "animChannel": "练习可触发场景动画通道（同一 movers 库）",
+      "entryTab": "lab",
+      "waitCap": "动手台等待按 1/k 折算并封顶 6s",
+      "s2": "§G/§J.1"
+    },
+    "L1": {
+      "id": "L1",
+      "name": "按门铃",
+      "pitch": "一键正确，学「按门铃=开工」",
+      "entry": "动手台第 1 关入口卡片「按门铃」",
+      "camera": "labL1",
+      "guide": "EP0 1 号旋钮呼吸高亮",
+      "inputs": [
+        { "id": "knob1", "kind": "click bell1 或 面板「按下」按钮（双入口同义）", "correct": true },
+        { "id": "knob0", "correct": false, "fail": "这是命令门铃（DB Target=0）。EP0 门铃=DB Target=1——DCI=(端点号×2)+1（p82）" },
+        { "id": "emptySlot", "correct": false, "fail": "空槽没有门铃——每设备槽一只，Slot ID 作索引（p82）" }
+      ],
+      "feedback": { "press": "旋钮压下+回弹（BELL_PRESS）", "anim": "EP0 环示例卡启动一格步进（STEP）", "live": "按门铃=告知 xHC：有新工作", "badge": "门铃上手 ✓" },
+      "s1": "§4.2（p82–83；xhci.h:313–314）"
+    },
+    "L2": {
+      "id": "L2",
+      "name": "组一次控制读",
+      "pitch": "带提示装配：GET_DESCRIPTOR 六步，字段值=S1 §3.2",
+      "mode": "每步即时纠错（错选不推进，V2 先例）；提示=选项高亮+灰字依据",
+      "badge": "控制读三段齐 ✓",
+      "steps": [
+        { "id": "s1", "name": "组请求", "options": [
+          { "field": "bmRequestType", "answer": "80h" },
+          { "field": "bRequest", "answer": "6" },
+          { "field": "wValue", "answer": "0100h" },
+          { "field": "wLength", "answer": "8" },
+          { "field": "wIndex", "fixed": "0", "note": "固定展示" }
+        ], "fail": "p73 现场值——Setup Stage TRB 载荷（S1 §3.2）" },
+        { "id": "s2", "name": "三 TRB 逐件确认", "options": [
+          { "trb": "Setup", "fields": { "TRT": "3", "IDT": "1", "IOC": "0" } },
+          { "trb": "Data", "fields": { "DIR": "'1'", "Len": "8", "CH": "0" } },
+          { "trb": "Status", "fields": { "DIR": "'0'", "Len": "0", "IOC": "1", "Buffer": "0" } }
+        ], "fail": "p73 步 ii/iv/vi 原值（S1 §3.2；控制读 Status 段方向=OUT）" },
+        { "id": "s3", "name": "写环顺序", "options": { "order": ["Setup", "Data", "Status"], "cycleFrom": "当前 PCS=1" }, "fail": "新环生产者循环态=1（S1 §4.3，xhci-mem.c:314–329）" },
+        { "id": "s4", "name": "门铃", "options": [ { "answer": "DB Target=1" }, { "distractor": "DB Target=0" } ], "fail": "按的是 EP0 门铃——命令门铃是 DB Target=0（p83）" },
+        { "id": "s5", "name": "等回执", "action": "点「读取回执」→ 设备回 8 字节+Status 段 Transfer Event（Completion Code=Success）", "fail": "Status 段 IOC=1 才有事件回（p73）；Success 判据=S1 §3.2 收尾（p74）" },
+        { "id": "s6", "name": "取事件+更新 MPS", "options": [ { "field": "新 MPS", "answer": "8" } ], "note": "样例设备 bMaxPacketSize0=8；规范=读 bMaxPacketSize0 更新（p72/p98）", "fail": "p98 Note：回包末字节=bMaxPacketSize0（S1 §3.1）" }
+      ],
+      "gate": "L2 徽章为 L3 入门票（递进门）",
+      "s2": "§G L2/§K"
+    },
+    "L3": {
+      "id": "L3",
+      "name": "值班工程师",
+      "pitch": "自由组装，无提示",
+      "mode": "选项无高亮、无前置提示，提交后统一判分；三任务全对=徽章",
+      "badge": "值班工程师 ✓",
+      "entry": "L2 徽章（入门票）",
+      "tasks": [
+        { "id": "T1", "name": "Enable Slot", "input": ["上哪条环", "按哪个门铃"], "correct": { "ring": "ringCmd", "bell": "DB Target=0" }, "judge": "Enable Slot 是命令——命令环唯一（p68），命令门铃 DB Target=0（p83）", "demo": "结局演示 Slot ID=1 回执（p75）" },
+        { "id": "T2", "name": "BSR 双分支", "options": [
+          { "bsr": "0", "outcome": "xHC 代发 SET_ADDRESS、槽 Enabled→Addressed" },
+          { "bsr": "1", "outcome": "无 SET_ADDRESS、槽 Enabled→Default、提示「通信后需再发 BSR=0 补编址」" }
+        ], "rule": "两分支分别呈现，不混写", "s1": "§6.1 表（p76–77/p97）" },
+        { "id": "T3", "name": "Linux 实路径挑战关", "input": "排序四张动作卡", "cards": ["Enable Slot", "BSR=1 使能 EP0", "读 8 字节", "BSR=0 编址"], "correctOrder": [0, 1, 2, 3], "judge": "正确序=S1 §6.3（hub.c:5056–5061）", "after": "判分后展示对照卡（与全速主线三点差异）" }
+      ],
+      "s2": "§G L3"
+    },
+    "quiz": {
+      "at": "F11 讲解 tab",
+      "count": [3, 5],
+      "options": "A/B/C",
+      "pass": "≥4/5 通过可重做",
+      "entry": "derived:d33（自由进入，不要求 L3 徽章）",
+      "topics": ["门铃分刻", "BSR 结局", "8 字节仅 FS", "双操作同成", "PSCEG 跳变", "Linux 实路径差异"],
+      "questionSource": "S2 未给题面原文——S4/S5 自 S1 对应章节拟题（topics→§4.2/§6.1/§3.1/§1.1 步 10/§2.3/§6.3）",
+      "s2": "§K"
+    },
+    "progression": {
+      "ladder": ["F0 全景认知（零交互）", "工段步进 F1–F11（◀▶/空格/自动巡游）", "分支预设 chips（对比观察）", "试错（F5 抢发编址→Parameter Error 红牌）", "L1 按门铃", "L2 组一次控制读", "L3 值班工程师", "quiz（脱场景回忆）"],
+      "f0Gate": "derived:d33（不设通过门）",
+      "principles": "L1→L3 靠「提示在场与否」单变量加深；分支预设与试错是观看层向操作层的两次过渡；每个判据的规范依据都能指回 S1",
+      "s2": "§K"
+    }
+  },
+  "panel": {
+    "live": { "indicators": ["设备状态", "槽状态", "PLS", "回执 n"], "runtimeStatus": true, "note": "活指标四项常驻 tab 头上方（首用中文注〔承 V2〕）+活文案行（RuntimeStatus，随场景实时变）", "s2": "§H" },
+    "controls": {
+      "speed": { "options": [0.5, 1, 2], "default": 0.5, "note": "宁慢勿快——用户裁定〔承 V2〕" },
+      "holdSlider": { "param": "HOLD_SET", "min": 1.5, "max": 4.0, "default": 2.0 }
+    },
+    "tabs": {
+      "explain": {
+        "title": "讲解",
+        "content": ["工段标题+进度", "正文卡组", "播放控制：▶单步/自动巡游/全线联动运行/⟲复位", "分支预设 chips ×5", "试错按钮（F5 场景下出现）", "自测题（F11）"],
+        "tryError": { "action": "空输入上下文抢发 Address Device", "result": "Parameter Error 红牌+输出上下文卡不动", "s1": "§7.2 条 10（p100）" }
+      },
+      "fields": {
+        "title": "字段与引文",
+        "fieldCards": [
+          { "id": "trbFields", "title": "三 TRB 字段组", "source": "S1 §3.2（p73 逐值）", "rows": "interactions.L2.steps[s2].options 同值" },
+          { "id": "ep0Fields", "title": "EP0 九字段", "source": "S1 §5.1（p76）", "cells": ["Control", "MPS〔样例 8〕", "Max Burst=0", "TR Deq=环首段", "DCS=1", "Interval=0", "MaxPStreams=0", "Mult=0", "CErr=3"] },
+          { "id": "slotStates", "title": "槽状态五行表", "source": "S1 §6.2（Table 4-1，p85–86）", "rows": [
+            ["Disabled", "N/A", "Disabled", "Disabled", "N/A", "Not valid", "Disabled"],
+            ["Enabled", "Default", "Disabled", "Disabled", "0", "Not valid", "Disabled（'0'，与 Disabled 复用）"],
+            ["Default", "Default", "Not Disabled", "Disabled", "0", "Valid", "Default"],
+            ["Addressed", "Address", "Not Disabled", "Disabled", "Assigned", "Valid", "Addressed"],
+            ["Configured", "Configured", "Not Disabled", "Any（脚注 13）", "Assigned", "Valid", "Configured"]
+          ] }
+        ],
+        "quotesSix": { "count": 6, "pages": "p71–76", "rule": "原文对照六条〔承 V1〕——取 S1 §1.1–§5.1 引文原句逐字；S2 未列清单，内容定稿留 S5" },
+        "processPrinciple": "流程原理（三方视角：设备只见 USB 请求与总线事件）",
+        "numericTable": [
+          { "field": "CCS", "values": "0/1" },
+          { "field": "CSC", "values": "0/1" },
+          { "field": "PED", "values": "0/1" },
+          { "field": "PR", "values": "0/1" },
+          { "field": "PLS", "values": "Polling='7'·U0='0'·RxDetect='5'·复位中不显数" },
+          { "field": "DB Target", "values": "0/1" },
+          { "field": "槽态", "values": "Disabled/Enabled/Default/Addressed/Configured（英文+中文注）" },
+          { "field": "地址", "values": "1（示例，xHC 自选牌）" },
+          { "field": "MPS", "values": "样例 FS=8" }
+        ],
+        "numericTableSource": "S1 §8.2"
+      },
+      "lab": { "title": "动手台", "content": ["L1/L2/L3 卡片", "徽章架（已得徽章常亮）", "练习区"], "s2": "§G/§H" },
+      "display": {
+        "title": "显示",
+        "content": ["剖视开关", "标签开关", "粒子开关", "速度选择器", "停留时长滑杆", "「回到工位」（机位复位）", "窄屏紧凑标签说明"],
+        "s2": "§H"
+      }
+    },
+    "narrow": {
+      "breakpointPx": 480,
+      "panel": "初始折叠+半高贴底（〔承 V2〕P2-5 形态）",
+      "compactLabelVisible": ["zone-sw", "zone-hc", "zone-dev", "plate"],
+      "s2": "§H"
+    }
+  },
+  "textureRequests": {
+    "policy": {
+      "generation": "全部程序化生成（Blender 节点+bake）",
+      "export": "PNG——albedo sRGB / normal·roughness·ao Non-Color",
+      "sizes": "hero 面 1024²、次面 512²、小件 256²",
+      "budget": "base64 内嵌预算 ≤+1.5MB；砍序=先小件 normal/ao、后 hero 面",
+      "agingKit": "做旧三件套判据：污渍（grime 噪声斑）、划痕（scratch 各向异性）、磨损（edge wear=curvature 驱动）",
+      "acceptance": { "zoom": "做旧显著性=近景截图可放大〔承 V2 过线判据〕", "deskRowStd": 40, "knotStd": 55, "note": "桌面行亮度标准差 ≥40（V2 机检值），V3 目标节疤处局部 ≥55" },
+      "s2": "§F 通则"
+    },
+    "items": [
+      { "no": 1, "id": "tex01", "material": "mCabinetSteel", "target": "机柜面板钢板", "maps": [ { "type": "albedo", "px": 1024 }, { "type": "roughness", "px": 512 }, { "type": "normal", "px": 512 }, { "type": "ao", "px": 512 } ], "aging": ["水平拉丝", "边缘磨损（格架口/门铃排周圈）", "指纹污渍 3–4 处/1024²", "螺丝点阵"], "guidance": "Noise(scale 6)+ColorRamp→roughness；Voronoi(dist to edge)+baked curvature→edge wear 遮罩；Wave(bands X 向)→拉丝 normal", "s2": "§F#1" },
+      { "no": 2, "id": "tex02", "material": "mRailSteel", "target": "轨道/门架钢", "maps": [ { "type": "albedo", "px": 512 }, { "type": "roughness", "px": 512 } ], "aging": ["纵向划痕（沿轨道 U 向）", "锈斑 2–3 处（暖褐斑）", "吊装接触磨损（横梁顶）"], "guidance": "Noise+Streak Blur（切向拉伸）→划痕；Voronoi 低密度→锈斑 albedo 偏移", "s2": "§F#2" },
+      { "no": 3, "id": "tex03", "material": "mDeskWood", "target": "桌面木", "maps": [ { "type": "albedo", "px": 1024 }, { "type": "roughness", "px": 512 }, { "type": "normal", "px": 512 } ], "aging": ["木纹走向沿 X", "节疤 2 处（V3 加档：节疤心色差 ΔL≥18/255+暗环 2 圈）", "卡座前常用区抛光亮斑（roughness −0.1）"], "guidance": "Wave(bands 6–9，distortion 1.2，沿 X)→albedo/normal；Voronoi F1+半径小→节疤；Noise mask→亮斑 roughness 局部乘 0.85", "s2": "§F#3" },
+      { "no": 4, "id": "tex04", "material": "mDevicePlastic", "target": "设备外壳塑料", "maps": [ { "type": "albedo", "px": 512 }, { "type": "roughness", "px": 512 }, { "type": "normal", "px": 512 } ], "aging": ["细磨砂颗粒", "顶盖斜向划痕 1–2 道", "四角高光磨损"], "guidance": "Noise(高 freq 0.02)→微 normal；scratch=Bezier 曲线 mask+bump；curvature→角部 roughness 降", "s2": "§F#4" },
+      { "no": 5, "id": "tex05", "material": "mCableRubber", "target": "缆皮橡胶", "maps": [ { "type": "albedo", "px": 256, "uv": "管 UV 环向" }, { "type": "roughness", "px": 256 } ], "aging": ["纵向挤出细纹", "灰尘沉积（上侧略哑）"], "guidance": "Wave(环向)→细纹 normal；Gradient(上侧)+Noise→尘 mask", "s2": "§F#5" },
+      { "no": 6, "id": "tex06", "material": "mPlugMetal", "target": "插头金属", "maps": [ { "type": "albedo", "px": 256 }, { "type": "roughness", "px": 256 } ], "aging": ["镀层拉丝", "插拔接触面磨损发亮（roughness −0.08）"], "guidance": "Anisotropy 拉丝；接触区 mask（端子周围）→roughness 乘 0.85", "s2": "§F#6" },
+      { "no": 7, "id": "tex07", "material": "mFloorEpoxy", "target": "地板环氧", "maps": [ { "type": "albedo", "px": 1024, "note": "内画网格线（间距 1.2 wu 换算 UV）" }, { "type": "roughness", "px": 1024, "note": "三处灯池 UV 圆域→roughness 亮斑（局部 0.30）" }, { "type": "ao", "px": 1024 } ], "aging": ["环氧微斑（低对比云纹）", "灯池区磨亮"], "guidance": "Noise(大 scale 1.5)→云纹；网格线=渐变阈值", "s2": "§F#7" },
+      { "no": 8, "id": "tex08", "material": "mCardPaper", "target": "卡纸面", "maps": [ { "type": "albedo", "px": 512, "note": "四款 tint 变体" }, { "type": "roughness", "px": 512 } ], "aging": ["纸纤维噪点", "边角轻卷（normal 边缘压暗）"], "guidance": "Noise(高频低幅)→纤维；边 mask→normal 微凸", "s2": "§F#8" },
+      { "no": 9, "id": "tex09", "material": "mKnobAlu", "target": "旋钮铝", "maps": [ { "type": "albedo", "px": 256 }, { "type": "roughness", "px": 256 }, { "type": "normal", "px": 256 } ], "aging": ["滚花直纹", "指尖磨损亮斑（中心）"], "guidance": "Wave(放射)→滚花 normal；径向渐变→中心 roughness 降", "s2": "§F#9" },
+      { "no": 10, "id": "tex10", "material": "mGridPlastic", "target": "格架塑料", "maps": [ { "type": "albedo", "px": 256, "note": "编号丝印（0..7）" }, { "type": "roughness", "px": 256 } ], "aging": ["编号丝印微磨损", "格口压痕（AO bake）"], "guidance": "文本 bake 丝印+Noise 磨口；格口 AO bake", "s2": "§F#10" },
+      { "no": 11, "id": "tex11", "material": "mLampshade", "target": "灯罩", "maps": [ { "type": "albedo", "px": 256, "note": "灯口红晕（emissive 渐变贴图）" }, { "type": "roughness", "px": 128 } ], "aging": ["表面细尘"], "guidance": "Gradient→emissive ramp；细 Noise→尘", "s2": "§F#11" },
+      { "no": 12, "id": "tex12", "material": "mScreenGlass", "target": "屏面玻璃", "maps": [ { "type": "albedo", "px": 128 }, { "type": "roughness", "px": 128 } ], "aging": ["抗反射微纹理", "一枚指纹（椭圆 mask+roughness 局部变化）"], "guidance": "Noise(极高频低幅)", "s2": "§F#12" }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "x43-s7-remotion-wrap",
+  "private": true,
+  "version": "1.0.0",
+  "description": "S7 Remotion 包装：4.3-3d 课件 12 工段教学演示视频集（片头卡/章节卡/底部字幕/片尾卡 → media/S07-*.mp4）",
+  "scripts": {
+    "render": "node render_all.mjs"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.x",
+    "@remotion/cli": "4.0.x",
+    "@remotion/renderer": "4.0.x",
+    "react": "19.x",
+    "react-dom": "19.x",
+    "remotion": "4.0.x"
+  }
+}

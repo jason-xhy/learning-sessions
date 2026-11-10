@@ -1,9 +1,10 @@
-/* style.css —— 4.3 3D 实验件单主题（deep-dark）。文字对比度 ≥4.5:1；正文 16px。 */
+/* style.css —— V3 4.3 3D 实验件单主题（deep-dark，DSL materials.flat 色板）。
+ * 文字对比度承 S2 §E.6 全对 ≥4.5:1；正文 16px。 */
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1116; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0f14; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  color: #e8e4d8;
+  color: #e8eef7;
 }
 /* 课堂大光标：默认 22px；全屏 34px（SVG data URI，自包含） */
 body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22'><path d='M3 1 L3 17 L7.5 13 L10.5 19.5 L13.5 18 L10.5 11.8 L16.5 11 Z' fill='%23ffffff' stroke='%23222' stroke-width='1.2'/></svg>") 3 1, auto !important; }
@@ -15,13 +16,13 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 /* ---------- 左上标题卡 ---------- */
 #x43Head {
   position: fixed; left: 14px; top: 14px; z-index: 20;
-  background: rgba(14, 19, 25, 0.88); border: 1px solid #2c3540; border-radius: 12px;
+  background: rgba(18, 24, 33, 0.88); border: 1px solid #2c3540; border-radius: 12px;
   padding: 10px 16px 11px; max-width: 430px; backdrop-filter: blur(6px);
 }
 #x43Head .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; color: #d9a860; margin: 0 0 3px; }
-#x43Head h1 { font-size: 20px; line-height: 1.3; margin: 0 0 3px; color: #f3efe4; }
-#x43Head .sub { font-size: 13px; color: #aab4bf; margin: 0 0 4px; line-height: 1.45; }
-#x43Head .specref { font-size: 11.5px; color: #7f8b97; margin: 0; font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+#x43Head h1 { font-size: 20px; line-height: 1.3; margin: 0 0 3px; color: #e8eef7; }
+#x43Head .sub { font-size: 13px; color: #a9b7c9; margin: 0 0 4px; line-height: 1.45; }
+#x43Head .specref { font-size: 11.5px; color: #7f8fa3; margin: 0; font-family: ui-monospace, "SF Mono", Consolas, monospace; }
 #x43Fs {
   position: absolute; right: 10px; top: 10px; border: 1px solid #3a4652; background: #141a21;
   color: #cfd8e0; border-radius: 7px; font-size: 13px; padding: 3px 9px;
@@ -31,15 +32,15 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 /* ---------- 右侧知识面板 ---------- */
 .x43-panel {
   position: fixed; right: 12px; top: 12px; bottom: 92px; width: 404px; z-index: 20;
-  background: rgba(14, 19, 25, 0.92); border: 1px solid #2c3540; border-radius: 14px;
+  background: rgba(18, 24, 33, 0.93); border: 1px solid #2c3540; border-radius: 14px;
   display: flex; flex-direction: column; backdrop-filter: blur(8px);
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
 }
 .x43-phead { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 9px; border-bottom: 1px solid #242d36; }
 .x43-phead-k { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #d9a860; }
-.x43-phead h2 { font-size: 17px; margin: 2px 0 0; color: #f3efe4; }
+.x43-phead h2 { font-size: 17px; margin: 2px 0 0; color: #e8eef7; }
 .x43-ptoggle {
-  border: 1px solid #3a4652; background: transparent; color: #aab4bf; border-radius: 7px;
+  border: 1px solid #3a4652; background: transparent; color: #a9b7c9; border-radius: 7px;
   width: 30px; height: 30px; font-size: 14px;
 }
 .x43-pbody { overflow-y: auto; padding: 11px 14px 16px; scrollbar-width: thin; scrollbar-color: #2c3540 transparent; }
@@ -47,10 +48,10 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 .x43-pbody::-webkit-scrollbar-thumb { background: #2c3540; border-radius: 4px; }
 
 .x43-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 0 0 9px; }
-.x43-m { background: #131922; border: 1px solid #263039; border-radius: 9px; padding: 7px 8px 6px; }
-.x43-m dt { font-size: 11px; color: #93a0ac; margin: 0 0 2px; white-space: nowrap; }
-.x43-m dd { font-size: 14.5px; font-weight: 700; color: #eef0e9; margin: 0; white-space: nowrap; }
-.x43-m dd small { display: block; font-size: 10px; font-weight: 600; color: #93a0ac; line-height: 1.25; }
+.x43-m { background: #10161d; border: 1px solid #263039; border-radius: 9px; padding: 7px 8px 6px; }
+.x43-m dt { font-size: 11px; color: #a9b7c9; margin: 0 0 2px; white-space: nowrap; }
+.x43-m dd { font-size: 14.5px; font-weight: 700; color: #e8eef7; margin: 0; white-space: nowrap; }
+.x43-m dd small { display: block; font-size: 10px; font-weight: 600; color: #a9b7c9; line-height: 1.25; }
 .x43-m.hot { border-color: #b3473c; background: #1d1413; }
 .x43-m.hot dd { color: #ff8a76; }
 .x43-m.hot dd small { color: #c98d80; }
@@ -65,18 +66,21 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
   background: #d9a860; color: #241503; font-weight: 800; font-size: 12.5px;
   border-radius: 999px; padding: 2px 9px;
 }
-.x43-stagename { font-size: 16px; font-weight: 700; color: #f3efe4; }
-.x43-status { margin-left: auto; font-size: 12px; color: #93a0ac; border: 1px solid #333e49; border-radius: 999px; padding: 2px 9px; }
+.x43-stagename { font-size: 15px; font-weight: 700; color: #e8eef7; }
+.x43-status { margin-left: auto; font-size: 12px; color: #a9b7c9; border: 1px solid #333e49; border-radius: 999px; padding: 2px 9px; }
 
 .x43-cards { display: flex; flex-direction: column; gap: 9px; margin-bottom: 11px; }
-.x43-card { background: #121820; border: 1px solid #263039; border-left: 3px solid #3d5a8a; border-radius: 9px; padding: 9px 12px 10px; }
-.x43-card h3 { margin: 0 0 4px; font-size: 13.5px; color: #8fb4ff; }
-.x43-card p { margin: 0; font-size: 16px; line-height: 1.52; color: #dde3da; }
+.x43-card { background: #10161d; border: 1px solid #263039; border-left: 3px solid #33445c; border-radius: 9px; padding: 9px 12px 10px; }
+.x43-card h3 { margin: 0 0 4px; font-size: 13.5px; color: #7c9ff0; }
+.x43-card p { margin: 0; font-size: 15.5px; line-height: 1.52; color: #dde3da; }
+.x43-card.anchor { border-left-color: #86bd7a; }
+.x43-card.anchor h3 { color: #86bd7a; }
+.x43-anchor { color: #7f8fa3; font-size: 12px; font-family: ui-monospace, Consolas, monospace; }
 
-.x43-alarm { background: #241114; border: 1px solid #b3473c; border-radius: 10px; padding: 10px 12px; margin-bottom: 11px; }
-.x43-alarm p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.5; color: #ffc4b8; }
+.x43-alarm { background: #38151b; border: 1px solid #e5484d; border-radius: 10px; padding: 10px 12px; margin-bottom: 11px; }
+.x43-alarm p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.5; color: #ffd9dd; }
 .x43-alarm button {
-  border: 1px solid #b3473c; background: #38171a; color: #ffd9d0; border-radius: 8px;
+  border: 1px solid #e5484d; background: #38151b; color: #ffd9dd; border-radius: 8px;
   padding: 5px 12px; font-size: 13.5px; font-weight: 600;
 }
 .x43-alarm button:hover { background: #4a1d20; }
@@ -90,7 +94,7 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 .x43-ctl button[aria-pressed="true"] { border-color: #d9a860; color: #ffd9a0; background: #1c1a12; }
 
 .x43-sec { margin-bottom: 11px; }
-.x43-sec h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.1em; color: #93a0ac; font-weight: 700; }
+.x43-sec h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.1em; color: #a9b7c9; font-weight: 700; }
 .x43-chips { display: flex; flex-wrap: wrap; gap: 7px; }
 .x43-chip.on { border-color: #d9a860; background: #1c1a12; color: #ffd9a0; }
 .x43-tryerr { margin-top: 8px; }
@@ -101,9 +105,12 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 .x43-fold summary { font-size: 13.5px; font-weight: 700; color: #cfd8e0; cursor: pointer; }
 .x43-fold summary:hover { color: #ffd9a0; }
 .x43-fold[open] summary { margin-bottom: 8px; }
+.x43-slot { display: inline-block; margin-left: 8px; font-size: 10.5px; font-weight: 600; color: #7f8fa3; border: 1px dashed #3a4652; border-radius: 6px; padding: 1px 6px; vertical-align: 1px; }
 .x43-optrow { margin: 7px 0; font-size: 14px; color: #cfd8e0; }
 .x43-optrow input { accent-color: #d9a860; margin-right: 6px; }
+.x43-optrow input[type="range"] { width: 100%; accent-color: #d9a860; }
 .x43-optrow button { font-size: 13px; }
+.x43-narrownote { font-size: 12px; color: #7f8fa3; line-height: 1.5; margin: 8px 0 0; }
 
 .x43-q { border-left: 3px solid #3d4a35; padding: 6px 10px; margin: 0 0 8px; background: #121814; border-radius: 0 8px 8px 0; }
 .x43-q .en { font-size: 12.8px; line-height: 1.5; color: #c3ceda; font-style: italic; }
@@ -111,41 +118,45 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 .x43-q .src { font-size: 11.5px; color: #d9a860; margin-top: 3px; font-family: ui-monospace, Consolas, monospace; }
 
 .x43-field { margin: 0 0 10px; }
-.x43-field h3 { margin: 0 0 6px; font-size: 13px; color: #8fb4ff; }
-.x43-field table { width: 100%; border-collapse: collapse; background: #10151b; border: 1px solid #263039; border-radius: 8px; overflow: hidden; }
-.x43-field th { text-align: left; font-size: 12px; color: #93a0ac; padding: 6px 8px; border-bottom: 1px solid #1d252e; width: 118px; vertical-align: top; font-weight: 600; }
-.x43-field td { font-size: 12.6px; color: #cfe0ff; padding: 6px 8px; border-bottom: 1px solid #1d252e; font-family: ui-monospace, "SF Mono", Consolas, monospace; line-height: 1.5; }
-.x43-field tr:last-child th, .x43-field tr:last-child td { border-bottom: none; }
-.x43-fnote { font-size: 11.5px; color: #93a0ac; margin: 5px 0 0; }
+.x43-field h3 { margin: 0 0 6px; font-size: 13px; color: #7c9ff0; }
+.x43-field table, .x43-num { width: 100%; border-collapse: collapse; background: #10151b; border: 1px solid #263039; border-radius: 8px; overflow: hidden; }
+.x43-field th { text-align: left; font-size: 12px; color: #a9b7c9; padding: 6px 8px; border-bottom: 1px solid #1d252e; width: 118px; vertical-align: top; font-weight: 600; }
+.x43-field td, .x43-num td { font-size: 12.4px; color: #cfe0ff; padding: 6px 8px; border-bottom: 1px solid #1d252e; font-family: ui-monospace, "SF Mono", Consolas, monospace; line-height: 1.5; }
+.x43-num th { text-align: left; font-size: 12px; color: #a9b7c9; padding: 6px 8px; border-bottom: 1px solid #1d252e; width: 96px; font-weight: 600; }
+.x43-field tr:last-child th, .x43-field tr:last-child td, .x43-num tr:last-child td { border-bottom: none; }
+.x43-fnote { font-size: 11.5px; color: #a9b7c9; margin: 5px 0 0; }
 
-.x43-quizq { background: #121820; border: 1px solid #263039; border-radius: 9px; padding: 9px 11px; margin-bottom: 9px; }
-.x43-qt { margin: 0 0 7px; font-size: 14.5px; line-height: 1.45; color: #e8e4d8; }
+.x43-quizq { background: #10161d; border: 1px solid #263039; border-radius: 9px; padding: 9px 11px; margin-bottom: 9px; }
+.x43-qt { margin: 0 0 7px; font-size: 14.5px; line-height: 1.45; color: #e8eef7; }
 .x43-qopts { display: flex; flex-direction: column; gap: 5px; }
 .x43-qp { text-align: left; border: 1px solid #333e49; background: #161d25; color: #d6dee5; border-radius: 8px; padding: 6px 10px; font-size: 13.5px; }
 .x43-qp.ok { border-color: #4e8f43; background: #14231a; color: #b9e3ac; }
-.x43-qp.bad { border-color: #b3473c; background: #241114; color: #ffc4b8; }
+.x43-qp.bad { border-color: #e5484d; background: #38151b; color: #ffd9dd; }
 .x43-qp:disabled { cursor: default; }
 .x43-qwhy { font-size: 12.8px; line-height: 1.5; color: #ffd9a0; margin: 7px 0 0; }
-.x43-qredo { margin-top: 6px; border: 1px solid #3a4652; background: transparent; color: #aab4bf; border-radius: 7px; padding: 3px 10px; font-size: 12.5px; }
+.x43-quizscore { font-size: 14px; font-weight: 700; color: #ffd9a0; margin: 4px 0 6px; }
+.x43-quizscore.pass { color: #b9e3ac; }
 
-/* ---------- 3D 标签 overlay（统一白底；分级=左色条：琥珀=区标 / 灰=部件 / 绿=教学锚） ---------- */
+/* ---------- 3D 标签 overlay（白底浮签+左色条三档 d28：zone 琥珀/part 灰/anchor 绿） ---------- */
 #x43Labels { position: fixed; inset: 0; z-index: 10; pointer-events: none; overflow: hidden; }
 .x43-lb {
   position: absolute; transform: translate(-50%, -130%);
-  background: rgba(250, 249, 244, 0.95); color: #1c2126;
-  font-size: 12.5px; font-weight: 600; line-height: 1.3;
+  background: rgba(255, 255, 255, 0.95); color: #1c2530;
+  font-size: 12px; font-weight: 600; line-height: 1.3;
   padding: 3px 9px; border-radius: 8px; white-space: nowrap;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(28, 33, 38, 0.22); border-left: 3px solid #8d99a6;
+  border: 1px solid rgba(28, 37, 48, 0.22); border-left: 3px solid #6b7684;
 }
-.x43-lb.x43-zone { font-size: 13.5px; font-weight: 800; padding: 4px 11px; border-left-color: #d9a860; }
-.x43-lb.x43-plate { white-space: normal; max-width: 250px; text-align: center; font-size: 12px; border-left-color: #86bd7a; }
+.x43-lb.x43-zone { font-size: 13px; font-weight: 800; padding: 4px 11px; }
+.x43-lb.x43-part { border-left-color: #6b7684; }
+.x43-lb.x43-anchor { border-left-color: #86bd7a; }
+.x43-lb.x43-zone { border-left-color: #d9a860; }
 
 /* ---------- 底部工段条 ---------- */
 .x43-bar {
   position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 20;
   display: flex; align-items: center; gap: 8px;
-  background: rgba(14, 19, 25, 0.92); border: 1px solid #2c3540; border-radius: 14px;
+  background: rgba(18, 24, 33, 0.93); border: 1px solid #2c3540; border-radius: 14px;
   padding: 8px 10px; max-width: calc(100vw - 24px); backdrop-filter: blur(8px);
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
 }
@@ -155,7 +166,7 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 .x43-grp { display: flex; flex-direction: column; gap: 3px; padding: 0 8px; border-right: 1px solid #242d36; border-radius: 8px; }
 .x43-grp:last-child { border-right: none; }
 .x43-grp.grp-on { background: #161d26; }
-.x43-grpname { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; color: #93a0ac; text-align: center; }
+.x43-grpname { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; color: #a9b7c9; text-align: center; }
 .x43-grp.grp-on .x43-grpname { color: #d9a860; }
 .x43-grpbtns { display: flex; gap: 4px; }
 .x43-sbtn {
@@ -163,7 +174,7 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
   border: 1px solid #333e49; background: #141a21; color: #d6dee5;
   border-radius: 8px; padding: 4px 9px; min-width: 62px;
 }
-.x43-sbtn span { font-size: 10px; color: #7f8b97; font-family: ui-monospace, Consolas, monospace; }
+.x43-sbtn span { font-size: 10px; color: #7f8fa3; font-family: ui-monospace, Consolas, monospace; }
 .x43-sbtn strong { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
 .x43-sbtn:hover { border-color: #d9a860; }
 .x43-sbtn.on { border-color: #d9a860; background: #1c1a12; }
@@ -173,17 +184,98 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
 
 /* ---------- Loading 卡 ---------- */
 #x43Loading {
-  position: fixed; inset: 0; z-index: 100; background: #0d1116;
+  position: fixed; inset: 0; z-index: 100; background: #0b0f14;
   display: flex; align-items: center; justify-content: center;
   transition: opacity 0.6s ease;
 }
 #x43Loading.x43-hidden { opacity: 0; pointer-events: none; }
 .x43-loadcard {
-  background: #121820; border: 1px solid #2c3540; border-radius: 14px; padding: 22px 34px;
+  background: #10161d; border: 1px solid #2c3540; border-radius: 14px; padding: 22px 34px;
   text-align: center; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
-.x43-loadcard strong { display: block; font-size: 17px; color: #f3efe4; margin-bottom: 6px; }
+.x43-loadcard strong { display: block; font-size: 17px; color: #e8eef7; margin-bottom: 6px; }
 .x43-loadcard span { font-size: 13px; color: #d9a860; font-family: ui-monospace, Consolas, monospace; }
+
+/* ---------- 面板 tab ---------- */
+.x43-tabs { display: flex; gap: 5px; margin: 0 0 10px; border-bottom: 1px solid #242d36; padding-bottom: 7px; }
+.x43-tab {
+  flex: 1; border: 1px solid #333e49; background: #141a21; color: #a9b7c9;
+  border-radius: 8px; padding: 5px 4px; font-size: 13px; font-weight: 700; white-space: nowrap;
+}
+.x43-tab:hover { border-color: #d9a860; color: #ffd9a0; }
+.x43-tab.on { border-color: #d9a860; background: #1c1a12; color: #ffd9a0; }
+.x43-pane { display: flex; flex-direction: column; gap: 10px; }
+.x43-pane[hidden] { display: none; }
+.x43-fsec h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.1em; color: #a9b7c9; font-weight: 700; }
+.x43-spedrow { display: flex; flex-direction: column; gap: 5px; }
+.x43-spedk { font-size: 12.5px; color: #a9b7c9; line-height: 1.45; }
+
+/* ---------- 动手台（三关） ---------- */
+.x43-labintro { margin: 0; font-size: 13.5px; line-height: 1.55; color: #cfd8e0; background: #10161d; border: 1px solid #263039; border-left: 3px solid #86bd7a; border-radius: 9px; padding: 9px 12px; }
+.x43-labchips { display: flex; flex-wrap: wrap; gap: 7px; }
+.x43-badrack { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12.5px; color: #a9b7c9; margin: 2px 0 6px; }
+.x43-bad { border: 1px solid #333e49; color: #7f8fa3; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; opacity: 0.6; }
+.x43-bad.got { border-color: #4e8f43; background: #14231a; color: #b9e3ac; opacity: 1; }
+.x43-labhead { display: flex; flex-direction: column; gap: 3px; }
+.x43-labname { font-size: 14.5px; font-weight: 800; color: #e8eef7; }
+.x43-labstep { font-size: 12px; color: #d9a860; font-family: ui-monospace, Consolas, monospace; }
+.x43-labdots { display: flex; gap: 5px; margin: 2px 0; }
+.x43-dot { width: 9px; height: 9px; border-radius: 50%; background: #263039; border: 1px solid #3a4652; }
+.x43-dot.on { background: #d9a860; border-color: #d9a860; }
+.x43-dot.done { background: #4e8f43; border-color: #4e8f43; }
+.x43-labp { margin: 0; font-size: 14.5px; line-height: 1.5; color: #dde3da; }
+.x43-labp small { color: #a9b7c9; }
+.x43-labhint { margin: 2px 0 0; font-size: 12px; color: #7f8fa3; }
+.x43-labfix { font-size: 12.5px; color: #cfd8e0; background: #10151b; border: 1px solid #263039; border-radius: 7px; padding: 4px 9px; font-family: ui-monospace, Consolas, monospace; }
+.x43-labfix small { margin-left: 8px; color: #7f8fa3; }
+.x43-labg { display: flex; flex-direction: column; gap: 4px; background: #10161d; border: 1px solid #263039; border-radius: 9px; padding: 8px 10px; margin-bottom: 6px; }
+.x43-labg .k { font-size: 13px; font-weight: 700; color: #7c9ff0; font-family: ui-monospace, Consolas, monospace; }
+.x43-labg .k small { margin-left: 8px; font-weight: 500; color: #a9b7c9; font-family: inherit; }
+.x43-labopts { display: flex; flex-wrap: wrap; gap: 6px; }
+.x43-labopts.big { gap: 8px; }
+.x43-labopt {
+  border: 1px solid #333e49; background: #161d25; color: #d6dee5;
+  border-radius: 8px; padding: 5px 11px; font-size: 13px; font-weight: 600;
+  font-family: ui-monospace, Consolas, monospace;
+}
+.x43-labopt:hover:not(:disabled) { border-color: #d9a860; color: #ffd9a0; }
+.x43-labopt.ok { border-color: #4e8f43; background: #14231a; color: #b9e3ac; }
+.x43-labopt.picked { border-color: #d9a860; background: #1c1a12; color: #ffd9a0; }
+.x43-labopt:disabled { opacity: 0.55; cursor: default; }
+.x43-labcards { display: flex; flex-wrap: wrap; gap: 8px; }
+.x43-labcard {
+  border: 1px dashed #4e8f43; background: #131b16; color: #b9e3ac;
+  border-radius: 10px; padding: 9px 14px; font-size: 13.5px; font-weight: 700;
+}
+.x43-labcard.placed { border-style: solid; background: #14231a; opacity: 0.6; }
+.x43-labring { display: flex; flex-direction: column; gap: 5px; background: #10151b; border: 1px solid #263039; border-radius: 9px; padding: 8px 10px; }
+.x43-labringk { font-size: 11.5px; color: #a9b7c9; font-family: ui-monospace, Consolas, monospace; }
+.x43-labslots { display: flex; gap: 5px; }
+.x43-labslot {
+  width: 52px; height: 40px; border: 1px dashed #3a4652; border-radius: 6px;
+  font-size: 10px; color: #7f8fa3; display: flex; align-items: center; justify-content: center;
+  font-family: ui-monospace, Consolas, monospace; text-align: center; line-height: 1.3;
+}
+.x43-labslot.fill { border-style: solid; border-color: #4e8f43; color: #b9e3ac; background: #14231a; }
+.x43-labwait { margin: 0; font-size: 13.5px; line-height: 1.55; color: #ffd9a0; background: #151a15; border: 1px dashed #3d4a35; border-radius: 8px; padding: 8px 11px; }
+.x43-labwait.done { color: #b9e3ac; border-style: solid; }
+.x43-labspin { display: inline-block; width: 10px; height: 10px; border: 2px solid #d9a860; border-top-color: transparent; border-radius: 50%; margin-left: 8px; vertical-align: -1px; animation: x43spin 0.9s linear infinite; }
+@keyframes x43spin { to { transform: rotate(360deg); } }
+.x43-labmsg { font-size: 13px; line-height: 1.5; color: #ffd9a0; background: #151a15; border: 1px dashed #3d4a35; border-radius: 8px; padding: 7px 10px; margin-top: 6px; }
+.x43-labmsg[data-bad="1"] { color: #ffd9dd; background: #38151b; border-color: #e5484d; }
+.x43-labbadge {
+  display: inline-block; align-self: flex-start; border: 1px solid #4e8f43; background: #14231a;
+  color: #b9e3ac; font-size: 15px; font-weight: 800; border-radius: 999px; padding: 6px 16px;
+}
+.x43-labsum { margin: 0; font-size: 13.5px; line-height: 1.55; color: #dde3da; }
+.x43-labfoot { display: flex; gap: 7px; flex-wrap: wrap; }
+
+/* ---------- S7 演示视频清单（x43Pane-video） ---------- */
+.x43-vrow { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 6px 2px; border-bottom: 1px dashed #223042; font-size: 13px; }
+.x43-vrow:last-child { border-bottom: 0; }
+.x43-vrow a { color: #7c9ff0; text-decoration: none; }
+.x43-vrow a:hover { text-decoration: underline; }
+.x43-vmeta { color: #7f8fa3; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---------- 窄屏 ---------- */
 @media (max-width: 860px) {
@@ -193,11 +285,10 @@ body, body * { cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.or
   .x43-card p { font-size: 14.5px; }
   #x43Head { max-width: 74vw; }
 }
-/* 手机（≤480px）：面板默认收起（JS 同步折叠），展开时半高贴底，保 3D 视口；标签缩字号（部件级由 JS 收起） */
+/* 手机（≤480px）：面板默认收起（JS 同步折叠），展开时半高贴底，保 3D 视口；标签缩字号（紧凑可见集由 JS 控制） */
 @media (max-width: 480px) {
   .x43-lb { font-size: 10.6px; padding: 2px 7px; }
   .x43-lb.x43-zone { font-size: 11.5px; }
-  .x43-lb.x43-plate { font-size: 10.2px; max-width: 200px; }
   .x43-panel { top: auto; bottom: 96px; max-height: 46vh; width: 94vw; right: 3vw; }
   .x43-pbody { max-height: 28vh; }
   #x43Head { max-width: 94vw; padding: 8px 12px 9px; }

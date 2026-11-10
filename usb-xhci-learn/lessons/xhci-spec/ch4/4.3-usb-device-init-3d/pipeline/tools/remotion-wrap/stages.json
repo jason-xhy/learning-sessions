@@ -1,0 +1,152 @@
+[
+ {
+  "id": "F0",
+  "title": "全景 · 车间初见",
+  "page": null,
+  "camera": "F0",
+  "seconds": 9.583,
+  "tend": 0.4,
+  "says": [
+   0
+  ],
+  "frames": 230
+ },
+ {
+  "id": "F1",
+  "title": "插入检测",
+  "page": "p71",
+  "camera": "F1",
+  "seconds": 9.833,
+  "tend": 7.1,
+  "says": [
+   4.8
+  ],
+  "frames": 236
+ },
+ {
+  "id": "F2",
+  "title": "查端口",
+  "page": "p71–72",
+  "camera": "F2",
+  "seconds": 6.333,
+  "tend": 3.3,
+  "says": [
+   0.9,
+   2.1
+  ],
+  "frames": 152
+ },
+ {
+  "id": "F3",
+  "title": "复位完成",
+  "page": "p72",
+  "camera": "F3",
+  "seconds": 7.333,
+  "tend": 4.4,
+  "says": [
+   2
+  ],
+  "frames": 176
+ },
+ {
+  "id": "F4",
+  "title": "取槽",
+  "page": "p72/p75",
+  "camera": "F4",
+  "seconds": 8.833,
+  "tend": 5.9,
+  "says": [
+   3.2,
+   4.9
+  ],
+  "frames": 212
+ },
+ {
+  "id": "F5",
+  "title": "槽初始化",
+  "page": "p75–76",
+  "camera": "F5",
+  "seconds": 9.208,
+  "tend": 6.3,
+  "says": [
+   0.9,
+   1.65,
+   5.1
+  ],
+  "frames": 221
+ },
+ {
+  "id": "F6",
+  "title": "编址",
+  "page": "p72/p76–77/p97",
+  "camera": "F6",
+  "seconds": 11.833,
+  "tend": 9.1,
+  "says": [
+   3.1,
+   6.7
+  ],
+  "frames": 284
+ },
+ {
+  "id": "F7",
+  "title": "问尺寸〔FS 主线〕",
+  "page": "p72–74",
+  "camera": "F7",
+  "seconds": 13.5,
+  "tend": 10.4,
+  "says": [
+   4.3,
+   8
+  ],
+  "frames": 324
+ },
+ {
+  "id": "F8",
+  "title": "更新上下文〔规范建议路径〕",
+  "page": "p74",
+  "camera": "F8",
+  "seconds": 8.167,
+  "tend": 5.2,
+  "says": [
+   2.9
+  ],
+  "frames": 196
+ },
+ {
+  "id": "F9",
+  "title": "读档案",
+  "page": "p74",
+  "camera": "F9",
+  "seconds": 8.542,
+  "tend": 5.8,
+  "says": [
+   3.4
+  ],
+  "frames": 205
+ },
+ {
+  "id": "F10",
+  "title": "配置",
+  "page": "p74/p77–78",
+  "camera": "F10",
+  "seconds": 7.792,
+  "tend": 4.7,
+  "says": [
+   2.3
+  ],
+  "frames": 187
+ },
+ {
+  "id": "F11",
+  "title": "完工",
+  "page": "p74",
+  "camera": "F11",
+  "seconds": 9.833,
+  "tend": 0.6,
+  "says": [
+   0
+  ],
+  "frames": 236
+ }
+]

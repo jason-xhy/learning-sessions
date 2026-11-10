@@ -1,417 +1,373 @@
-/* stages.js —— 12 工段数据（设计档 §5：heeli 工段记录结构 {id,title,camera,metrics,cards,runtime}）
- * 内容唯一取材源：现行 4.3 页 build.mjs（12 帧帧序 / 六条引文 / 示例值 / 分支卡）。
- * 演示样例：FS 设备插 USB2 根端口 1；Slot ID=1 为示例值（xHC 自选，§4.3.2 p75 / §4.6.5 p97）。
- * 每条 steps: [时刻s, 动作名, 参数…]；动作解释器在 main.js。 */
-const X43_META = {
-  eyebrow: "xHCI 规范对照学习 · §4.3",
-  title: "USB 设备初始化 · xHC 启机车间",
-  subtitle: "一台全速（FS）设备插入 USB2 根端口 1，从插入到配置完工的登记全程",
-  specref: "xHCI 1.2b §4.3 USB Device Initialization · p71–80",
-};
+/* stages.js —— V3 工段编译器：timeline.stages（DSL）→ [t,fn,arg] 步序 + 预设/变体 + 面板内容
+ * 时长全部取 X43D（timeline.params，速度模型 /k ×k 贯通）；工段总时长不写死（d31）。
+ * state[]/flow[] 的规范语义值逐字渲染（含 s1 锚）；variants/branches/contrastCards 照 DSL branches。 */
+const X43Stages = (() => {
+  const D = X43D;
+  const DSLST = D.D.timeline.stages;
 
-const X43_GROUPS = [
-  { id: "g0", name: "总览", stages: [0] },
-  { id: "g1", name: "连接", stages: [1, 2, 3] },
-  { id: "g2", name: "登记", stages: [4, 5, 6] },
-  { id: "g3", name: "配置", stages: [7, 8, 9, 10] },
-  { id: "g4", name: "完工", stages: [11] },
-];
+  // 每工段活指标（从 DSL state[] 语义值推导；回执 n=累计到Desk事件卡数）
+  const METRICS = {
+    F0: { dev: "未接", slot: "—", pls: "—", receipts: 0, hot: [] },
+    F1: { dev: "Powered", devNote: "已上电", slot: "—", pls: "7", receipts: 1, hot: ["pls"] },
+    F2: { dev: "Powered", devNote: "已上电", slot: "—", pls: "复位", receipts: 1, hot: ["pls"] },
+    F3: { dev: "Default", devNote: "默认态", slot: "—", pls: "U0", receipts: 2, hot: ["pls", "dev"] },
+    F4: { dev: "Default", devNote: "默认态", slot: "Enabled", slotNote: "已使能", pls: "U0", receipts: 3, hot: ["slot", "receipts"] },
+    F5: { dev: "Default", devNote: "默认态", slot: "Enabled", slotNote: "已使能", pls: "U0", receipts: 3, hot: [] },
+    F6: { dev: "Address", devNote: "已编址", slot: "Addressed", slotNote: "已编址", pls: "U0", receipts: 4, hot: ["dev", "slot"] },
+    F7: { dev: "Address", devNote: "已编址", slot: "Addressed", slotNote: "已编址", pls: "U0", receipts: 5, hot: ["receipts"] },
+    F8: { dev: "Address", devNote: "已编址", slot: "Addressed", slotNote: "已编址", pls: "U0", receipts: 6, hot: ["receipts"] },
+    F9: { dev: "Address", devNote: "已编址", slot: "Addressed", slotNote: "已编址", pls: "U0", receipts: 7, hot: ["receipts"] },
+    F10: { dev: "Configured", devNote: "已配置", slot: "Configured", slotNote: "已配置", pls: "U0", receipts: 8, hot: ["dev", "slot"] },
+    F11: { dev: "Configured", devNote: "已配置", slot: "Configured", slotNote: "已配置", pls: "U0", receipts: 8, hot: ["receipts"] },
+  };
 
-/* 预设 chips（设计档 §5 增补）：语义诚实映射避雷清单——
- * FS=教学全分支；HS/SS 跳过 8 字节读取与 Evaluate Context；USB3 attach 自动 Enabled、无端口复位帧；
- * BSR=1 legacy：先在 Default 态通信、xHC 被禁止发 SET_ADDRESS，通信完成后再用 BSR=0 编址（§4.3.4 p76–77）。 */
-const X43_PRESETS = [
-  { id: "fs", name: "全速设备 · 教学全分支", speed: "FS", mps: "8" },
-  { id: "hs", name: "高速设备", speed: "HS", mps: "64", skip: [7, 8], variant: { 3: "hs" } },
-  { id: "usb3", name: "USB3 设备", speed: "SS", mps: "512", skip: [2, 3, 7, 8], variant: { 1: "usb3" } },
-  { id: "bsr1", name: "BSR=1 legacy", speed: "FS", mps: "8", skip: [], variant: { 6: "bsr1", 10: "bsr1" } },
-];
+  // RuntimeStatus 活文案（逐字出自 DSL state[]/moves 语义）
+  const RUNTIME = {
+    F0: "端口 1 上电待检（PP='1'，Disconnected）——等待设备插入；三环空转慢巡航",
+    F1: "设备滑入 → 插头推入端口 1 → 端口灯亮：Disabled（USB2）· CCS=1 · CSC=1 → PSCEG 0→1 跳变 → 事件卡生成",
+    F2: "驱动读 PORTSC（CCS=1 确认插入）→ 写 PR=1：端口复位开始（注意：读见变化位 ≠ 事件已入环，p292 Note）",
+    F3: "复位完成四信号：PRC=1 · PED=1 · PR=0 · PLS=U0；Port Speed=FS；设备 Powered→Default",
+    F4: "Enable Slot 命令单入命令环 slot 7 → 按 DB Target=0 → 回执 Slot ID=1（示例，xHC 自选）→ 输出上下文挂 DCBAA 1 号格",
+    F5: "Input Context 两页表格卡填格（A0=1·A1=1 / Slot 三格 / EP0 九格）→ EP0 传输环上架（xhci-mem.c:1010）",
+    F6: "Address Device（BSR=0）→ xHC 代发 SET_ADDRESS 东行 → 设备 Default→Address、槽 Enabled→Addressed",
+    F7: "GET_DESCRIPTOR 三 TRB 依次写入 EP0 环（cycle 从 PCS=1 起）→ 按 DB Target=1 → 8 字节回包西行 → bMaxPacketSize0=8 读出",
+    F8: "Evaluate Context（A1=1）→ EP0 MPS 更新生效=8 → 事件环回执",
+    F9: "GET_DESCRIPTOR 完整描述符：三段 TD 快速版 → 回包西行 → 描述符卡叠入收件匣（交给 Class Driver）",
+    F10: "Configure Endpoint 命令 + SET_CONFIGURATION 请求双票据并行（航线 z 分层）——双操作同成才升级（p74）",
+    F11: "管道全通：EP0 环持续流动、缆方波空闲微光、四态灯 Configured 绿亮——初始化完成",
+  };
 
-const X43_CAM0 = { pos: [6.8, 12, 39], tgt: [6.8, 3.0, 0] };
+  const bell = (target) => ({ do: "bellPress", target: target === 1 ? "bell1" : "bell0" });
 
-const X43_STAGES = [
-  {
-    id: "F0", n: 0, group: 0, title: "总览", dur: 6,
-    camera: { pos: [6.8, 12, 39], tgt: [6.8, 3.0, 0] },
-    metrics: { dev: "未接", slot: "—", pls: "—", receipts: 0, hot: [] },
-    runtime: "端口 1 上电待检（PP=1）——等待设备插入",
-    cards: [
-      { h3: "三方一台", p: "左区文书台是 xHCI 驱动（规范原文称 system software，系统软件）：写寄存器、发命令单、收事件回执；中区 xHC 总控台执行命令、维护端口与槽；右区设备试验盒从头到尾只看见 USB 请求与总线事件——槽、环、上下文对它不可见。" },
-      { h3: "演示样例", p: "FS 设备插入 USB2 根端口 1（教学最全分支：必须走端口复位，也必走 8 字节描述符读取）。Slot ID=1 与新地址 1 为示例值，实际由 xHC 自选。" },
-      { h3: "主线一览", p: "检出插入 → 软件做端口复位 → Enable Slot 取槽 → 填输入上下文 → Address Device 编址 → 读描述符 → Configure Endpoint 与 SET_CONFIGURATION 双操作同成。用底栏工段条或「单步」逐段走。" },
+  // 变体步序（branches.overrides 的语义展开；数值全部出自 DSL/S1 已核值）
+  const VARIANT_STEPS = {
+    usb3_F1: () => [
+      [0.4, "deviceSlideIn", {}],
+      [2.9, "plugPush", {}],
+      [3.9, "portLight", {}],
+      [4.5, "portFlags", { ccs: 1, pedUsb3: 1 }],
+      [4.5, "pls", { v: "0" }],
+      [4.5, "speed", { v: "SS" }],
+      [4.5, "lampSwitch", { target: "deviceLampRow: →Default", to: "Default" }],
+      [5.0, "say", { t: "USB3 端口 Polling→Enabled 自动（PED=1 · PR=0 · PLS=0）——无 Disabled 帧、无软件复位" }],
+      [5.4, "evCard", { label: "端口状态变化事件", toDesk: true, from: "PORTSC · PSCEG 0→1", to: "事件环 → 驱动读取" }],
+      [6.0, "irqFlash", {}],
+      [7.0, "done", {}],
     ],
-    steps: [],
-  },
-  {
-    id: "F1", n: 1, group: 1, title: "插入检测", dur: 9,
-    camera: { pos: [7.6, 4.8, 14.2], tgt: [10.4, 2.2, 0.5] },
-    metrics: { dev: "Powered", devNote: "已上电", slot: "—", pls: "7", receipts: 1, hot: ["pls"] },
-    runtime: "设备插入端口 1 → 端口进 Disabled（USB2）→ CCS=1 · CSC=1 → 端口状态变化事件发出",
-    cards: [
-      { h3: "xHC 检出插入", p: "USB2 协议端口收到设备后前进到 Disabled 态（USB2 规范的 Disabled 态），同时把 Current Connect Status（CCS）与 Connect Status Change（CSC）置 1。注意：USB3 端口与 USB2 端口的 Disabled 态含义不同——USB3 指 DSPORT.Disabled，涉及时分开表述。" },
-      { h3: "事件怎么回家", p: "CSC 置 1 若造成 PSCEG（Port Status Change Event Generation）0→1 跳变，xHC 才生成一个端口状态变化事件——是跳变触发事件，不是状态位等于 1 就有事件。事件卡沿事件环传送带流向文书台的事件匣。" },
-      { h3: "设备看见什么", p: "设备这一侧只感到上电（Powered），别无所见——插入检测是 xHC 与端口电气层的事。" },
-    ],
-    steps: [
-      [0.4, "cablePlug", {}],
-      [1.2, "say", { t: "设备插入：端口 1 电气检测中…" }],
-      [2.2, "portFlags", { ccs: 1, csc: 1 }],
-      [2.2, "pls", { v: "7" }],
-      [2.2, "devLamp", { v: "powered" }],
-      [3.2, "say", { t: "CCS=1 · CSC=1 已点亮；PSCEG 0→1 → 端口状态变化事件入事件环" }],
-      [3.6, "evCard", { label: "端口状态变化事件", toDesk: true }],
-      [6.8, "done", {}],
-    ],
-  },
-  {
-    id: "F2", n: 2, group: 1, title: "查端口", dur: 8,
-    camera: { pos: [1.2, 7.6, 10.5], tgt: [-0.6, 6.6, -1.4] },
-    metrics: { dev: "Powered", devNote: "已上电", slot: "—", pls: "复位", receipts: 1, hot: ["pls"] },
-    runtime: "软件读 PORTSC（CCS=1）→ 写 PR=1 发起端口复位",
-    cards: [
-      { h3: "读 PORTSC", p: "驱动读事件环拿到端口状态变化事件，按 Port ID 找到端口 1，再读它的 PORTSC 寄存器：CCS=1 确认是插入而不是拔出。" },
-      { h3: "写 PR=1", p: "USB2 端口必须由软件发起端口复位才能到 Enabled——这与 USB3 端口 attach 成功自动到 Enabled 是两条路径，不得混同。驱动向 PORTSC 的 PR 位写 1，复位脉冲发向端口。" },
-      { h3: "复位期间", p: "PORTSC 的 PLS 显示「复位」是文字提示不是数值——规范未给 USB2 复位期间的 PLS 数值，此处不造数。" },
-    ],
-    steps: [
-      [0.4, "portRead", {}],
-      [1.6, "say", { t: "读 PORTSC：CCS=1，确认为插入事件" }],
-      [2.6, "regWrite", {}],
-      [3.4, "portFlags", { pr: 1 }],
-      [3.4, "pls", { v: "复位" }],
-      [4.2, "say", { t: "写 PR=1：端口复位进行中（USB2 必须软件复位）" }],
-      [4.6, "resetPulse", {}],
+    bsr1_F6: () => [
+      [0.5, "bsrTurn", { to: "1" }],
+      [1.4, "cmdFly", { card: "Address Device · BSR=1" }],
+      [3.1, "bellPress", { target: "bell0" }],
+      [3.6, "say", { t: "Address Device（BSR=1）：EP0 先启用，xHC 被禁止发 SET_ADDRESS" }],
+      [4.0, "evCard", { label: "命令完成事件 · Success", toDesk: true, from: "xHC 命令完成", to: "事件环 → 驱动读取" }],
+      [4.6, "irqFlash", {}],
+      [5.0, "lampSwitch", { target: "slotLampRow: Enabled→Default", to: "Default" }],
+      [5.6, "say", { t: "槽 Enabled→Default（BSR=1 单分支结局）——通信后需再发 BSR=0 补编址（p76–77）" }],
       [7.2, "done", {}],
     ],
-  },
-  {
-    id: "F3", n: 3, group: 1, title: "端口复位完成", dur: 9,
-    camera: { pos: [4.6, 6.4, 13], tgt: [3.2, 3.6, 0.6] },
-    metrics: { dev: "Default", devNote: "默认态", slot: "—", pls: "U0", receipts: 2, hot: ["pls", "dev"] },
-    runtime: "复位完成：PRC=1 · PED=1 · PR=0 · PLS=U0；Port Speed=FS；设备 Powered → Default",
-    cards: [
-      { h3: "四信号判据", p: "复位完成是四个信号的组合：PRC=1、PED=1、PR=0、PLS=U0（'0'）——一个不能少。PRC 置 1 造成 PSCEG 0→1 跳变，再产生一个端口状态变化事件回到驱动。" },
-      { h3: "速度自报", p: "成功复位后，PORTSC 的 Port Speed 字段指示所接设备的速度——这里读出 FS。演示样例的 MPS 由此定为 8。" },
-      { h3: "设备进入 Default", p: "复位把 USB2 设备送入 Default 态，备好收 SET_ADDRESS——设备灯从 Powered 跳到 Default。" },
+    linux_F8: () => [
+      [0.5, "bsrTurn", { to: "0" }],
+      [1.4, "cmdFly", { card: "Address Device · BSR=0 补编址" }],
+      [3.1, "bellPress", { target: "bell0" }],
+      [3.6, "ticketEast", { text: "SET_ADDRESS · 地址=1（xHC 代发）" }],
+      [5.2, "domeColor", { emissive: 1.9 }],
+      [5.8, "plateFlip", {}],
+      [6.6, "flipHold", {}],
+      [7.0, "lampSwitch", { target: "deviceLampRow: Default→Address", to: "Address" }],
+      [7.0, "lampSwitch", { target: "slotLampRow: Default→Addressed", to: "Addressed" }],
+      [7.4, "say", { t: "BSR=0 补编址完成：槽 Default→Addressed。驱动不重写 EP0 MPS（初值按速度一次写入——xhci-mem.c:1125–1128）" }],
+      [7.8, "evCard", { label: "命令完成事件 · Success", toDesk: true, from: "xHC 命令完成", to: "事件环 → 驱动读取" }],
+      [8.4, "irqFlash", {}],
+      [10.6, "done", {}],
     ],
-    steps: [
-      [0.4, "portFlags", { pr: 0, prc: 1, ped: 1 }],
-      [0.4, "pls", { v: "U0" }],
-      [0.4, "speed", { v: "FS" }],
-      [1.2, "devLamp", { v: "default" }],
-      [2.0, "say", { t: "复位完成四信号：PRC=1 · PED=1 · PR=0 · PLS=U0；Port Speed=FS" }],
-      [2.6, "evCard", { label: "端口状态变化事件（PRC）", toDesk: true }],
-      [6.4, "done", {}],
-    ],
-  },
-  {
-    id: "F4", n: 4, group: 2, title: "取槽", dur: 11,
-    camera: { pos: [-2.2, 6.0, 10.8], tgt: [-1.4, 3.7, -0.2] },
-    metrics: { dev: "Default", devNote: "默认态", slot: "Enabled", slotNote: "已使能", pls: "U0", receipts: 3, hot: ["slot", "receipts"] },
-    runtime: "Enable Slot 命令单入命令环 → 按门铃 0 → 回执 Slot ID=1 → DCBAA 1 号格挂输出上下文",
-    cards: [
-      { h3: "一条命令环", p: "全规范只有一条命令环。驱动把 Enable Slot 命令单放上命令环，写门铃寄存器 0（DB Target=0，Host Controller Command）——它与 EP0 门铃（DB Target=1）语义不同，本台分开刻。" },
-      { h3: "Slot ID=1（示例）", p: "端口到 Enabled 后，软件用 Enable Slot 命令为设备取一个设备槽；命令完成事件带回 Slot ID，由 xHC 自选——本演示固定示例值 1。成功后槽进 Enabled 态。" },
-      { h3: "DCBAA 表项谁装载", p: "输出上下文卡由软件挂进设备上下文基地址数组（DCBAA）的 1 号格——表项由软件装载，xHC 只读。" },
-    ],
-    steps: [
-      [0.5, "slip", { label: "Enable Slot" }],
-      [2.2, "bell0", {}],
-      [2.8, "say", { t: "Enable Slot 命令单沿命令环送达，门铃 0（DB Target=0）按下" }],
-      [4.4, "evCard", { label: "命令完成事件 · Slot ID=1", toDesk: true }],
-      [6.6, "slotLamp", { v: "Enabled" }],
-      [7.4, "outctxFly", {}],
-      [9.4, "say", { t: "回执 Slot ID=1（xHC 自选，示例值）；输出上下文已挂 DCBAA 1 号格（软件装载）" }],
-      [10.4, "done", {}],
-    ],
-  },
-  {
-    id: "F5", n: 5, group: 2, title: "槽初始化", dur: 12,
-    camera: { pos: [-10.2, 5.2, 9.8], tgt: [-13.4, 3.4, 0.8] },
-    metrics: { dev: "Default", devNote: "默认态", slot: "Enabled", slotNote: "已使能", pls: "U0", receipts: 3, hot: [] },
-    runtime: "填输入上下文（A0=1 · A1=1）→ EP0 传输环上架 → 备好 Address Device 命令单",
-    cards: [
-      { h3: "输入上下文置位", p: "软件分配输入上下文并全部清 0，再把输入控制上下文的 A0 与 A1 同时置 1——Slot Context 与 EP0 Context 都受本命令影响。" },
-      { h3: "Slot Context 填格", p: "Root Hub Port Number=1（端口号）；Route String=0（根端口直连，Route String 不含端口号）；Context Entries=1。" },
-      { h3: "EP0 Context 填格", p: "EP Type=Control；Max Packet Size=按端口速度的默认值（FS=8）；Max Burst=0；TR Dequeue Pointer=EP0 传输环首段；DCS=1；Interval=0；MaxPStreams=0；Mult=0；CErr=3。EP0 传输环上架后就绪灯亮。" },
-      { h3: "试错入口", p: "此刻数据结构已备好。想看错误路径？点下方「试错：不填上下文直接编址」——用一张空表格卡抢发 Address Device，看 xHC 怎么回执。" },
-    ],
-    steps: [
-      [0.6, "formFill", { n: 2 }],
-      [1.8, "say", { t: "输入控制上下文：A0=1 · A1=1（Slot 与 EP0 同时受影响）" }],
-      [2.6, "formFill", { n: 5 }],
-      [4.2, "formFill", { n: 9 }],
-      [5.8, "ep0Ready", {}],
-      [6.6, "say", { t: "EP0 传输环上架，就绪灯亮；输入上下文九格填毕" }],
-      [7.4, "slipPrep", { label: "Address Device" }],
-      [11.4, "done", {}],
-    ],
-  },
-  {
-    id: "F6", n: 6, group: 2, title: "编址", dur: 12,
-    camera: { pos: [8.2, 4.4, 13.6], tgt: [7.6, 2.4, 0.6] },
-    metrics: { dev: "Address", devNote: "已编址", slot: "Addressed", slotNote: "已编址", pls: "U0", receipts: 4, hot: ["dev", "slot"] },
-    runtime: "Address Device（BSR=0）→ xHC 在总线上代发 SET_ADDRESS → 设备 Default→Address、槽 Enabled→Addressed",
-    cards: [
-      { h3: "BSR=0 主线", p: "软件发 Address Device 命令并把 BSR（Block Set Address Request）标志清 0——这是主线编址。成功后设备槽从 Enabled 进 Addressed 态。" },
-      { h3: "谁在发请求", p: "在总线上代发 SET_ADDRESS（新地址=1，示例值）的是 xHC，不是驱动——设备第一次收到 USB 请求，票据沿总线缆走到试验盒。" },
-      { h3: "设备视角", p: "设备只看见一张 SET_ADDRESS 请求票据与自己的状态灯变化（Default→Address）；命令、槽、上下文它一概看不见。" },
-    ],
-    steps: [
-      [0.5, "slip", { label: "Address Device · BSR=0" }],
-      [2.4, "bell0", {}],
-      [3.0, "say", { t: "Address Device（BSR=0）入命令环，门铃 0 按下" }],
-      [4.2, "ticketOut", { text: "SET_ADDRESS · 地址=1" }],
-      [6.2, "devLamp", { v: "address" }],
-      [6.6, "slotLamp", { v: "Addressed" }],
-      [7.2, "evCard", { label: "命令完成事件", toDesk: true }],
-      [8.4, "say", { t: "SET_ADDRESS 已送达：设备 Default→Address；槽 Enabled→Addressed" }],
-      [11.4, "done", {}],
-    ],
-  },
-  {
-    id: "F7", n: 7, group: 3, title: "问尺寸", dur: 13,
-    camera: { pos: [4.5, 5.6, 12.8], tgt: [3.0, 3.4, 0.4] },
-    metrics: { dev: "Address", devNote: "已编址", slot: "Addressed", slotNote: "已编址", pls: "U0", receipts: 5, hot: ["receipts"] },
-    runtime: "GET_DESCRIPTOR 前 8 字节：Setup/Data/Status 三 TRB 入 EP0 环 → 门铃 1 → 回 8 字节票据",
-    cards: [
-      { h3: "仅 FS 必走", p: "LS/HS/SS 设备的 Default Control Endpoint 只允许 8/64/512 字节包，默认值已定，这一步可跳过；FS 设备必须先读 USB Device Descriptor 前 8 字节取 bMaxPacketSize0。" },
-      { h3: "三 TRB 入环", p: "控制读需要 Setup Stage TD、Data Stage TD、Status Stage TD 依次入 EP0 传输环，然后按门铃 1（DB Target=1，EP0）——与命令门铃 0 语义不同。" },
-      { h3: "读回什么", p: "试验盒回一张 8 字节描述符票据：bMaxPacketSize0=8。字段逐值见面板「规范字段卡」折叠节（Setup/Data/Status 三 TRB 字段组）。" },
-    ],
-    steps: [
-      [0.5, "trbPlace", { n: 1, label: "Setup" }],
-      [1.6, "trbPlace", { n: 2, label: "Data" }],
-      [2.6, "trbPlace", { n: 3, label: "Status" }],
-      [3.4, "bell1", {}],
-      [4.0, "say", { t: "三 TRB 入 EP0 传输环，按门铃 1（DB Target=1 · EP0）" }],
-      [4.8, "ticketOut", { text: "GET_DESCRIPTOR(Device) · 前 8 字节" }],
-      [7.4, "ticketIn", { text: "8 字节 · bMaxPacketSize0=8" }],
-      [9.6, "evCard", { label: "传输事件", toDesk: true }],
-      [10.6, "say", { t: "8 字节描述符回执：bMaxPacketSize0=8（仅 FS 必走此步）" }],
-      [11.9, "trbClear", {}],
-      [12.4, "done", {}],
-    ],
-  },
-  {
-    id: "F8", n: 8, group: 3, title: "更新上下文", dur: 9,
-    camera: { pos: [-3.2, 5.0, 9.8], tgt: [-0.6, 3.2, 0] },
-    metrics: { dev: "Address", devNote: "已编址", slot: "Addressed", slotNote: "已编址", pls: "U0", receipts: 6, hot: ["receipts"] },
-    runtime: "Evaluate Context（A1=1）→ EP0 Max Packet Size 更新生效",
-    cards: [
-      { h3: "回读与更新", p: "驱动回读 8 字节里的 bMaxPacketSize0=8——与端口速度默认值一致；若不同，就把新值填进输入上下文（A1=1，只影响 EP0 Context），用 Evaluate Context 命令告知 xHC。" },
-      { h3: "生效即完成", p: "命令成功后 EP0 的 Max Packet Size 更新生效——上下文是软件与 xHC 之间的数据结构，设备不知道也不需要知道。" },
-    ],
-    steps: [
-      [0.5, "slip", { label: "Evaluate Context" }],
-      [2.2, "bell0", {}],
-      [3.0, "say", { t: "Evaluate Context（A1=1）：EP0 Max Packet Size 更新生效" }],
-      [4.0, "evCard", { label: "命令完成事件", toDesk: true }],
-      [6.6, "mps", { v: "8" }],
-      [7.4, "done", {}],
-    ],
-  },
-  {
-    id: "F9", n: 9, group: 3, title: "读档案", dur: 11,
-    camera: { pos: [9.6, 4.2, 12.8], tgt: [9.8, 2.4, 0.6] },
-    metrics: { dev: "Address", devNote: "已编址", slot: "Addressed", slotNote: "已编址", pls: "U0", receipts: 7, hot: ["receipts"] },
-    runtime: "GET_DESCRIPTOR 读完整 Device/Configuration Descriptor → 描述符入收件匣",
-    cards: [
-      { h3: "读全描述符", p: "拿准 EP0 包长后，驱动再发 GET_DESCRIPTOR 读完整 Device Descriptor 与 Configuration Descriptor——设备配置全貌由此到手。" },
-      { h3: "收件匣", p: "描述符数据沿总线缆回到 xHC，再作为传输事件回到驱动，落入文书台的描述符收件匣——下一工段配置参数就从这里取。" },
-    ],
-    steps: [
-      [0.5, "ticketOut", { text: "GET_DESCRIPTOR(Device·Config)" }],
-      [3.0, "ticketIn", { text: "完整描述符数据" }],
-      [5.2, "descTray", {}],
-      [5.6, "evCard", { label: "传输事件", toDesk: true }],
-      [7.2, "say", { t: "完整描述符入收件匣——配置参数备齐" }],
-      [10.4, "done", {}],
-    ],
-  },
-  {
-    id: "F10", n: 10, group: 3, title: "配置", dur: 13,
-    camera: { pos: [3.0, 6.0, 14.6], tgt: [2.6, 3.0, 0.4] },
-    metrics: { dev: "Configured", devNote: "已配置", slot: "Configured", slotNote: "已配置", pls: "U0", receipts: 9, hot: ["dev", "slot"] },
-    runtime: "Configure Endpoint 命令 + SET_CONFIGURATION 请求：双操作同成 → 设备与槽同时进 Configured",
-    cards: [
-      { h3: "双操作同成", p: "驱动发出 Configure Endpoint 命令（配置各 Endpoint 的传输环与上下文），并向设备发 SET_CONFIGURATION 请求——两个操作都成功，设备才从 Address 进 Configured、槽从 Addressed 进 Configured。缺一不可。" },
-      { h3: "两条通路", p: "命令走命令环与门铃 0（软件与 xHC 的管理通道）；SET_CONFIGURATION 是 USB 请求，由 xHC 在总线上代发，沿总线缆走到设备——两条通路在同一段时间轴上推进。" },
-      { h3: "hub 拓扑提醒", p: "多级拓扑必须从根集线器起，把每一层的 hub 与 TT 完全初始化后再处理下一层（p74 Note）——本台只演示根端口直连设备。" },
-    ],
-    steps: [
-      [0.5, "slip", { label: "Configure Endpoint" }],
-      [2.2, "bell0", {}],
-      [2.8, "say", { t: "Configure Endpoint 命令入命令环；SET_CONFIGURATION 请求并行上路" }],
-      [3.2, "ticketOut", { text: "SET_CONFIGURATION" }],
-      [5.6, "devLamp", { v: "configured" }],
-      [6.0, "slotLamp", { v: "Configured" }],
-      [6.6, "evCard", { label: "命令完成 + 传输事件", toDesk: true }],
-      [8.0, "say", { t: "双操作同成：设备 Address→Configured；槽 Addressed→Configured" }],
-      [12.4, "done", {}],
-    ],
-  },
-  {
-    id: "F11", n: 11, group: 4, title: "完工巡检", dur: 8,
-    camera: { pos: [6.8, 12, 39], tgt: [6.8, 3.0, 0] },
-    metrics: { dev: "Configured", devNote: "已配置", slot: "Configured", slotNote: "已配置", pls: "U0", receipts: 9, hot: ["receipts"] },
-    runtime: "各 Endpoint 传输环可调度 TD，管道全通——初始化完成",
-    cards: [
-      { h3: "管道全通", p: "设备 Configured、槽 Configured、各 Endpoint 传输环可调度传输描述符（TD）——上层驱动随后就能按配置打开接口、收发数据。" },
-      { h3: "巡回清点", p: "回执 9 张：端口状态变化事件 2 张、命令完成事件 4 张、传输事件 3 张。试一试上方四个分支预设，或按 ⟲ 复位从头再来。" },
-      { h3: "分支速查", p: "USB3 端口 attach 成功自动 Enabled（无端口复位帧）；BSR=1 legacy 分支先在 Default 态通信再编址；hub/TT 逐层初始化要求见 p74 Note——三张分支注记在「流程原理」折叠节。" },
-    ],
-    steps: [
-      [0.6, "epLights", {}],
-      [1.4, "say", { t: "初始化完成：设备 Configured · 槽 Configured · 回执 9 张" }],
-      [7.4, "done", {}],
-    ],
-  },
-];
+  };
 
-/* 预设变体卡（覆盖同名工段的正文/动作增补；不发明新数值） */
-const X43_VARIANTS = {
-  usb3: {
-    1: {
-      metrics: { dev: "Default", devNote: "默认态", slot: "—", pls: "U0", receipts: 1, hot: ["pls"] },
-      runtime: "USB3 设备插入端口 1 → Polling 成功自动 Enabled（PED=1 · PR=0 · PLS=0）",
-      cards: [
-        { h3: "USB3：自动 Enabled", p: "USB3 协议端口插入后进入 Polling，轮询成功自动前进到 Enabled（PED=1、PR=0、PLS=0），失败回 Disconnected——与 USB2 必须软件复位是两条路径。" },
-        { h3: "Disabled 态分开表述", p: "两族的 Disabled 态不同义：USB3 指 DSPORT.Disabled（USB3 规范图 10-9），USB2 指 USB2 规范 Disabled 态（图 11-10）。" },
+  // 主线步序编译（12 工段；时长=X43D.base）
+  function compileSteps(id) {
+    const B = (p) => D.base(p);
+    let t = 0;
+    const steps = [];
+    const push = (fn, arg) => steps.push([Math.round(t * 100) / 100, fn, arg || {}]);
+    const adv = (dt) => { t += dt; };
+    const say = (tt) => push("say", { t: tt });
+
+    if (id === "F0") {
+      push("waveIdle", {}); push("ringIdleCruise", {}); push("dmaBeamIdle", {}); push("lampBreath", {});
+      say("三区三方同场：文书台（驱动）· 总控台（xHC）· 试验盒（设备）；三环慢巡航，缆方波空闲微光");
+      adv(0.4); push("done", {});
+      return steps;
+    }
+    if (id === "F1") {
+      adv(0.4); push("deviceSlideIn", {}); adv(B("DEV_SLIDE_IN"));
+      push("plugPush", {}); adv(B("PLUG_PUSH"));
+      push("portLight", {}); adv(B("PORT_LIGHT"));
+      push("triggerPull", {}); adv(B("TRIGGER_PULL"));
+      push("portFlags", { ccs: 1, csc: 1 }); push("pls", { v: "7" });
+      push("lampSwitch", { target: "deviceLampRow: →Powered", to: "Powered" });
+      say("插头到位：端口 1 → Disabled（USB2）· CCS=1 · CSC=1；PSCEG 0→1 跳变才产生事件（p71/p292）");
+      adv(0.5);
+      push("evCard", { label: "端口状态变化事件", toDesk: true, from: "PORTSC · PSCEG 0→1 跳变（p71）", to: "事件环 → 驱动读取 · Port Status Change Event" });
+      adv(0.4); push("irqFlash", {});
+      adv(1.4); push("done", {});
+      return steps;
+    }
+    if (id === "F2") {
+      adv(0.4); push("lineFlash", {}); adv(B("LINE_FLASH"));
+      say("驱动读 PORTSC：CCS=1 确认插入（读见变化位 ≠ 事件已入环——p292 Note 同步性警告）");
+      adv(0.6); push("buttonPress", {}); adv(B("RESET_PRESS"));
+      push("portFlags", { pr: 1 }); push("pls", { v: "复位" });
+      say("软件写 PR=1：端口复位开始（p75 §4.3.1 步 1）；PLS 屏显「复位」文字非数值（规范未给，不造数）");
+      adv(1.2); push("done", {});
+      return steps;
+    }
+    if (id === "F3") {
+      adv(0.4); push("breathe", {}); adv(0.2);
+      push("signalQuad", { order: ["PRC=1", "PED=1", "PR=0", "PLS=U0"] }); adv(B("SIG_INTERVAL") * 4);
+      push("speed", { v: "FS" });
+      push("lampSwitch", { target: "deviceLampRow: Powered→Default", to: "Default" });
+      say("复位完成四信号：PRC=1 · PED=1 · PR=0 · PLS=U0（一个不能少）；Port Speed=FS；复位把设备送入 Default 态（p72）");
+      adv(0.4);
+      push("evCard", { label: "端口状态变化事件（PRC）", toDesk: true, from: "复位完成 · PSCEG 0→1", to: "事件环 → 驱动读取 · PRC=1" });
+      adv(0.4); push("irqFlash", {});
+      adv(1.6); push("done", {});
+      return steps;
+    }
+    if (id === "F4") {
+      adv(0.5); push("cmdFly", { card: "Enable Slot" }); adv(B("CMD_FLY"));
+      push("bellPress", { target: "bell0" }); adv(B("BELL_PRESS"));
+      push("drawerPick", {}); adv(B("DRAWER_PICK"));
+      say("Enable Slot 命令单入环 slot 7 → 按 DB Target=0（命令门铃）→ xHC 抽空白槽卡");
+      adv(0.3);
+      push("evCard", { label: "命令完成事件 · Slot ID=1", toDesk: true, from: "xHC · 自选 Slot ID=1（p75）", to: "事件环 → 驱动读取" });
+      adv(0.4); push("irqFlash", {});
+      push("gridHang", {}); adv(B("GRID_HANG"));
+      push("lampSwitch", { target: "slotLampRow: Disabled→Enabled（双色灯切芯）", to: "Enabled" });
+      push("dcbaaWindowOn", {});
+      say("回执 Slot ID=1（示例值）；输出上下文卡飞挂 DCBAA 1 号格——表项由软件装载（xHC 只读，p76 步 7）");
+      adv(1.0); push("done", {});
+      return steps;
+    }
+    if (id === "F5") {
+      adv(0.5); push("tickCheck", { target: "inputCtx.A0/A1" }); adv(B("TICK_CHECK"));
+      say("输入控制上下文 A0=1 · A1=1（Slot 与 EP0 同时受影响，p75–76）");
+      for (let i = 0; i < 3; i++) { push("cellFill", { target: "slotCard", cells: ["1"], n: i }); adv(B("CELL_FILL")); }
+      say("Slot Context：端口号 1 · Route String=0（不含端口号，脚注 8）· Context Entries=1");
+      for (let i = 0; i < 9; i++) { push("cellFill", { target: "ep0Card", cells: ["1"] }); adv(B("CELL_FILL")); }
+      push("ringMount", {}); adv(B("RING_MOUNT"));
+      push("dcbaaNote", {});
+      say("EP0 Context 九格填毕（MPS=按端口速度默认〔样例 FS=8〕·TR Deq=环首段·DCS=1·CErr=3）；EP0 传输环上架（xhci-mem.c:1010）");
+      adv(1.2); push("done", {});
+      return steps;
+    }
+    if (id === "F6") {
+      adv(0.5); push("bsrTurn", { to: "0" }); adv(B("BSR_TURN"));
+      push("cmdFly", { card: "Address Device · BSR=0（BSR 位与 Slot ID 同在 word3）" }); adv(B("CMD_FLY"));
+      push("bellPress", { target: "bell0" }); adv(B("BELL_PRESS"));
+      say("Address Device（BSR=0）入命令环——第一个 USB 请求来自 xHC，不是驱动（教学锚）");
+      adv(0.3);
+      push("ticketEast", { text: "SET_ADDRESS · 地址=1（xHC 代发）" });
+      adv(1.4);
+      push("domeColor", { emissive: 1.9 }); adv(B("DOME_COLOR"));
+      push("plateFlip", {}); adv(B("PLATE_FLIP"));
+      push("flipHold", {}); adv(B("FLIP_HOLD"));
+      push("lampSwitch", { target: "deviceLampRow: Default→Address", to: "Address" });
+      push("lampSwitch", { target: "slotLampRow: Enabled→Addressed", to: "Addressed" });
+      say("SET_ADDRESS 已送达：设备 Default→Address（顶灯换色·铭牌翻面地址 1）；槽 Enabled→Addressed（p77）");
+      adv(0.4);
+      push("evCard", { label: "命令完成事件 · Success（p74）", toDesk: true, from: "Address Device · BSR=0", to: "事件环 → 驱动读取" });
+      adv(0.4); push("irqFlash", {});
+      adv(1.6); push("done", {});
+      return steps;
+    }
+    if (id === "F7") {
+      adv(0.4); push("gateLight", {});
+      push("dmaBeam", { to: "ep0" });
+      adv(0.3);
+      push("trbPlace", { target: "ringEp0.slot5/6/7", cards: ["Setup·TRT=3 IDT=1 IOC=0", "Data·DIR=1 Len=8", "Status·DIR=0 IOC=1"] });
+      adv(B("TRB_PLACE") * 3 + B("DMA_BEAM"));
+      push("bellPress", { target: "bell1" }); adv(B("BELL_PRESS"));
+      say("三 TRB 写入 EP0 环（DMA 可见写，cycle 从 PCS=1 起）→ 按 DB Target=1（EP0，DCI=1）");
+      adv(0.3);
+      push("ticketEast", { text: "GET_DESCRIPTOR · 请求" });
+      adv(1.5);
+      push("ticketWest", { text: "8 字节 · bMaxPacketSize0=8" });
+      adv(1.5);
+      push("dmaFlash", {});
+      push("trayPop", {}); adv(B("TRAY_POP"));
+      say("8 字节回包落托盘（bMaxPacketSize0=8 读出）——仅 FS 必走此步（LS/HS/SS 8/64/512 直接绕行，p72）");
+      adv(0.4);
+      push("evCard", { label: "传输事件 · Status 段（IOC=1）· Success", toDesk: true, from: "设备 · 8 字节回包", to: "事件环 → 驱动读取 · Status 段" });
+      adv(0.4); push("irqFlash", {});
+      adv(1.6); push("done", {});
+      return steps;
+    }
+    if (id === "F8") {
+      adv(0.5); push("cmdFly", { card: "Evaluate Context · A1=1" }); adv(B("CMD_FLY"));
+      push("bellPress", { target: "bell0" }); adv(B("BELL_PRESS"));
+      push("mpsFlash", {}); adv(D.ref("derived:d14"));
+      say("Evaluate Context（A1=1）：EP0 MPS 格翻新高亮——更新生效=8（p74 步 ix/x）");
+      adv(0.3);
+      push("evCard", { label: "命令完成事件 · Success", toDesk: true, from: "Evaluate Context · A1=1", to: "事件环 → 驱动读取" });
+      adv(0.4); push("irqFlash", {});
+      adv(1.6); push("done", {});
+      return steps;
+    }
+    if (id === "F9") {
+      adv(0.5); push("tdFast", {});
+      adv(0.5); push("ticketWest", { text: "GET_DESCRIPTOR · 完整描述符" });
+      adv(1.6); push("inboxStack", {}); adv(B("INBOX_STACK"));
+      say("描述符卡叠入收件匣（叠卡翻摞）——交给 Class Driver 注记；描述符字节数 S1 未给，不造数");
+      adv(0.4);
+      push("evCard", { label: "传输事件 · Success", toDesk: true, from: "GET_DESCRIPTOR · 完整描述符", to: "事件环 → 驱动读取" });
+      adv(0.4); push("irqFlash", {});
+      adv(1.6); push("done", {});
+      return steps;
+    }
+    if (id === "F10") {
+      adv(0.5);
+      push("dualFly", { lanes: [
+        { card: "Configure Endpoint 命令单（DC=0）", route: "printer→ringCmd.slot7", zOffset: 0.8 },
+        { card: "SET_CONFIGURATION 请求票据", route: "cable east", zOffset: 1.2 },
+      ] });
+      adv(B("DUAL_FLY"));
+      push("lampSwitch", { target: "deviceLampRow: Address→Configured（绿）", to: "Configured" });
+      push("lampSwitch", { target: "slotLampRow: Addressed→Configured", to: "Configured" });
+      push("epSlotsAllLit", {});
+      say("双操作同成才升级，缺一不可（p74）：设备 Address→Configured · 槽 Addressed→Configured 同步翻转；EP 环全槽点亮可调度");
+      adv(0.4);
+      push("evCard", { label: "命令完成 + 传输事件 · 双成功", toDesk: true, from: "Configure Endpoint + SET_CONFIGURATION", to: "事件环 → 驱动读取" });
+      adv(0.4); push("irqFlash", {});
+      adv(1.6); push("done", {});
+      return steps;
+    }
+    if (id === "F11") {
+      push("ringFlow", {});
+      push("waveIdle", {}); push("ringIdleCruise", {}); push("lampBreath", {});
+      say("初始化完成：管道全通（EP0 环演示性流转）——试着做几道自测题，或切分支预设对比观察");
+      adv(0.6); push("done", {});
+      return steps;
+    }
+    throw new Error("未知工段 " + id);
+  }
+
+  function variantStepsFor(presetId, stageId) {
+    const key = presetId + "_" + stageId;
+    if (VARIANT_STEPS[key]) return VARIANT_STEPS[key]();
+    return null;
+  }
+
+  // ---------- 预设（timeline.branches 全量接线） ----------
+  const BR = D.D.timeline.branches;
+  const PRESETS = BR.chips.map((c) => ({
+    id: c.id,
+    name: c.label,
+    tag: c.tag || "",
+    skip: c.id === "hs" ? [7, 8] : c.id === "usb3" ? [2, 3, 7, 8] : [],
+  }));
+  const CONTRAST = BR.contrastCards;
+
+  // ---------- 面板内容编译（DSL panel 分区 + s1 锚逐字） ----------
+  function stageCards(id) {
+    const st = DSLST.find((s) => s.id === id);
+    const cards = [];
+    const pts = String(st.panel || "").split("；").map((s) => s.trim()).filter(Boolean);
+    cards.push({ h3: "本工段要点", p: pts.map((p) => "· " + p).join("<br>") });
+    if (st.state && st.state.length) {
+      cards.push({
+        h3: "场景状态（规范语义值）",
+        p: st.state.map((s) => {
+          const txt = s.set || (s.do === "receipt" ? "回执 " + s.value : s.do === "readout" ? "读出 " + s.value : s.text || "");
+          return "· " + txt + (s.s1 ? " <span class='x43-anchor'>[" + s.s1 + "]</span>" : "");
+        }).join("<br>"),
+      });
+    }
+    if (st.flow && st.flow.length) {
+      cards.push({
+        h3: "流转路径",
+        p: st.flow.map((f) => "· 起 ▸ " + f.from + "　终 ▸ " + f.to).join("<br>"),
+      });
+    }
+    if (st.teachingAnchor) cards.push({ h3: "三方教学锚", p: st.teachingAnchor, anchorCard: true });
+    if (st.physical) cards.push({ h3: "物理动作感瞬间", p: st.physical });
+    if (st.panel && st.panel.indexOf("MPS 三口径") >= 0) {
+      cards.push({ h3: "MPS 三口径（三者不互冒）", p: "规范规则：读 bMaxPacketSize0 更新（p72/p98）· 样例值：FS=8 · 驱动初猜：64（xhci-mem.c:1125–1128）" });
+    }
+    return cards;
+  }
+
+  const FIELD_CARDS = [
+    {
+      h3: "GET_DESCRIPTOR(Device) · 前 8 字节 · 三 TRB 字段组",
+      note: "控制读 Status 段方向=OUT（DIR=0）",
+      rows: [
+        ["Setup Stage TRB", "TRT=IN Data Stage(3) · Length=8 · IDT=1 · IOC=0 · bmRequestType=80h · bRequest=6 · wValue=0100h · wIndex=0 · wLength=8"],
+        ["Data Stage TRB", "DIR=1 · Length=8 · CH=0 · IOC=0 · IDT=0"],
+        ["Status Stage TRB", "DIR=0 · Length=0 · CH=0 · IOC=1 · IDT=0 · Buffer=0"],
       ],
-      steps: [
-        [0.4, "cablePlug", {}],
-        [1.4, "say", { t: "USB3 设备插入：端口进入 Polling…" }],
-        [2.6, "portFlags", { ccs: 1, csc: 1, ped: 1 }],
-        [2.6, "pls", { v: "U0" }],
-        [2.6, "speed", { v: "SS" }],
-        [2.6, "devLamp", { v: "default" }],
-        [3.6, "evCard", { label: "端口状态变化事件", toDesk: true }],
-        [5.2, "say", { t: "轮询成功：端口自动 Enabled（PED=1 · PR=0 · PLS=0）——无软件复位帧" }],
-        [8.4, "done", {}],
-      ],
+      src: "xHCI 1.2b §4.3 步 7.a p73（S1 §3.2 逐值）",
     },
-  },
-  bsr1: {
-    6: {
-      metrics: { dev: "Default", devNote: "默认态", slot: "Default", slotNote: "默认态", pls: "U0", receipts: 4, hot: ["slot"] },
-      runtime: "Address Device（BSR=1）→ EP0 启用，但 xHC 被禁止发 SET_ADDRESS → 槽 Enabled→Default",
-      cards: [
-        { h3: "BSR=1：legacy 分支", p: "个别 legacy 设备需要先在 Default 态通信再编址：Address Device 带 BSR=1——EP0 先启用，但 xHC 被禁止发 SET_ADDRESS；成功后槽从 Enabled 进 Default 态（主线 BSR=0 成功是 Enabled→Addressed）。" },
-        { h3: "设备视角", p: "设备灯停在 Default：没有 SET_ADDRESS 票据上路。通信照常可以开始——编址放到通信完成之后（见「配置」工段前半）。" },
+    {
+      h3: "EP0 Context 九字段",
+      note: "Max Packet Size=按端口速度默认值（FS=8 / HS=64 / SS=512）",
+      rows: [
+        ["EP Type / MPS", "Control / 按端口速度默认〔样例 8〕"],
+        ["Max Burst / CErr", "0 / 3"],
+        ["TR Dequeue Ptr / DCS", "EP0 传输环首段 / 1"],
+        ["Interval / MaxPStreams / Mult", "0 / 0 / 0"],
       ],
-      steps: [
-        [0.5, "slip", { label: "Address Device · BSR=1" }],
-        [2.4, "bell0", {}],
-        [3.0, "say", { t: "Address Device（BSR=1）：EP0 启用，禁止发 SET_ADDRESS" }],
-        [4.2, "slotLamp", { v: "Default" }],
-        [5.0, "evCard", { label: "命令完成事件", toDesk: true }],
-        [6.4, "say", { t: "槽 Enabled→Default（BSR=1 分支）——先在 Default 态通信，编址后补" }],
-        [9.4, "done", {}],
-      ],
+      src: "xHCI 1.2b §4.3.3 p76（S1 §5.1 表）",
     },
-    10: {
-      runtime: "先补编址（BSR=0）再配置：SET_ADDRESS + Configure Endpoint + SET_CONFIGURATION",
-      cards: [
-        { h3: "先通信后编址", p: "legacy 分支在 Default 态完成描述符通信后，用 BSR=0 的 Address Device 正式编址（§4.3.4 p76–77），再走 Configure Endpoint 与 SET_CONFIGURATION 双操作。" },
-        { h3: "双操作同成", p: "编址补齐后，到 Configured 仍是双操作同成：Configure Endpoint 命令成功且 SET_CONFIGURATION 请求成功，缺一不可（p74）。" },
-      ],
-      steps: [
-        [0.5, "slip", { label: "Address Device · BSR=0（补编址）" }],
-        [2.2, "bell0", {}],
-        [3.2, "ticketOut", { text: "SET_ADDRESS · 地址=1" }],
-        [5.0, "devLamp", { v: "address" }],
-        [5.4, "slotLamp", { v: "Addressed" }],
-        [6.2, "say", { t: "补编址完成：设备 Default→Address、槽 Default→Addressed" }],
-        [7.0, "slip", { label: "Configure Endpoint" }],
-        [8.8, "bell0", {}],
-        [9.4, "ticketOut", { text: "SET_CONFIGURATION" }],
-        [11.0, "devLamp", { v: "configured" }],
-        [11.4, "slotLamp", { v: "Configured" }],
-        [12.0, "evCard", { label: "命令完成 + 传输事件", toDesk: true }],
-        [14.0, "say", { t: "双操作同成：设备与槽同时进 Configured（legacy 全程完）" }],
-        [16.0, "done", {}],
-      ],
+    {
+      h3: "槽状态五行表（Table 4-1）",
+      note: "Enabled 与 Disabled 共用编码 '0'——看 DCBAA 指针是否有效分辨（p87）",
+      header: ["槽态", "设备态", "可提交?", "已编址?", "地址", "DCBAA 指针", "状态名"],
+      rows: D.D.panel.tabs.fields.fieldCards.find((f) => f.id === "slotStates").rows,
+      src: "xHCI 1.2b §6.2 Table 4-1 p85–86（S1 §6.2 五行全值）",
     },
-  },
-};
+  ];
 
-/* 规范原文对照六条（逐字取自现行 4.3 页，页码 pypdf 门同现行） */
-const X43_QUOTES = [
-  { en: "“When the xHC detects a device attach, it shall set the Current Connect Status (CCS) and Connect Status Change (CSC) flags to ‘1’.”", zh: "插入由 xHC 检出：CCS 与 CSC 同时置 1。", src: "xHCI 1.2b §4.3 步 1 p71" },
-  { en: "“The completion of the port reset shall cause the PORTSC register PRC and PED flags to be set (‘1’), the PR flag to be cleared (‘0’), and the PLS field to be U0 (‘0’). The reset operation sets the USB2 device into the Default state, preparing it for a SET_ADDRESS request.”", zh: "USB2 复位完成是四信号组合：PRC=1、PED=1、PR=0、PLS=U0；复位把设备送入 Default 态，备好收 SET_ADDRESS。", src: "xHCI 1.2b §4.3 步 3.b p72" },
-  { en: "“After the port successfully reaches the Enabled state, system software shall obtain a Device Slot for the newly attached device using an Enable Slot Command” / “The Enable Slot Command returns a Slot ID that is selected by the host controller.”", zh: "端口到 Enabled 后软件发 Enable Slot 取槽；Slot ID 由 xHC 自选，放在命令完成事件里交回。", src: "xHCI 1.2b §4.3 步 4 p72 · §4.3.2 p75" },
-  { en: "“system software shall issue an Address Device Command with the Block Set Address Request (BSR) flag cleared to ‘0’” / “Successful completion of the Address Device Command with BSR = ‘0’ shall transition the Device Slot from the Enabled to the Addressed state.”", zh: "主线编址：Address Device 带 BSR=0，成功后槽 Enabled→Addressed、设备 Default→Address；SET_ADDRESS 由 xHC 在总线上代发。", src: "xHCI 1.2b §4.3.4 p76–77" },
-  { en: "“For LS, HS, and SS devices; 8, 64, and 512 bytes, respectively, are the only packet sizes allowed for the Default Control Endpoint, so step a may be skipped. For FS devices, system software should initially read the first 8 bytes of the USB Device Descriptor to retrieve the value of the bMaxPacketSize0 field”", zh: "8 字节读取仅 FS 必走：LS/HS/SS 默认包长 8/64/512 已定，可跳过；FS 先读描述符前 8 字节取 bMaxPacketSize0。", src: "xHCI 1.2b §4.3 步 7 p72" },
-  { en: "“The successful completion of both operations is required to advance the state of the USB device from Address to Configured and xHC Device Slot from Addressed to Configured.”", zh: "到 Configured 需要双操作同成：Configure Endpoint 命令成功且 SET_CONFIGURATION 请求成功，缺一不可。", src: "xHCI 1.2b §4.3 步 10 p74 · §4.3.5 p77" },
-];
+  const NUMERIC_TABLE = D.D.panel.tabs.fields.numericTable;
+  const PRINCIPLES = [
+    { h3: "三方各管一段（流程原理）", p: "数据结构全由软件准备：输入上下文、EP0 传输环、DCBAA 表项都是软件装载、xHC 只读；xHC 执行命令，需要时在总线上代发 USB 请求；设备只看见 USB 请求与总线事件——槽/环/上下文对它不可见。" },
+    { h3: "「Linux 实路径」与规范建议路径（三点差异）", p: "BSR=1 先通信 · BSR=0 后编址 · 不重写 MPS（S1 §6.3，hub.c:5056–5061/4785–4790；Evaluate Context 不在枚举链）。切到该预设可在 F6/F7/F8 看到注记卡。" },
+    { h3: "中断（可选）与轮询", p: "事件环有事件待取时可用中断通知驱动，也可以轮询事件环运行（p69 脚注 7）——本台闪线与轮询滑车双形态并存，中断不是唯一形态。" },
+    { h3: "hub 与 TT：逐层初始化", p: "多级拓扑必须从根集线器起，把每一层的 hub 与 TT 完全初始化后再处理下一层，否则 xHC 行为未定义（p74 Note）——本台只演示根端口直连设备。" },
+  ];
 
-/* 规范字段卡：GET_DESCRIPTOR 三 TRB 字段组（p73 现场值）+ EP0 上下文初值（§4.3.3 p76） */
-const X43_FIELDCARDS = [
-  {
-    h3: "GET_DESCRIPTOR(Device) · 前 8 字节 · 三 TRB 字段组",
-    note: "控制读 Status 段方向=OUT（DIR=0）",
-    rows: [
-      ["Setup Stage TRB", "TRT=IN Data Stage(3) · Length=8 · IDT=1 · IOC=0 · bmRequestType=80h · bRequest=6 · wValue=0100h · wIndex=0 · wLength=8"],
-      ["Data Stage TRB", "DIR=1 · Length=8 · CH=0 · IOC=0 · IDT=0"],
-      ["Status Stage TRB", "DIR=0 · Length=0 · CH=0 · IOC=1 · IDT=0 · Buffer=0"],
-    ],
-    src: "xHCI 1.2b §4.3 步 7.a p73",
-  },
-  {
-    h3: "EP0 上下文初值（输入上下文）",
-    note: "Max Packet Size=按端口速度的默认值（FS=8 / HS=64 / SS=512）",
-    rows: [
-      ["EP Type / MPS", "Control / 按端口速度默认值"],
-      ["Max Burst / CErr", "0 / 3"],
-      ["TR Dequeue Ptr / DCS", "EP0 传输环首段 / 1"],
-      ["Interval / MaxPStreams / Mult", "0 / 0 / 0"],
-    ],
-    src: "xHCI 1.2b §4.3.3 p76",
-  },
-  {
-    h3: "输入上下文置位与 Slot Context",
-    note: "A0=1 且 A1=1——Slot Context 与 EP0 Context 同时受影响",
-    rows: [
-      ["输入控制上下文", "A0=1 · A1=1"],
-      ["Slot Context", "Root Hub Port Number=端口号 · Route String=0（根端口直连；不含端口号）· Context Entries=1"],
-    ],
-    src: "xHCI 1.2b §4.3.3 p75–76",
-  },
-];
+  // 原文对照六条（S5 定稿：en 各段逐字核验=规范提取文本，dev/quote_verify.py QUOTE-VERIFY-PASS；
+  // 段间「/」=规范同页非连续句（quote 2 两句在 p72 不相邻，故拆段））
+  const QUOTES = [
+    { en: "“When the xHC detects a device attach, it shall set the Current Connect Status (CCS) and Connect Status Change (CSC) flags to ‘1’.”", zh: "插入由 xHC 检出：CCS 与 CSC 同时置 1。", src: "xHCI 1.2b §4.3 步 1 p71" },
+    { en: "“The completion of the port reset shall cause the PORTSC register PRC and PED flags to be set (‘1’), the PR flag to be cleared (‘0’), and the PLS field to be U0 (‘0’).” / “The reset operation sets the USB2 device into the Default state, preparing it for a SET_ADDRESS request.”", zh: "USB2 复位完成是四信号组合：PRC=1、PED=1、PR=0、PLS=U0；复位把设备送入 Default 态，备好收 SET_ADDRESS。", src: "xHCI 1.2b §4.3 步 3.b p72" },
+    { en: "“After the port successfully reaches the Enabled state, system software shall obtain a Device Slot for the newly attached device using an Enable Slot Command” / “The Enable Slot Command returns a Slot ID that is selected by the host controller.”", zh: "端口到 Enabled 后软件发 Enable Slot 取槽；Slot ID 由 xHC 自选，放在命令完成事件里交回。", src: "xHCI 1.2b §4.3 步 4 p72 · §4.3.2 p75" },
+    { en: "“system software shall issue an Address Device Command with the Block Set Address Request (BSR) flag cleared to ‘0’” / “Successful completion of the Address Device Command with BSR = ‘0’ shall transition the Device Slot from the Enabled to the Addressed state.”", zh: "主线编址：Address Device 带 BSR=0，成功后槽 Enabled→Addressed、设备 Default→Address；SET_ADDRESS 由 xHC 在总线上代发。", src: "xHCI 1.2b §4.3.4 p76–77" },
+    { en: "“For LS, HS, and SS devices; 8, 64, and 512 bytes, respectively, are the only packet sizes allowed for the Default Control Endpoint, so step a may be skipped. For FS devices, system software should initially read the first 8 bytes of the USB Device Descriptor to retrieve the value of the bMaxPacketSize0 field”", zh: "8 字节读取仅 FS 必走：LS/HS/SS 默认包长 8/64/512 已定，可跳过；FS 先读描述符前 8 字节取 bMaxPacketSize0。", src: "xHCI 1.2b §4.3 步 7 p72" },
+    { en: "“The successful completion of both operations is required to advance the state of the USB device from Address to Configured and xHC Device Slot from Addressed to Configured.”", zh: "到 Configured 需要双操作同成：Configure Endpoint 命令成功且 SET_CONFIGURATION 请求成功，缺一不可。", src: "xHCI 1.2b §4.3 步 10 p74 · §4.3.5 p77" },
+  ];
 
-/* 流程原理折叠节（三方视角注记 + 分支注记三卡） */
-const X43_PRINCIPLES = [
-  { h3: "三方各管一段", p: "数据结构全由软件准备：输入上下文、EP0 传输环、DCBAA 表项都是软件装载、xHC 只读；xHC 执行命令，需要时在总线上代发 USB 请求；设备只看见 USB 请求与总线事件。规范原文称软件侧为 system software（系统软件），本课件统一写「xHCI 驱动」。" },
-  { h3: "USB3 端口：自动 Enabled", p: "USB3 协议端口插入后进入 Polling：轮询成功自动到 Enabled（PED=1、PR=0、PLS=0），失败回 Disconnected。注意两族的 Disabled 态不同义——USB3 指 DSPORT.Disabled（USB3 规范图 10-9），USB2 指 USB2 规范 Disabled 态（图 11-10）。xHCI 1.2b §4.3 p71–72" },
-  { h3: "BSR=1：legacy 设备分支", p: "个别 legacy 设备需要先在 Default 态通信再编址：Address Device 带 BSR=1——EP0 先启用，但 xHC 被禁止发 SET_ADDRESS；成功后槽 Enabled→Default（主线 BSR=0 成功是 Enabled→Addressed）。xHCI 1.2b §4.3.4 p76–77" },
-  { h3: "hub 与 TT：逐层初始化", p: "多级拓扑必须从根集线器起，把每一层的 hub 与 TT 完全初始化后再处理下一层，否则 xHC 行为未定义。xHCI 1.2b §4.3 p74 Note" },
-];
+  // 自测题 5 题（S5 定稿：按 §K 递进阶梯出题——F0 认知→工段顺序→分支差异→试错→动手台经验；
+  // 字段值/页码全引 S1 已核值，零发明；题面与解析不新增语言门计数（豁免词零新增））
+  const QUIZ = [
+    { q: "命令完成事件走哪条环，交回给软件？", opts: ["原命令环——原路返回", "事件环", "EP0 传输环"], ans: 1, why: "所有命令都以命令完成事件在事件环上报完成（p60）；全规范仅一条命令环（p68 原句 There is only one Command Ring）——完成事件绝不回命令环；EP0 传输环只走该槽的传输。" },
+    { q: "Enable Slot 之后、Address Device 之前，软件必须先等到什么？", opts: ["无须等待——两条命令可以连发", "本槽的命令完成事件（Slot ID 随事件交回）", "设备的 8 字节回包"], ans: 1, why: "§4.3.2（p75）：须等本槽命令完成事件才可对同槽发后续命令；Slot ID 由 xHC 自选（p75）。8 字节读取是编址之后 FS 才走的支线（p72）。" },
+    { q: "Address Device 带 BSR=1 且成功，设备槽进入哪个状态？", opts: ["Enabled → Addressed", "Enabled → Default", "保持 Enabled 不变"], ans: 1, why: "BSR=1：EP0 先启用但 xHC 被禁止发 SET_ADDRESS，成功后槽 Enabled→Default（p76–77）；主线 BSR=0 才是 Enabled→Addressed，通信后需再发 BSR=0 补编址（p76–77 Note）。" },
+    { q: "F5 试错：输入上下文未填就抢发 Address Device，xHC 会？", opts: ["照常编址，交回 Slot ID", "回 Completion Code=Parameter Error，输出上下文不变", "把设备直接送入 Default 态"], ans: 1, why: "命令执行前校验输入上下文有效——无效上下文→Parameter Error，输出上下文卡不动（p100；S1 §7.2 条 10）。这正是「先填表后编址」顺序的存在理由。" },
+    { q: "门铃分刻：EP0 传输的门铃是哪一个？", opts: ["门铃 0 · DB Target=0", "门铃 1 · DB Target=1（DCI=1）", "任意门铃都行"], ans: 1, why: "命令门铃=0 号（DB Target=0）；EP0 门铃=DB Target=1——DCI=(端点号×2)+1（p82–83；xhci.h:313–314）。两块分刻牌分开刻。" },
+  ];
 
-/* 完工自测题（3–5 题，可选件；判据全部来自现行页内容） */
-const X43_QUIZ = [
-  {
-    q: "USB2 端口复位完成的判据是哪一组信号？",
-    opts: ["PRC=1 · PED=1 · PR=0 · PLS=U0", "CCS=1 · CSC=1 · PSCEG=1", "PED=1 · PLS=Polling(7)"],
-    ans: 0,
-    why: "复位完成四信号组合缺一不可：PRC=1、PED=1、PR=0、PLS=U0（'0'）；Port Speed 同时指示设备速度（p72 3.b）。CCS/CSC 是插入检出信号，Polling 是 attach 后的 PLS 显示。",
-  },
-  {
-    q: "「先读描述符前 8 字节取 bMaxPacketSize0」这一步对哪种设备必走？",
-    opts: ["LS / HS / SS 设备", "仅 FS 设备", "所有速度都必走"],
-    ans: 1,
-    why: "LS/HS/SS 的 Default Control Endpoint 只允许 8/64/512 字节包，默认值已定可跳过；仅 FS 设备必走 8 字节读取（p72 步 7）。",
-  },
-  {
-    q: "Address Device 带 BSR=1 且成功，设备槽进入哪个状态？",
-    opts: ["Enabled → Addressed", "Enabled → Default", "保持 Enabled 不变"],
-    ans: 1,
-    why: "BSR=1 是 legacy 设备分支：EP0 先启用但 xHC 被禁止发 SET_ADDRESS，成功后槽 Enabled→Default（p76–77）；主线 BSR=0 成功才是 Enabled→Addressed。",
-  },
-  {
-    q: "设备从 Address 进 Configured，需要哪些操作成功？",
-    opts: ["仅 Configure Endpoint 命令成功", "仅 SET_CONFIGURATION 请求成功", "Configure Endpoint 命令成功 且 SET_CONFIGURATION 请求成功"],
-    ans: 2,
-    why: "双操作同成、缺一不可（p74 步 10 / §4.3.5 p77）——命令与 USB 请求走两条通路，两个都成功状态才前进。",
-  },
-];
+  const GROUPS = [
+    { id: "g0", name: "总览", stages: [0] },
+    { id: "g1", name: "连接", stages: [1, 2, 3] },
+    { id: "g2", name: "登记", stages: [4, 5, 6] },
+    { id: "g3", name: "配置", stages: [7, 8, 9, 10] },
+    { id: "g4", name: "完工", stages: [11] },
+  ];
+  const SPEEDS = D.D.meta.speedModel.k.map((v) => ({ id: String(v), label: v + "×", v }));
+  const META = D.D.meta.dsl;
+
+  return {
+    compileSteps, variantStepsFor, METRICS, RUNTIME, PRESETS, CONTRAST, GROUPS, SPEEDS, META,
+    stageCards, FIELD_CARDS, NUMERIC_TABLE, PRINCIPLES, QUOTES, QUIZ,
+    stageCount: DSLST.length,
+  };
+})();

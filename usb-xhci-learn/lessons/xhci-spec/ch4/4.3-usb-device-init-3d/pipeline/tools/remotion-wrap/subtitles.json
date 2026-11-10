@@ -1,0 +1,51 @@
+{
+ "F0": [
+  {"from": 0.3, "to": 4.2, "text": "车间三方一台：左「文书台」=xHCI 驱动，中「总控台」=xHC，右「试验盒」=USB 设备"},
+  {"from": 4.3, "to": 8.3, "text": "上方三环各司其职：命令环（唯一）· 事件环（回执）· EP0 传输环（每设备槽一条）"}
+ ],
+ "F1": [
+  {"from": 0.3, "to": 5.2, "text": "设备滑入，插头推入端口 1——设备只感到上电，端口灯亮"},
+  {"from": 5.3, "to": 9.6, "text": "xHC 置 CCS=1、CSC=1——PSCEG（端口状态变化事件生成）0→1 跳变才发事件卡（p71）"}
+ ],
+ "F2": [
+  {"from": 0.4, "to": 3.2, "text": "驱动读 PORTSC：CCS=1 确认插入（p71）"},
+  {"from": 3.3, "to": 6.1, "text": "软件写 PR=1——复位按钮下压回弹，端口复位开始（p75 §4.3.1 步 1）"}
+ ],
+ "F3": [
+  {"from": 0.4, "to": 3.9, "text": "复位完成四信号一个不能少：PRC=1 · PED=1 · PR=0 · PLS=U0（p72）"},
+  {"from": 4.0, "to": 7.1, "text": "Port Speed=FS；复位把设备送入 Default（默认）态——备好收 SET_ADDRESS（p72）"}
+ ],
+ "F4": [
+  {"from": 0.4, "to": 4.6, "text": "Enable Slot 命令单入命令环（唯一），按 0 号门铃 DB Target=0（p83）"},
+  {"from": 4.7, "to": 8.6, "text": "xHC 自选 Slot ID=1 回执（示例）——输出上下文卡挂上 DCBAA 1 号格（软件装载，p76）"}
+ ],
+ "F5": [
+  {"from": 0.4, "to": 5.0, "text": "软件填表（DMA 直写可见）：A0=A1=1 打勾——Slot 卡三格、EP0 卡九字段逐格点亮（p75–76）"},
+  {"from": 5.1, "to": 9.0, "text": "EP0 传输环上架——每设备槽各一条；试错入口：不填上下文直接编址试试看"}
+ ],
+ "F6": [
+  {"from": 0.4, "to": 6.6, "text": "BSR=0：xHC 选地址并代发 SET_ADDRESS——第一个 USB 请求来自 xHC，不是驱动（p97/p98）"},
+  {"from": 6.7, "to": 11.6, "text": "设备铭牌翻面「地址 1（示例）」；槽态 Enabled（已使能）→ Addressed（已编址）（p77）"}
+ ],
+ "F7": [
+  {"from": 0.4, "to": 4.2, "text": "FS 才需先读 8 字节：LS/HS/SS=8/64/512 直接绕行（p72）"},
+  {"from": 4.3, "to": 8.4, "text": "GET_DESCRIPTOR 三 TRB（传输请求块）写 EP0 环——按 1 号门铃 DB Target=1（p82–83）"},
+  {"from": 8.5, "to": 13.2, "text": "Setup 票据东行、8 字节回包西行落托盘——bMaxPacketSize0=8（p73）"}
+ ],
+ "F8": [
+  {"from": 0.4, "to": 4.6, "text": "Evaluate Context（A1=1）更新 EP0 MPS（最大包长）生效——规范建议路径（p74）"},
+  {"from": 4.7, "to": 7.9, "text": "Linux 实路径不走此步：BSR=1 先通信、不重写 MPS（hub.c:5056–5061）"}
+ ],
+ "F9": [
+  {"from": 0.4, "to": 4.8, "text": "EP0 完全可用——读完整 Device/Configuration 描述符（p74）"},
+  {"from": 4.9, "to": 8.3, "text": "描述符卡叠入收件匣，交给对应的 Class Driver（p74）"}
+ ],
+ "F10": [
+  {"from": 0.4, "to": 4.4, "text": "双操作同成：Configure Endpoint（命令环）+ SET_CONFIGURATION（缆通道）并行飞行（p74）"},
+  {"from": 4.5, "to": 7.6, "text": "设备灯与槽态灯同步翻转：Addressed → Configured（已配置）——缺一不可（p74/p77–78）"}
+ ],
+ "F11": [
+  {"from": 0.3, "to": 5.0, "text": "管道全通：设备 Configured、四态灯绿亮、EP0 环持续流动——登记完工（p74 步 12）"},
+  {"from": 5.1, "to": 9.5, "text": "回课件「讲解」tab 做完工自测（5 题 ≥4 通过）；动手台三关等你挑战"}
+ ]
+}
